@@ -4,4 +4,4 @@
 
 export * from './types';
 export { parseHmlV2 } from './parser';
-export { generateHmlV2, generateHmlFile } from './generator';
+export { generateHmlFromTemplate, generateHmlFile, generateHmlV2 } from './generator';

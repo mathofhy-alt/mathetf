@@ -37,3 +37,14 @@ next-env.d.ts
 
 # Logs
 *.log
+
+# Temporary test files
+test_2column_output.hml
+test_zero_output.hml
+test_zero_questions.hml
+extracted_mapping_table.xml
+extract_mapping_table.js
+apply_mapping_table.js
+test_hml_v2_output.hml
+extracted_mapping_table.xml
+*.webp

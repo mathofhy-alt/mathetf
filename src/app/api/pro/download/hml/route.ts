@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const ids: string[] = body.ids || [];
         let questions: any[] = body.questions || [];
+        console.log(`[HML Download API] Received - IDs: ${ids.length}, Questions: ${questions.length}`);
 
         if (ids.length > 0) {
             const { data, error } = await supabase
@@ -48,14 +49,26 @@ export async function POST(req: NextRequest) {
             q.question_number = idx + 1;
         });
 
-        // Load Template
-        const templatePath = path.join(process.cwd(), 'template.hml');
+        // Load Template (Prefer 2-column template)
+        let templatePath = path.join(process.cwd(), '재조립양식.hml');
+        if (!fs.existsSync(templatePath)) {
+            templatePath = path.join(process.cwd(), 'template.hml');
+        }
+
         if (!fs.existsSync(templatePath)) return new NextResponse('Template missing', { status: 500 });
         const templateXml = fs.readFileSync(templatePath, 'utf-8');
 
-        // NEW: Surgical Injection Assembly
-        const manager = new HmlTemplateManager();
-        const finalHml = await manager.buildFinalHmlFile(templateXml, questions);
+        // NEW: Surgical Injection Assembly (v2 with Style Sanitization & 2-Column Support)
+        const { generateHmlFromTemplate } = await import('@/lib/hml-v2/generator');
+
+        // Wrap questions for the v2 generator
+        const questionsWithImages = questions.map(q => ({
+            question: q,
+            images: q.images || []
+        }));
+
+        const result = generateHmlFromTemplate(templateXml, questionsWithImages);
+        const finalHml = result.hmlContent;
 
         const filename = `exam_${new Date().getTime()}.hml`;
 

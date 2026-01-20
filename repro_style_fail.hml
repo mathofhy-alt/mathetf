@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<HWPML Style="embed" SubVersion="8.0.0.0" Version="2.8">
+<HEAD SecCnt="1">
+    <BINDATALIST Count="0"></BINDATALIST>
+    <MAPPINGTABLE></MAPPINGTABLE>
+</HEAD>
+<BODY>
+<SECTION Id="0">
+    <P><TEXT>TEMPLATE_MARKER_HEADER</TEXT></P>
+    <P><SECDEF><STARTNUMBER/></SECDEF></P>
+    <P><TEXT>TEMPLATE_MARKER_FOOTER</TEXT></P>
+    <P><TEXT><P><TEXT>QUESTION_WITH_MISSING_STYLE</TEXT></P></TEXT></P>
+</SECTION>
+</BODY>
+<TAIL>
+    <BINDATASTORAGE Count="0"></BINDATASTORAGE>
+</TAIL>
+</HWPML>

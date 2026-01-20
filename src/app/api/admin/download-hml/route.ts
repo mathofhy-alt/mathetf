@@ -80,23 +80,27 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        // 4. Load template
-        const templatePath = path.join(process.cwd(), 'hml v2-test-tem.hml');
+        // 4. Load template (Prefer 2-column template)
+        let templatePath = path.join(process.cwd(), '재조립양식.hml');
         if (!fs.existsSync(templatePath)) {
-            // Fallback to other template names
-            const altPath = path.join(process.cwd(), 'template.hml');
-            if (!fs.existsSync(altPath)) {
-                return new NextResponse('HML template missing', { status: 500 });
-            }
+            templatePath = path.join(process.cwd(), 'hml v2-test-tem.hml');
         }
+        if (!fs.existsSync(templatePath)) {
+            templatePath = path.join(process.cwd(), 'template.hml');
+        }
+
+        if (!fs.existsSync(templatePath)) return new NextResponse('HML template missing', { status: 500 });
         const templateContent = fs.readFileSync(templatePath, 'utf-8');
 
         // 5. Generate HML using V2 generator
-        const result = generateHmlFile(
-            templateContent,
-            orderedQuestions,
-            imagesByQuestion
-        );
+        const { generateHmlFromTemplate } = await import('@/lib/hml-v2/generator');
+
+        const questionsWithImages = orderedQuestions.map(q => ({
+            question: q,
+            images: imagesByQuestion.get(q.id) || []
+        }));
+
+        const result = generateHmlFromTemplate(templateContent, questionsWithImages);
 
         console.log(`[HML-V2-DOWNLOAD] Generated HML: ${result.questionCount} questions, ${result.imageCount} images, ${result.hmlContent.length} chars`);
 

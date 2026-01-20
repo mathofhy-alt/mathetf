@@ -1,0 +1,129 @@
+=== NEW UPLOAD START: 2026-01-19T12:13:20.860Z ===
+[2026-01-19T12:13:20.864Z] [HML-V2-INGEST] File: test_hml_v2_output.hml, Size: 362119 chars
+[2026-01-19T12:13:20.949Z] [HML-V2 Parser] Extracted 1 images
+[2026-01-19T12:13:20.951Z] [HML-V2 Parser] Found 1 BINITEM entries
+[2026-01-19T12:13:20.953Z] [HML-V2 Parser] Found 228 top-level elements
+[2026-01-19T12:13:20.953Z] [HML-V2 Parser] Question boundary at Index[0]: ENDNOTE Number="1"
+[2026-01-19T12:13:20.954Z] [HML-V2 Parser] Endnote Q1 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.954Z] [HML-V2 Parser] NO TABLE in Q1 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="1" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ③</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.955Z] [HML-V2 Parser] Question boundary at Index[10]: ENDNOTE Number="2"
+[2026-01-19T12:13:20.956Z] [HML-V2 Parser] Endnote Q2 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.956Z] [HML-V2 Parser] NO TABLE in Q2 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="2" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ①</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.956Z] [HML-V2 Parser] Question boundary at Index[18]: ENDNOTE Number="3"
+[2026-01-19T12:13:20.957Z] [HML-V2 Parser] Endnote Q3 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.957Z] [HML-V2 Parser] NO TABLE in Q3 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="3" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ①</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.957Z] [HML-V2 Parser] Question boundary at Index[25]: ENDNOTE Number="4"
+[2026-01-19T12:13:20.958Z] [HML-V2 Parser] Endnote Q4 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.958Z] [HML-V2 Parser] NO TABLE in Q4 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="4" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ④</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.959Z] [HML-V2 Parser] Question boundary at Index[34]: ENDNOTE Number="5"
+[2026-01-19T12:13:20.959Z] [HML-V2 Parser] Endnote Q5 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.959Z] [HML-V2 Parser] NO TABLE in Q5 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="5" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ④</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.960Z] [HML-V2 Parser] Question boundary at Index[41]: ENDNOTE Number="6"
+[2026-01-19T12:13:20.960Z] [HML-V2 Parser] Endnote Q6 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.960Z] [HML-V2 Parser] NO TABLE in Q6 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="6" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ⑤</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.961Z] [HML-V2 Parser] Question boundary at Index[45]: ENDNOTE Number="7"
+[2026-01-19T12:13:20.961Z] [HML-V2 Parser] Endnote Q7 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.961Z] [HML-V2 Parser] NO TABLE in Q7 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="7" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ④</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.962Z] [HML-V2 Parser] Question boundary at Index[62]: ENDNOTE Number="8"
+[2026-01-19T12:13:20.962Z] [HML-V2 Parser] Endnote Q8 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.963Z] [HML-V2 Parser] NO TABLE in Q8 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="8" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ①</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.963Z] [HML-V2 Parser] Question boundary at Index[68]: ENDNOTE Number="9"
+[2026-01-19T12:13:20.963Z] [HML-V2 Parser] Endnote Q9 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.964Z] [HML-V2 Parser] NO TABLE in Q9 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="9" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ⑤</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.964Z] [HML-V2 Parser] Question boundary at Index[86]: ENDNOTE Number="10"
+[2026-01-19T12:13:20.964Z] [HML-V2 Parser] Endnote Q10 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.965Z] [HML-V2 Parser] NO TABLE in Q10 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="10" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ⑤</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.965Z] [HML-V2 Parser] Question boundary at Index[91]: ENDNOTE Number="11"
+[2026-01-19T12:13:20.965Z] [HML-V2 Parser] Endnote Q11 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.966Z] [HML-V2 Parser] NO TABLE in Q11 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="11" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ②</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.966Z] [HML-V2 Parser] Question boundary at Index[109]: ENDNOTE Number="12"
+[2026-01-19T12:13:20.966Z] [HML-V2 Parser] Endnote Q12 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.967Z] [HML-V2 Parser] NO TABLE in Q12 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="12" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ③</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.967Z] [HML-V2 Parser] Question boundary at Index[115]: ENDNOTE Number="13"
+[2026-01-19T12:13:20.967Z] [HML-V2 Parser] Endnote Q13 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.968Z] [HML-V2 Parser] NO TABLE in Q13 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="13" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ①</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.968Z] [HML-V2 Parser] Question boundary at Index[130]: ENDNOTE Number="14"
+[2026-01-19T12:13:20.968Z] [HML-V2 Parser] Endnote Q14 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.969Z] [HML-V2 Parser] NO TABLE in Q14 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="14" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ②</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.969Z] [HML-V2 Parser] Question boundary at Index[134]: ENDNOTE Number="15"
+[2026-01-19T12:13:20.969Z] [HML-V2 Parser] Endnote Q15 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.970Z] [HML-V2 Parser] NO TABLE in Q15 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="15" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ④</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.970Z] [HML-V2 Parser] Question boundary at Index[152]: ENDNOTE Number="16"
+[2026-01-19T12:13:20.970Z] [HML-V2 Parser] Endnote Q16 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.971Z] [HML-V2 Parser] NO TABLE in Q16 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="16" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ③</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.971Z] [HML-V2 Parser] Question boundary at Index[157]: ENDNOTE Number="17"
+[2026-01-19T12:13:20.971Z] [HML-V2 Parser] Endnote Q17 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.972Z] [HML-V2 Parser] NO TABLE in Q17 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="17" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ②</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.972Z] [HML-V2 Parser] Question boundary at Index[171]: ENDNOTE Number="18"
+[2026-01-19T12:13:20.972Z] [HML-V2 Parser] Endnote Q18 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.973Z] [HML-V2 Parser] NO TABLE in Q18 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="18" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ⑤</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.973Z] [HML-V2 Parser] Question boundary at Index[175]: ENDNOTE Number="19"
+[2026-01-19T12:13:20.974Z] [HML-V2 Parser] Endnote Q19 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.974Z] [HML-V2 Parser] NO TABLE in Q19 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="19" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ④</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.975Z] [HML-V2 Parser] Question boundary at Index[190]: ENDNOTE Number="20"
+[2026-01-19T12:13:20.975Z] [HML-V2 Parser] Endnote Q20 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.975Z] [HML-V2 Parser] NO TABLE in Q20 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="20" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ②</CHAR></TEXT></P></PARALIST>
+[2026-01-19T12:13:20.976Z] [HML-V2 Parser] Question boundary at Index[196]: ENDNOTE Number="21"
+[2026-01-19T12:13:20.976Z] [HML-V2 Parser] Endnote Q21 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.977Z] [HML-V2 Parser] NO TABLE in Q21 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="21" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> </CHAR><EQUATION BaseLine="85" BaseUnit="1100" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="2027538529" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="264"><SIZE Height="1125" He
+[2026-01-19T12:13:20.977Z] [HML-V2 Parser] Question boundary at Index[214]: ENDNOTE Number="22"
+[2026-01-19T12:13:20.978Z] [HML-V2 Parser] Endnote Q22 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.978Z] [HML-V2 Parser] NO TABLE in Q22 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="22" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> </CHAR><EQUATION BaseLine="85" BaseUnit="1100" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="2027538547" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="270"><SIZE Height="1125" He
+[2026-01-19T12:13:20.979Z] [HML-V2 Parser] Question boundary at Index[217]: ENDNOTE Number="23"
+[2026-01-19T12:13:20.979Z] [HML-V2 Parser] Endnote Q23 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.979Z] [HML-V2 Parser] NO TABLE in Q23 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="23" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> </CHAR><EQUATION BaseLine="65" BaseUnit="1100" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="2027538583" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="293"><SIZE Height="2580" He
+[2026-01-19T12:13:20.980Z] [HML-V2 Parser] Question boundary at Index[220]: ENDNOTE Number="24"
+[2026-01-19T12:13:20.980Z] [HML-V2 Parser] Endnote Q24 Content: 1 Ps, 0 Tables
+[2026-01-19T12:13:20.980Z] [HML-V2 Parser] NO TABLE in Q24 Endnote. InnerXML: <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="4" Style="7"><TEXT CharShape="5"><AUTONUM Number="24" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> </CHAR><EQUATION BaseLine="87" BaseUnit="1100" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="2027538605" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="302"><SIZE Height="1290" He
+[2026-01-19T12:13:20.980Z] [HML-V2 Parser] Found 24 question boundaries
+[2026-01-19T12:13:20.986Z] [HML-V2 Parser] Q1: 3 elements, 12848 chars
+[2026-01-19T12:13:20.988Z] [HML-V2 Parser] Q2: 2 elements, 6586 chars
+[2026-01-19T12:13:20.992Z] [HML-V2 Parser] Q3: 6 elements, 10463 chars
+[2026-01-19T12:13:20.995Z] [HML-V2 Parser] Q4: 2 elements, 6632 chars
+[2026-01-19T12:13:20.999Z] [HML-V2 Parser] Q5: 2 elements, 11269 chars
+[2026-01-19T12:13:21.002Z] [HML-V2 Parser] Q6: 2 elements, 7368 chars
+[2026-01-19T12:13:21.005Z] [HML-V2 Parser] Q7: 2 elements, 9339 chars
+[2026-01-19T12:13:21.006Z] [HML-V2 Parser] Q8: 2 elements, 5964 chars
+[2026-01-19T12:13:21.009Z] [HML-V2 Parser] Q9: 2 elements, 6599 chars
+[2026-01-19T12:13:21.010Z] [HML-V2 Parser] Q10: 2 elements, 5460 chars
+[2026-01-19T12:13:21.012Z] [HML-V2 Parser] Q11: 2 elements, 5382 chars
+[2026-01-19T12:13:21.015Z] [HML-V2 Parser] Q12: 2 elements, 7984 chars
+[2026-01-19T12:13:21.017Z] [HML-V2 Parser] Q13: 3 elements, 7333 chars
+[2026-01-19T12:13:21.020Z] [HML-V2 Parser] Q14: 2 elements, 9444 chars
+[2026-01-19T12:13:21.022Z] [HML-V2 Parser] Q15: 2 elements, 7306 chars
+[2026-01-19T12:13:21.025Z] [HML-V2 Parser] Q16: 2 elements, 8549 chars
+[2026-01-19T12:13:21.028Z] [HML-V2 Parser] Q17: 2 elements, 9892 chars
+[2026-01-19T12:13:21.030Z] [HML-V2 Parser] Q18: 2 elements, 8013 chars
+[2026-01-19T12:13:21.033Z] [HML-V2 Parser] Q19: 2 elements, 10684 chars
+[2026-01-19T12:13:21.036Z] [HML-V2 Parser] Q20: 2 elements, 7919 chars
+[2026-01-19T12:13:21.037Z] [HML-V2 Parser] Q21: 1 elements, 4566 chars
+[2026-01-19T12:13:21.039Z] [HML-V2 Parser] Q22: 1 elements, 3275 chars
+[2026-01-19T12:13:21.040Z] [HML-V2 Parser] Q23: 1 elements, 3200 chars
+[2026-01-19T12:13:21.044Z] [HML-V2 Parser] Q24: 1 elements, 3217 chars
+[2026-01-19T12:13:21.044Z] [HML-V2 Parser] Extracted 24 questions
+[2026-01-19T12:13:21.045Z] [HML-V2-INGEST] Parsed 24 questions, 1 images
+[2026-01-19T12:13:21.946Z] [HML-V2-INGEST] Q1 saved with 0 images
+[2026-01-19T12:13:22.063Z] [HML-V2-INGEST] Q2 saved with 0 images
+[2026-01-19T12:13:22.148Z] [HML-V2-INGEST] Q3 saved with 0 images
+[2026-01-19T12:13:22.197Z] [HML-V2-INGEST] Q4 saved with 0 images
+[2026-01-19T12:13:22.271Z] [HML-V2-INGEST] Q5 saved with 0 images
+[2026-01-19T12:13:22.484Z] [HML-V2-INGEST] Q6 saved with 1 images
+[2026-01-19T12:13:22.556Z] [HML-V2-INGEST] Q7 saved with 0 images
+[2026-01-19T12:13:22.616Z] [HML-V2-INGEST] Q8 saved with 0 images
+[2026-01-19T12:13:22.663Z] [HML-V2-INGEST] Q9 saved with 0 images
+[2026-01-19T12:13:22.744Z] [HML-V2-INGEST] Q10 saved with 0 images
+[2026-01-19T12:13:22.781Z] [HML-V2-INGEST] Q11 saved with 0 images
+[2026-01-19T12:13:22.823Z] [HML-V2-INGEST] Q12 saved with 0 images
+[2026-01-19T12:13:22.871Z] [HML-V2-INGEST] Q13 saved with 0 images
+[2026-01-19T12:13:22.916Z] [HML-V2-INGEST] Q14 saved with 0 images
+[2026-01-19T12:13:22.959Z] [HML-V2-INGEST] Q15 saved with 0 images
+[2026-01-19T12:13:23.008Z] [HML-V2-INGEST] Q16 saved with 0 images
+[2026-01-19T12:13:23.052Z] [HML-V2-INGEST] Q17 saved with 0 images
+[2026-01-19T12:13:23.090Z] [HML-V2-INGEST] Q18 saved with 0 images
+[2026-01-19T12:13:23.130Z] [HML-V2-INGEST] Q19 saved with 0 images
+[2026-01-19T12:13:23.168Z] [HML-V2-INGEST] Q20 saved with 0 images
+[2026-01-19T12:13:23.197Z] [HML-V2-INGEST] Q21 saved with 0 images
+[2026-01-19T12:13:23.230Z] [HML-V2-INGEST] Q22 saved with 0 images
+[2026-01-19T12:13:23.262Z] [HML-V2-INGEST] Q23 saved with 0 images
+[2026-01-19T12:13:23.296Z] [HML-V2-INGEST] Q24 saved with 0 images
+[2026-01-19T12:13:23.296Z] [HML-V2-INGEST] Complete: 24/24 questions saved

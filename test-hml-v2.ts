@@ -12,9 +12,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseHmlV2 } from './src/lib/hml-v2/parser.ts';
-import { generateHmlV2 } from './src/lib/hml-v2/generator.ts';
-import type { QuestionWithImages, DbQuestion, DbQuestionImage } from './src/lib/hml-v2/types.ts';
+import { parseHmlV2 } from './src/lib/hml-v2/parser';
+import { generateHmlV2, generateHmlFromTemplate } from './src/lib/hml-v2/generator';
+import type { QuestionWithImages, DbQuestion, DbQuestionImage } from './src/lib/hml-v2/types';
 
 const TEST_INPUT = 'repro_real_image.hml';
 const TEST_OUTPUT = 'test_hml_v2_output.hml';
@@ -51,7 +51,13 @@ async function main() {
     console.log('\n[3] Simulating database storage...');
 
     const questionsWithImages: QuestionWithImages[] = parseResult.questions.map((q, idx) => {
-        // Create mock DbQuestion
+        // [DEBUG] Check what the parser extracted
+        if (idx === 0) {
+            console.log(`\n[DEBUG] Raw contentXml from parser (Q${idx + 1}):`);
+            console.log(q.contentXml.slice(0, 500));
+        }
+
+        // Use original content (user said "하나도 빠짐없이 밀어 넣어줘")
         const dbQuestion: DbQuestion = {
             id: `mock-question-${idx + 1}`,
             question_number: q.questionNumber,
@@ -84,7 +90,17 @@ async function main() {
 
     // Step 4: Generate new HML
     console.log('\n[4] Generating new HML...');
-    const generateResult = generateHmlV2(questionsWithImages);
+
+    // We use a separate template for the reassembly strategy
+    const templatePath = path.join(__dirname, '재조립양식.hml');
+    if (!fs.existsSync(templatePath)) {
+        console.error(`Error: Template file not found: ${templatePath}`);
+        process.exit(1);
+    }
+    const templateContent = fs.readFileSync(templatePath, 'utf-8');
+    console.log(`    Loaded template: 재조립양식.hml (${templateContent.length} bytes)`);
+
+    const generateResult = generateHmlFromTemplate(templateContent, questionsWithImages);
 
     console.log(`    Output size: ${generateResult.hmlContent.length} bytes`);
     console.log(`    Questions: ${generateResult.questionCount}`);

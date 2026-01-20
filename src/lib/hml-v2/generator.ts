@@ -1,240 +1,217 @@
 /**
- * HML V2 Generator (Template-Based Implementation)
+ * HML V2 Generator (Surgical String Splicing Implementation)
  * 
- * Strategy: Use the original HML file as template, preserving HEAD structure
- * Only modify BINDATALIST, BODY, and BINDATASTORAGE
- * 
- * Key HML Structure:
- * - HEAD > MAPPINGTABLE > BINDATALIST > BINITEM (image metadata)
- * - BODY > SECTION > P (content with PICTURE > IMAGE tags)
- * - TAIL > BINDATASTORAGE > BINDATA (Base64 image data)
+ * Strategy: Perform string-level replacement of {{CONTENT_HERE}} 
+ * and surgical insertion of binary data into HEAD/TAIL.
+ * This ensures no DOM transformation or namespace corruption occurs to the template.
  */
 
 import { DOMParser, XMLSerializer } from 'xmldom';
-import type { GenerateResult, DbQuestion, DbQuestionImage, QuestionWithImages } from './types';
+import type { GenerateResult, DbQuestionImage, QuestionWithImages } from './types';
 
-/**
- * Generate an HML file from questions and their images, using template
- */
 export function generateHmlFromTemplate(
     templateContent: string,
     questionsWithImages: QuestionWithImages[]
 ): GenerateResult {
-    console.log(`[HML-V2 Generator] Processing ${questionsWithImages.length} questions`);
+    console.log(`[HML-V2 Surgical Generator] Processing ${questionsWithImages.length} questions`);
 
-    const parser = new DOMParser();
     const serializer = new XMLSerializer();
-    const doc = parser.parseFromString(templateContent, 'text/xml');
+    const parser = new DOMParser();
 
-    // Collect all images and create ID remap
+    // 1. Process Questions to get their Paragraphs and Images
+    let combinedContentXmlFull = '';
     const allImages: { originalId: string; newId: number; image: DbQuestionImage }[] = [];
-    const idRemapByQuestion = new Map<string, Map<string, number>>();
+
+    // Scan template for existing Max ID and Style IDs
     let nextImageId = 1;
+    const templateDoc = parser.parseFromString(templateContent, 'text/xml');
+
+    const validStyles = {
+        ParaShape: new Set<string>(),
+        CharShape: new Set<string>(),
+        Style: new Set<string>()
+    };
+
+    // Collect valid Style IDs from MAPPINGTABLE
+    const mappingTable = templateDoc.getElementsByTagName('MAPPINGTABLE')[0];
+    if (mappingTable) {
+        const collect = (tagName: string, set: Set<string>) => {
+            const elements = mappingTable.getElementsByTagName(tagName);
+            for (let i = 0; i < elements.length; i++) {
+                const id = elements[i].getAttribute('Id');
+                if (id) set.add(id);
+            }
+        };
+        collect('PARASHAPE', validStyles.ParaShape);
+        collect('CHARSHAPE', validStyles.CharShape);
+        collect('STYLE', validStyles.Style);
+    }
+
+    const existingBins = templateDoc.getElementsByTagName('BINDATA');
+    for (let i = 0; i < existingBins.length; i++) {
+        const id = parseInt(existingBins[i].getAttribute('Id') || '0', 10);
+        if (id >= nextImageId) nextImageId = id + 1;
+    }
 
     for (const qwi of questionsWithImages) {
+        const qDoc = parser.parseFromString(`<WRAP>${qwi.question.content_xml}</WRAP>`, 'text/xml');
+
+        // Remap images for this question
         const remap = new Map<string, number>();
         for (const img of qwi.images) {
             const newId = nextImageId++;
             remap.set(img.original_bin_id, newId);
             allImages.push({ originalId: img.original_bin_id, newId, image: img });
         }
-        idRemapByQuestion.set(qwi.question.id, remap);
+
+        // Sanitize missing style references
+        sanitizeNodeStyles(qDoc.documentElement, validStyles);
+
+        // Apply remap and serialize
+        let questionXml = serializer.serializeToString(qDoc.documentElement);
+        // Remove <WRAP>...</WRAP>
+        questionXml = questionXml.replace(/^<WRAP>/, '').replace(/<\/WRAP>$/, '');
+
+        // Remap BinItem/BinData
+        remap.forEach((newId, oldId) => {
+            const pattern = new RegExp(`(BinItem|BinData)="${oldId}"`, 'g');
+            questionXml = questionXml.replace(pattern, `$1="${newId}"`);
+        });
+
+        // Add mandatory TreatAsChar to PICTURE if missing
+        questionXml = questionXml.replace(/<PICTURE([^>]*?)(\/?)>/g, (match, attrs, selfClose) => {
+            if (!attrs.includes('TreatAsChar')) {
+                return `<PICTURE${attrs} TreatAsChar="true"${selfClose}>`;
+            }
+            return match;
+        });
+
+        combinedContentXmlFull += questionXml;
     }
 
-    console.log(`[HML-V2 Generator] Total ${allImages.length} images to embed`);
+    // 2. Surgical String Replacement of Anchor
+    // Note: We support {{CONTENT_HERE}} as the primary anchor.
+    let currentHml = templateContent;
+    const anchor = '{{CONTENT_HERE}}';
 
-    // Step 1: Update BINDATALIST in HEAD > MAPPINGTABLE
-    updateBindataList(doc, allImages);
+    if (!currentHml.includes(anchor)) {
+        console.warn(`[HML-V2 Surgical Generator] Anchor "${anchor}" NOT found in template!`);
+    }
 
-    // Step 2: Update TAIL > BINDATASTORAGE (Step 2 logic moved here as per plan)
-    updateBindataStorage(doc, allImages);
+    currentHml = currentHml.replace(anchor, combinedContentXmlFull);
 
-    // Serialize basic structure (HEAD + TAIL)
-    let hmlContent = serializer.serializeToString(doc);
-
-    // Step 3: Replace SECTION content using string manipulation
-    // This bypasses DOM Parser stripping "redundant" namespaces, ensuring every P tag keeps its xmlns
-    const sectionContent: string[] = [];
-
-    for (const qwi of questionsWithImages) {
-        let contentXml = qwi.question.content_xml;
-        const remap = idRemapByQuestion.get(qwi.question.id);
-
-        if (remap && remap.size > 0) {
-            contentXml = remapImageReferences(contentXml, remap);
+    // 3. Surgical Injection of BINDATALIST into HEAD
+    if (allImages.length > 0) {
+        let binItemsXml = '';
+        for (const { newId, image } of allImages) {
+            const format = (image.format || 'PNG').toUpperCase();
+            const paddedId = String(newId).padStart(4, '0');
+            binItemsXml += `<BINITEM BinData="${newId}" Format="${format}" Type="Embedding" Compress="false" Path="BIN${paddedId}.${format}"/>`;
         }
-        sectionContent.push(contentXml);
+
+        // Find BINDATALIST or create it
+        if (currentHml.includes('<BINDATALIST')) {
+            // Update Count and Append
+            currentHml = currentHml.replace(/<BINDATALIST Count="(\d+)"([^>]*?)>/, (match, count, rest) => {
+                const newCount = parseInt(count, 10) + allImages.length;
+                return `<BINDATALIST Count="${newCount}"${rest}>`;
+            });
+            currentHml = currentHml.replace('</BINDATALIST>', `${binItemsXml}</BINDATALIST>`);
+        } else if (currentHml.includes('<MAPPINGTABLE>')) {
+            // Insert at the beginning of MAPPINGTABLE
+            currentHml = currentHml.replace('<MAPPINGTABLE>', `<MAPPINGTABLE><BINDATALIST Count="${allImages.length}">${binItemsXml}</BINDATALIST>`);
+        } else {
+            // Insert after <HEAD ...> as fallback
+            const headTagMatch = currentHml.match(/<HEAD[^>]*?>/);
+            if (headTagMatch) {
+                const tag = headTagMatch[0];
+                const listTag = `<BINDATALIST Count="${allImages.length}">${binItemsXml}</BINDATALIST>`;
+                currentHml = currentHml.replace(tag, `${tag}${listTag}`);
+            }
+        }
     }
 
-    // Replace everything inside <SECTION>...</SECTION> with our concatenated content
-    hmlContent = hmlContent.replace(
-        /(<SECTION[^>]*>)[\s\S]*?(<\/SECTION>)/,
-        `$1${sectionContent.join('\n')}$2`
-    );
+    // 4. Surgical Injection of BINDATASTORAGE into TAIL
+    if (allImages.length > 0) {
+        let binDataXml = '';
+        for (const { newId, image } of allImages) {
+            let base64 = image.data;
+            if (base64.startsWith('data:')) base64 = base64.split(',')[1] || base64;
+            const cleanBase64 = base64.replace(/[^A-Za-z0-9+/=]/g, '');
+            binDataXml += `<BINDATA Id="${newId}" Encoding="Base64" Compress="false">${cleanBase64}</BINDATA>`;
+        }
 
-    console.log(`[HML-V2 Generator] Generated HML with ${questionsWithImages.length} questions (String Assembly)`);
+        if (currentHml.includes('<BINDATASTORAGE')) {
+            currentHml = currentHml.replace(/<BINDATASTORAGE Count="(\d+)"([^>]*?)>/, (match, count, rest) => {
+                const newCount = parseInt(count, 10) + allImages.length;
+                return `<BINDATASTORAGE Count="${newCount}"${rest}>`;
+            });
+            currentHml = currentHml.replace('</BINDATASTORAGE>', `${binDataXml}</BINDATASTORAGE>`);
+        } else {
+            // Insert into TAIL. Known safe spot: before </TAIL>
+            const tailEnd = currentHml.lastIndexOf('</TAIL>');
+            if (tailEnd >= 0) {
+                const storageTag = `<BINDATASTORAGE Count="${allImages.length}">${binDataXml}</BINDATASTORAGE>`;
+                currentHml = currentHml.substring(0, tailEnd) + storageTag + currentHml.substring(tailEnd);
+            }
+        }
+    }
+
+    // 5. Update Global Metadata (Picture counts)
+    if (allImages.length > 0) {
+        // Update DOCSETTING Picture count
+        currentHml = currentHml.replace(/(<DOCSETTING[^>]*?Picture=")(\d+)(")/g, (match, start, count, end) => {
+            return `${start}${parseInt(count, 10) + allImages.length}${end}`;
+        });
+        // Update BEGINNUMBER Picture count
+        currentHml = currentHml.replace(/(<BEGINNUMBER[^>]*?Picture=")(\d+)(")/g, (match, start, count, end) => {
+            return `${start}${parseInt(count, 10) + allImages.length}${end}`;
+        });
+    }
 
     return {
-        hmlContent,
+        hmlContent: currentHml,
         questionCount: questionsWithImages.length,
         imageCount: allImages.length
     };
 }
-// updateBodyContent removed as it is no longer used
-
 
 /**
- * Update BINDATALIST in HEAD > MAPPINGTABLE
+ * Recursively scans nodes and removes style-related attributes if they are not in validSets.
  */
-function updateBindataList(
-    doc: Document,
-    images: { originalId: string; newId: number; image: DbQuestionImage }[]
-): void {
-    // Find existing BINDATALIST
-    let bindataList = doc.getElementsByTagName('BINDATALIST')[0];
+function sanitizeNodeStyles(node: any, validSets: { ParaShape: Set<string>; CharShape: Set<string>; Style: Set<string> }) {
+    if (node.nodeType !== 1) return; // 1 is Element
 
-    if (!bindataList) {
-        // Create BINDATALIST if not exists (inside MAPPINGTABLE)
-        const mappingTable = doc.getElementsByTagName('MAPPINGTABLE')[0];
-        if (mappingTable) {
-            bindataList = doc.createElement('BINDATALIST');
-            // Insert at the beginning of MAPPINGTABLE
-            mappingTable.insertBefore(bindataList, mappingTable.firstChild);
-        } else {
-            console.error('[HML-V2 Generator] MAPPINGTABLE not found');
-            return;
+    const checkAndStrip = (attr: string, set: Set<string>) => {
+        const val = node.getAttribute(attr);
+        if (val && !set.has(val)) {
+            console.warn(`[HML-V2 Sanitizer] Stripping invalid ${attr}="${val}" from <${node.tagName}>`);
+            node.removeAttribute(attr);
         }
+    };
+
+    checkAndStrip('ParaShape', validSets.ParaShape);
+    checkAndStrip('CharShape', validSets.CharShape);
+    checkAndStrip('Style', validSets.Style);
+
+    for (let i = 0; i < node.childNodes.length; i++) {
+        sanitizeNodeStyles(node.childNodes[i], validSets);
     }
-
-    // Clear existing BINITEM elements
-    while (bindataList.firstChild) {
-        bindataList.removeChild(bindataList.firstChild);
-    }
-
-    // Set count
-    bindataList.setAttribute('Count', String(images.length));
-
-    // Add new BINITEM elements
-    for (const { newId, image } of images) {
-        const binItem = doc.createElement('BINITEM');
-        binItem.setAttribute('BinData', String(newId));
-        binItem.setAttribute('Format', (image.format || 'jpg').toLowerCase());
-        binItem.setAttribute('Type', 'Embedding');
-        bindataList.appendChild(binItem);
-    }
-
-    console.log(`[HML-V2 Generator] Updated BINDATALIST with ${images.length} items`);
-}
-
-/**
- * Remap image references in content XML
- * Changes BinItem="oldId" to BinItem="newId"
- */
-function remapImageReferences(
-    xml: string,
-    remap: Map<string, number>
-): string {
-    let result = xml;
-
-    remap.forEach((newId, originalId) => {
-        // Match BinItem="originalId"
-        const pattern = new RegExp(`BinItem="${escapeRegex(originalId)}"`, 'g');
-        result = result.replace(pattern, `BinItem="${newId}"`);
-    });
-
-    return result;
-}
-
-/**
- * Update TAIL > BINDATASTORAGE
- */
-function updateBindataStorage(
-    doc: Document,
-    images: { originalId: string; newId: number; image: DbQuestionImage }[]
-): void {
-    const tail = doc.getElementsByTagName('TAIL')[0];
-    if (!tail) {
-        console.error('[HML-V2 Generator] TAIL not found');
-        return;
-    }
-
-    // Find or create BINDATASTORAGE
-    let bindataStorage = doc.getElementsByTagName('BINDATASTORAGE')[0];
-
-    if (!bindataStorage) {
-        bindataStorage = doc.createElement('BINDATASTORAGE');
-        // Insert at the beginning of TAIL
-        tail.insertBefore(bindataStorage, tail.firstChild);
-    }
-
-    // Clear existing BINDATA elements
-    while (bindataStorage.firstChild) {
-        bindataStorage.removeChild(bindataStorage.firstChild);
-    }
-
-    // Set count
-    bindataStorage.setAttribute('Count', String(images.length));
-
-    // Add new BINDATA elements
-    for (const { newId, image } of images) {
-        const binData = doc.createElement('BINDATA');
-        binData.setAttribute('Id', String(newId));
-        binData.setAttribute('Encoding', 'Base64');
-        binData.setAttribute('Compress', 'false');
-
-        // Clean and format Base64 data
-        let base64 = image.data;
-        if (base64.startsWith('data:')) {
-            base64 = base64.split(',')[1] || base64;
-        }
-        base64 = base64.replace(/\s/g, '');
-
-        // Calculate size
-        const sizeBytes = image.size_bytes || Math.floor(base64.length * 3 / 4);
-        binData.setAttribute('Size', String(sizeBytes));
-
-        // Format with 76-character line breaks
-        const chunkedBase64 = chunkString(base64, 76).join('\n');
-        binData.textContent = chunkedBase64;
-
-        bindataStorage.appendChild(binData);
-    }
-
-    console.log(`[HML-V2 Generator] Updated BINDATASTORAGE with ${images.length} items`);
-}
-// chunkString starts below...
-/**
- * Split string into chunks
- */
-function chunkString(str: string, size: number): string[] {
-    const chunks: string[] = [];
-    for (let i = 0; i < str.length; i += size) {
-        chunks.push(str.slice(i, i + size));
-    }
-    return chunks;
-}
-
-/**
- * Escape special regex characters
- */
-function escapeRegex(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// Legacy export for compatibility
-export function generateHmlV2(questionsWithImages: QuestionWithImages[]): GenerateResult {
-    throw new Error('Use generateHmlFromTemplate instead - template is required');
 }
 
 export function generateHmlFile(
     templateContent: string,
-    questions: DbQuestion[],
+    questions: any[],
     imagesByQuestion: Map<string, DbQuestionImage[]>
 ): GenerateResult {
     const questionsWithImages: QuestionWithImages[] = questions.map(q => ({
         question: q,
         images: imagesByQuestion.get(q.id) || []
     }));
-
     return generateHmlFromTemplate(templateContent, questionsWithImages);
+}
+
+// Legacy export
+export function generateHmlV2(questionsWithImages: QuestionWithImages[]): GenerateResult {
+    throw new Error('Use generateHmlFromTemplate');
 }
