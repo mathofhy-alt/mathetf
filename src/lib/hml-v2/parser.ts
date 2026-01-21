@@ -31,6 +31,10 @@ export function parseHmlV2(hmlContent: string): ParseResult {
     const imageMetaMap = extractImageMetadata(doc);
     console.log(`[HML-V2 Parser] Found ${imageMetaMap.size} BINITEM entries`);
 
+    // NEW: Extract Style Name mappings from HEAD > MAPPINGTABLE > STYLELIST
+    const styleNameMap = extractStyleNames(doc);
+    console.log(`[HML-V2 Parser] Found ${styleNameMap.size} Style Name entries`);
+
     // Step 3: Merge metadata into images
     images.forEach(img => {
         const meta = imageMetaMap.get(img.binId);
@@ -39,11 +43,39 @@ export function parseHmlV2(hmlContent: string): ParseResult {
         }
     });
 
+    // NEW: Extract BorderFill definitions
+    const borderFillMap = extractBorderFills(doc);
+    console.log(`[HML-V2 Parser] Found ${borderFillMap.size} BorderFill definitions`);
+
     // Step 4: Extract questions from BODY
-    const questions = extractQuestions(doc);
+    const questions = extractQuestions(doc, styleNameMap, borderFillMap);
     console.log(`[HML-V2 Parser] Extracted ${questions.length} questions`);
 
     return { questions, images };
+}
+
+/**
+ * Extract BorderFill definitions from HEAD > MAPPINGTABLE > BORDERFILLLIST
+ */
+function extractBorderFills(doc: Document): Map<string, string> {
+    const borderMap = new Map<string, string>();
+    const borderFills = doc.getElementsByTagName('BORDERFILL');
+    const serializer = new XMLSerializer();
+
+    for (let i = 0; i < borderFills.length; i++) {
+        const bf = borderFills[i];
+        const id = bf.getAttribute('Id');
+        if (id) {
+            // Clone and remove Id so we can compare content XML later
+            const cloned = bf.cloneNode(true) as Element;
+            cloned.removeAttribute('Id');
+            const xml = serializer.serializeToString(cloned);
+            // Hancom is sensitive to xmlns in MAPPINGTABLE entries
+            const cleanXml = xml.replace(/\sxmlns(:[a-z0-9]+)?="[^"]*"/gi, '');
+            borderMap.set(id, cleanXml);
+        }
+    }
+    return borderMap;
 }
 
 /**
@@ -100,11 +132,29 @@ function extractImageMetadata(doc: Document): Map<string, { format: string; type
 }
 
 /**
+ * Extract style names from HEAD > MAPPINGTABLE > STYLELIST
+ */
+function extractStyleNames(doc: Document): Map<string, string> {
+    const styleMap = new Map<string, string>();
+    const styles = doc.getElementsByTagName('STYLE');
+
+    for (let i = 0; i < styles.length; i++) {
+        const style = styles[i];
+        const id = style.getAttribute('Id');
+        const name = style.getAttribute('Name');
+        if (id && name) {
+            styleMap.set(id, name);
+        }
+    }
+    return styleMap;
+}
+
+/**
  * Extract questions from BODY > SECTION
  * 
  * Splits content by question numbering patterns (ENDNOTE with Number attribute)
  */
-function extractQuestions(doc: Document): ExtractedQuestion[] {
+function extractQuestions(doc: Document, styleMap: Map<string, string>, borderFillMap: Map<string, string>): ExtractedQuestion[] {
     const questions: ExtractedQuestion[] = [];
     const serializer = new XMLSerializer();
 
@@ -123,7 +173,6 @@ function extractQuestions(doc: Document): ExtractedQuestion[] {
     // Get all direct child elements of SECTION (P, TABLE, etc.)
     const allElements: Element[] = [];
 
-    // Only get direct children of SECTION
     const childNodes = section.childNodes;
     for (let i = 0; i < childNodes.length; i++) {
         const node = childNodes[i];
@@ -156,7 +205,8 @@ function extractQuestions(doc: Document): ExtractedQuestion[] {
     if (startIndices.length === 0) {
         const contentXml = allElements.map(el => {
             const clonedEl = el.cloneNode(true) as Element;
-            cleanStyleAttributes(clonedEl);
+            tagSemanticRole(clonedEl, styleMap);
+            cleanStyleAttributes(clonedEl, borderFillMap);
             return serializer.serializeToString(clonedEl);
         }).join('');
 
@@ -210,8 +260,11 @@ function extractQuestions(doc: Document): ExtractedQuestion[] {
             // Clone the node to avoid modifying the original DOM during cleanup
             const clonedEl = el.cloneNode(true) as Element;
 
+            // NEW: Identify and tag semantic role (QUESTION, CHOICE, etc.)
+            tagSemanticRole(clonedEl, styleMap);
+
             // Cleanup style attributes to prevent rendering issues in target HML
-            cleanStyleAttributes(clonedEl);
+            cleanStyleAttributes(clonedEl, borderFillMap);
 
             return serializer.serializeToString(clonedEl);
         }).join('\n');
@@ -265,7 +318,7 @@ function getPlainText(elements: Element[]): string {
 }
 
 // Helper to recursively remove style attributes
-function cleanStyleAttributes(element: Element) {
+function cleanStyleAttributes(element: Element, borderFillMap: Map<string, string>) {
     // Remove attributes from current element
     // [Fix for Missing Content]: We MUST strip source-specific IDs because we do not merge definitions.
     // Leaving them creates "Dangling References" which makes text invisible in Hancom.
@@ -274,19 +327,19 @@ function cleanStyleAttributes(element: Element) {
     element.removeAttribute('ParaShape');
     element.removeAttribute('CharShape');
 
-    // For TABLES and CELLS, we MUST provide a valid BorderFill ID to ensure visibility.
-    // If we simply remove it, the table/cell borders (and sometimes content) become invisible in Hancom.
-    // We use ID "3" which corresponds to standard Solid Lines in the "hml v2-test-tem.hml" template.
-    if (element.tagName === 'TABLE' || element.tagName === 'CELL') {
-        const existingBorder = element.getAttribute('BorderFill');
-        // Only override if missing or likely invalid (we can't easily check validity, so we force for safety)
-        // BUT user wanted "Copy Paste". If we force "3", we lose custom borders.
-        // However, invalid BorderFill ID = Invisible Table.
-        // Compromise: Force "3" is safer than undefined/invalid.
-        element.setAttribute('BorderFill', '3');
-    } else {
-        // For non-table elements, remove BorderFill to avoid random border artifacts
+    // NEW: Comprehensive Border Preservation
+    // Capture from ANY element that might have a border reference
+    const borderAttr = element.getAttribute('BorderFill') || element.getAttribute('BorderFillId');
+    if (borderAttr) {
+        const borderXml = borderFillMap.get(borderAttr);
+        if (borderXml) {
+            // Store the full XML definition in a temporary attribute
+            const encodedXml = Buffer.from(borderXml).toString('base64');
+            element.setAttribute('data-hml-border-xml', encodedXml);
+        }
+        // ALWAYS remove the original ID to prevent dangling references in target HML
         element.removeAttribute('BorderFill');
+        element.removeAttribute('BorderFillId');
     }
 
     // [Fix for Structural Leakage]: Blacklist document-level layout tags that shouldn't exist in a question fragment.
@@ -301,11 +354,73 @@ function cleanStyleAttributes(element: Element) {
             if (layoutTags.includes(el.tagName.toUpperCase())) {
                 element.removeChild(child);
             } else {
-                cleanStyleAttributes(el);
+                cleanStyleAttributes(el, borderFillMap);
             }
         }
     }
 }
+
+/**
+ * Identify and tag semantic roles based on style names
+ */
+function tagSemanticRole(element: Element, styleMap: Map<string, string>) {
+    const tagName = element.tagName.toUpperCase();
+
+    if (tagName === 'P') {
+        const styleId = element.getAttribute('Style');
+        if (styleId) {
+            const styleName = styleMap.get(styleId) || '';
+            let role = '';
+
+            // Role Mapping Logic (Ordered by specificity)
+            if (styleName.includes('해설') || styleName.includes('미주')) {
+                role = 'BOX_MIJU';
+            } else if (styleName.includes('조건')) {
+                role = 'BOX_JOKUN';
+            } else if (styleName.includes('보기')) {
+                role = 'BOX_BOGI';
+            } else if (styleName.includes('박스') || styleName.includes('지문')) {
+                role = 'BOX_BOGI';
+            } else if (styleName.includes('문제') || styleName.includes('문항')) {
+                role = 'QUESTION';
+            } else if (styleName.includes('선지') || styleName.includes('선택지')) {
+                role = 'CHOICE';
+            }
+
+            if (role) {
+                console.log(`[HML-V2 Parser] Tagged P as ${role} (Style: ${styleName}, StyleID: ${styleId})`);
+                element.setAttribute('data-hml-style', role);
+            }
+
+            // Keep the original style name
+            if (styleName) {
+                element.setAttribute('data-hml-orig-style', styleName);
+            }
+        }
+    } else if (tagName === 'TABLE') {
+        // Identify tables that act as boxes
+        const text = (element.textContent || '').trim();
+        // Broader matching for "보기" variants
+        if (text.includes('보  기') || text.includes('보 기') || text.includes('보기') ||
+            text.includes('조건') || text.includes('박스') || text.includes('지문')) {
+            // Tag the table itself so the generator can handle it
+            const role = (text.includes('조건')) ? 'BOX_JOKUN' :
+                ((text.includes('미주') || text.includes('해설')) ? 'BOX_MIJU' : 'BOX_BOGI');
+
+            console.log(`[HML-V2 Parser] Tagged TABLE as ${role} (Content preview: ${text.slice(0, 30)})`);
+            element.setAttribute('data-hml-style', role);
+        }
+    }
+
+    // Recurse to catch nested paragraphs if any (e.g. within a BOX style but inside another structure)
+    const children = Array.from(element.childNodes);
+    for (const child of children) {
+        if (child.nodeType === 1) { // Element node
+            tagSemanticRole(child as Element, styleMap);
+        }
+    }
+}
+
 
 // For testing
 export { extractImages, extractImageMetadata, extractQuestions };
