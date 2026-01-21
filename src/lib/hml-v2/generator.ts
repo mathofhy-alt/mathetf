@@ -199,6 +199,10 @@ export function generateHmlFromTemplate(
         });
 
         combinedContentXmlFull += questionXml;
+
+        // Add 5 padding paragraphs between questions for better spacing
+        const paddingPara = `<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR/></TEXT></P>`;
+        combinedContentXmlFull += paddingPara.repeat(5);
     }
 
     // 2. Surgical Injection of NEW BORDERFILLs into Header
