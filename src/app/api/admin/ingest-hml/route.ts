@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { parseHmlV2 } from '@/lib/hml-v2/parser';
+import { renderMathToSvg } from '@/lib/math-renderer';
 
 const STORAGE_BUCKET = 'hwpx';
 
@@ -39,15 +40,23 @@ export async function POST(req: NextRequest) {
         // Read file content as text (HML is XML-based)
         const hmlContent = await file.text();
         console.log(`[HML-V2-INGEST] File: ${file.name}, Size: ${hmlContent.length} chars`);
+        console.log(`[HML-V2-INGEST] Content Start: ${hmlContent.slice(0, 200)}...`);
 
         // 1. Parse HML using V2 parser
-        const { questions, images } = parseHmlV2(hmlContent);
-        console.log(`[HML-V2-INGEST] Parsed ${questions.length} questions, ${images.length} images`);
+        const result = parseHmlV2(hmlContent);
+        const { questions, images } = result;
+        console.log(`[HML-V2-INGEST] Parser Result - Questions: ${questions.length}, Images: ${images.length}`);
 
         if (questions.length === 0) {
+            console.error('[HML-V2-INGEST] Parsing failed: No questions found.');
             return NextResponse.json({
                 success: false,
-                error: 'No questions found in HML file'
+                error: 'No questions found in HML file.',
+                debug: {
+                    contentLength: hmlContent.length,
+                    contentSample: hmlContent.slice(0, 500),
+                    imagesFound: images.length
+                }
             }, { status: 400 });
         }
 
@@ -101,14 +110,21 @@ export async function POST(req: NextRequest) {
                     year,
                     semester,
                     source_db_id,
-                    question_number: q.questionNumber
+                    question_number: q.questionNumber,
+                    equation_scripts: q.equationScripts,
+                    plain_text: q.plainText
                 })
                 .select('id')
                 .single();
 
             if (qError) {
                 console.error(`[HML-V2-INGEST] Q${q.questionNumber} insert error:`, qError);
-                continue;
+                // Return immediate error if DB fails to help diagnosis
+                return NextResponse.json({
+                    success: false,
+                    error: `Database insert failed for Q${q.questionNumber}: ${qError.message}`,
+                    details: qError
+                }, { status: 500 });
             }
 
             savedQuestionIds.push(qData.id);
@@ -135,11 +151,49 @@ export async function POST(req: NextRequest) {
                     console.error(`[HML-V2-INGEST] Image ${binId} insert error:`, imgError);
                 }
             }
+            // 5. Insert Math Images (MathJax SVG to DB Embedding - V23 Bulletproof)
+            if (q.equationScripts && q.equationScripts.length > 0) {
+                const fs = await import('fs');
+                const path = await import('path');
 
-            console.log(`[HML-V2-INGEST] Q${q.questionNumber} saved with ${q.imageRefs.length} images`);
+                for (let i = 0; i < q.equationScripts.length; i++) {
+                    const script = q.equationScripts[i];
+                    try {
+                        const svg = await renderMathToSvg(script);
+                        const binId = `MATH_${i}`; // V23: Match Parser's questionMathCounter
+                        const b64Data = Buffer.from(svg).toString('base64');
+
+                        const payload = {
+                            question_id: qData.id,
+                            original_bin_id: binId,
+                            format: 'svg',
+                            data: b64Data, // PRIMARY DATA
+                            size_bytes: svg.length
+                        };
+
+                        // 1. Storage Backup (Optional)
+                        try {
+                            const fileName = `q_${qData.id}_m${i}.svg`;
+                            const mathDir = path.join(process.cwd(), 'public', 'math');
+                            if (!fs.existsSync(mathDir)) fs.mkdirSync(mathDir, { recursive: true });
+                            fs.writeFileSync(path.join(mathDir, fileName), svg);
+                        } catch (e) { }
+
+                        // 2. DB Persistence (Primary)
+                        const { error: dbError } = await (supabase.from('question_images') as any).insert({
+                            ...payload,
+                            storage_path: `/math/q_${qData.id}_m${i}.svg`
+                        });
+
+                        if (dbError) {
+                            await supabase.from('question_images').insert(payload);
+                        }
+                    } catch (renderError) {
+                        console.error(`[FATAL-RENDER] Q_ID: ${qData.id}, Idx: ${i}`, renderError);
+                    }
+                }
+            }
         }
-
-        console.log(`[HML-V2-INGEST] Complete: ${savedQuestionIds.length}/${questions.length} questions saved`);
 
         return NextResponse.json({
             success: true,
@@ -150,10 +204,7 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (e: any) {
-        console.error('[HML-V2-INGEST] Error:', e);
-        return NextResponse.json({
-            success: false,
-            error: e.message || String(e)
-        }, { status: 500 });
+        console.error('[HML-V2-INGEST-CRASH]', e);
+        return NextResponse.json({ success: false, error: e.message }, { status: 500 });
     }
 }

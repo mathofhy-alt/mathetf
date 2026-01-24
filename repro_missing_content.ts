@@ -1,6 +1,7 @@
 import * as fs from 'fs';
-import { generateHmlFromTemplate } from './src/lib/hml-v2/generator.ts';
-import type { DbQuestion, QuestionWithImages } from './src/lib/hml-v2/types.ts';
+import { generateHmlFromTemplate } from './src/lib/hml-v2/generator';
+import type { DbQuestion, QuestionWithImages } from './src/lib/hml-v2/types';
+import { parseHmlV2 } from './src/lib/hml-v2/parser';
 
 // 1. Mock Template with critical content "TEMPLATE_MARKER"
 const mockTemplate = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>

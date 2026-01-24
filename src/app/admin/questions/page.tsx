@@ -28,8 +28,12 @@ export default function AdminQuestionsPage() {
         difficulty: ''
     });
 
+    // Capture Error UI
+    const [captureError, setCaptureError] = useState<{ message: string, stdout: string, stderr: string } | null>(null);
+
     // Cart / Selection
     const [selectedIds, setSelectedIds] = useState<Set<any>>(new Set());
+    const [expandedSolutions, setExpandedSolutions] = useState<Set<string>>(new Set());
 
     const toggleSelect = (id: any) => {
         const newSet = new Set(selectedIds);
@@ -68,6 +72,27 @@ export default function AdminQuestionsPage() {
             console.error(e);
             alert('삭제 중 오류가 발생했습니다.');
         }
+    };
+
+    const handleCollectMathScripts = () => {
+        if (questions.length === 0) return;
+
+        let report = "--- MATH SCRIPTS REPORT ---\n";
+        questions.forEach(q => {
+            if (q.equation_scripts && q.equation_scripts.length > 0) {
+                report += `\n[Q${q.question_number} ID:${q.id}]\n`;
+                q.equation_scripts.forEach((s: string, idx: number) => {
+                    report += `  Eq ${idx}: ${s}\n`;
+                });
+            }
+        });
+
+        navigator.clipboard.writeText(report).then(() => {
+            alert('현재 페이지의 모든 수식 스크립트가 클립보드에 복사되었습니다. 이 내용을 채팅창에 붙여넣어 주시면 분석해 드릴 수 있습니다.');
+        }).catch(err => {
+            console.error('Clipboard error:', err);
+            alert('복사 실패. 콘솔을 확인해주세요.');
+        });
     };
 
     const handleDeleteAll = async () => {
@@ -229,7 +254,7 @@ export default function AdminQuestionsPage() {
 
         // Update Modal State (if open)
         if (selectedQuestion && selectedQuestion.id === q.id) {
-            setSelectedQuestion(prev => ({ ...prev, difficulty: newDiff }));
+            setSelectedQuestion((prev: any) => ({ ...prev, difficulty: newDiff }));
         }
 
         try {
@@ -248,13 +273,102 @@ export default function AdminQuestionsPage() {
                     item.id === q.id ? { ...item, difficulty: oldDiff } : item
                 ));
                 if (selectedQuestion && selectedQuestion.id === q.id) {
-                    setSelectedQuestion(prev => ({ ...prev, difficulty: oldDiff }));
+                    setSelectedQuestion((prev: any) => ({ ...prev, difficulty: oldDiff }));
                 }
                 alert('수정 실패');
             }
         } catch (e) {
             console.error(e);
             alert('오류가 발생했습니다.');
+        }
+    };
+
+    const handleManualCapture = async (q: any, captureType: 'question' | 'solution' = 'question') => {
+        try {
+            // 1. Trigger Local Capture App via Local Flask (port 5000)
+            const captureRes = await fetch('http://localhost:5000/trigger-manual-capture', {
+                method: 'POST'
+            });
+
+            if (!captureRes.ok) {
+                const err = await captureRes.json();
+                console.error("[CAPTURE_SERVER_ERROR]", err);
+                throw new Error(`${err.error}\nSTDOUT: ${err.stdout || ''}\nSTDERR: ${err.stderr || ''}`);
+            }
+
+            const { file_path } = await captureRes.json();
+
+            // 2. We need to read this local file path and upload it to our server.
+            // Since browser can't read absolute paths, we need the Flask server to serve this file 
+            // or provide a Base64 version. Let's assume we implement a /get-capture route in Flask.
+            const fileRes = await fetch(`http://localhost:5000/get-capture?path=${encodeURIComponent(file_path)}`);
+            const blob = await fileRes.blob();
+
+            // 3. Upload to Supabase Question Images
+            const formData = new FormData();
+            formData.append('file', blob, `capture_${q.question_number}_${captureType}.png`);
+            formData.append('questionId', q.id);
+            formData.append('captureType', captureType);
+
+            const uploadRes = await fetch('/api/admin/upload-capture', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (uploadRes.ok) {
+                alert(`${captureType === 'solution' ? '해설' : '문제'} 이미지가 성공적으로 캡쳐되어 업로드되었습니다.`);
+                fetchQuestions();
+                if (captureType === 'solution') {
+                    // Auto-expand solution view
+                    const newSet = new Set(expandedSolutions);
+                    newSet.add(q.id);
+                    setExpandedSolutions(newSet);
+                }
+            } else {
+                alert('업로드 실패');
+            }
+
+        } catch (e: any) {
+            console.error(e);
+            // alert(`캡쳐 오류: ${e.message}. 로컬 파이썬 툴이 실행 중인지 확인해 주세요.`);
+            // Parse error details if possible
+            const logMatch = e.message.match(/STDOUT: (.*)\nSTDERR: (.*)/s);
+            setCaptureError({
+                message: e.message.split('\nSTDOUT:')[0],
+                stdout: logMatch ? logMatch[1] : '',
+                stderr: logMatch ? logMatch[2] : ''
+            });
+        }
+    };
+
+    const handleDeleteCapture = async (imageId: string, imageUrl: string) => {
+        try {
+            const res = await fetch('/api/admin/delete-capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageId, imageUrl })
+            });
+
+            if (res.ok) {
+                // Refresh list
+                fetchQuestions();
+                // If modal is open, we might need to update the local selectedQuestion state
+                if (selectedQuestion) {
+                    setSelectedQuestion((prev: any) => {
+                        if (!prev) return null;
+                        return {
+                            ...prev,
+                            question_images: prev.question_images.filter((img: any) => img.id !== imageId)
+                        };
+                    });
+                }
+            } else {
+                const err = await res.json();
+                alert(`삭제 실패: ${err.error}`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('삭제 중 오류가 발생했습니다.');
         }
     };
 
@@ -299,6 +413,41 @@ export default function AdminQuestionsPage() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-6">
+            {/* Capture Error Modal (Selectable) */}
+            {captureError && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-[80vh]">
+                        <div className="p-4 border-b flex justify-between items-center bg-red-50">
+                            <h3 className="font-bold text-red-700">캡쳐 오류 상세 (드래그하여 복사 가능)</h3>
+                            <button onClick={() => setCaptureError(null)} className="text-gray-500 hover:text-gray-800 text-xl font-bold">&times;</button>
+                        </div>
+                        <div className="p-6 overflow-auto space-y-4 text-sm font-mono whitespace-pre-wrap select-text">
+                            <div className="font-bold text-red-600 underline">ERROR: {captureError.message}</div>
+                            {captureError.stdout && (
+                                <div>
+                                    <div className="text-blue-600 font-bold mb-1">[STDOUT]</div>
+                                    <div className="bg-gray-100 p-3 rounded border">{captureError.stdout}</div>
+                                </div>
+                            )}
+                            {captureError.stderr && (
+                                <div>
+                                    <div className="text-orange-600 font-bold mb-1">[STDERR]</div>
+                                    <div className="bg-gray-100 p-3 rounded border">{captureError.stderr}</div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 border-t bg-gray-50 text-right">
+                            <button
+                                onClick={() => setCaptureError(null)}
+                                className="px-4 py-2 bg-gray-800 text-white rounded font-bold hover:bg-black"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <h1 className="text-2xl font-bold text-gray-800">문제 관리 (Questions Admin)</h1>
 
             {/* Filters */}
@@ -420,6 +569,15 @@ export default function AdminQuestionsPage() {
                     {/* Spacer */}
                     <div className="w-4"></div>
 
+                    {/* Math Fix Tool */}
+                    <button
+                        onClick={handleCollectMathScripts}
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs font-bold border border-blue-200 transition-colors"
+                        title="현재 페이지의 모든 수식 원본 스크립트를 복사합니다."
+                    >
+                        📋 수식 데이터 수집
+                    </button>
+
                     {/* Delete All (Danger) */}
                     <button
                         onClick={handleDeleteAll}
@@ -476,7 +634,14 @@ export default function AdminQuestionsPage() {
                                     </td>
                                     <td className="p-3 text-center text-gray-500 text-xs">{q.question_number}</td>
                                     <td className="p-3">
-                                        <div className="font-bold text-gray-800">{q.school || '-'}</div>
+                                        <div className="font-bold text-gray-800 flex items-center gap-2">
+                                            {q.school || '-'}
+                                            {(q.question_images && q.question_images.length > 0) && (
+                                                <span className="bg-blue-100 text-blue-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                                                    📸 이미지 {q.question_images.length}
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="text-xs text-gray-500">{q.region} {q.district}</div>
                                     </td>
                                     <td className="p-3 text-gray-700">{q.grade}</td>
@@ -496,21 +661,69 @@ export default function AdminQuestionsPage() {
                                         </select>
                                     </td>
                                     <td className="p-3 text-gray-600 text-xs max-w-md overflow-hidden" onClick={e => setSelectedQuestion(q)}>
-                                        <div className="max-h-[150px] overflow-hidden relative group">
+                                        <div className={`relative ${q.question_images?.length > 0 ? 'max-h-[500px]' : 'max-h-60'} overflow-hidden border rounded group`}>
                                             <QuestionRenderer
                                                 xmlContent={q.content_xml}
                                                 showDownloadAction={false}
+                                                externalImages={q.question_images}
+                                                onDeleteCapture={handleDeleteCapture}
                                             />
-                                            {/* Fade out effect at bottom */}
+                                            {/* Fade out effect: Only show if content is likely taller than box */}
                                             <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
                                         </div>
+
+                                        {/* Solution View Integration */}
+                                        {expandedSolutions.has(q.id) && (
+                                            <div className="mt-4 p-4 bg-green-50/30 border-2 border-green-100 rounded-xl animate-in slide-in-from-top-4">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="text-lg">📖</span>
+                                                    <h4 className="text-sm font-black text-green-700 uppercase tracking-widest">직접 캡쳐한 해설 (Solution)</h4>
+                                                </div>
+                                                <QuestionRenderer
+                                                    xmlContent="" // Solution mode doesn't need XML fallback usually
+                                                    showDownloadAction={false}
+                                                    externalImages={q.question_images}
+                                                    onDeleteCapture={handleDeleteCapture}
+                                                    displayMode="solution"
+                                                />
+                                            </div>
+                                        )}
                                     </td>
-                                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                    <td className="p-3 text-center space-y-1" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             onClick={() => setSelectedQuestion(q)}
-                                            className="text-xs bg-white text-gray-700 px-2 py-1 rounded border hover:bg-gray-100 shadow-sm"
+                                            className="w-full text-xs bg-white text-gray-700 px-2 py-1 rounded border hover:bg-gray-100 shadow-sm"
                                         >
                                             수정
+                                        </button>
+                                        <button
+                                            onClick={() => handleManualCapture(q, 'question')}
+                                            className="w-full text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 shadow-sm flex items-center justify-center gap-1 font-bold"
+                                            title="한글 화면에서 마우스로 영역을 선택하여 문제 이미지를 캡쳐합니다."
+                                        >
+                                            📸 문제 캡쳐
+                                        </button>
+                                        <button
+                                            onClick={() => handleManualCapture(q, 'solution')}
+                                            className="w-full text-[10px] bg-green-50 text-green-600 px-2 py-1 rounded border border-green-100 hover:bg-green-100 shadow-sm flex items-center justify-center gap-1 font-bold"
+                                            title="한글 화면에서 마우스로 영역을 선택하여 해설 이미지를 캡쳐합니다."
+                                        >
+                                            📝 해설 캡쳐
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const newSet = new Set(expandedSolutions);
+                                                if (newSet.has(q.id)) newSet.delete(q.id);
+                                                else newSet.add(q.id);
+                                                setExpandedSolutions(newSet);
+                                            }}
+                                            className={`w-full text-[10px] px-2 py-1 rounded border shadow-sm flex items-center justify-center gap-1 font-bold transition-colors ${expandedSolutions.has(q.id)
+                                                    ? 'bg-gray-800 text-white border-gray-700'
+                                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {expandedSolutions.has(q.id) ? '📖 해설 닫기' : '📖 해설지보기'}
                                         </button>
                                     </td>
                                 </tr>
@@ -699,6 +912,8 @@ export default function AdminQuestionsPage() {
                                                 xmlContent={selectedQuestion.content_xml}
                                                 showDownloadAction={true}
                                                 fileName={`Q${selectedQuestion.question_number}_${selectedQuestion.subject || 'math'}`}
+                                                externalImages={selectedQuestion.question_images}
+                                                onDeleteCapture={handleDeleteCapture}
                                             />
                                         </div>
                                     )}

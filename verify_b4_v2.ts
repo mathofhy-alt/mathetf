@@ -16,22 +16,26 @@ async function main() {
     const questionsWithImages = [
         {
             question: {
-                id: 'q1',
-                question_number: 1,
+                plain_text: "1. 다음 보기의 표 내용을 확인하시오. 질문 내용...",
                 content_xml: `<P ParaShape="1" Style="1" data-hml-style="QUESTION"><TEXT CharShape="0"><CHAR>1. 다음 보기의 표 내용을 확인하시오.</CHAR></TEXT></P>
-                             <TABLE BorderFill="1" data-hml-style="BOX_BOGI">
-                               <SHAPEOBJECT InstId="999" Lock="false" NumberingType="Table" ZOrder="0">
-                                 <SIZE Height="1000" HeightRelTo="Absolute" Protect="false" Width="20000" WidthRelTo="Absolute"/>
-                               </SHAPEOBJECT>
-                               <ROW>
-                                 <CELL><PARALIST><P><TEXT><CHAR>Column 1 Content</CHAR></TEXT></P></PARALIST></CELL>
-                                 <CELL><PARALIST><P><TEXT><CHAR>Column 2 Content</CHAR></TEXT></P></PARALIST></CELL>
-                               </ROW>
-                             </TABLE>
-                             <P ParaShape="1" Style="0"><TEXT CharShape="0"><CHAR>질문 내용...</CHAR></TEXT></P>`,
-                plain_text: 'Preview with table'
+<TABLE BorderFill="7" CellSpacing="0" ColCount="1" PageBreak="Cell" RepeatHeader="true" RowCount="1">
+  <ROW>
+    <CELL BorderFill="5" ColAddr="0" ColSpan="1" Width="29320"><PARALIST><P><TEXT><CHAR>Table Content</CHAR></TEXT></P></PARALIST></CELL>
+  </ROW>
+</TABLE>
+<P ParaShape="1" Style="0"><TEXT CharShape="0"><CHAR>질문 내용...</CHAR></TEXT></P>`
             } as any,
             images: []
+        },
+        {
+            images: [],
+            question: {
+                content_xml: `<P ParaShape="1" Style="1" data-hml-style="QUESTION"><TEXT CharShape="0"><CHAR>2. 다음 중 옳은 것은?</CHAR></TEXT></P>
+<P ParaShape="1" Style="0" data-hml-style="CHOICE"><TEXT CharShape="0"><CHAR>① 정답</CHAR></TEXT></P>`,
+                fragment_xml: `<P ParaShape="1" Style="1" data-hml-style="QUESTION"><TEXT CharShape="0"><CHAR>2. 다음 중 옳은 것은?</CHAR></TEXT></P>
+<P ParaShape="1" Style="0" data-hml-style="CHOICE"><TEXT CharShape="0"><CHAR>① 정답</CHAR></TEXT></P>`,
+                plain_text: "2. 다음 중 옳은 것은? ① 정답"
+            } as any
         }
     ];
 

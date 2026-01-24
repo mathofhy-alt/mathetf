@@ -7,6 +7,7 @@ export interface QuestionBoundary {
     startPos: number;
     endPos: number;
     xml: string;
+    equationScripts: string[];
 }
 
 export interface ParserResult {
@@ -172,32 +173,23 @@ export async function parseQuestionsFromHwpx(fileBuffer: Buffer | Uint8Array): P
             const stopIndex = lastEndNoteIndex + 1;
             let startIndex = stopIndex;
 
-            // Strategy: Find *Last* trigger of Strong Start in range [stopIndex, i]
-            // Why Last? Because there might be noise. 
-            // Actually, we want the *Earliest* valid start for THIS question.
-            // If we have [PrevEnd] [P1] [P2] [StrongStart] [P3] [EndNote],
-            // It splits? [P1][P2] are ... orphans? Or part of prev?
-            // Usually [P1][P2] belong to THIS question if they are not StrongStarts themselves.
-            // So we take everything from stopIndex.
-
-            // BUT, Check for multiple StrongStarts in range.
-            // [PrevEnd] [StrongStart1 (Q_N)] ... [StrongStart2 (Q_N+1?)] ... [EndNote]
-            // If we see two StrongStarts, we likely merged two questions where middle EndNote was missing.
-            // In that case, we should split?
-            // But we iterate by EndNote. If Q_N missed its EndNote, we can't save it easily as distinct Q.
-            // We'll proceed with taking from `stopIndex`. 
-            // The QA log will catch if `strongStartCount > 1`.
-
-            // Fallback for "No Choice" questions (short ones)
-            // If range is tiny, verify we didn't miss backward context (though limited by stopIndex)
-
             let finalXml = "";
             let ssCount = 0;
             let enCount = 0;
+            const equationScripts: string[] = [];
 
             for (let k = startIndex; k <= endIndex; k++) {
                 if (isStrongStart(paragraphs[k])) ssCount++;
                 if (hasEndNote(paragraphs[k])) enCount++;
+
+                // Extract Math Scripts
+                const eqs = paragraphs[k].getElementsByTagName("hp:equation");
+                for (let j = 0; j < eqs.length; j++) {
+                    const scripts = eqs[j].getElementsByTagName("hp:script");
+                    if (scripts.length > 0) {
+                        equationScripts.push(scripts[0].textContent || "");
+                    }
+                }
 
                 const norm = normalizeParagraph(paragraphs[k]);
                 if (norm) finalXml += norm;
@@ -208,29 +200,15 @@ export async function parseQuestionsFromHwpx(fileBuffer: Buffer | Uint8Array): P
             const textLen = combinedText.length;
             const hasChoice = /[①-⑤]/.test(combinedText) || /\d+\)/.test(combinedText);
 
-            console.log(`[QA3] q=${questionCounter} idx=[${startIndex}-${endIndex}] pCount=${endIndex - startIndex + 1} textLen=${textLen} choice=${hasChoice ? 'Y' : 'N'} ssCount=${ssCount} enCount=${enCount}`);
-
-            // Recovery: If multiple StrongStarts?
-            // If ssCount > 1, maybe we should have cut earlier?
-            // But where? We don't know which StrongStart pairs with our EndNote.
-            // Generally the *Last* StrongStart pairs with current EndNote? 
-            // No, the First one is the start of the block. 
-            // If we have [SS1] ... [SS2] ... [EndNote], likely [SS1].. is Q_Missing, [SS2]..[EndNote] is Q_Current.
-            // If we keep all, we merge them.
-            // If strict, we might move startIndex to [SS2]. But then [SS1] is lost forever.
-            // Better to keep them merged than lose data? Or better to split?
-            // User requirement: "24 -> 20" means they ARE being merged/lost.
-            // If we just keep as is, we reproduce the bug (merged).
-            // To restore count, we must split. But `parseQuestions` returns array.
-            // We can't easily return 2 questions for 1 loop iteration without refactoring loop.
-            // For now, let's keep logic simple: strict collection.
+            console.log(`[QA3] q=${questionCounter} idx=[${startIndex}-${endIndex}] pCount=${endIndex - startIndex + 1} textLen=${textLen} eqCount=${equationScripts.length} choice=${hasChoice ? 'Y' : 'N'} ssCount=${ssCount} enCount=${enCount}`);
 
             if (finalXml.length > 0) {
                 boundaries.push({
                     questionIndex: questionCounter,
                     startPos: startIndex,
                     endPos: endIndex,
-                    xml: finalXml
+                    xml: finalXml,
+                    equationScripts
                 });
                 questionCounter++;
             }

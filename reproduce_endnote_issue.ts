@@ -1,5 +1,5 @@
 
-import { parseHmlV2 } from './src/lib/hml-v2/parser.ts';
+import { parseHmlV2 } from './src/lib/hml-v2/parser';
 
 const COMPLEX_ENDNOTE_HML = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <HWPML Style="embed" SubVersion="8.0.0.0" Version="2.8">

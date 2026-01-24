@@ -23,6 +23,11 @@ export function parseHmlV2(hmlContent: string): ParseResult {
     const parser = new DOMParser();
     const doc = parser.parseFromString(hmlContent, 'text/xml');
 
+    console.log(`[HML-V2 Parser] Root element: ${doc.documentElement?.tagName}`);
+    if (!doc.documentElement) {
+        console.error('[HML-V2 Parser] XML Parsing failed: Document has no root element.');
+    }
+
     // Step 1: Extract all binary data from TAIL > BINDATASTORAGE
     const images = extractImages(doc);
     console.log(`[HML-V2 Parser] Extracted ${images.length} images`);
@@ -47,30 +52,41 @@ export function parseHmlV2(hmlContent: string): ParseResult {
     const borderFillMap = extractBorderFills(doc);
     console.log(`[HML-V2 Parser] Found ${borderFillMap.size} BorderFill definitions`);
 
+    // NEW: Extract ParaShape Alignments
+    const paraAlignMap = extractParaAligns(doc);
+    console.log(`[HML-V2 Parser] Found ${paraAlignMap.size} ParaShape Alignments`);
+
     // Step 4: Extract questions from BODY
-    const questions = extractQuestions(doc, styleNameMap, borderFillMap);
+    const questions = extractQuestions(doc, styleNameMap, borderFillMap, paraAlignMap, images);
     console.log(`[HML-V2 Parser] Extracted ${questions.length} questions`);
 
     return { questions, images };
 }
 
 /**
- * Extract BorderFill definitions from HEAD > MAPPINGTABLE > BORDERFILLLIST
+ * Helper to get elements by tag name considering namespace
  */
+function getTags(parent: Document | Element, tagName: string): Element[] {
+    const combined = new Set<Element>();
+    const names = [tagName, `hp:${tagName.toLowerCase()}`, `hp:${tagName.toUpperCase()}`];
+    for (const name of names) {
+        const els = parent.getElementsByTagName(name);
+        for (let i = 0; i < els.length; i++) combined.add(els[i]);
+    }
+    return Array.from(combined);
+}
+
 function extractBorderFills(doc: Document): Map<string, string> {
     const borderMap = new Map<string, string>();
-    const borderFills = doc.getElementsByTagName('BORDERFILL');
+    const borderFills = getTags(doc, 'BORDERFILL');
     const serializer = new XMLSerializer();
 
-    for (let i = 0; i < borderFills.length; i++) {
-        const bf = borderFills[i];
+    for (const bf of borderFills) {
         const id = bf.getAttribute('Id');
         if (id) {
-            // Clone and remove Id so we can compare content XML later
             const cloned = bf.cloneNode(true) as Element;
             cloned.removeAttribute('Id');
             const xml = serializer.serializeToString(cloned);
-            // Hancom is sensitive to xmlns in MAPPINGTABLE entries
             const cleanXml = xml.replace(/\sxmlns(:[a-z0-9]+)?="[^"]*"/gi, '');
             borderMap.set(id, cleanXml);
         }
@@ -78,68 +94,57 @@ function extractBorderFills(doc: Document): Map<string, string> {
     return borderMap;
 }
 
-/**
- * Extract binary image data from TAIL > BINDATASTORAGE > BINDATA
- */
+function extractParaAligns(doc: Document): Map<string, string> {
+    const paraMap = new Map<string, string>();
+    const paraShapes = getTags(doc, 'PARASHAPE');
+    for (const ps of paraShapes) {
+        const id = ps.getAttribute('Id');
+        const align = ps.getAttribute('Align');
+        if (id && align) paraMap.set(id, align);
+    }
+    return paraMap;
+}
+
 function extractImages(doc: Document): ExtractedImage[] {
     const images: ExtractedImage[] = [];
-
-    const binDataElements = doc.getElementsByTagName('BINDATA');
+    const binDataElements = getTags(doc, 'BINDATA');
 
     for (let i = 0; i < binDataElements.length; i++) {
         const el = binDataElements[i];
         const id = el.getAttribute('Id') || String(i + 1);
         const rawBase64 = el.textContent || '';
-
-        // Clean up Base64: remove whitespace and newlines
-        // [Fix for Unknown Error]: Aggressively strip ANY character that is not valid Base64
-        // Including \r, \n, \t, and any hidden unicode whitespace.
         const cleanBase64 = rawBase64.replace(/[^A-Za-z0-9+/=]/g, '');
-
-        // Calculate actual binary size (not Base64 string length)
         const sizeBytes = Math.floor(cleanBase64.length * 3 / 4);
 
         images.push({
             binId: id,
-            format: 'jpg', // Default, will be overwritten by metadata
+            format: 'jpg',
             data: cleanBase64,
             sizeBytes
         });
     }
-
     return images;
 }
 
-/**
- * Extract image metadata from HEAD > MAPPINGTABLE > BINDATALIST > BINITEM
- */
 function extractImageMetadata(doc: Document): Map<string, { format: string; type: string }> {
     const metaMap = new Map<string, { format: string; type: string }>();
-
-    const binItems = doc.getElementsByTagName('BINITEM');
+    const binItems = getTags(doc, 'BINITEM');
 
     for (let i = 0; i < binItems.length; i++) {
         const item = binItems[i];
-        // BinData attribute contains the ID that matches BINDATA Id
         const binDataId = item.getAttribute('BinData') || String(i + 1);
         const format = item.getAttribute('Format') || 'jpg';
         const type = item.getAttribute('Type') || 'Embedding';
-
         metaMap.set(binDataId, { format, type });
     }
-
     return metaMap;
 }
 
-/**
- * Extract style names from HEAD > MAPPINGTABLE > STYLELIST
- */
 function extractStyleNames(doc: Document): Map<string, string> {
     const styleMap = new Map<string, string>();
-    const styles = doc.getElementsByTagName('STYLE');
+    const styles = getTags(doc, 'STYLE');
 
-    for (let i = 0; i < styles.length; i++) {
-        const style = styles[i];
+    for (const style of styles) {
         const id = style.getAttribute('Id');
         const name = style.getAttribute('Name');
         if (id && name) {
@@ -154,48 +159,69 @@ function extractStyleNames(doc: Document): Map<string, string> {
  * 
  * Splits content by question numbering patterns (ENDNOTE with Number attribute)
  */
-function extractQuestions(doc: Document, styleMap: Map<string, string>, borderFillMap: Map<string, string>): ExtractedQuestion[] {
+function extractQuestions(
+    doc: Document,
+    styleMap: Map<string, string>,
+    borderFillMap: Map<string, string>,
+    paraAlignMap: Map<string, string>,
+    images: ExtractedImage[]
+): ExtractedQuestion[] {
     const questions: ExtractedQuestion[] = [];
     const serializer = new XMLSerializer();
 
-    const body = doc.getElementsByTagName('BODY')[0];
+    const body = doc.getElementsByTagName('BODY')[0] || doc.getElementsByTagName('hp:body')[0];
+    console.log(`[HML-V2 Parser] BODY found: ${!!body}`);
     if (!body) {
-        console.warn('[HML-V2 Parser] No BODY element found');
-        return [];
+        console.warn('[HML-V2 Parser] No BODY/hp:body element found. Trying documentElement...');
     }
 
-    const section = body.getElementsByTagName('SECTION')[0];
+    const section = body?.getElementsByTagName('SECTION')[0] || body?.getElementsByTagName('hp:section')[0] || body;
+    console.log(`[HML-V2 Parser] SECTION found: ${!!section}`);
     if (!section) {
-        console.warn('[HML-V2 Parser] No SECTION element found');
+        console.warn('[HML-V2 Parser] No SECTION/hp:section/BODY element found');
         return [];
     }
 
-    // Get all direct child elements of SECTION (P, TABLE, etc.)
+    // Find all paragraphs/elements that could hold a question boundary
     const allElements: Element[] = [];
-
     const childNodes = section.childNodes;
     for (let i = 0; i < childNodes.length; i++) {
         const node = childNodes[i];
-        if (node.nodeType === 1) { // Element node
-            allElements.push(node as Element);
+        if (node.nodeType === 1) {
+            const el = node as Element;
+            const tName = el.tagName.toUpperCase().replace('HP:', '');
+            // If it's a paragraph or table, add it
+            if (['P', 'TABLE'].includes(tName)) {
+                allElements.push(el);
+            } else {
+                // If it's a container (like a sub-section or list), we might need to go deeper
+                // For now, let's keep it robust by including it.
+                allElements.push(el);
+            }
         }
     }
 
-    console.log(`[HML-V2 Parser] Found ${allElements.length} top-level elements`);
+    console.log(`[HML-V2 Parser] Found ${allElements.length} meaningful elements`);
 
-    // Find question boundaries using ENDNOTE tags with Number attribute
+    // Find question boundaries
     const startIndices: number[] = [];
     for (let i = 0; i < allElements.length; i++) {
         const el = allElements[i];
-        // Only P tags usually contain ENDNOTE, but check everything just in case
-        const endnotes = el.getElementsByTagName('ENDNOTE');
-        if (endnotes.length > 0) {
-            const endnote = endnotes[0];
-            const num = endnote.getElementsByTagName('AUTONUM')[0]?.getAttribute('Number');
-            if (num) {
-                startIndices.push(i);
-                console.log(`[HML-V2 Parser] Question boundary at Index[${i}]: ENDNOTE Number="${num}"`);
+        // Question start is usually a P with an ENDNOTE
+        const endnotes = getTags(el, 'ENDNOTE');
+        let hasQuestionBoundary = false;
+
+        for (const en of endnotes) {
+            const autonums = getTags(en, 'AUTONUM');
+            if (autonums.length > 0 && autonums[0].getAttribute('Number')) {
+                hasQuestionBoundary = true;
+                break;
             }
+        }
+
+        if (hasQuestionBoundary) {
+            startIndices.push(i);
+            console.log(`[HML-V2 Parser] Question boundary at Index[${i}]`);
         }
     }
 
@@ -203,20 +229,45 @@ function extractQuestions(doc: Document, styleMap: Map<string, string>, borderFi
 
     // If no questions found, treat entire content as one question
     if (startIndices.length === 0) {
+        let questionMathCounter = 0;
         const contentXml = allElements.map(el => {
             const clonedEl = el.cloneNode(true) as Element;
+
+            // Tag with local IDs even in single-question mode
+            const eqTags = getTags(clonedEl, 'EQUATION');
+            for (let j = 0; j < eqTags.length; j++) {
+                eqTags[j].setAttribute('data-hml-math-id', `MATH_Q1_${questionMathCounter++}`);
+            }
+
             tagSemanticRole(clonedEl, styleMap);
-            cleanStyleAttributes(clonedEl, borderFillMap);
+            cleanStyleAttributes(clonedEl, borderFillMap, paraAlignMap);
             return serializer.serializeToString(clonedEl);
         }).join('');
 
         const imageRefs = extractImageRefs(contentXml);
+        const equationScripts = extractEquationScripts(allElements);
+
+        // NEW: Bundle binaries into contentXml for web preview fidelity (stowaway pattern)
+        let bundledXml = contentXml;
+        if (imageRefs.length > 0) {
+            const bundledBinaries = imageRefs.map(ref => {
+                const img = images.find(i => i.binId === ref);
+                return img ? { id: img.binId, data: img.data, type: img.format } : null;
+            }).filter(Boolean);
+
+            if (bundledBinaries.length > 0) {
+                const binaryJson = JSON.stringify(bundledBinaries);
+                const encoded = Buffer.from(binaryJson).toString('base64');
+                bundledXml = `<?antigravity-binaries data="${encoded}"?>\n` + bundledXml;
+            }
+        }
 
         questions.push({
             questionNumber: 1,
-            contentXml,
+            contentXml: bundledXml,
             plainText: getPlainText(allElements).slice(0, 300),
-            imageRefs
+            imageRefs,
+            equationScripts
         });
         return questions;
     }
@@ -237,9 +288,9 @@ function extractQuestions(doc: Document, styleMap: Map<string, string>, borderFi
 
             // Check if element has any content
             const hasVisualContent = text.length > 0 ||
-                el.getElementsByTagName('PICTURE').length > 0 ||
-                el.getElementsByTagName('EQUATION').length > 0 ||
-                el.getElementsByTagName('TABLE').length > 0;
+                getTags(el, 'PICTURE').length > 0 ||
+                getTags(el, 'EQUATION').length > 0 ||
+                getTags(el, 'TABLE').length > 0;
 
             // Stop if we find meaningful content (but skip "정답" only)
             if (hasVisualContent && text !== '정답' && text !== '답') {
@@ -256,33 +307,83 @@ function extractQuestions(doc: Document, styleMap: Map<string, string>, borderFi
             continue;
         }
 
+        let questionMathCounter = 0;
         const contentXml = questionElements.map(el => {
             // Clone the node to avoid modifying the original DOM during cleanup
             const clonedEl = el.cloneNode(true) as Element;
 
-            // NEW: Identify and tag semantic role (QUESTION, CHOICE, etc.)
-            tagSemanticRole(clonedEl, styleMap);
+            // V23: Unified Single-Index Mapping (Force 1:1 match with route.ts loop)
+            const eqTags = getTags(clonedEl, 'EQUATION');
+            for (let j = 0; j < eqTags.length; j++) {
+                eqTags[j].setAttribute('data-hml-math-id', `MATH_${questionMathCounter++}`);
+            }
 
             // Cleanup style attributes to prevent rendering issues in target HML
-            cleanStyleAttributes(clonedEl, borderFillMap);
+            tagSemanticRole(clonedEl, styleMap);
+            cleanStyleAttributes(clonedEl, borderFillMap, paraAlignMap);
 
             return serializer.serializeToString(clonedEl);
         }).join('\n');
 
         const imageRefs = extractImageRefs(contentXml);
 
-        console.log(`[HML-V2 Parser] Q${questions.length + 1}: ${questionElements.length} elements, ${contentXml.length} chars`);
+        // NEW: Bundle binaries into contentXml for web preview fidelity (stowaway pattern)
+        let bundledXml = contentXml;
+        if (imageRefs.length > 0) {
+            const bundledBinaries = imageRefs.map(ref => {
+                const img = images.find(i => i.binId === ref);
+                return img ? { id: img.binId, data: img.data, type: img.format } : null;
+            }).filter(Boolean);
+
+            if (bundledBinaries.length > 0) {
+                const binaryJson = JSON.stringify(bundledBinaries);
+                const encoded = Buffer.from(binaryJson).toString('base64');
+                bundledXml = `<?antigravity-binaries data="${encoded}"?>\n` + bundledXml;
+            }
+        }
+
+        console.log(`[HML-V2 Parser] Q${questions.length + 1}: ${questionElements.length} elements, ${bundledXml.length} chars`);
+
+        const equationScripts = extractEquationScripts(questionElements);
 
         questions.push({
             questionNumber: questions.length + 1,
-            contentXml,
+            contentXml: bundledXml,
             plainText: getPlainText(questionElements).slice(0, 300),
-            imageRefs
+            imageRefs,
+            equationScripts
         });
     }
 
     return questions;
 }
+
+/**
+ * Extract HWP Equation scripts from elements
+ */
+function extractEquationScripts(elements: Element[]): string[] {
+    const scripts: string[] = [];
+    for (const el of elements) {
+        const eqTags = getTags(el, 'EQUATION');
+        for (const eq of eqTags) {
+            // Priority 1: SCRIPT child tag (standard HML/HWPX)
+            const scriptNode = getTags(eq, 'SCRIPT')[0];
+            let script = scriptNode?.textContent || '';
+
+            // Priority 2: Fallback to eq textContent if SCRIPT is missing
+            if (!script.trim()) {
+                script = eq.textContent || '';
+            }
+
+            // Cleanup HWP specific junk (수식입니다, [수식] 등)
+            script = script.replace(/(수식|그림|표)입니다\.?\s*/g, '').replace(/\[(수식|그림|표)\](?:\s|$)/g, '').trim();
+
+            if (script) scripts.push(script);
+        }
+    }
+    return scripts;
+}
+
 
 /**
  * Extract image references from XML
@@ -309,20 +410,49 @@ function extractImageRefs(xml: string): string[] {
 function getPlainText(elements: Element[]): string {
     const texts: string[] = [];
 
+    const getCleanText = (node: Node): string => {
+        if (node.nodeType === 3) {
+            let t = node.textContent || '';
+            return t.replace(/(수식|그림|표)입니다\.?\s*/g, '').replace(/\[(수식|그림|표)\]\s*/g, '');
+        }
+        if (node.nodeType === 1) {
+            const el = node as Element;
+            const tName = el.tagName.toUpperCase().replace('HP:', '');
+
+            // Skip equations in plain text to avoid script leakage
+            if (tName === 'EQUATION') return '';
+
+            let res = '';
+            for (let i = 0; i < el.childNodes.length; i++) {
+                res += getCleanText(el.childNodes[i]);
+            }
+            return res;
+        }
+        return '';
+    };
+
     for (const el of elements) {
-        const text = el.textContent || '';
-        texts.push(text.trim());
+        texts.push(getCleanText(el).trim());
     }
 
     return texts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 // Helper to recursively remove style attributes
-function cleanStyleAttributes(element: Element, borderFillMap: Map<string, string>) {
+function cleanStyleAttributes(element: Element, borderFillMap: Map<string, string>, paraAlignMap: Map<string, string>) {
     // Remove attributes from current element
     // [Fix for Missing Content]: We MUST strip source-specific IDs because we do not merge definitions.
     // Leaving them creates "Dangling References" which makes text invisible in Hancom.
     // By removing them, content falls back to the Target Template's default style (Visible).
+
+    // NEW: Capture Alignment
+    const tName = element.tagName.toUpperCase().replace('HP:', '');
+    const paraShapeId = element.getAttribute('ParaShape');
+    if (paraShapeId && tName === 'P') {
+        const align = paraAlignMap.get(paraShapeId);
+        if (align) element.setAttribute('data-hml-align', align);
+    }
+
     element.removeAttribute('Style');
     element.removeAttribute('ParaShape');
     element.removeAttribute('CharShape');
@@ -349,12 +479,24 @@ function cleanStyleAttributes(element: Element, borderFillMap: Map<string, strin
     // Process children recursively
     const children = Array.from(element.childNodes);
     for (const child of children) {
-        if (child.nodeType === 1) { // Element node
+        if (child.nodeType === 3) { // Text Node
+            // NEW: Anti-Pollution - Remove HWP specific metadata like "수식입니다"
+            const pollutions = [
+                /(수식|그림|표)입니다\.?\s*/g,
+                /\[(수식|그림|표)\]\s*/g
+            ];
+            let text = child.textContent || '';
+            for (const p of pollutions) {
+                text = text.replace(p, '');
+            }
+            child.textContent = text;
+        } else if (child.nodeType === 1) { // Element node
             const el = child as Element;
-            if (layoutTags.includes(el.tagName.toUpperCase())) {
+            const cName = el.tagName.toUpperCase().replace('HP:', '');
+            if (layoutTags.includes(cName)) {
                 element.removeChild(child);
             } else {
-                cleanStyleAttributes(el, borderFillMap);
+                cleanStyleAttributes(el, borderFillMap, paraAlignMap);
             }
         }
     }
@@ -364,7 +506,7 @@ function cleanStyleAttributes(element: Element, borderFillMap: Map<string, strin
  * Identify and tag semantic roles based on style names
  */
 function tagSemanticRole(element: Element, styleMap: Map<string, string>) {
-    const tagName = element.tagName.toUpperCase();
+    const tagName = element.tagName.toUpperCase().replace('HP:', '');
 
     if (tagName === 'P') {
         const styleId = element.getAttribute('Style');

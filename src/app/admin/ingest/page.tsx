@@ -57,6 +57,9 @@ export default function AdminIngestPage() {
                 setLog(prev => [...prev, `Success! Processed ${result.questionCount} questions.`]);
             } else {
                 setLog(prev => [...prev, `Error: ${result.error}`]);
+                if (result.debug) {
+                    setLog(prev => [...prev, `DEBUG INFO: ${JSON.stringify(result.debug, null, 2)}`]);
+                }
             }
 
         } catch (error) {

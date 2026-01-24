@@ -16,8 +16,8 @@ import { parseHmlV2 } from './src/lib/hml-v2/parser';
 import { generateHmlV2, generateHmlFromTemplate } from './src/lib/hml-v2/generator';
 import type { QuestionWithImages, DbQuestion, DbQuestionImage } from './src/lib/hml-v2/types';
 
-const TEST_INPUT = 'repro_real_image.hml';
-const TEST_OUTPUT = 'test_hml_v2_output.hml';
+const TEST_INPUT = '시험지_2026-01-15 (36).hml';
+const TEST_OUTPUT = 'test_hml_v2_real_output.hml';
 
 async function main() {
     console.log('=== HML V2 Round-Trip Test ===\n');
@@ -53,8 +53,16 @@ async function main() {
     const questionsWithImages: QuestionWithImages[] = parseResult.questions.map((q, idx) => {
         // [DEBUG] Check what the parser extracted
         if (idx === 0) {
-            console.log(`\n[DEBUG] Raw contentXml from parser (Q${idx + 1}):`);
-            console.log(q.contentXml.slice(0, 500));
+            console.log(`\n[DEBUG] Question 1 sample XML:`);
+            console.log(q.contentXml.slice(0, 1000));
+
+            const hasStyleTag = q.contentXml.includes('data-hml-style');
+            console.log(`\n[DEBUG] Found data-hml-style tags: ${hasStyleTag}`);
+
+            if (hasStyleTag) {
+                const styleMatches = q.contentXml.match(/data-hml-style="([^"]+)"/g);
+                console.log(`[DEBUG] Role tags found: ${styleMatches?.join(', ')}`);
+            }
         }
 
         // Use original content (user said "하나도 빠짐없이 밀어 넣어줘")

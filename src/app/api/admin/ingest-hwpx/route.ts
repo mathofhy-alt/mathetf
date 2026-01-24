@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { parseQuestionsFromHwpx } from '@/lib/hwpx/parser';
+import { renderMathToSvg } from '@/lib/math-renderer';
 
 const STORAGE_BUCKET = 'hwpx';
 
@@ -137,7 +138,8 @@ export async function POST(req: NextRequest) {
                     year,
                     semester,
                     source_db_id,
-                    question_number: b.questionIndex // or mapped number?
+                    question_number: b.questionIndex,
+                    equation_scripts: b.equationScripts
                 })
                 .select('id')
                 .single();
@@ -154,6 +156,30 @@ export async function POST(req: NextRequest) {
                 console.error(`[ADMIN-INGEST] Insert Error Q${b.questionIndex}:`, error);
             } else {
                 savedIds.push(data.id);
+
+                // 6. Pre-render Math Images (V28)
+                if (b.equationScripts && b.equationScripts.length > 0) {
+                    for (let i = 0; i < b.equationScripts.length; i++) {
+                        const script = b.equationScripts[i];
+                        try {
+                            // Call V28 Engine (Python Proxy)
+                            const svg = await renderMathToSvg(script);
+                            const binId = `MATH_${i}`;
+                            const b64Data = Buffer.from(svg).toString('base64');
+
+                            await supabase.from('question_images')
+                                .insert({
+                                    question_id: data.id,
+                                    original_bin_id: binId,
+                                    format: 'svg',
+                                    data: b64Data,
+                                    size_bytes: svg.length
+                                });
+                        } catch (renderError) {
+                            console.error(`[ADMIN-INGEST-MATH-ERR] Q${data.id} M${i}:`, renderError);
+                        }
+                    }
+                }
             }
         }
 

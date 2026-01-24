@@ -7,6 +7,7 @@ import os
 import time
 import uuid
 from flask import Flask, request, jsonify, render_template, send_file
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -15,6 +16,7 @@ from hwpx_builder import create_hwpx_from_selection
 
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": ["http://localhost:3000"]}})
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'output'
@@ -208,14 +210,107 @@ def download_file(filename):
     )
 
 
+from math_renderer import get_renderer
+
+@app.route('/render-math', methods=['POST'])
+def render_math():
+    """HWP 수식을 이미지(Base64)로 렌더링"""
+    data = request.get_json()
+    if not data or 'script' not in data:
+        return jsonify({'error': '수식 스크립트가 없습니다.'}), 400
+    
+    script = data['script']
+    try:
+        renderer = get_renderer()
+        base64_data = renderer.render(script)
+        
+        if not base64_data:
+            return jsonify({'error': '렌더링 실패'}), 500
+            
+        return jsonify({
+            'success': True,
+            'image': base64_data,
+            'format': 'png'
+        })
+    except Exception as e:
+        print(f"Render API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+import subprocess
+import sys
+
+@app.route('/trigger-manual-capture', methods=['POST'])
+def trigger_manual_capture():
+    """수동 캡쳐 UI 실행 및 결과 저장"""
+    try:
+        # manual_capturer.py 실행 (서브프로세스)
+        # 현재 활성화된 가상환경의 python.exe 경로 탐색
+        python_exe = sys.executable 
+        proc = subprocess.Popen(
+            [python_exe, 'manual_capturer.py'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=os.path.dirname(os.path.abspath(__file__))
+        )
+        
+        # 캡쳐 도구가 종료될 때까지 대기 (또는 타임아웃)
+        stdout, stderr = proc.communicate(timeout=60)
+        
+        if "CAPTURED_FILE:" in stdout:
+            file_path = stdout.split("CAPTURED_FILE:")[1].strip()
+            return jsonify({
+                'success': True,
+                'file_path': file_path
+            })
+        else:
+            return jsonify({
+                'error': '캡쳐가 취소되었거나 실패했습니다.',
+                'stdout': stdout,
+                'stderr': stderr
+            }), 400
+            
+    except Exception as e:
+        print(f"Capture trigger error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.errorhandler(413)
 def too_large(e):
     """파일 크기 초과 에러"""
     return jsonify({'error': '파일 크기는 50MB를 초과할 수 없습니다.'}), 413
 
 
+@app.route('/get-capture')
+def get_capture():
+    """캡쳐된 이미지 파일을 스트리밍 (프론트엔드 업로드용)"""
+    path = request.args.get('path')
+    if not path or not os.path.exists(path):
+        return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+    
+    return send_file(path, mimetype='image/png')
+
 if __name__ == '__main__':
+    import atexit
+    import signal
+
+    def signal_handler(sig, frame):
+        print("\nShutting down server...")
+        try:
+            renderer = get_renderer()
+            renderer.quit()
+        except: pass
+        scheduler.shutdown()
+        os._exit(0)
+
+    # Register exit handlers
+    atexit.register(lambda: get_renderer().quit() if get_renderer() else None)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     try:
-        app.run(debug=True, host='0.0.0.0', port=5000)
+        # Use debug=False in production or if re-dispatch issues occur
+        app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
     finally:
         scheduler.shutdown()
+        get_renderer().quit()

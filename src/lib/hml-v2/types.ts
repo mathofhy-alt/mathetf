@@ -32,6 +32,8 @@ export interface ExtractedQuestion {
     plainText: string;
     /** Array of image IDs referenced in this question */
     imageRefs: string[];
+    /** Array of HWP equation scripts found in this question */
+    equationScripts: string[];
 }
 
 /**

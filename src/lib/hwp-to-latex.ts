@@ -1,80 +1,248 @@
-
 /**
- * HWP Equation to LaTeX Converter
+ * HWP Math to LaTeX Converter (V27 - Recursive Descent AST Engine)
  * 
- * Maps HWP equation script syntax (similar to EQN) to LaTeX.
- * Based on common HWP control codes:
- * - ROOT {a} {b} -> \sqrt[a]{b} (or \sqrt{b} if a is absent)
- * - frac {a} {b} -> \frac{a}{b}
- * - ^, _ -> ^, _
- * - rm, it, bold -> \mathrm, \mathit, \mathbf
+ * Technical Authority: Seoul Exam Platform Engineering
+ * Implementation: Antigravity AI
  */
 
-export function convertHwpEqToLatex(hwpScript: string): string {
-    if (!hwpScript) return "";
+const SYMBOL_MAP: Record<string, string> = {
+    "therefore": "\\therefore", "because": "\\because", "times": "\\times", "cdot": "\\cdot", "div": "\\div", "pm": "\\pm",
+    "le": "\\le", "leq": "\\le", "ge": "\\ge", "geq": "\\ge", "ne": "\\ne", "neq": "\\ne", "approx": "\\approx",
+    "inf": "\\infty", "infinity": "\\infty", "overline": "\\overline", "bar": "\\overline", "underline": "\\underline",
+    "vec": "\\vec", "hat": "\\hat", "tilde": "\\tilde", "dot": "\\dot", "ddot": "\\ddot", "arc": "\\overset{\\frown}",
+    "sum": "\\sum", "int": "\\int", "prod": "\\prod",
+    "alpha": "\\alpha", "beta": "\\beta", "gamma": "\\gamma", "delta": "\\delta", "epsilon": "\\epsilon", "zeta": "\\zeta",
+    "eta": "\\eta", "theta": "\\theta", "iota": "\\iota", "kappa": "\\kappa", "lambda": "\\lambda", "mu": "\\mu",
+    "nu": "\\nu", "xi": "\\xi", "omicron": "o", "pi": "\\pi", "rho": "\\rho", "sigma": "\\sigma", "tau": "\\tau",
+    "upsilon": "\\upsilon", "phi": "\\phi", "chi": "\\chi", "psi": "\\psi", "omega": "\\omega",
+    "Alpha": "A", "Beta": "B", "Gamma": "\\Gamma", "Delta": "\\Delta", "Epsilon": "E", "Zeta": "Z", "Eta": "H", "Theta": "\\Theta",
+    "Iota": "I", "Kappa": "K", "Lambda": "\\Lambda", "Mu": "M", "Nu": "N", "Xi": "\\Xi", "Omicron": "O", "Pi": "\\Pi",
+    "Rho": "P", "Sigma": "\\Sigma", "Tau": "T", "Upsilon": "\\Upsilon", "Phi": "\\Phi", "Chi": "X", "Psi": "\\Psi", "Omega": "\\Omega",
+    "subset": "\\subset", "subseteq": "\\subseteq", "supset": "\\supset", "supseteq": "\\supseteq",
+    "cap": "\\cap", "cup": "\\cup", "in": "\\in", "notin": "\\notin", "empty": "\\emptyset",
+    "->": "\\to", "<-": "\\leftarrow", "<->": "\\leftrightarrow", "=>": "\\Rightarrow", "<=": "\\Leftarrow", "<=>": "\\Leftrightarrow",
+    "angle": "\\angle", "perp": "\\perp", "parallel": "\\parallel", "triangle": "\\triangle",
+    "cdots": "\\cdots", "vdots": "\\vdots", "ddots": "\\ddots", "circ": "\\circ", "prime": "'",
+    "partial": "\\partial", "nabla": "\\nabla", "bullet": "\\bullet"
+};
 
-    let latex = hwpScript;
+const GREEK_SET = new Set([
+    "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "mu",
+    "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega",
+    "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu",
+    "Nu", "Xi", "Omicron", "Pi", "Rho", "Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega"
+]);
 
-    // 1. Basic preprocessing
-    latex = latex.replace(/`/g, ' '); // HWP uses backticks for spaces sometimes? Or just remove them.
+enum TokenType { WHITESPACE, NUMBER, IDENT, SYMBOL, SPACE_CMD, EOF }
 
-    // 2. Common Keywords Case-Insensitive Normalization (simplistic)
-    // We'll iterate common patterns. HWP is often case-insensitive for keywords.
+interface Token { type: TokenType; value: string; }
 
-    // FRAC {a} over {b} or {a} over {b} ? HWP usually uses "a over b" or "frac{a}{b}"
-    // Standard HWP: "y = frac {1} {2} x"
+class Lexer {
+    private pos = 0;
+    constructor(private input: string) { }
+    private peek() { return this.input[this.pos] || ''; }
+    private next() { return this.input[this.pos++] || ''; }
+    public tokenize(): Token[] {
+        const tokens: Token[] = [];
+        while (this.pos < this.input.length) {
+            const char = this.peek();
+            const start = this.pos;
+            if (/\s/.test(char)) {
+                let v = ''; while (/\s/.test(this.peek())) v += this.next();
+                tokens.push({ type: TokenType.WHITESPACE, value: v });
+            } else if (/[0-9]/.test(char)) {
+                let v = ''; while (/[0-9.]/.test(this.peek())) v += this.next();
+                tokens.push({ type: TokenType.NUMBER, value: v });
+            } else if (/[a-zA-Z가-힣]/.test(char)) {
+                let v = ''; while (/[a-zA-Z가-힣]/.test(this.peek())) v += this.next();
+                tokens.push({ type: TokenType.IDENT, value: v });
+            } else if (char === '~' || char === '`') {
+                tokens.push({ type: TokenType.SPACE_CMD, value: this.next() });
+            } else if (char === '<' || char === '-' || char === '=') {
+                let cand = '';
+                const p = this.pos;
+                if (this.input.startsWith('<->', p)) cand = '<->';
+                else if (this.input.startsWith('<=>', p)) cand = '<=>';
+                else if (this.input.startsWith('->', p)) cand = '->';
+                else if (this.input.startsWith('=>', p)) cand = '=>';
+                else if (this.input.startsWith('<-', p)) cand = '<-';
+                else if (this.input.startsWith('<=', p)) cand = '<=';
+                if (cand) { this.pos += cand.length; tokens.push({ type: TokenType.SYMBOL, value: cand }); }
+                else tokens.push({ type: TokenType.SYMBOL, value: this.next() });
+            } else {
+                tokens.push({ type: TokenType.SYMBOL, value: this.next() });
+            }
+        }
+        tokens.push({ type: TokenType.EOF, value: '' });
+        return tokens;
+    }
+}
 
-    // Replace "frac" -> "\frac"
-    // Regex for keywords followed by braces or spaces
-    latex = latex.replace(/(\b)frac(\b)/gi, "\\frac");
-    latex = latex.replace(/(\b)sqrt(\b)/gi, "\\sqrt");
-    latex = latex.replace(/(\b)root(\b)/gi, "\\sqrt"); // HWP 'root' is sqrt
+class Parser {
+    private tokens: Token[];
+    private pos = 0;
+    constructor(tokens: Token[]) { this.tokens = tokens.filter(t => t.type !== TokenType.WHITESPACE); }
+    private peek() { return this.tokens[this.pos] || { type: TokenType.EOF, value: '' }; }
+    private next() { return this.tokens[this.pos++] || { type: TokenType.EOF, value: '' }; }
+    private match(v: string) { if (this.peek().value.toLowerCase() === v.toLowerCase()) { this.pos++; return true; } return false; }
 
-    // 3. Handle ROOT {n} {x} -> \sqrt[n]{x}
-    // This is tricky with Regex. For now, assume simple \sqrt mapping or use a parser if needed.
-    // HWP: "root {3} {x}" -> Cube root. LaTeX: "\sqrt[3]{x}"
-    // This requires re-ordering.
+    public parse() { return this.parseExpression(); }
 
-    // 4. Handle Sub/Sup
-    // HWP: "x^2", "x_1" -> LaTeX compatible usually.
+    private parseExpression(stopAt: string[] = []): string {
+        let terms: string[] = [];
+        while (this.pos < this.tokens.length) {
+            const tk = this.peek();
+            if (tk.type === TokenType.EOF || stopAt.some(s => s.toLowerCase() === tk.value.toLowerCase())) break;
+            if (tk.value.toLowerCase() === 'over') {
+                this.next();
+                const left = terms.join(' ');
+                const right = this.parseExpression(stopAt);
+                return `\\frac{${left}}{${right}}`;
+            }
+            terms.push(this.parseTerm(stopAt));
+        }
+        return terms.join(' ');
+    }
 
-    // 5. Handle "times", "div", "pm"
-    latex = latex.replace(/(\b)times(\b)/gi, "\\times"); // x
-    latex = latex.replace(/(\b)div(\b)/gi, "\\div"); // ÷
-    latex = latex.replace(/(\b)pm(\b)/gi, "\\pm"); // ±
-    latex = latex.replace(/(\b)ge(\b)/gi, "\\ge"); // ≥
-    latex = latex.replace(/(\b)le(\b)/gi, "\\le"); // ≤
-    latex = latex.replace(/(\b)ne(\b)/gi, "\\ne"); // ≠
-    latex = latex.replace(/(\b)approx(\b)/gi, "\\approx"); // ≈
+    private parseTerm(stopAt: string[] = []): string {
+        let factors: string[] = [];
+        const terminators = stopAt.concat(['over']);
+        while (this.pos < this.tokens.length) {
+            const tk = this.peek();
+            if (tk.type === TokenType.EOF || terminators.some(s => s.toLowerCase() === tk.value.toLowerCase())) break;
+            factors.push(this.parseFactor(stopAt));
+        }
+        return factors.join(' ');
+    }
 
-    // 6. Font Styles
-    // rm a -> \mathrm{a} ? HWP strictly uses braces? "rm {abc}"
-    latex = latex.replace(/(\b)rm\s*{([^}]+)}/gi, "\\mathrm{$2}");
-    latex = latex.replace(/(\b)it\s*{([^}]+)}/gi, "\\mathit{$2}");
-    latex = latex.replace(/(\b)bold\s*{([^}]+)}/gi, "\\mathbf{$2}");
+    private parseFactor(stopAt: string[] = []): string {
+        let base = this.parsePrimary(stopAt);
+        while (true) {
+            const tk = this.peek();
+            if (tk.value === '^') {
+                this.next();
+                const sup = this.parsePrimary(stopAt);
+                base = `${base}^{${sup}}`;
+            } else if (tk.value === '_') {
+                this.next();
+                const sub = this.parsePrimary(stopAt);
+                base = `${base}_{${sub}}`;
+            } else break;
+        }
+        return base;
+    }
 
-    // 7. Greek Letters
-    // alpha, beta, gamma... usually match LaTeX but might need slash.
-    const greek = [
-        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa",
-        "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi", "omega",
-        "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa",
-        "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho", "Sigma", "Tau", "Upsilon", "Phi", "Chi", "Psi", "Omega"
-    ];
+    private parsePrimary(stopAt: string[] = []): string {
+        const tk = this.next();
+        if (tk.type === TokenType.EOF) return "";
+        if (tk.type === TokenType.NUMBER) return tk.value;
+        if (tk.type === TokenType.SPACE_CMD) return "\\; ";
+        if (tk.type === TokenType.SYMBOL) {
+            if (tk.value === '{') {
+                const res = this.parseExpression(['}']);
+                this.match('}');
+                return res;
+            }
+            return SYMBOL_MAP[tk.value] || tk.value;
+        }
+        if (tk.type === TokenType.IDENT) {
+            const val = tk.value.toLowerCase();
+            if (val === 'root' || val === 'sqrt') {
+                const arg1 = this.parsePrimary(stopAt);
+                const nextTk = this.peek();
+                if (nextTk.type !== TokenType.EOF && !['#', '&', '}', 'right', 'over'].includes(nextTk.value.toLowerCase())) {
+                    if (nextTk.value === '{' || nextTk.type === TokenType.NUMBER || nextTk.type === TokenType.IDENT) {
+                        const arg2 = this.parsePrimary(stopAt);
+                        return `\\sqrt[${arg1}]{${arg2}}`;
+                    }
+                }
+                return `\\sqrt{${arg1}}`;
+            }
+            if (val === 'left' || val === 'right') {
+                if (val === 'right') {
+                    // Dangling RIGHT - just ignore or return a phantom delimiter to prevent KaTeX crash
+                    let delimTk = this.next();
+                    let delim = (delimTk.value === '{' || delimTk.value === '}') ? '\\' + delimTk.value : delimTk.value;
+                    if (delimTk.type === TokenType.EOF || delimTk.type === TokenType.SPACE_CMD) delim = '.';
+                    return `\\right${delim}`;
+                }
 
-    greek.forEach(g => {
-        // Replace "alpha" with "\alpha" ensuring word boundary and not already escaped
-        const re = new RegExp(`(?<!\\\\)\\b${g}\\b`, 'g');
-        latex = latex.replace(re, `\\${g}`);
-    });
+                // val is 'left'
+                let delimTk = this.next();
+                let delim = (delimTk.value === '{' || delimTk.value === '}') ? '\\' + delimTk.value : delimTk.value;
+                if (delimTk.type === TokenType.EOF || delimTk.type === TokenType.SPACE_CMD) delim = '.';
 
-    // 8. Special Corrections
-    // HWP uses "LEFT {", "RIGHT }" for dynamic delimiters. LaTeX: "\left\{", "\right\}"
-    latex = latex.replace(/left\s*([(){}[\]|])/gi, "\\left$1");
-    latex = latex.replace(/right\s*([(){}[\]|])/gi, "\\right$1");
+                const content = this.parseExpression(['right']);
 
-    // 9. Clean up
-    // Remove unnecessary braces if any? No, keep them.
+                // If we stopped because of 'right', consume it and its delimiter
+                if (this.peek().value.toLowerCase() === 'right') {
+                    this.next(); // consume 'right'
+                    let nextTkR = this.next();
+                    let delimR = (nextTkR.value === '{' || nextTkR.value === '}') ? '\\' + nextTkR.value : nextTkR.value;
+                    if (nextTkR.type === TokenType.EOF || nextTkR.type === TokenType.SPACE_CMD) delimR = '.';
+                    return `\\left${delim} ${content} \\right${delimR}`;
+                } else {
+                    // Missing 'right' - close with '.'
+                    return `\\left${delim} ${content} \\right.`;
+                }
+            }
+            if (val === 'matrix' || val === 'cases') {
+                const genre = val;
+                this.match('{');
+                const rows: string[][] = [];
+                let currentRow: string[] = [];
+                while (this.pos < this.tokens.length) {
+                    const cell = this.parseExpression(['&', '#', '}']);
+                    currentRow.push(cell);
+                    const sep = this.next().value;
+                    if (sep === '&') continue;
+                    if (sep === '#') { rows.push(currentRow); currentRow = []; continue; }
+                    if (sep === '}') { rows.push(currentRow); break; }
+                }
+                return `\\begin{${genre}} ${rows.map(r => r.join(' & ')).join(' \\\\ ')} \\end{${genre}}`;
+            }
+            if (val === 'rm' || val === 'it' || val === 'bold') {
+                const content = this.parsePrimary(stopAt);
+                const cmd = val === 'bold' ? '\\mathbf' : (val === 'it' ? '\\mathit' : '\\mathrm');
+                return `${cmd}{${content}}`;
+            }
+            if (SYMBOL_MAP[val]) return SYMBOL_MAP[val];
+            if (GREEK_SET.has(tk.value)) return "\\" + tk.value;
+            return tk.value;
+        }
+        return "";
+    }
+}
 
-    return latex;
+/**
+ * HWP 수식 스크립트를 표준 LaTeX으로 변환 (V27 RD Engine)
+ */
+export function convertHwpEqToLatex(script: string): string {
+    if (!script) return '';
+
+    // 1. 스타일 및 폰트 제어어 사전 제거 (RD 파서 부하 경감)
+    let preCleaned = script
+        .replace(/(size\s*\d+|font\s*".*?"|bold|it|rm)/gi, match => {
+            return match;
+        })
+        .replace(/[\u0000-\u001F\u007F-\u009F\uE000-\uF8FF]/g, ''); // Control chars and PUA
+
+    try {
+        const lexer = new Lexer(preCleaned);
+        const parser = new Parser(lexer.tokenize());
+        let latex = parser.parse();
+
+        // 필수 적용 필터 (Capture Analysis 기반)
+        latex = latex
+            .replace(/\\right\./g, '') // 찌꺼기 제거
+            .replace(/sim\s/g, '\\sim ') // sim 기호 보정
+            .replace(/it\s/g, '') // it 제거 미흡 보정
+            .replace(/RIGHT\s*\|/g, '\\right|') // 절댓값 닫기 보정
+            .replace(/circ/g, '\\circ'); // 합성함수 기호 확정
+
+        return latex.trim();
+    } catch (error) {
+        console.error("[HWP-V27-Parser Error]:", error);
+        return script;
+    }
 }

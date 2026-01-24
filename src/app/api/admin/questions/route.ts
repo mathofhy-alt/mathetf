@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
         .from('questions')
-        .select('*', { count: 'exact' });
+        .select('*, question_images(*)', { count: 'exact' });
 
     if (q) {
         query = query.ilike('plain_text', `%${q}%`);
