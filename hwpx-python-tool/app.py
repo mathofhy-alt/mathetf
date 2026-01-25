@@ -255,14 +255,15 @@ def trigger_manual_capture():
             cwd=os.path.dirname(os.path.abspath(__file__))
         )
         
-        # 캡쳐 도구가 종료될 때까지 대기 (또는 타임아웃)
-        stdout, stderr = proc.communicate(timeout=60)
+        # 캡쳐 도구가 종료될 때까지 대기 (최대 5분)
+        stdout, stderr = proc.communicate(timeout=300)
         
         if "CAPTURED_FILE:" in stdout:
-            file_path = stdout.split("CAPTURED_FILE:")[1].strip()
+            # [V14.5] 다음 줄에 오는 디버그 로그가 경로에 포함되지 않도록 첫 줄만 추출
+            raw_path = stdout.split("CAPTURED_FILE:")[1].split('\n')[0].strip()
             return jsonify({
                 'success': True,
-                'file_path': file_path
+                'file_path': raw_path
             })
         else:
             return jsonify({
@@ -285,10 +286,20 @@ def too_large(e):
 def get_capture():
     """캡쳐된 이미지 파일을 스트리밍 (프론트엔드 업로드용)"""
     path = request.args.get('path')
-    if not path or not os.path.exists(path):
+    if not path:
+        print("GET-CAPTURE: Path missing")
+        return jsonify({'error': '경로가 없습니다.'}), 400
+    
+    # [V14.4] 경로 정규화 및 존재 확인 로그 추가
+    norm_path = os.path.normpath(path)
+    print(f"GET-CAPTURE 요청: {path}")
+    print(f"정규화된 경로: {norm_path}")
+    
+    if not os.path.exists(norm_path):
+        print(f"GET-CAPTURE 실패: 파일이 존재하지 않음 ({norm_path})")
         return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
     
-    return send_file(path, mimetype='image/png')
+    return send_file(norm_path, mimetype='image/png')
 
 if __name__ == '__main__':
     import atexit

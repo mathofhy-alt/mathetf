@@ -16,6 +16,8 @@ interface QuestionRendererProps {
     onDeleteCapture?: (imageId: string, imageUrl: string) => void;
     /** Whether to show question part or solution part */
     displayMode?: 'question' | 'solution';
+    /** Custom class name for the container */
+    className?: string;
 }
 
 const QuestionRenderer: React.FC<QuestionRendererProps> = ({
@@ -24,7 +26,8 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     fileName = 'question',
     externalImages = [],
     onDeleteCapture,
-    displayMode = 'question'
+    displayMode = 'question',
+    className = ''
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [images, setImages] = useState<Map<string, string>>(new Map());
@@ -119,7 +122,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                             <img
                                 src={img.data}
                                 alt={`${displayMode} capture`}
-                                className={`max-w-full rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
+                                className={`w-full rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
                                 style={{ maxHeight: '1000px' }}
                             />
                             {onDeleteCapture && (
@@ -165,7 +168,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     <img
                         src={extractedImages.get('WHOLE_QUESTION_V28')}
                         alt="High Fidelity Question Capture"
-                        className="max-w-full rounded shadow-md border"
+                        className="w-full rounded shadow-md border"
                     />
                     <div className="mt-4 w-full h-[1px] bg-gray-100" />
                     {/* Removed Visual Engine label */}
@@ -269,7 +272,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         <div className="relative group">
             <div
                 ref={containerRef}
-                className="bg-white p-6 border rounded shadow-sm max-w-full overflow-x-auto text-sm"
+                className={`bg-white p-2 border rounded shadow-sm max-w-full overflow-x-auto text-2xl font-medium ${className}`}
             >
                 {renderedContent}
             </div>
@@ -326,8 +329,7 @@ function TextRun({ node, extractedImages }: { node: ChildNode, extractedImages: 
                             key={i}
                             src={extractedImages.get(binId)}
                             alt="Visual Content"
-                            className="inline-block max-w-[80%] my-2 rounded shadow-sm align-middle"
-                            style={{ maxHeight: '400px' }}
+                            className="inline-block w-full my-2 rounded shadow-sm align-middle"
                         />
                     );
                 }
@@ -341,7 +343,7 @@ function TextRun({ node, extractedImages }: { node: ChildNode, extractedImages: 
             }
             const width = (child as Element).getAttribute('Width') || 'auto';
             elements.push(
-                <table key={i} className="border-collapse my-2 text-xs" style={{ width: width !== 'auto' ? '100%' : 'auto' }}>
+                <table key={i} className="border-collapse my-2" style={{ width: width !== 'auto' ? '100%' : 'auto' }}>
                     <tbody>
                         {rows.map((rowNode, rIdx) => {
                             const cells = Array.from((rowNode as Element).getElementsByTagName('CELL').length > 0 ? (rowNode as Element).getElementsByTagName('CELL') : (rowNode as Element).getElementsByTagName('hp:tc'));
@@ -460,7 +462,7 @@ function EquationRenderer({ node, extractedImages }: { node: Element, extractedI
         );
     } catch (e) {
         console.error("Equation Render Fatal Error:", latex, e);
-        return <code className="text-xs bg-red-50 text-red-500 border border-red-200 px-1 rounded">{latex}</code>;
+        return <code className="bg-red-50 text-red-500 border border-red-200 px-1 rounded">{latex}</code>;
     }
 }
 

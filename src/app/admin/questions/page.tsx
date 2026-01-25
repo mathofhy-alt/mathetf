@@ -13,13 +13,7 @@ export default function AdminQuestionsPage() {
     const [search, setSearch] = useState('');
     const [school, setSchool] = useState('');
     const [subject, setSubject] = useState('');
-    // ... filters
     const [page, setPage] = useState(1);
-
-    // Detail & Edit Modal
-    const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
-    const [previewTab, setPreviewTab] = useState<'preview' | 'xml' | 'text'>('preview');
-    const [isEditMode, setIsEditMode] = useState(true);
 
     // Bulk Update State
     const [bulkUpdate, setBulkUpdate] = useState({
@@ -34,6 +28,20 @@ export default function AdminQuestionsPage() {
     // Cart / Selection
     const [selectedIds, setSelectedIds] = useState<Set<any>>(new Set());
     const [expandedSolutions, setExpandedSolutions] = useState<Set<string>>(new Set());
+
+    // Similarity Search State
+    const [similarQuestions, setSimilarQuestions] = useState<any[]>([]);
+    const [isSimilarModalOpen, setIsSimilarModalOpen] = useState(false);
+    const [similarityTarget, setSimilarityTarget] = useState<any>(null);
+    const [loadingSimilar, setLoadingSimilar] = useState(false);
+
+    // Embedding Generation State
+    const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
+    const [generationProgress, setGenerationProgress] = useState(0);
+
+    // Detailed Edit Modal State
+    const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
+    const [previewTab, setPreviewTab] = useState<'preview' | 'xml' | 'text'>('preview');
 
     const toggleSelect = (id: any) => {
         const newSet = new Set(selectedIds);
@@ -51,8 +59,7 @@ export default function AdminQuestionsPage() {
     };
 
     const handleDeleteSelected = async () => {
-        if (selectedIds.size === 0) return;
-        if (!confirm(`${selectedIds.size}개의 문제를 정말 삭제하시겠습니까?`)) return;
+        if (!confirm(`${selectedIds.size}개의 문제를 삭제하시겠습니까?`)) return;
 
         try {
             const res = await fetch('/api/admin/questions', {
@@ -62,7 +69,8 @@ export default function AdminQuestionsPage() {
             });
 
             if (res.ok) {
-                alert('선택한 문제가 삭제되었습니다.');
+                alert('삭제되었습니다.');
+                setSelectedIds(new Set());
                 fetchQuestions();
             } else {
                 const err = await res.json();
@@ -70,20 +78,29 @@ export default function AdminQuestionsPage() {
             }
         } catch (e) {
             console.error(e);
-            alert('삭제 중 오류가 발생했습니다.');
+            alert('오류가 발생했습니다.');
         }
     };
 
     const handleCollectMathScripts = () => {
-        if (questions.length === 0) return;
-
-        let report = "--- MATH SCRIPTS REPORT ---\n";
+        // Collect all MathML/Latex scripts from the current page
+        // Format: [Question ID] -> Script
+        let report = "=== Math Script Analysis Report ===\n";
         questions.forEach(q => {
-            if (q.equation_scripts && q.equation_scripts.length > 0) {
-                report += `\n[Q${q.question_number} ID:${q.id}]\n`;
-                q.equation_scripts.forEach((s: string, idx: number) => {
-                    report += `  Eq ${idx}: ${s}\n`;
-                });
+            report += `\n[Q-${q.question_number} ID:${q.id}]\n`;
+            // Simple regex to find math text in plain text or XML
+            // This is a naive extraction for inspection
+            if (q.plain_text) {
+                report += q.plain_text.slice(0, 500) + "\n";
+            }
+            // If we have detailed scripts from renderer (this would require renderer to expose it, but for now we just dump raw)
+            // Let's dump the XML content too
+            if (q.content_xml) {
+                const mathTags = q.content_xml.match(/<script[^>]*>([\s\S]*?)<\/script>/g);
+                if (mathTags) {
+                    report += `Found ${mathTags.length} script tags.\n`;
+                    mathTags.forEach((tag: string) => report += tag + "\n");
+                }
             }
         });
 
@@ -121,7 +138,6 @@ export default function AdminQuestionsPage() {
 
     const handleDownload = async () => {
         const selectedIdsArray = Array.from(selectedIds);
-        console.log("[UI_SELECTED_IDS]", selectedIdsArray);
         if (new Set(selectedIdsArray).size !== selectedIdsArray.length) {
             alert("중복 선택 감지: 리스트 확인");
             return;
@@ -224,7 +240,7 @@ export default function AdminQuestionsPage() {
                         grade: q.grade,
                         unit: q.unit,
                         difficulty: q.difficulty,
-                        plain_text: q.plain_text // Allow text edit? Maybe later.
+                        plain_text: q.plain_text
                     }
                 })
             });
@@ -244,15 +260,12 @@ export default function AdminQuestionsPage() {
     };
 
     const handleQuickDifficultyChange = async (q: any, newDiff: string) => {
-        // Optimistic Update
         const oldDiff = q.difficulty;
 
-        // Update List State
         setQuestions(prev => prev.map(item =>
             item.id === q.id ? { ...item, difficulty: newDiff } : item
         ));
 
-        // Update Modal State (if open)
         if (selectedQuestion && selectedQuestion.id === q.id) {
             setSelectedQuestion((prev: any) => ({ ...prev, difficulty: newDiff }));
         }
@@ -268,7 +281,6 @@ export default function AdminQuestionsPage() {
             });
 
             if (!res.ok) {
-                // Revert on failure
                 setQuestions(prev => prev.map(item =>
                     item.id === q.id ? { ...item, difficulty: oldDiff } : item
                 ));
@@ -285,7 +297,6 @@ export default function AdminQuestionsPage() {
 
     const handleManualCapture = async (q: any, captureType: 'question' | 'solution' = 'question') => {
         try {
-            // 1. Trigger Local Capture App via Local Flask (port 5000)
             const captureRes = await fetch('http://localhost:5000/trigger-manual-capture', {
                 method: 'POST'
             });
@@ -298,13 +309,13 @@ export default function AdminQuestionsPage() {
 
             const { file_path } = await captureRes.json();
 
-            // 2. We need to read this local file path and upload it to our server.
-            // Since browser can't read absolute paths, we need the Flask server to serve this file 
-            // or provide a Base64 version. Let's assume we implement a /get-capture route in Flask.
             const fileRes = await fetch(`http://localhost:5000/get-capture?path=${encodeURIComponent(file_path)}`);
+            if (!fileRes.ok) {
+                const err = await fileRes.json();
+                throw new Error(`로컬 파일을 가져오지 못했습니다: ${err.error}`);
+            }
             const blob = await fileRes.blob();
 
-            // 3. Upload to Supabase Question Images
             const formData = new FormData();
             formData.append('file', blob, `capture_${q.question_number}_${captureType}.png`);
             formData.append('questionId', q.id);
@@ -319,7 +330,6 @@ export default function AdminQuestionsPage() {
                 alert(`${captureType === 'solution' ? '해설' : '문제'} 이미지가 성공적으로 캡쳐되어 업로드되었습니다.`);
                 fetchQuestions();
                 if (captureType === 'solution') {
-                    // Auto-expand solution view
                     const newSet = new Set(expandedSolutions);
                     newSet.add(q.id);
                     setExpandedSolutions(newSet);
@@ -330,14 +340,93 @@ export default function AdminQuestionsPage() {
 
         } catch (e: any) {
             console.error(e);
-            // alert(`캡쳐 오류: ${e.message}. 로컬 파이썬 툴이 실행 중인지 확인해 주세요.`);
-            // Parse error details if possible
-            const logMatch = e.message.match(/STDOUT: (.*)\nSTDERR: (.*)/s);
+            const logMatch = e.message.match(/STDOUT: ([\s\S]*)\nSTDERR: ([\s\S]*)/);
             setCaptureError({
                 message: e.message.split('\nSTDOUT:')[0],
                 stdout: logMatch ? logMatch[1] : '',
                 stderr: logMatch ? logMatch[2] : ''
             });
+        }
+    };
+
+    const handleFindSimilar = async (q: any) => {
+        setSimilarityTarget(q);
+        setLoadingSimilar(true);
+        setIsSimilarModalOpen(true);
+        setSimilarQuestions([]);
+
+        try {
+            const params = new URLSearchParams({
+                id: q.id,
+                limit: '5',
+                // Auto boost: Grade +3%, Unit +5%
+                grade: q.grade || '',
+                unit: q.unit || ''
+            });
+
+            const res = await fetch(`/api/admin/questions/similar?${params.toString()}`);
+            const data = await res.json();
+
+            if (data.success) {
+                setSimilarQuestions(data.data);
+            } else {
+                console.error("Similarity search failed:", data.error);
+                if (data.error.includes("embedding")) {
+                    if (confirm("이 문항의 벡터 데이터가 없습니다. 지금 생성하시겠습니까?")) {
+                        await fetch('/api/admin/embeddings/generate', {
+                            method: 'POST',
+                            body: JSON.stringify({ forceIds: [q.id] })
+                        });
+                        const retryRes = await fetch(`/api/admin/questions/similar?${params.toString()}`);
+                        const retryData = await retryRes.json();
+                        if (retryData.success) setSimilarQuestions(retryData.data);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Similarity search error:", e);
+            alert("유사 문항 검색 중 오류가 발생했습니다.");
+        } finally {
+            setLoadingSimilar(false);
+        }
+    };
+
+    const handleGenerateEmbeddings = async () => {
+        if (!confirm("모든 문제에 대해 AI 데이터(벡터 임베딩)를 생성하시겠습니까?\n문제가 많을 경우 시간이 소요될 수 있습니다.")) return;
+
+        setIsGeneratingEmbeddings(true);
+        setGenerationProgress(0);
+        let totalProcessed = 0;
+
+        try {
+            while (true) {
+                const res = await fetch('/api/admin/embeddings/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}) // Default: process pending items
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+
+                if (data.processed === 0) {
+                    break; // Done
+                }
+
+                totalProcessed += data.processed;
+                setGenerationProgress(totalProcessed);
+
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            alert(`완료되었습니다! 총 ${totalProcessed}개 문항의 AI 데이터를 생성했습니다.`);
+        } catch (e: any) {
+            console.error(e);
+            alert(`오류 발생: ${e.message}`);
+        } finally {
+            setIsGeneratingEmbeddings(false);
         }
     };
 
@@ -350,9 +439,7 @@ export default function AdminQuestionsPage() {
             });
 
             if (res.ok) {
-                // Refresh list
                 fetchQuestions();
-                // If modal is open, we might need to update the local selectedQuestion state
                 if (selectedQuestion) {
                     setSelectedQuestion((prev: any) => {
                         if (!prev) return null;
@@ -374,7 +461,6 @@ export default function AdminQuestionsPage() {
 
     const fetchQuestions = async () => {
         setLoading(true);
-        // Reset selection on new fetch to avoid confusion
         setSelectedIds(new Set());
 
         try {
@@ -399,11 +485,9 @@ export default function AdminQuestionsPage() {
         }
     };
 
-    // Debounce search or just search on button click? 
-    // Let's do simple Search button for now to avoid too many requests
     useEffect(() => {
         fetchQuestions();
-    }, [page]); // Re-fetch on page change
+    }, [page]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -436,78 +520,77 @@ export default function AdminQuestionsPage() {
                                 </div>
                             )}
                         </div>
-                        <div className="p-4 border-t bg-gray-50 text-right">
-                            <button
-                                onClick={() => setCaptureError(null)}
-                                className="px-4 py-2 bg-gray-800 text-white rounded font-bold hover:bg-black"
-                            >
-                                닫기
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}
 
-            <h1 className="text-2xl font-bold text-gray-800">문제 관리 (Questions Admin)</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+                    기출 문항 관리 <span className="text-gray-400 font-normal text-xl ml-2">({total}문제)</span>
+                </h1>
+                <div className="flex items-center gap-4">
+                    {/* Search Stats */}
+                    <div className="px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold">
+                        {selectedIds.size}개 선택됨
+                    </div>
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} className="flex gap-2">
+                        <select
+                            className="border rounded-lg px-3 py-2 text-sm"
+                            value={school}
+                            onChange={(e) => setSchool(e.target.value)}
+                        >
+                            <option value="">모든 학교</option>
+                            <option value="경기고">경기고</option>
+                            <option value="서울고">서울고</option>
+                            <option value="휘문고">휘문고</option>
+                        </select>
+                        <select
+                            className="border rounded-lg px-3 py-2 text-sm"
+                            value={subject}
+                            onChange={(e) => setSubject(e.target.value)}
+                        >
+                            <option value="">모든 과목</option>
+                            <option value="수학(상)">수학(상)</option>
+                            <option value="수학(하)">수학(하)</option>
+                            <option value="수1">수1</option>
+                            <option value="수2">수2</option>
+                            <option value="미적분">미적분</option>
+                            <option value="확통">확통</option>
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="문항 내용 검색..."
+                            className="border rounded-lg px-3 py-2 text-sm w-64"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">
+                            검색
+                        </button>
+                    </form>
+                </div>
+            </div>
 
-            {/* Filters */}
-            <form onSubmit={handleSearch} className="bg-white p-6 rounded-lg shadow-sm border space-y-4 md:space-y-0 md:flex md:gap-4 items-end">
-                <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">학교명 (School)</label>
+            {/* Bulk Actions */}
+            <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
                     <input
-                        type="text"
-                        value={school}
-                        onChange={e => setSchool(e.target.value)}
-                        placeholder="경기고, 휘문고..."
-                        className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        type="checkbox"
+                        checked={selectedIds.size > 0 && selectedIds.size === questions.length}
+                        onChange={toggleAll}
+                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
+                    <span className="text-sm font-bold text-gray-700">전체 선택</span>
                 </div>
-                <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">과목 (Subject)</label>
-                    <select
-                        value={subject}
-                        onChange={e => setSubject(e.target.value)}
-                        className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                        <option value="">전체</option>
-                        <option value="공통수학1">공통수학1</option>
-                        <option value="공통수학2">공통수학2</option>
-                        <option value="대수">대수</option>
-                        <option value="미적분1">미적분1</option>
-                        <option value="미적분2">미적분2</option>
-                        <option value="기하">기하</option>
-                        <option value="확통">확통</option>
-                    </select>
-                </div>
-                <div className="flex-[2]">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">내용 검색 (Content Search)</label>
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        placeholder="문제 텍스트 검색..."
-                        className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                </div>
-                <button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-medium transition-colors"
-                >
-                    검색
-                </button>
-            </form>
 
-            {/* Bulk Update Bar (Visible when selection > 0) */}
-            {selectedIds.size > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg flex flex-wrap gap-4 items-center shadow-sm animate-in fade-in slide-in-from-top-2">
-                    <span className="font-bold text-yellow-800 text-sm">{selectedIds.size}개 선택됨: 일괄 수정</span>
-
+                <div className="flex items-center gap-2 border-l pl-4">
                     <select
-                        className="border rounded px-2 py-1 text-sm w-24"
+                        className="border rounded px-2 py-1.5 text-sm w-24"
                         value={bulkUpdate.grade}
                         onChange={e => setBulkUpdate({ ...bulkUpdate, grade: e.target.value })}
                     >
-                        <option value="">학년 선택</option>
+                        <option value="">학년 변경</option>
                         <option value="고1">고1</option>
                         <option value="고2">고2</option>
                         <option value="고3">고3</option>
@@ -515,17 +598,14 @@ export default function AdminQuestionsPage() {
                         <option value="중2">중2</option>
                         <option value="중3">중3</option>
                     </select>
-
                     <input
-                        type="text"
-                        placeholder="단원명 (예: 다항식)"
-                        className="border rounded px-2 py-1 text-sm w-32"
+                        className="border rounded px-2 py-1.5 text-sm w-32"
+                        placeholder="단원명 변경"
                         value={bulkUpdate.unit}
                         onChange={e => setBulkUpdate({ ...bulkUpdate, unit: e.target.value })}
                     />
-
                     <select
-                        className="border rounded px-2 py-1 text-sm w-24"
+                        className="border rounded px-2 py-1.5 text-sm w-24"
                         value={bulkUpdate.difficulty}
                         onChange={e => setBulkUpdate({ ...bulkUpdate, difficulty: e.target.value })}
                     >
@@ -534,20 +614,39 @@ export default function AdminQuestionsPage() {
                             <option key={n} value={n}>{n}</option>
                         ))}
                     </select>
-
                     <button
                         onClick={handleBulkUpdate}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1 rounded text-sm font-bold"
+                        disabled={selectedIds.size === 0}
+                        className="bg-gray-800 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
                     >
                         일괄 적용
                     </button>
                 </div>
-            )}
 
-            {/* Stats & Actions */}
-            <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>총 {total}개의 문제가 검색되었습니다.</span>
+                <div className="flex-1"></div>
+
                 <div className="flex items-center gap-2">
+                    {/* AI Generation Button */}
+                    <button
+                        onClick={handleGenerateEmbeddings}
+                        disabled={isGeneratingEmbeddings}
+                        className={`px-4 py-2 rounded text-sm font-bold shadow-sm flex items-center gap-2 transition-all ${isGeneratingEmbeddings
+                            ? 'bg-purple-100 text-purple-700 cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-700 text-white'
+                            }`}
+                    >
+                        {isGeneratingEmbeddings ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-700"></div>
+                                AI 분석 중... ({generationProgress}개)
+                            </>
+                        ) : (
+                            <>
+                                🤖 AI 데이터 일괄 생성
+                            </>
+                        )}
+                    </button>
+
                     {/* Delete Selected */}
                     {selectedIds.size > 0 && (
                         <button
@@ -590,66 +689,88 @@ export default function AdminQuestionsPage() {
                 </div>
             </div>
 
-            {/* Data Grid */}
-            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <table className="w-full text-left border-collapse table-auto">
-                    <thead className="bg-gray-50 text-gray-700 text-sm font-medium">
-                        <tr>
-                            <th className="p-3 border-b w-10 text-center">
-                                <input
-                                    type="checkbox"
-                                    onChange={toggleAll}
-                                    checked={questions.length > 0 && selectedIds.size === questions.length}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                            </th>
-                            <th className="p-3 border-b w-14 text-center">No.</th>
-                            <th className="p-3 border-b w-24">지역/학교</th>
-                            <th className="p-3 border-b w-16">학년</th>
-                            <th className="p-3 border-b w-24">단원</th>
-                            <th className="p-3 border-b w-16">난이도</th>
-                            <th className="p-3 border-b">문제 내용</th>
-                            <th className="p-3 border-b w-20 text-center">관리</th>
-                        </tr>
-                    </thead>
-                    <tbody className="text-sm divide-y divide-gray-100">
-                        {loading ? (
-                            <tr><td colSpan={8} className="p-8 text-center text-gray-500">Loading...</td></tr>
-                        ) : questions.length === 0 ? (
-                            <tr><td colSpan={8} className="p-8 text-center text-gray-500">데이터가 없습니다.</td></tr>
-                        ) : (
-                            questions.map((q) => (
-                                <tr
-                                    key={q.id}
-                                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.has(q.id) ? 'bg-blue-50' : ''}`}
-                                    onClick={() => toggleSelect(q.id)}
-                                >
-                                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedIds.has(q.id)}
-                                            onChange={() => toggleSelect(q.id)}
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                    </td>
-                                    <td className="p-3 text-center text-gray-500 text-xs">{q.question_number}</td>
-                                    <td className="p-3">
-                                        <div className="font-bold text-gray-800 flex items-center gap-2">
-                                            {q.school || '-'}
-                                            {(q.question_images && q.question_images.length > 0) && (
-                                                <span className="bg-blue-100 text-blue-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                                                    📸 이미지 {q.question_images.length}
-                                                </span>
-                                            )}
+            {/* Data Grid (Card Layout) */}
+            {loading ? (
+                <div className="p-20 text-center text-gray-500">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
+                    <p>데이터를 불러오는 중입니다...</p>
+                </div>
+            ) : questions.length === 0 ? (
+                <div className="p-20 text-center text-gray-500 bg-gray-50 rounded-lg border border-dashed">
+                    <p className="text-xl mb-2">검색 결과가 없습니다.</p>
+                    <p className="text-sm">검색 조건을 변경하거나 필터를 초기화해보세요.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {questions.map((q) => (
+                        <div
+                            key={q.id}
+                            className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col relative group ${selectedIds.has(q.id) ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/10' : 'border-gray-200'
+                                }`}
+                            onClick={() => toggleSelect(q.id)}
+                        >
+                            {/* Card Header */}
+                            <div className="p-4 flex justify-between items-start bg-gray-50/80 border-b backdrop-blur-sm">
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-black text-blue-600 text-xl">#{q.question_number}</span>
+                                        <span className="text-sm bg-white border px-2 py-0.5 rounded text-gray-500 font-medium">
+                                            {q.subject}
+                                        </span>
+                                    </div>
+                                    <div className="text-sm text-gray-700 mt-1 font-bold w-full">
+                                        {q.year && `${q.year}년`} {q.school} {q.grade} {q.semester}
+                                    </div>
+                                </div>
+                                <div onClick={(e) => e.stopPropagation()}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.has(q.id)}
+                                        onChange={() => toggleSelect(q.id)}
+                                        className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Card Body: Renderer */}
+                            <div
+                                className="flex-1 p-0 overflow-hidden relative bg-white cursor-pointer min-h-[400px] flex flex-col"
+                                onClick={(e) => { e.stopPropagation(); setSelectedQuestion(q); }}
+                            >
+                                {/* Images Badge */}
+                                {(q.question_images && q.question_images.length > 0) && (
+                                    <div className="absolute top-2 right-2 z-10 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-md">
+                                        📸 {q.question_images.length}
+                                    </div>
+                                )}
+
+                                <div className="flex-1 relative">
+                                    <div className="absolute inset-0 overflow-hidden">
+                                        <div className="origin-top-left h-full w-full overflow-hidden">
+                                            <QuestionRenderer
+                                                xmlContent={q.content_xml}
+                                                showDownloadAction={false}
+                                                externalImages={q.question_images}
+                                                onDeleteCapture={handleDeleteCapture}
+                                                className="text-xl font-medium leading-relaxed [&_img]:!max-w-full"
+                                            />
                                         </div>
-                                        <div className="text-xs text-gray-500">{q.region} {q.district}</div>
-                                    </td>
-                                    <td className="p-3 text-gray-700">{q.grade}</td>
-                                    <td className="p-3 text-gray-700 text-xs">{q.unit || '미분류'}</td>
-                                    <td className="p-3" onClick={e => e.stopPropagation()}>
+                                    </div>
+                                    {/* Gradient overlay for long content */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+                                </div>
+
+                                {/* Difficulty & Unit Badge (Overlay at bottom) */}
+                                <div className="px-3 py-2 bg-white/90 border-t flex justify-between items-center text-xs">
+                                    <div className="flex items-center gap-1 overflow-hidden">
+                                        <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded truncate max-w-[100px]">
+                                            {q.unit || '단원 미분류'}
+                                        </span>
+                                    </div>
+                                    <div onClick={e => e.stopPropagation()}>
                                         <select
-                                            className={`border rounded px-1 py-1 text-xs font-bold ${parseInt(q.difficulty) >= 8 ? 'bg-red-50 text-red-700 border-red-200' :
-                                                parseInt(q.difficulty) >= 5 ? 'bg-yellow-50 text-yellow-800 border-yellow-200' :
+                                            className={`border rounded px-1.5 py-0.5 text-xs font-bold appearance-none text-center w-10 ${parseInt(q.difficulty) >= 8 ? 'bg-red-50 text-red-600 border-red-200' :
+                                                parseInt(q.difficulty) >= 5 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
                                                     'bg-green-50 text-green-700 border-green-200'
                                                 }`}
                                             value={q.difficulty || '1'}
@@ -659,79 +780,79 @@ export default function AdminQuestionsPage() {
                                                 <option key={n} value={n}>{n}</option>
                                             ))}
                                         </select>
-                                    </td>
-                                    <td className="p-3 text-gray-600 text-xs max-w-md overflow-hidden" onClick={e => setSelectedQuestion(q)}>
-                                        <div className={`relative ${q.question_images?.length > 0 ? 'max-h-[500px]' : 'max-h-60'} overflow-hidden border rounded group`}>
-                                            <QuestionRenderer
-                                                xmlContent={q.content_xml}
-                                                showDownloadAction={false}
-                                                externalImages={q.question_images}
-                                                onDeleteCapture={handleDeleteCapture}
-                                            />
-                                            {/* Fade out effect: Only show if content is likely taller than box */}
-                                            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
-                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                        {/* Solution View Integration */}
-                                        {expandedSolutions.has(q.id) && (
-                                            <div className="mt-4 p-4 bg-green-50/30 border-2 border-green-100 rounded-xl animate-in slide-in-from-top-4">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <span className="text-lg">📖</span>
-                                                    <h4 className="text-sm font-black text-green-700 uppercase tracking-widest">직접 캡쳐한 해설 (Solution)</h4>
-                                                </div>
-                                                <QuestionRenderer
-                                                    xmlContent="" // Solution mode doesn't need XML fallback usually
-                                                    showDownloadAction={false}
-                                                    externalImages={q.question_images}
-                                                    onDeleteCapture={handleDeleteCapture}
-                                                    displayMode="solution"
-                                                />
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="p-3 text-center space-y-1" onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                            onClick={() => setSelectedQuestion(q)}
-                                            className="w-full text-xs bg-white text-gray-700 px-2 py-1 rounded border hover:bg-gray-100 shadow-sm"
-                                        >
-                                            수정
-                                        </button>
-                                        <button
-                                            onClick={() => handleManualCapture(q, 'question')}
-                                            className="w-full text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 shadow-sm flex items-center justify-center gap-1 font-bold"
-                                            title="한글 화면에서 마우스로 영역을 선택하여 문제 이미지를 캡쳐합니다."
-                                        >
-                                            📸 문제 캡쳐
-                                        </button>
-                                        <button
-                                            onClick={() => handleManualCapture(q, 'solution')}
-                                            className="w-full text-[10px] bg-green-50 text-green-600 px-2 py-1 rounded border border-green-100 hover:bg-green-100 shadow-sm flex items-center justify-center gap-1 font-bold"
-                                            title="한글 화면에서 마우스로 영역을 선택하여 해설 이미지를 캡쳐합니다."
-                                        >
-                                            📝 해설 캡쳐
-                                        </button>
+                            {/* Card Footer: Expanded Solution */}
+                            {expandedSolutions.has(q.id) && (
+                                <div className="bg-green-50/50 border-t-2 border-green-100 p-3 animate-in slide-in-from-top-2">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-xs font-bold text-green-700 flex items-center gap-1">
+                                            📝 해설 (Solution)
+                                        </span>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                const newSet = new Set(expandedSolutions);
-                                                if (newSet.has(q.id)) newSet.delete(q.id);
-                                                else newSet.add(q.id);
-                                                setExpandedSolutions(newSet);
+                                                handleManualCapture(q, 'solution');
                                             }}
-                                            className={`w-full text-[10px] px-2 py-1 rounded border shadow-sm flex items-center justify-center gap-1 font-bold transition-colors ${expandedSolutions.has(q.id)
-                                                    ? 'bg-gray-800 text-white border-gray-700'
-                                                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                                                }`}
+                                            className="text-[10px] bg-white border border-green-200 text-green-600 px-2 py-0.5 rounded hover:bg-green-50"
                                         >
-                                            {expandedSolutions.has(q.id) ? '📖 해설 닫기' : '📖 해설지보기'}
+                                            + 추가 캡쳐
                                         </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto bg-white rounded border border-green-100 p-2 text-xs">
+                                        <QuestionRenderer
+                                            xmlContent=""
+                                            showDownloadAction={false}
+                                            externalImages={q.question_images}
+                                            onDeleteCapture={handleDeleteCapture}
+                                            displayMode="solution"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Card Actions */}
+                            <div className="p-2 border-t bg-gray-50 flex gap-1">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedQuestion(q); }}
+                                    className="flex-1 bg-white border border-gray-200 text-gray-700 py-1.5 rounded text-xs font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                >
+                                    수정
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleManualCapture(q, 'question'); }}
+                                    className="flex-1 bg-blue-50 border border-blue-100 text-blue-600 py-1.5 rounded text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+                                >
+                                    📸 문제
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const newSet = new Set(expandedSolutions);
+                                        if (newSet.has(q.id)) newSet.delete(q.id);
+                                        else newSet.add(q.id);
+                                        setExpandedSolutions(newSet);
+                                    }}
+                                    className={`flex-1 border py-1.5 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1 ${expandedSolutions.has(q.id)
+                                        ? 'bg-green-600 border-green-600 text-white'
+                                        : 'bg-green-50 border-green-100 text-green-600 hover:bg-green-100'
+                                        }`}
+                                >
+                                    {expandedSolutions.has(q.id) ? '접기' : '📝 해설'}
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleFindSimilar(q); }}
+                                    className="flex-1 bg-purple-50 border border-purple-100 text-purple-600 py-1.5 rounded text-xs font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-1"
+                                >
+                                    🔍 유사
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Pagination UI - Simple Prev/Next */}
             <div className="flex justify-center gap-2">
@@ -960,6 +1081,91 @@ export default function AdminQuestionsPage() {
                                 >
                                     저장
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Similarity Search Result Modal */}
+            {isSimilarModalOpen && similarityTarget && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" onClick={() => setIsSimilarModalOpen(false)}>
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                            <div className="flex items-center gap-3">
+                                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">🔍 유사 문항 검색</span>
+                                <h3 className="font-bold text-lg text-gray-800">
+                                    Q{similarityTarget.question_number} ({similarityTarget.school} {similarityTarget.year}) 와(과) 비슷한 문제
+                                </h3>
+                            </div>
+                            <button onClick={() => setIsSimilarModalOpen(false)} className="text-gray-400 hover:text-gray-800 text-2xl font-bold">&times;</button>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                            {/* Left: Original Question */}
+                            <div className="w-full md:w-1/3 border-r bg-gray-50/50 p-4 overflow-y-auto hidden md:block">
+                                <h4 className="font-bold text-gray-500 mb-4 text-sm uppercase tracking-wide">기준 문제 (Source)</h4>
+                                <div className="bg-white p-4 rounded-xl border shadow-sm">
+                                    <QuestionRenderer
+                                        xmlContent={similarityTarget.content_xml}
+                                        externalImages={similarityTarget.question_images}
+                                        className="text-lg"
+                                    />
+                                    <div className="mt-4 pt-4 border-t text-sm text-gray-600 space-y-1">
+                                        <p>🏷️ 학년: <span className="font-bold">{similarityTarget.grade}</span></p>
+                                        <p>📚 단원: <span className="font-bold">{similarityTarget.unit}</span></p>
+                                        <p>📊 난이도: <span className="font-bold">{similarityTarget.difficulty}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Similar Questions List */}
+                            <div className="w-full md:w-2/3 p-6 overflow-y-auto bg-gray-50">
+                                {loadingSimilar ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-4">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                                        <p className="animate-pulse">유사한 문제를 찾고 있습니다...</p>
+                                    </div>
+                                ) : similarQuestions.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                        <div className="text-6xl mb-4">🤷‍♂️</div>
+                                        <p>유사한 문제를 찾지 못했습니다.</p>
+                                        <p className="text-sm mt-2">임베딩 데이터가 생성되었는지 확인해주세요.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {similarQuestions.map((simQ, idx) => (
+                                            <div key={simQ.id} className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                                                <div className="p-3 bg-purple-50/50 border-b flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">{idx + 1}위</span>
+                                                        <span className="text-sm font-bold text-purple-900">{Math.round(simQ.similarity * 100)}% 일치</span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {simQ.year} {simQ.school} {simQ.grade}
+                                                    </div>
+                                                </div>
+                                                <div className="p-4 flex-1 overflow-hidden" style={{ minHeight: '300px' }}>
+                                                    {simQ.plain_text ? (
+                                                        <p className="whitespace-pre-wrap text-sm">{simQ.plain_text.slice(0, 200)}...</p>
+                                                    ) : (
+                                                        <p className="text-gray-400 italic">내용 미리보기 없음</p>
+                                                    )}
+                                                    <div className="mt-4 text-center">
+                                                        <button
+                                                            className="text-purple-600 hover:text-purple-800 text-sm font-bold underline"
+                                                            onClick={async () => {
+                                                                alert(`상세 보기 기능은 준비 중입니다. (ID: ${simQ.id})`);
+                                                            }}
+                                                        >
+                                                            자세히 보기
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
