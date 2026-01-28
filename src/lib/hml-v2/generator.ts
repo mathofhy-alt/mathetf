@@ -186,8 +186,32 @@ export function generateHmlFromTemplate(
 
         // Remap BinItem/BinData
         remap.forEach((newId, oldId) => {
+            // First, normalize IMAGE tags to use BinItem (Hancom requirement)
+            // If the source has BinData on IMAGE, convert it to BinItem locally for the regex to catch
+            // Or just handle it in the global replace.
+
+            // We want to match BinItem="oldId" OR BinData="oldId"
+            // And replace with BinItem="newId" (Force BinItem for usage references)
+            // WARNING: BINITEM tag in HEAD uses BinData="ID", but here we are processing BODY content.
+            // In BODY, IMAGE tags should use BinItem.
             const pattern = new RegExp(`(BinItem|BinData)="${oldId}"`, 'g');
-            questionXml = questionXml.replace(pattern, `$1="${newId}"`);
+            questionXml = questionXml.replace(pattern, (match, attr) => {
+                // Force attributes found in control file: Alpha="0" Bright="0" Contrast="0" Effect="RealPic"
+                // The regex match replaces 'BinItem="ID"' part.
+                // But we need to make sure we don't break other attributes or duplicate them. 
+                // A safer bet is just to correct the ID reference attribute name first.
+                return `BinItem="${newId}"`;
+            });
+
+            // Add mandatory Effect="RealPic" to IMAGE if missing
+            questionXml = questionXml.replace(/<IMAGE\b([^>]*?)(\/?)>/g, (match, attrs, selfClose) => {
+                let newAttrs = attrs;
+                if (!newAttrs.includes('Effect="')) newAttrs += ' Effect="RealPic"';
+                if (!newAttrs.includes('Alpha="')) newAttrs += ' Alpha="0"';
+                if (!newAttrs.includes('Bright="')) newAttrs += ' Bright="0"';
+                if (!newAttrs.includes('Contrast="')) newAttrs += ' Contrast="0"';
+                return `<IMAGE${newAttrs}${selfClose}>`;
+            });
         });
 
         // Add mandatory TreatAsChar to PICTURE if missing
@@ -239,9 +263,8 @@ export function generateHmlFromTemplate(
     if (allImages.length > 0) {
         let binItemsXml = '';
         for (const { newId, image } of allImages) {
-            const format = (image.format || 'PNG').toUpperCase();
-            const paddedId = String(newId).padStart(4, '0');
-            binItemsXml += `<BINITEM BinData="${newId}" Format="${format}" Type="Embedding" Compress="false" Path="BIN${paddedId}.${format}"/>`;
+            const format = (image.format || 'png').toLowerCase();
+            binItemsXml += `<BINITEM BinData="${newId}" Format="${format}" Type="Embedding"/>`;
         }
 
         if (currentHml.includes('<BINDATALIST')) {
@@ -269,7 +292,18 @@ export function generateHmlFromTemplate(
             let base64 = image.data;
             if (base64.startsWith('data:')) base64 = base64.split(',')[1] || base64;
             const cleanBase64 = base64.replace(/[^A-Za-z0-9+/=]/g, '');
-            binDataXml += `<BINDATA Id="${newId}" Encoding="Base64" Compress="false">${cleanBase64}</BINDATA>`;
+
+
+            // Wrap Base64 at 76 chars (MIME standard for XML embedding)
+            // Windows-friendly CRLF
+            const wrappedBase64 = cleanBase64.match(/.{1,76}/g)?.join('\r\n') || cleanBase64;
+
+            // Hancom Control File Observation:
+            // Matches text length including newlines.
+            const size = wrappedBase64.length;
+
+            // STRICT MATCH: Remove Compress="false" as it is absent in Control File.
+            binDataXml += `<BINDATA Id="${newId}" Encoding="Base64" Size="${size}">${wrappedBase64}</BINDATA>`;
         }
 
         if (currentHml.includes('<BINDATASTORAGE')) {
@@ -287,14 +321,32 @@ export function generateHmlFromTemplate(
         }
     }
 
-    // 5. Update Global Metadata (Picture counts)
+    // 5. Update Global Metadata (Picture counts) - ROBUST INJECTION
     if (allImages.length > 0) {
-        currentHml = currentHml.replace(/(<DOCSETTING[^>]*?Picture=")(\d+)(")/g, (match, start, count, end) => {
-            return `${start}${parseInt(count, 10) + allImages.length}${end}`;
-        });
-        currentHml = currentHml.replace(/(<BEGINNUMBER[^>]*?Picture=")(\d+)(")/g, (match, start, count, end) => {
-            return `${start}${parseInt(count, 10) + allImages.length}${end}`;
-        });
+        const totalPics = allImages.length + 10; // Padding for safety
+
+        // Update or Inject Picture count in DOCSETTING
+        if (currentHml.includes('<DOCSETTING')) {
+            if (currentHml.match(/<DOCSETTING[^>]*?Picture="/)) {
+                currentHml = currentHml.replace(/(<DOCSETTING[^>]*?Picture=")(\d+)(")/g, (match, start, count, end) => {
+                    return `${start}${parseInt(count, 10) + totalPics}${end}`;
+                });
+            } else {
+                // Inject attribute if missing
+                currentHml = currentHml.replace('<DOCSETTING', `<DOCSETTING Picture="${totalPics}"`);
+            }
+        }
+
+        // Update or Inject Picture count in BEGINNUMBER
+        if (currentHml.includes('<BEGINNUMBER')) {
+            if (currentHml.match(/<BEGINNUMBER[^>]*?Picture="/)) {
+                currentHml = currentHml.replace(/(<BEGINNUMBER[^>]*?Picture=")(\d+)(")/g, (match, start, count, end) => {
+                    return `${start}${parseInt(count, 10) + totalPics}${end}`;
+                });
+            } else {
+                currentHml = currentHml.replace('<BEGINNUMBER', `<BEGINNUMBER Picture="${totalPics}"`);
+            }
+        }
     }
 
     return {
@@ -303,6 +355,7 @@ export function generateHmlFromTemplate(
         imageCount: allImages.length
     };
 }
+
 
 function sanitizeNodeStyles(node: any, validSets: {
     ParaShape: Set<string>;
@@ -396,8 +449,131 @@ function sanitizeNodeStyles(node: any, validSets: {
         }
     }
 
+    // Repair PICTURE structure (Nuclear Reconstruction)
+    if (node.tagName === 'PICTURE') {
+        repairPictureStructure(node as Element, serializer);
+    }
+
     for (let i = 0; i < node.childNodes.length; i++) {
         sanitizeNodeStyles(node.childNodes[i], validSets, serializer);
+    }
+}
+
+function repairPictureStructure(pic: Element, serializer: any) {
+    // 1. Ensure IMAGE is a direct child
+    // Search deep for IMAGE and move it up if needed.
+    const images = pic.getElementsByTagName('IMAGE');
+    if (images.length > 0) {
+        const img = images[0];
+        if (img.parentNode !== pic) {
+            img.parentNode?.removeChild(img);
+            pic.appendChild(img);
+        }
+
+        // Ensure IMAGE has attributes matching Control File
+        if (!img.getAttribute('Effect')) img.setAttribute('Effect', 'RealPic');
+        if (!img.getAttribute('Alpha')) img.setAttribute('Alpha', '0');
+
+        // 2. Ensure SHAPEOBJECT exists
+        let so = pic.getElementsByTagName('SHAPEOBJECT')[0];
+        if (!so) {
+            so = pic.ownerDocument.createElement('SHAPEOBJECT');
+            // Useful attributes from Control File
+            so.setAttribute('InstId', String(Math.floor(Math.random() * 100000000) + 2000000000));
+            so.setAttribute('Lock', 'false');
+            so.setAttribute('NumberingType', 'Figure');
+            so.setAttribute('ZOrder', '0');
+            pic.insertBefore(so, pic.firstChild); // Should be first
+        }
+
+        // 3. Ensure SIZE exists inside SHAPEOBJECT
+        let size = so.getElementsByTagName('SIZE')[0];
+        if (!size) {
+            size = pic.ownerDocument.createElement('SIZE');
+            size.setAttribute('Width', '17700'); // ~50mm
+            size.setAttribute('Height', '12960'); // ~36mm
+            size.setAttribute('WidthRelTo', 'Absolute');
+            size.setAttribute('HeightRelTo', 'Absolute');
+            size.setAttribute('Protect', 'false');
+            so.appendChild(size);
+        }
+
+        // 4. Ensure POSITION exists inside SHAPEOBJECT (Contains TreatAsChar)
+        let pos = so.getElementsByTagName('POSITION')[0];
+        if (!pos) {
+            pos = pic.ownerDocument.createElement('POSITION');
+            pos.setAttribute('TreatAsChar', 'true'); // CRITICAL
+            pos.setAttribute('HorzAlign', 'Left');
+            pos.setAttribute('VertAlign', 'Top');
+            pos.setAttribute('HorzRelTo', 'Column');
+            pos.setAttribute('VertRelTo', 'Para');
+            pos.setAttribute('FlowWithText', 'true');
+            pos.setAttribute('AllowOverlap', 'false');
+            so.appendChild(pos);
+        } else {
+            // Force TreatAsChar if it exists but is false
+            pos.setAttribute('TreatAsChar', 'true');
+        }
+
+        // Remove TreatAsChar from PICTURE if present (It belongs in POSITION)
+        if (pic.hasAttribute('TreatAsChar')) {
+            pic.removeAttribute('TreatAsChar');
+        }
+
+        // 5. Ensure SHAPECOMPONENT exists (Sibling of SHAPEOBJECT in Control File)
+        let sc = pic.getElementsByTagName('SHAPECOMPONENT')[0];
+        if (!sc) {
+            sc = pic.ownerDocument.createElement('SHAPECOMPONENT');
+            sc.setAttribute('InstID', String(Math.floor(Math.random() * 1000000000)));
+            sc.setAttribute('OriWidth', '17700');
+            sc.setAttribute('OriHeight', '12960');
+            sc.setAttribute('XPos', '0');
+            sc.setAttribute('YPos', '0');
+            sc.setAttribute('GroupLevel', '0');
+            // Insert after SHAPEOBJECT
+            if (so.nextSibling) {
+                pic.insertBefore(sc, so.nextSibling);
+            } else {
+                pic.appendChild(sc);
+            }
+        }
+
+        // 6. Ensure IMAGERECT exists (Sibling)
+        let rect = pic.getElementsByTagName('IMAGERECT')[0];
+        if (!rect) {
+            rect = pic.ownerDocument.createElement('IMAGERECT');
+            rect.setAttribute('X0', '0');
+            rect.setAttribute('Y0', '0');
+            rect.setAttribute('X1', '17700');
+            rect.setAttribute('Y1', '0');
+            rect.setAttribute('X2', '17700');
+            rect.setAttribute('Y2', '12960');
+            rect.setAttribute('X3', '0');
+            rect.setAttribute('Y3', '12960');
+            // Insert after SHAPECOMPONENT
+            if (sc.nextSibling) {
+                pic.insertBefore(rect, sc.nextSibling);
+            } else {
+                pic.appendChild(rect);
+            }
+        }
+
+        // 7. Ensure IMAGECLIP exists (Sibling)
+        let clip = pic.getElementsByTagName('IMAGECLIP')[0];
+        if (!clip) {
+            clip = pic.ownerDocument.createElement('IMAGECLIP');
+            clip.setAttribute('Top', '0');
+            clip.setAttribute('Left', '0');
+            clip.setAttribute('Right', '17700'); // Should match width usually, or larger
+            clip.setAttribute('Bottom', '12960');
+
+            // Insert after IMAGERECT
+            if (rect.nextSibling) {
+                pic.insertBefore(clip, rect.nextSibling);
+            } else {
+                pic.appendChild(clip);
+            }
+        }
     }
 }
 
@@ -503,6 +679,7 @@ export function generateHmlFile(
     }));
     return generateHmlFromTemplate(templateContent, questionsWithImages);
 }
+
 
 export function generateHmlV2(questionsWithImages: QuestionWithImages[]): GenerateResult {
     throw new Error('Use generateHmlFromTemplate');

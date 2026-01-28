@@ -56,8 +56,12 @@ export function parseHmlV2(hmlContent: string): ParseResult {
     const paraAlignMap = extractParaAligns(doc);
     console.log(`[HML-V2 Parser] Found ${paraAlignMap.size} ParaShape Alignments`);
 
+    // NEW: Extract BINITEM Index Map (Index -> BinDataId)
+    const binItemMap = extractBinItemMap(doc);
+    console.log(`[HML-V2 Parser] Found ${binItemMap.size} BINITEM mappings`);
+
     // Step 4: Extract questions from BODY
-    const questions = extractQuestions(doc, styleNameMap, borderFillMap, paraAlignMap, images);
+    const questions = extractQuestions(doc, styleNameMap, borderFillMap, paraAlignMap, images, binItemMap);
     console.log(`[HML-V2 Parser] Extracted ${questions.length} questions`);
 
     return { questions, images };
@@ -74,6 +78,18 @@ function getTags(parent: Document | Element, tagName: string): Element[] {
         for (let i = 0; i < els.length; i++) combined.add(els[i]);
     }
     return Array.from(combined);
+}
+
+function extractBinItemMap(doc: Document): Map<string, string> {
+    const map = new Map<string, string>();
+    const binItems = getTags(doc, 'BINITEM');
+    for (let i = 0; i < binItems.length; i++) {
+        const binDataId = binItems[i].getAttribute('BinData');
+        if (binDataId) {
+            map.set(String(i + 1), binDataId);
+        }
+    }
+    return map;
 }
 
 function extractBorderFills(doc: Document): Map<string, string> {
@@ -164,7 +180,8 @@ function extractQuestions(
     styleMap: Map<string, string>,
     borderFillMap: Map<string, string>,
     paraAlignMap: Map<string, string>,
-    images: ExtractedImage[]
+    images: ExtractedImage[],
+    binItemMap: Map<string, string>
 ): ExtractedQuestion[] {
     const questions: ExtractedQuestion[] = [];
     const serializer = new XMLSerializer();
@@ -244,7 +261,7 @@ function extractQuestions(
             return serializer.serializeToString(clonedEl);
         }).join('');
 
-        const imageRefs = extractImageRefs(contentXml);
+        const imageRefs = extractImageRefs(contentXml, binItemMap);
         const equationScripts = extractEquationScripts(allElements);
 
         // NEW: Bundle binaries into contentXml for web preview fidelity (stowaway pattern)
@@ -325,7 +342,7 @@ function extractQuestions(
             return serializer.serializeToString(clonedEl);
         }).join('\n');
 
-        const imageRefs = extractImageRefs(contentXml);
+        const imageRefs = extractImageRefs(contentXml, binItemMap);
 
         // NEW: Bundle binaries into contentXml for web preview fidelity (stowaway pattern)
         let bundledXml = contentXml;
@@ -388,16 +405,25 @@ function extractEquationScripts(elements: Element[]): string[] {
 /**
  * Extract image references from XML
  * Looks for BinItem="X" in IMAGE tags inside PICTURE
+ * Resolves Index -> BinDataId using binItemMap
  */
-function extractImageRefs(xml: string): string[] {
+function extractImageRefs(xml: string, binItemMap: Map<string, string>): string[] {
     const refs: string[] = [];
 
     // Match BinItem="X" or BinData="X" (used in IMAGE/PICTURE tags)
     const regex = /(?:BinItem|BinData)="([^"]+)"/gi;
     let match;
     while ((match = regex.exec(xml)) !== null) {
-        if (!refs.includes(match[1])) {
-            refs.push(match[1]);
+        const rawRef = match[1];
+        let resolvedId = rawRef;
+
+        // Try to resolve using binItemMap (assuming rawRef is an Index)
+        if (binItemMap.has(rawRef)) {
+            resolvedId = binItemMap.get(rawRef) || rawRef;
+        }
+
+        if (!refs.includes(resolvedId)) {
+            refs.push(resolvedId);
         }
     }
 
