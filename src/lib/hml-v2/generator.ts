@@ -73,6 +73,7 @@ export function generateHmlFromTemplate(
         CharShape: new Set<string>(),
         Style: new Set<string>(),
         StyleNames: new Map<string, string>(), // Name -> Id
+        StyleParaShapes: new Map<string, string>(), // StyleId -> ParaShapeId
         BorderFills: new Map<string, string>(), // XML -> Id
         BorderFillIds: new Set<string>(), // Raw IDs in template
         InjectedBorders: [] as { id: string; xml: string }[],
@@ -83,22 +84,26 @@ export function generateHmlFromTemplate(
     // Collect valid Style IDs from MAPPINGTABLE
     const mappingTable = templateDoc.getElementsByTagName('MAPPINGTABLE')[0];
     if (mappingTable) {
-        const collect = (tagName: string, set: Set<string>, nameMap?: Map<string, string>) => {
+        const collect = (tagName: string, set: Set<string>, nameMap?: Map<string, string>, styleParaMap?: Map<string, string>) => {
             const elements = mappingTable.getElementsByTagName(tagName);
             for (let i = 0; i < elements.length; i++) {
                 const id = elements[i].getAttribute('Id');
                 const name = elements[i].getAttribute('Name');
+                const paraShape = elements[i].getAttribute('ParaShape');
                 if (id) {
                     set.add(id);
                     if (name && nameMap) {
                         nameMap.set(name, id);
+                    }
+                    if (tagName === 'STYLE' && paraShape && styleParaMap) {
+                        styleParaMap.set(id, paraShape);
                     }
                 }
             }
         };
         collect('PARASHAPE', validStyles.ParaShape);
         collect('CHARSHAPE', validStyles.CharShape);
-        collect('STYLE', validStyles.Style, validStyles.StyleNames);
+        collect('STYLE', validStyles.Style, validStyles.StyleNames, validStyles.StyleParaShapes);
 
         // Collect existing BorderFills to reuse them
         const bfs = mappingTable.getElementsByTagName('BORDERFILL');
@@ -125,8 +130,56 @@ export function generateHmlFromTemplate(
     }
 
     for (const qwi of questionsWithImages) {
-        const qDoc = parser.parseFromString(`<WRAP>${qwi.question.content_xml}</WRAP>`, 'text/xml');
+        // Remove Column Breaks (Ctrl+Shift+Enter) as requested
+        // Handles both Standalone Tags (<COLBREAK>, <hp:COLBREAK>) and Paragraph Attributes (ColumnBreak="true")
+        let cleanContent = qwi.question.content_xml
+            .replace(/<(?:hp:)?COLBREAK[^>]*?>/gi, '')
+            .replace(/ColumnBreak="true"/gi, '')
+            .replace(/ColumnBreak="1"/gi, '');
+        const qDoc = parser.parseFromString(`<WRAP>${cleanContent}</WRAP>`, 'text/xml');
         const root = qDoc.documentElement;
+
+        // Safety: Ensure only the first paragraph is treated as the "Question Start" (Style: 문제1)
+        // This prevents every line getting a number (1. 2. 3.) if Parser tagged them all as QUESTION
+        const allPs = root.getElementsByTagName('P');
+        for (let i = 1; i < allPs.length; i++) {
+            const p = allPs[i];
+            if (p.getAttribute('data-hml-style') === 'QUESTION') {
+                p.removeAttribute('data-hml-style'); // Fallback to safe default or "Body" style
+            }
+        }
+        // Auto-Numbering: Apply '문제1' Style (Ctrl+2) to first paragraph
+        // This force-applies the Style ID and its associated ParaShape ID
+        const firstP = root.getElementsByTagName('P')[0];
+        if (firstP) {
+            const TARGET_STYLE_NAME = '문제1';
+            const styleId = validStyles.StyleNames.get(TARGET_STYLE_NAME);
+
+            if (styleId) {
+                firstP.setAttribute('Style', styleId);
+                const paraShapeId = validStyles.StyleParaShapes.get(styleId);
+                if (paraShapeId) {
+                    firstP.setAttribute('ParaShape', paraShapeId);
+                }
+
+                // Force 'HamchoromBatang' (CharShape 11) on all TEXT nodes in this paragraph
+                // This overrides the Style's default font (ShinMyeongjo)
+                const textNodes = firstP.getElementsByTagName('TEXT');
+                for (let k = 0; k < textNodes.length; k++) {
+                    // Check if CharShape 11 is valid (it should be in this template)
+                    if (validStyles.CharShape.has('11')) {
+                        textNodes[k].setAttribute('CharShape', '11');
+                    } else {
+                        // Fallback/Warning if template changed
+                        console.warn('[HML-V2 Generator] CharShape "11" (Hamchorom) not found in template! Keeping default.');
+                    }
+                }
+
+                console.log(`[HML-V2 Generator] Manual Injection: Applied '문제1' (Id=${styleId}, Para=${paraShapeId}) + Hamchorom(CharShape=11) to First Paragraph`);
+            } else {
+                console.warn(`[HML-V2 Generator] Manual Injection FAILED: '문제1' style not found!`);
+            }
+        }
 
         // Remap images for this question
         const remap = new Map<string, number>();
@@ -362,6 +415,7 @@ function sanitizeNodeStyles(node: any, validSets: {
     CharShape: Set<string>;
     Style: Set<string>;
     StyleNames: Map<string, string>;
+    StyleParaShapes: Map<string, string>;
     BorderFills: Map<string, string>;
     BorderFillIds: Set<string>;
     InjectedBorders: { id: string; xml: string }[];
@@ -388,6 +442,14 @@ function sanitizeNodeStyles(node: any, validSets: {
                 const targetId = validSets.StyleNames.get(targetStyleName);
                 if (targetId) {
                     node.setAttribute('Style', targetId);
+                    // Also enforce ParaShape if available in the map
+                    const targetPara = validSets.StyleParaShapes.get(targetId);
+                    if (targetPara) {
+                        node.setAttribute('ParaShape', targetPara);
+                    }
+                    console.log(`[HML-V2 Generator] sanitizeNodeStyles: Applied Style '${targetStyleName}' (Id=${targetId}, Para=${targetPara}) to P`);
+                } else {
+                    console.warn(`[HML-V2 Generator] Style Name '${targetStyleName}' not found via validSets.StyleNames!`);
                 }
             }
         }
