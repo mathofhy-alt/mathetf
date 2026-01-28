@@ -129,7 +129,9 @@ export function generateHmlFromTemplate(
         if (id >= nextImageId) nextImageId = id + 1;
     }
 
+    let qIndex = 0;
     for (const qwi of questionsWithImages) {
+        qIndex++;
         // Remove Column Breaks (Ctrl+Shift+Enter) as requested
         // Handles both Standalone Tags (<COLBREAK>, <hp:COLBREAK>) and Paragraph Attributes (ColumnBreak="true")
         let cleanContent = qwi.question.content_xml
@@ -280,6 +282,13 @@ export function generateHmlFromTemplate(
         // Add 5 padding paragraphs between questions for better spacing
         const paddingPara = `<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR/></TEXT></P>`;
         combinedContentXmlFull += paddingPara.repeat(5);
+
+        // Layout: Force 2 Questions per Column
+        // Insert Column Break (Ctrl+Shift+Enter) after every 2nd question
+        // AND after the last question (Requested feature)
+        if (qIndex % 2 === 0 || qIndex === questionsWithImages.length) {
+            combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
+        }
     }
 
     // 2. Surgical Injection of NEW BORDERFILLs into Header
