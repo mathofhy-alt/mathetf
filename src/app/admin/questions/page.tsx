@@ -4,10 +4,17 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import QuestionRenderer from '@/components/QuestionRenderer';
 
+const UNIT_OPTIONS: Record<string, string[]> = {
+    '공통수학2': ['집합', '명제', '절대부등식', '함수', '역함수합성함수', '유리함수', '무리함수']
+};
+
 export default function AdminQuestionsPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
+
+    // State for Tabs
+    const [currentTab, setCurrentTab] = useState<'unsorted' | 'sorted'>('unsorted');
 
     // Filters
     const [search, setSearch] = useState('');
@@ -295,6 +302,54 @@ export default function AdminQuestionsPage() {
         }
     };
 
+    const handleMarkSorted = async (q: any) => {
+        // Optimistic UI Update: Remove from list immediately
+        setQuestions(prev => prev.filter(item => item.id !== q.id));
+
+        try {
+            const res = await fetch('/api/admin/questions', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ids: [q.id],
+                    updates: { work_status: 'sorted' }
+                })
+            });
+
+            if (!res.ok) {
+                // Revert on failure
+                fetchQuestions(); // Refresh is safer than manual revert logic
+                alert('소팅 상태 업데이트 실패');
+            }
+        } catch (e) {
+            console.error(e);
+            fetchQuestions();
+            alert('오류가 발생했습니다.');
+        }
+    };
+
+    // Return to unsorted ("Undo")
+    const handleMarkUnsorted = async (q: any) => {
+        setQuestions(prev => prev.filter(item => item.id !== q.id));
+        try {
+            const res = await fetch('/api/admin/questions', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ids: [q.id],
+                    updates: { work_status: 'unsorted' }
+                })
+            });
+            if (!res.ok) {
+                fetchQuestions();
+                alert('상태 업데이트 실패');
+            }
+        } catch (e) {
+            console.error(e);
+            fetchQuestions();
+        }
+    };
+
     const handleManualCapture = async (q: any, captureType: 'question' | 'solution' = 'question') => {
         try {
             const captureRes = await fetch('http://localhost:5000/trigger-manual-capture', {
@@ -430,6 +485,26 @@ export default function AdminQuestionsPage() {
         }
     };
 
+    const handleGenerateSingleEmbedding = async (q: any) => {
+        try {
+            const res = await fetch('/api/admin/embeddings/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ forceIds: [q.id] })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('AI 데이터 생성이 완료되었습니다.');
+                fetchQuestions(); // Refresh list to update status
+            } else {
+                alert('생성 실패: ' + data.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('오류가 발생했습니다.');
+        }
+    };
+
     const handleDeleteCapture = async (imageId: string, imageUrl: string) => {
         try {
             const res = await fetch('/api/admin/delete-capture', {
@@ -468,7 +543,8 @@ export default function AdminQuestionsPage() {
                 q: search,
                 school,
                 subject,
-                page: page.toString()
+                page: page.toString(),
+                status: currentTab === 'sorted' ? 'sorted' : 'unsorted'
             });
 
             const res = await fetch(`/api/admin/questions?${params.toString()}`);
@@ -485,9 +561,10 @@ export default function AdminQuestionsPage() {
         }
     };
 
+    // Re-fetch when tab changes
     useEffect(() => {
         fetchQuestions();
-    }, [page]);
+    }, [page, currentTab]); // Depend on currentTab
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -524,9 +601,32 @@ export default function AdminQuestionsPage() {
                 </div>
             )}
 
+            {/* Top Navigation Tabs */}
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit mb-4">
+                <button
+                    onClick={() => { setCurrentTab('unsorted'); setPage(1); }}
+                    className={`px-4 py-2 text-sm font-bold rounded-md transition-all ${currentTab === 'unsorted'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    미분류 (Unsorted)
+                </button>
+                <button
+                    onClick={() => { setCurrentTab('sorted'); setPage(1); }}
+                    className={`px-4 py-2 text-sm font-bold rounded-md transition-all ${currentTab === 'sorted'
+                        ? 'bg-white text-green-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    소팅완료 (Sorted)
+                </button>
+            </div>
+
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-                    기출 문항 관리 <span className="text-gray-400 font-normal text-xl ml-2">({total}문제)</span>
+                    {currentTab === 'sorted' ? '소팅 완료된 문항' : '기출 문항 관리'}
+                    <span className="text-gray-400 font-normal text-xl ml-2">({total}문제)</span>
                 </h1>
                 <div className="flex items-center gap-4">
                     {/* Search Stats */}
@@ -701,155 +801,416 @@ export default function AdminQuestionsPage() {
                     <p className="text-sm">검색 조건을 변경하거나 필터를 초기화해보세요.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                <div className={currentTab === 'unsorted' ? 'space-y-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8'}>
                     {questions.map((q) => (
-                        <div
-                            key={q.id}
-                            className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col relative group ${selectedIds.has(q.id) ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/10' : 'border-gray-200'
-                                }`}
-                            onClick={() => toggleSelect(q.id)}
-                        >
-                            {/* Card Header */}
-                            <div className="p-4 flex justify-between items-start bg-gray-50/80 border-b backdrop-blur-sm">
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-black text-blue-600 text-xl">#{q.question_number}</span>
-                                        <span className="text-sm bg-white border px-2 py-0.5 rounded text-gray-500 font-medium">
-                                            {q.subject}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-gray-700 mt-1 font-bold w-full">
-                                        {q.year && `${q.year}년`} {q.school} {q.grade} {q.semester}
-                                    </div>
-                                </div>
-                                <div onClick={(e) => e.stopPropagation()}>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedIds.has(q.id)}
-                                        onChange={() => toggleSelect(q.id)}
-                                        className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Card Body: Renderer */}
+                        currentTab === 'unsorted' ? (
+                            // Horizontal Layout (Unsorted)
                             <div
-                                className="flex-1 p-0 overflow-hidden relative bg-white cursor-pointer min-h-[400px] flex flex-col"
-                                onClick={(e) => { e.stopPropagation(); setSelectedQuestion(q); }}
+                                key={q.id}
+                                className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-row relative group ${selectedIds.has(q.id) ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/10' : 'border-gray-200'
+                                    }`}
+                                onClick={() => toggleSelect(q.id)}
                             >
-                                {/* Images Badge */}
-                                {(q.question_images && q.question_images.length > 0) && (
-                                    <div className="absolute top-2 right-2 z-10 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-md">
-                                        📸 {q.question_images.length}
-                                    </div>
-                                )}
+                                {/* Left Side: Question Content */}
+                                <div
+                                    className="flex-1 p-0 overflow-hidden relative bg-white cursor-pointer min-h-[300px] border-r"
+                                    onClick={(e) => { e.stopPropagation(); setSelectedQuestion(q); }}
+                                >
+                                    {/* Images Badge */}
+                                    {(q.question_images && q.question_images.length > 0) && (
+                                        <div className="absolute top-2 right-2 z-10 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-md">
+                                            📸 {q.question_images.length}
+                                        </div>
+                                    )}
 
-                                <div className="flex-1 relative">
-                                    <div className="absolute inset-0 overflow-hidden">
-                                        <div className="origin-top-left h-full w-full overflow-hidden">
-                                            <QuestionRenderer
-                                                xmlContent={q.content_xml}
-                                                showDownloadAction={false}
-                                                externalImages={q.question_images}
-                                                onDeleteCapture={handleDeleteCapture}
-                                                className="text-xl font-medium leading-relaxed [&_img]:!max-w-full"
-                                            />
+                                    <div className="flex-1 relative h-full flex flex-col">
+                                        <div className="flex-1 relative overflow-hidden">
+                                            <div className="origin-top-left h-full w-full overflow-hidden">
+                                                <QuestionRenderer
+                                                    xmlContent={q.content_xml}
+                                                    showDownloadAction={false}
+                                                    externalImages={q.question_images}
+                                                    onDeleteCapture={handleDeleteCapture}
+                                                    className="text-xl font-medium leading-relaxed [&_img]:!max-w-full"
+                                                />
+                                            </div>
+                                            {/* Gradient overlay */}
+                                            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+                                        </div>
+
+                                        {/* Solution View (Expanded) */}
+                                        {expandedSolutions.has(q.id) && (
+                                            <div className="mt-4 border-t pt-4 bg-yellow-50/30 p-4 rounded-lg">
+                                                <h4 className="font-bold text-gray-500 mb-2 flex items-center gap-2">
+                                                    <span>💡 해설</span>
+                                                    <span className="text-xs font-normal text-gray-400">(해설 캡쳐 이미지가 여기에 표시됩니다)</span>
+                                                </h4>
+                                                <QuestionRenderer
+                                                    xmlContent=""
+                                                    displayMode="solution"
+                                                    showDownloadAction={false}
+                                                    externalImages={q.question_images}
+                                                    onDeleteCapture={handleDeleteCapture}
+                                                    className="bg-transparent border-none shadow-none"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Controls & Metadata */}
+                                <div className="w-[320px] flex-shrink-0 flex flex-col bg-gray-50/50" onClick={e => e.stopPropagation()}>
+                                    {/* Header Info */}
+                                    <div className="p-4 border-b bg-white flex justify-between items-start">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-black text-blue-600 text-lg">#{q.question_number}</span>
+                                                <span className="text-xs bg-gray-100 border px-2 py-0.5 rounded text-gray-600 font-bold">
+                                                    {q.subject}
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-gray-500 font-bold">
+                                                {q.year} {q.school} {q.grade}
+                                            </div>
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(q.id)}
+                                            onChange={() => toggleSelect(q.id)}
+                                            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer mt-1"
+                                        />
+                                    </div>
+
+                                    {/* Quick Actions Form */}
+                                    <div className="p-4 space-y-3 flex-1 overflow-y-auto">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">단원 (Unit)</label>
+                                            {UNIT_OPTIONS[q.subject] ? (
+                                                <select
+                                                    className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                                                    value={q.unit || ''}
+                                                    onChange={async (e) => {
+                                                        const newVal = e.target.value;
+                                                        setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, unit: newVal } : item));
+                                                        await fetch('/api/admin/questions', {
+                                                            method: 'PATCH',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ ids: [q.id], updates: { unit: newVal } })
+                                                        });
+                                                    }}
+                                                >
+                                                    <option value="">선택하세요</option>
+                                                    {UNIT_OPTIONS[q.subject].map(u => (
+                                                        <option key={u} value={u}>{u}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                                                    value={q.unit || ''}
+                                                    placeholder="단원명 입력..."
+                                                    onChange={(e) => {
+                                                        const newVal = e.target.value;
+                                                        setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, unit: newVal } : item));
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        if (e.target.value !== q.unit) {
+                                                            fetch('/api/admin/questions', {
+                                                                method: 'PATCH',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ ids: [q.id], updates: { unit: e.target.value } })
+                                                            });
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">학년</label>
+                                                <select
+                                                    className="w-full border rounded px-2 py-1.5 text-sm bg-white"
+                                                    value={q.grade || '고1'}
+                                                    onChange={async (e) => {
+                                                        const newGrade = e.target.value;
+                                                        setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, grade: newGrade } : item));
+                                                        await fetch('/api/admin/questions', {
+                                                            method: 'PATCH',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ ids: [q.id], updates: { grade: newGrade } })
+                                                        });
+                                                    }}
+                                                >
+                                                    <option value="고1">고1</option>
+                                                    <option value="고2">고2</option>
+                                                    <option value="고3">고3</option>
+                                                    <option value="중1">중1</option>
+                                                    <option value="중2">중2</option>
+                                                    <option value="중3">중3</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">난이도</label>
+                                                <select
+                                                    className={`w-full border rounded px-2 py-1.5 text-sm font-bold text-center ${parseInt(q.difficulty) >= 8 ? 'bg-red-50 text-red-600 border-red-200' :
+                                                        parseInt(q.difficulty) >= 5 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                            'bg-green-50 text-green-700 border-green-200'
+                                                        }`}
+                                                    value={q.difficulty || '1'}
+                                                    onChange={(e) => handleQuickDifficultyChange(q, e.target.value)}
+                                                >
+                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                                                        <option key={n} value={n}>{n}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="pt-2 grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => setSelectedQuestion(q)}
+                                                className="bg-white border border-gray-300 text-gray-700 py-2 rounded text-xs font-bold hover:bg-gray-50"
+                                            >
+                                                상세 수정
+                                            </button>
+                                            <button
+                                                onClick={() => handleFindSimilar(q)}
+                                                className="bg-purple-50 border border-purple-200 text-purple-700 py-2 rounded text-xs font-bold hover:bg-purple-100"
+                                            >
+                                                🔍 유사 문항
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    const newSet = new Set(expandedSolutions);
+                                                    if (newSet.has(q.id)) newSet.delete(q.id);
+                                                    else newSet.add(q.id);
+                                                    setExpandedSolutions(newSet);
+                                                }}
+                                                className={`col-span-2 border py-2 rounded text-xs font-bold transition-colors ${expandedSolutions.has(q.id)
+                                                    ? 'bg-yellow-100 border-yellow-300 text-yellow-700'
+                                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {expandedSolutions.has(q.id) ? '🔽 상세보기 (닫기)' : '▶ 상세보기 (문제/해설)'}
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleManualCapture(q, 'question')}
+                                                className="bg-blue-50 border border-blue-200 text-blue-700 py-2 rounded text-xs font-bold hover:bg-blue-100"
+                                            >
+                                                📸 문제 캡쳐
+                                            </button>
+                                            <button
+                                                onClick={() => handleManualCapture(q, 'solution')}
+                                                className="bg-green-50 border border-green-200 text-green-700 py-2 rounded text-xs font-bold hover:bg-green-100"
+                                            >
+                                                📸 해설 캡쳐
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleGenerateSingleEmbedding(q)}
+                                                className={`col-span-2 border py-2 rounded text-xs font-bold transition-colors mt-2 flex items-center justify-center gap-2 ${q.embedding
+                                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                                                    : 'bg-gray-50 border-gray-300 text-gray-500 hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                <span>🤖 AI 데이터 생성</span>
+                                                {q.embedding ? (
+                                                    <span className="text-[10px] bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded-full">완료됨</span>
+                                                ) : (
+                                                    <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">미생성</span>
+                                                )}
+                                            </button>
                                         </div>
                                     </div>
-                                    {/* Gradient overlay for long content */}
-                                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
-                                </div>
 
-                                {/* Difficulty & Unit Badge (Overlay at bottom) */}
-                                <div className="px-3 py-2 bg-white/90 border-t flex justify-between items-center text-xs">
-                                    <div className="flex items-center gap-1 overflow-hidden">
-                                        <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded truncate max-w-[100px]">
-                                            {q.unit || '단원 미분류'}
-                                        </span>
-                                    </div>
-                                    <div onClick={e => e.stopPropagation()}>
-                                        <select
-                                            className={`border rounded px-1.5 py-0.5 text-xs font-bold appearance-none text-center w-10 ${parseInt(q.difficulty) >= 8 ? 'bg-red-50 text-red-600 border-red-200' :
-                                                parseInt(q.difficulty) >= 5 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                                                    'bg-green-50 text-green-700 border-green-200'
-                                                }`}
-                                            value={q.difficulty || '1'}
-                                            onChange={(e) => handleQuickDifficultyChange(q, e.target.value)}
+                                    {/* Footer: Sort Complte Button */}
+                                    <div className="p-4 border-t bg-white">
+                                        <button
+                                            onClick={() => handleMarkSorted(q)}
+                                            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg text-sm font-black shadow-sm transition-all flex items-center justify-center gap-2 transform active:scale-95"
                                         >
-                                            {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-                                                <option key={n} value={n}>{n}</option>
-                                            ))}
-                                        </select>
+                                            <span>✅ 소팅 완료</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Card Footer: Expanded Solution */}
-                            {expandedSolutions.has(q.id) && (
-                                <div className="bg-green-50/50 border-t-2 border-green-100 p-3 animate-in slide-in-from-top-2">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs font-bold text-green-700 flex items-center gap-1">
-                                            📝 해설 (Solution)
-                                        </span>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleManualCapture(q, 'solution');
-                                            }}
-                                            className="text-[10px] bg-white border border-green-200 text-green-600 px-2 py-0.5 rounded hover:bg-green-50"
-                                        >
-                                            + 추가 캡쳐
-                                        </button>
+                        ) : (
+                            // Vertical Layout (Sorted - Existing)
+                            <div
+                                key={q.id}
+                                className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col relative group ${selectedIds.has(q.id) ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/10' : 'border-gray-200'
+                                    }`}
+                                onClick={() => toggleSelect(q.id)}
+                            >
+                                {/* Card Header */}
+                                <div className="p-4 flex justify-between items-start bg-gray-50/80 border-b backdrop-blur-sm">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            {/* Status Badge */}
+                                            {q.work_status === 'sorted' && (
+                                                <span className="bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 rounded border border-green-200 font-bold">
+                                                    완료
+                                                </span>
+                                            )}
+                                            <span className="font-black text-blue-600 text-xl">#{q.question_number}</span>
+                                            <span className="text-sm bg-white border px-2 py-0.5 rounded text-gray-500 font-medium">
+                                                {q.subject}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-gray-700 mt-1 font-bold w-full">
+                                            {q.year && `${q.year}년`} {q.school} {q.grade} {q.semester}
+                                        </div>
                                     </div>
-                                    <div className="max-h-64 overflow-y-auto bg-white rounded border border-green-100 p-2 text-xs">
-                                        <QuestionRenderer
-                                            xmlContent=""
-                                            showDownloadAction={false}
-                                            externalImages={q.question_images}
-                                            onDeleteCapture={handleDeleteCapture}
-                                            displayMode="solution"
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(q.id)}
+                                            onChange={() => toggleSelect(q.id)}
+                                            className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                         />
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Card Actions */}
-                            <div className="p-2 border-t bg-gray-50 flex gap-1">
-                                <button
+                                {/* Card Body: Renderer */}
+                                <div
+                                    className="flex-1 p-0 overflow-hidden relative bg-white cursor-pointer min-h-[400px] flex flex-col"
                                     onClick={(e) => { e.stopPropagation(); setSelectedQuestion(q); }}
-                                    className="flex-1 bg-white border border-gray-200 text-gray-700 py-1.5 rounded text-xs font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
                                 >
-                                    수정
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleManualCapture(q, 'question'); }}
-                                    className="flex-1 bg-blue-50 border border-blue-100 text-blue-600 py-1.5 rounded text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
-                                >
-                                    📸 문제
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const newSet = new Set(expandedSolutions);
-                                        if (newSet.has(q.id)) newSet.delete(q.id);
-                                        else newSet.add(q.id);
-                                        setExpandedSolutions(newSet);
-                                    }}
-                                    className={`flex-1 border py-1.5 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1 ${expandedSolutions.has(q.id)
-                                        ? 'bg-green-600 border-green-600 text-white'
-                                        : 'bg-green-50 border-green-100 text-green-600 hover:bg-green-100'
-                                        }`}
-                                >
-                                    {expandedSolutions.has(q.id) ? '접기' : '📝 해설'}
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleFindSimilar(q); }}
-                                    className="flex-1 bg-purple-50 border border-purple-100 text-purple-600 py-1.5 rounded text-xs font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-1"
-                                >
-                                    🔍 유사
-                                </button>
+                                    {/* Images Badge */}
+                                    {(q.question_images && q.question_images.length > 0) && (
+                                        <div className="absolute top-2 right-2 z-10 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-md">
+                                            📸 {q.question_images.length}
+                                        </div>
+                                    )}
+
+                                    <div className="flex-1 relative">
+                                        <div className="absolute inset-0 overflow-hidden">
+                                            <div className="origin-top-left h-full w-full overflow-hidden">
+                                                <QuestionRenderer
+                                                    xmlContent={q.content_xml}
+                                                    showDownloadAction={false}
+                                                    externalImages={q.question_images}
+                                                    onDeleteCapture={handleDeleteCapture}
+                                                    className="text-xl font-medium leading-relaxed [&_img]:!max-w-full"
+                                                />
+                                            </div>
+                                        </div>
+                                        {/* Gradient overlay for long content */}
+                                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+                                    </div>
+
+                                    {/* Difficulty & Unit Badge (Overlay at bottom) */}
+                                    <div className="px-3 py-2 bg-white/90 border-t flex justify-between items-center text-xs">
+                                        <div className="flex items-center gap-1 overflow-hidden">
+                                            <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded truncate max-w-[100px]">
+                                                {q.unit || '단원 미분류'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                            <select
+                                                className={`border rounded px-1.5 py-0.5 text-xs font-bold appearance-none text-center w-10 ${parseInt(q.difficulty) >= 8 ? 'bg-red-50 text-red-600 border-red-200' :
+                                                    parseInt(q.difficulty) >= 5 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                        'bg-green-50 text-green-700 border-green-200'
+                                                    }`}
+                                                value={q.difficulty || '1'}
+                                                onChange={(e) => handleQuickDifficultyChange(q, e.target.value)}
+                                            >
+                                                {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                                                    <option key={n} value={n}>{n}</option>
+                                                ))}
+                                            </select>
+
+                                            {/* Sort Action Button */}
+                                            {currentTab === 'unsorted' ? (
+                                                <button
+                                                    onClick={() => handleMarkSorted(q)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors shadow-sm"
+                                                >
+                                                    소팅완료
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleMarkUnsorted(q)}
+                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-xs font-bold transition-colors"
+                                                >
+                                                    재검토
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Card Footer: Expanded Solution */}
+                                {expandedSolutions.has(q.id) && (
+                                    <div className="bg-green-50/50 border-t-2 border-green-100 p-3 animate-in slide-in-from-top-2">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-xs font-bold text-green-700 flex items-center gap-1">
+                                                📝 해설 (Solution)
+                                            </span>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleManualCapture(q, 'solution');
+                                                }}
+                                                className="text-[10px] bg-white border border-green-200 text-green-600 px-2 py-0.5 rounded hover:bg-green-50"
+                                            >
+                                                + 추가 캡쳐
+                                            </button>
+                                        </div>
+                                        <div className="max-h-64 overflow-y-auto bg-white rounded border border-green-100 p-2 text-xs">
+                                            <QuestionRenderer
+                                                xmlContent=""
+                                                showDownloadAction={false}
+                                                externalImages={q.question_images}
+                                                onDeleteCapture={handleDeleteCapture}
+                                                displayMode="solution"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Card Actions */}
+                                <div className="p-2 border-t bg-gray-50 flex gap-1">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setSelectedQuestion(q); }}
+                                        className="flex-1 bg-white border border-gray-200 text-gray-700 py-1.5 rounded text-xs font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                    >
+                                        수정
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleManualCapture(q, 'question'); }}
+                                        className="flex-1 bg-blue-50 border border-blue-100 text-blue-600 py-1.5 rounded text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        📸 문제
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const newSet = new Set(expandedSolutions);
+                                            if (newSet.has(q.id)) newSet.delete(q.id);
+                                            else newSet.add(q.id);
+                                            setExpandedSolutions(newSet);
+                                        }}
+                                        className={`flex-1 border py-1.5 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1 ${expandedSolutions.has(q.id)
+                                            ? 'bg-green-600 border-green-600 text-white'
+                                            : 'bg-green-50 border-green-100 text-green-600 hover:bg-green-100'
+                                            }`}
+                                    >
+                                        {expandedSolutions.has(q.id) ? '접기' : '📝 해설'}
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleFindSimilar(q); }}
+                                        className="flex-1 bg-purple-50 border border-purple-100 text-purple-600 py-1.5 rounded text-xs font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        🔍 유사
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )
                     ))}
                 </div>
             )}
@@ -1146,11 +1507,28 @@ export default function AdminQuestionsPage() {
                                                     </div>
                                                 </div>
                                                 <div className="p-4 flex-1 overflow-hidden" style={{ minHeight: '300px' }}>
-                                                    {simQ.plain_text ? (
-                                                        <p className="whitespace-pre-wrap text-sm">{simQ.plain_text.slice(0, 200)}...</p>
-                                                    ) : (
-                                                        <p className="text-gray-400 italic">내용 미리보기 없음</p>
-                                                    )}
+                                                    {/* Prioritize Manual Capture (Question) */}
+                                                    {(() => {
+                                                        const manualCapture = simQ.question_images?.find((img: any) => img.original_bin_id?.startsWith("MANUAL_Q_"));
+                                                        if (manualCapture) {
+                                                            return (
+                                                                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                                                    <img
+                                                                        src={manualCapture.data || manualCapture.public_url}
+                                                                        alt="Manual Capture"
+                                                                        className="max-w-full max-h-full object-contain"
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        } else {
+                                                            // Fallback to plain text if no image
+                                                            return simQ.plain_text ? (
+                                                                <p className="whitespace-pre-wrap text-sm">{simQ.plain_text.slice(0, 200)}...</p>
+                                                            ) : (
+                                                                <p className="text-gray-400 italic">내용 미리보기 없음</p>
+                                                            );
+                                                        }
+                                                    })()}
                                                     <div className="mt-4 text-center">
                                                         <button
                                                             className="text-purple-600 hover:text-purple-800 text-sm font-bold underline"

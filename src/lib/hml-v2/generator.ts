@@ -18,10 +18,12 @@ export function generateHmlFromTemplate(
     const serializer = new XMLSerializer();
     const parser = new DOMParser();
 
+
     // 0. Extract Box Patterns from Template
     const templateDoc = parser.parseFromString(templateContent, 'text/xml');
     const boxPatterns: Record<string, string> = {};
     const tables = Array.from(templateDoc.getElementsByTagName('TABLE'));
+    const patternsToRemove: string[] = []; // Store InstIds of tables to remove
 
     for (const table of tables) {
         const ps = Array.from(table.getElementsByTagName('P'));
@@ -32,12 +34,23 @@ export function generateHmlFromTemplate(
             if (pText === '보기박스') { role = 'BOX_BOGI'; break; }
             if (pText === '조건박스') { role = 'BOX_JOKUN'; break; }
             if (pText === '미주박스') { role = 'BOX_MIJU'; break; }
+            if (pText === '박스안') { role = 'BOX_INNER'; break; }
         }
 
         if (role) {
             // Store the pattern
             console.log(`[HML-V2 Surgical Generator] Extracted pattern for role: ${role}`);
             boxPatterns[role] = serializer.serializeToString(table);
+
+            // Find InstId for Surgical Removal
+            const so = table.getElementsByTagName('SHAPEOBJECT')[0];
+            if (so) {
+                const instId = so.getAttribute('InstId');
+                if (instId) {
+                    patternsToRemove.push(instId);
+                    console.log(`[HML-V2 Surgical Generator] Marked table for removal (InstId=${instId})`);
+                }
+            }
         }
     }
 
@@ -55,14 +68,20 @@ export function generateHmlFromTemplate(
             // Remove everything from marker until just before </SECTION>
             cleanedTemplate = cleanedTemplate.substring(0, markerIndex) + cleanedTemplate.substring(sectionEndIndex);
         } else {
-            // Fallback: just remove the marker
             cleanedTemplate = cleanedTemplate.replace(marker, '');
+        }
+    } else {
+        // Fallback: Surgical Removal by InstId
+        for (const instId of patternsToRemove) {
+            cleanedTemplate = removeTableByInstId(cleanedTemplate, instId);
         }
     }
 
     // 1. Process Questions to get their Paragraphs and Images
     let combinedContentXmlFull = '';
     const allImages: { originalId: string; newId: number; image: DbQuestionImage }[] = [];
+
+
 
     // Scan template for existing Max ID and Style IDs
     let nextImageId = 1;
@@ -319,7 +338,17 @@ export function generateHmlFromTemplate(
         console.warn(`[HML-V2 Surgical Generator] Anchor "${anchor}" NOT found in template!`);
     }
 
-    currentHml = currentHml.replace(anchor, combinedContentXmlFull);
+    // Try to replace the entire containing paragraph first (Safe Mode)
+    // This handles cases where {{CONTENT_HERE}} is inside <P><TEXT><CHAR>...</CHAR></TEXT></P>
+    // We want to replace the whole P tag with our content P tags.
+    const anchorRegex = /<P[^>]*>\s*<TEXT[^>]*>\s*(?:<CHAR>\s*)?{{CONTENT_HERE}}(?:\s*<\/CHAR>)?\s*<\/TEXT>\s*<\/P>/;
+
+    if (anchorRegex.test(currentHml)) {
+        currentHml = currentHml.replace(anchorRegex, combinedContentXmlFull);
+    } else {
+        // Fallback to direct string replacement (Legacy Mode or if anchor is bare)
+        currentHml = currentHml.replace(anchor, combinedContentXmlFull);
+    }
 
     // 3. Surgical Injection of BINDATALIST into HEAD
     if (allImages.length > 0) {
@@ -443,9 +472,18 @@ function sanitizeNodeStyles(node: any, validSets: {
         const semanticRole = node.getAttribute('data-hml-style');
         if (semanticRole) {
             let targetStyleName = '';
+            // 1. Priority: Semantic Role Default Mapping
             if (semanticRole === 'QUESTION') targetStyleName = '문제1';
             else if (semanticRole === 'CHOICE') targetStyleName = '오선지';
             else if (semanticRole.startsWith('BOX_')) targetStyleName = '박스안';
+
+            // 2. High Priority: Specific Original Style Preservation
+            // If the original HML had a specific style name (e.g. "3선지") and the current template SUPPORTS it, use it.
+            const originalStyleName = node.getAttribute('data-hml-orig-style');
+            if (originalStyleName && validSets.StyleNames.has(originalStyleName)) {
+                console.log(`[HML-V2 Generator] Preserving Original Style: '${originalStyleName}' matches template!`);
+                targetStyleName = originalStyleName;
+            }
 
             if (targetStyleName) {
                 const targetId = validSets.StyleNames.get(targetStyleName);
@@ -754,4 +792,79 @@ export function generateHmlFile(
 
 export function generateHmlV2(questionsWithImages: QuestionWithImages[]): GenerateResult {
     throw new Error('Use generateHmlFromTemplate');
+}
+
+function removeTableByInstId(hml: string, instId: string): string {
+    // 1. Find the InstId location
+    const instIdMarker = `InstId="${instId}"`;
+    const instIdIdx = hml.indexOf(instIdMarker);
+    if (instIdIdx === -1) {
+        console.warn(`[HML-V2 Surgical Generator] Could not find InstId="${instId}" to remove table.`);
+        return hml;
+    }
+
+    // 2. Scan BACKWARDS to find the opening <TABLE> tag that contains this InstId
+    let tableStartIdx = -1;
+    let searchPos = instIdIdx;
+
+    while (true) {
+        const openIdx = hml.lastIndexOf('<TABLE', searchPos);
+        if (openIdx === -1) break; // Not found?
+
+        const closeIdx = hml.indexOf('</TABLE>', openIdx);
+        // If the table closes *before* our InstId, it's a sibling. Keep searching back.
+        if (closeIdx !== -1 && closeIdx < instIdIdx) {
+            searchPos = openIdx - 1;
+            continue;
+        }
+
+        // Found it! This TABLE opens before InstId and doesn't close before it.
+        tableStartIdx = openIdx;
+        break;
+    }
+
+    if (tableStartIdx === -1) {
+        console.warn(`[HML-V2 Surgical Generator] Could not find opening <TABLE> for InstId="${instId}".`);
+        return hml;
+    }
+
+    // 3. Scan FORWARDS to find the matching </TABLE>
+    // We need to handle nesting of <TABLE> ... </TABLE>
+    let nesting = 0;
+    let scanPos = tableStartIdx + '<TABLE'.length;
+    let tableEndIdx = -1;
+
+    while (scanPos < hml.length) {
+        const nextOpen = hml.indexOf('<TABLE', scanPos);
+        const nextClose = hml.indexOf('</TABLE>', scanPos);
+
+        if (nextClose === -1) break; // Error: Unclosed table
+
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+            // Nested table opens
+            nesting++;
+            scanPos = nextOpen + '<TABLE'.length;
+        } else {
+            // Table closes
+            if (nesting > 0) {
+                nesting--;
+                scanPos = nextClose + '</TABLE>'.length;
+            } else {
+                // Determine the end of </TABLE>
+                tableEndIdx = nextClose + '</TABLE>'.length;
+                break;
+            }
+        }
+    }
+
+    if (tableEndIdx !== -1) {
+        console.log(`[HML-V2 Surgical Generator] Surgically removing TABLE for InstId="${instId}" (Range: ${tableStartIdx}-${tableEndIdx})`);
+        // Also remove following newline/whitespace if possible to leave clean XML
+        let cutStart = tableStartIdx;
+        let cutEnd = tableEndIdx;
+
+        return hml.substring(0, cutStart) + hml.substring(cutEnd);
+    }
+
+    return hml;
 }

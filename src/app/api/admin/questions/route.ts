@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
+// GET: Filter by work_status
 export async function GET(req: NextRequest) {
     const supabase = createAdminClient();
     const { searchParams } = new URL(req.url);
@@ -8,6 +9,7 @@ export async function GET(req: NextRequest) {
     const q = searchParams.get('q') || '';
     const school = searchParams.get('school') || '';
     const subject = searchParams.get('subject') || '';
+    const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
     const page = parseInt(searchParams.get('page') || '1');
     const limit = 20;
     const start = (page - 1) * limit;
@@ -16,21 +18,27 @@ export async function GET(req: NextRequest) {
         .from('questions')
         .select('*, question_images(*)', { count: 'exact' });
 
+    // Status Filter
+    if (status !== 'all') {
+        if (status === 'sorted') {
+            query = query.eq('work_status', 'sorted');
+        } else {
+            // Default is everything NOT sorted (includes null, unsorted, empty string, etc)
+            query = query.or('work_status.neq.sorted,work_status.is.null');
+        }
+    }
+
     if (q) {
         query = query.ilike('plain_text', `%${q}%`);
     }
     if (school) {
-        // source_db_id usually starts with "School_Year_Semester_Subject"
         query = query.ilike('source_db_id', `%${school}%`);
     }
     if (subject) {
         query = query.eq('subject', subject);
     }
 
-    // Default order: newest first
     query = query.order('created_at', { ascending: false });
-
-    // Pagination
     query = query.range(start, start + limit - 1);
 
     const { data, error, count } = await query;
@@ -58,9 +66,6 @@ export async function DELETE(req: NextRequest) {
         let query = supabase.from('questions').delete();
 
         if (deleteAll) {
-            // Delete all records.
-            // 'id' is UUID, so we can't compare with number.
-            // Use 'question_number' (numeric) to match all rows.
             query = query.gte('question_number', 0);
         } else if (ids && Array.isArray(ids) && ids.length > 0) {
             query = query.in('id', ids);
@@ -92,7 +97,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         // Sanitize allowed updates
-        const allowedFields = ['grade', 'unit', 'difficulty', 'region', 'district', 'school', 'year', 'semester'];
+        const allowedFields = ['grade', 'unit', 'difficulty', 'region', 'district', 'school', 'year', 'semester', 'work_status'];
         const cleanUpdates: any = {};
         for (const key of allowedFields) {
             if (updates[key] !== undefined) {
