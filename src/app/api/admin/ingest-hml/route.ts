@@ -12,7 +12,14 @@ const STORAGE_BUCKET = 'hwpx';
  * - Questions in 'questions' table
  * - Images in 'question_images' table
  */
+import { requireAdmin } from '@/utils/admin-auth';
+
+// ...
+
 export async function POST(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     try {
         const formData = await req.formData();
         const file = formData.get('file') as File;

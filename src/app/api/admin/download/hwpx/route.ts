@@ -6,12 +6,18 @@ import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
+import { requireAdmin } from '@/utils/admin-auth';
+
+// ...
+
 export async function POST(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     const supabase = createClient();
 
-    // Auth Check
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return new NextResponse('Unauthorized', { status: 401 });
+    // Generted by requireAdmin check
+
 
     try {
         const body = await req.json();

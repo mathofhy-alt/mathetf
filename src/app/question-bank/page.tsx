@@ -12,7 +12,11 @@ export default function QuestionBankPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [showAutoModal, setShowAutoModal] = useState(false);
-    const [user, setUser] = useState<any>(null); // Placeholder for user auth
+    const [user, setUser] = useState<any>(null);
+
+    // Personal DB State
+    const [purchasedDbs, setPurchasedDbs] = useState<any[]>([]);
+    const [selectedDb, setSelectedDb] = useState<string>('');
 
     const supabase = createClient();
 
@@ -20,15 +24,78 @@ export default function QuestionBankPage() {
         // Check auth
         supabase.auth.getUser().then(({ data }) => {
             setUser(data.user);
+            if (data.user) fetchPurchasedDbs(data.user.id);
         });
 
-        const fetchQuestions = async () => {
-            const { data } = await supabase.from('questions').select('*').limit(20);
-            if (data) setQuestions(data);
-            setLoading(false);
-        };
         fetchQuestions();
     }, []);
+
+    const fetchPurchasedDbs = async (userId: string) => {
+        // Join purchases with exam_materials to get DB details
+        const { data, error } = await supabase
+            .from('purchases')
+            .select(`
+                *,
+                exam_materials!inner (
+                    id, title, school, grade, semester, exam_type, subject, file_type
+                )
+            `)
+            .eq('user_id', userId)
+            .eq('exam_materials.file_type', 'DB');
+
+        if (data) {
+            setPurchasedDbs(data.map((p: any) => p.exam_materials));
+        }
+    };
+
+    const fetchQuestions = async (dbFilter?: any) => {
+        setLoading(true);
+        let query = supabase
+            .from('questions')
+            .select('*')
+            .eq('work_status', 'sorted') // Only fetch sorted questions
+            .limit(50);
+
+        if (dbFilter) {
+            // Apply strict filters based on the selected DB
+            if (dbFilter.school) query = query.eq('school', dbFilter.school);
+
+            // Year Logic: exam_materials might lack year column, parse from title if needed
+            let filterYear = dbFilter.year;
+            if (!filterYear && dbFilter.title) {
+                const yearMatch = dbFilter.title.match(/20[0-9]{2}/);
+                if (yearMatch) filterYear = yearMatch[0];
+            }
+            if (filterYear) query = query.eq('year', filterYear);
+
+            if (dbFilter.grade) query = query.eq('grade', dbFilter.grade);
+
+            // Semester Logic: Map integer (1, 2) to string pattern if needed
+            // DB has '1', '2'. Questions table has '1학기중간', etc.
+            // If dbFilter.semester represents just 1 or 2, we should filter loosely or map?
+            // Actually, questions table semester is text. 
+            // Let's assume for now we filter by starting string "1" or "2"
+            if (dbFilter.semester) {
+                query = query.ilike('semester', `${dbFilter.semester}%`);
+            }
+
+            if (dbFilter.subject) query = query.ilike('subject', `%${dbFilter.subject}%`);
+        }
+
+        const { data } = await query;
+        if (data) setQuestions(data);
+        setLoading(false);
+    };
+
+    const handleDbSelect = (dbId: string) => {
+        setSelectedDb(dbId);
+        if (dbId === '') {
+            fetchQuestions(); // Reset
+        } else {
+            const db = purchasedDbs.find(d => d.id === dbId);
+            if (db) fetchQuestions(db);
+        }
+    };
 
     const toggleCart = (question: any) => {
         if (cart.find(q => q.id === question.id)) {
@@ -43,7 +110,6 @@ export default function QuestionBankPage() {
         setIsGenerating(true);
 
         try {
-            // Updated to use the new HML Generator (Pure TypeScript, No Python)
             const response = await fetch('/api/pro/download/hml', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -55,12 +121,10 @@ export default function QuestionBankPage() {
                 throw new Error(errText || 'Download failed');
             }
 
-            // Trigger download
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            // Use .hml extension for the new format
             a.download = `Exam_Paper_${new Date().toISOString().slice(0, 10)}.hml`;
             document.body.appendChild(a);
             a.click();
@@ -77,10 +141,60 @@ export default function QuestionBankPage() {
 
     return (
         <div className="flex bg-gray-100 h-full">
+            {/* Sidebar for Filters */}
+            <div className="w-64 bg-white border-r p-4 flex flex-col gap-4">
+                <h2 className="font-bold text-lg text-slate-800">필터 설정</h2>
+
+                {/* Personal DB Filter */}
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                        내 보유 DB (학교별)
+                    </label>
+                    <select
+                        value={selectedDb}
+                        onChange={(e) => handleDbSelect(e.target.value)}
+                        className="w-full text-sm border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                        <option value="">전체 문제 보기</option>
+                        {purchasedDbs.map(db => (
+                            <option key={db.id} value={db.id}>
+                                {db.school} {db.exam_year} ({db.grade}학년)
+                            </option>
+                        ))}
+                    </select>
+                    {purchasedDbs.length === 0 && user && (
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            * 보유한 개인 DB가 없습니다.<br />메인 페이지에서 개인 DB를 구매해보세요.
+                        </p>
+                    )}
+                </div>
+
+                {selectedDb && (
+                    <div className="bg-indigo-50 p-3 rounded text-xs text-indigo-700 space-y-1">
+                        <p className="font-bold">선택된 DB 정보:</p>
+                        {(() => {
+                            const db = purchasedDbs.find(d => d.id === selectedDb);
+                            if (!db) return null;
+                            return (
+                                <>
+                                    <p>학교: {db.school}</p>
+                                    <p>년도: {db.exam_year}</p>
+                                    <p>학년: {db.grade}학년 {db.semester}학기</p>
+                                    <p>범위: {db.exam_type}</p>
+                                    <p>과목: {db.subject}</p>
+                                </>
+                            );
+                        })()}
+                    </div>
+                )}
+            </div>
+
             {/* Main List */}
             <div className="flex-1 p-6 overflow-y-auto">
                 <header className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800">문제 검색</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">
+                        {selectedDb ? 'DB 문제 목록' : '전체 문제 검색'}
+                    </h1>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setShowAutoModal(true)}
@@ -91,62 +205,72 @@ export default function QuestionBankPage() {
                     </div>
                 </header>
 
-                {/* Search Bar */}
+                {/* Search Bar - Optional, keep valid even with DB selected */}
                 <div className="mb-6">
                     <input
                         type="text"
-                        placeholder="단원명, 문제 내용 검색..."
+                        placeholder="문제 내용 검색..."
                         className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                 </div>
 
                 {loading ? (
-                    <div>Loading...</div>
+                    <div className="flex justify-center py-20">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                        {questions.map((q) => {
+                        {questions.length > 0 ? questions.map((q) => {
                             const inCart = !!cart.find(c => c.id === q.id);
                             return (
                                 <div
                                     key={q.id}
                                     onClick={() => toggleCart(q)}
                                     className={`relative rounded-xl shadow-sm border p-4 transition cursor-pointer select-none
-                    ${inCart ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500' : 'bg-white hover:shadow-md'}
-                  `}
+                                        ${inCart ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500' : 'bg-white hover:shadow-md'}
+                                    `}
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-medium">
-                                            {q.subject || '수학'}
-                                        </span>
-                                        <span className={`text-xs px-2 py-1 rounded font-medium ${q.difficulty === 'Hard' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                                            }`}>
+                                        <div className="flex gap-1">
+                                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-medium">
+                                                {q.subject || '수학'}
+                                            </span>
+                                            <span className="bg-slate-100 text-slate-800 text-xs px-2 py-1 rounded font-medium">
+                                                {q.school}
+                                            </span>
+                                        </div>
+                                        <span className={`text-xs px-2 py-1 rounded font-medium ${q.difficulty === 'Hard' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                                             {q.difficulty || '중'}
                                         </span>
                                     </div>
 
-                                    <div className="h-24 bg-gray-50 rounded mb-2 overflow-hidden p-2 text-xs text-gray-500 border">
+                                    <div className="h-24 bg-gray-50 rounded mb-2 overflow-hidden p-2 text-xs text-gray-500 border relative">
                                         {q.plain_text ? q.plain_text.slice(0, 100) + '...' : '(내용 없음)'}
                                     </div>
 
                                     <div className="flex justify-between items-center mt-2">
                                         <div className="text-xs text-gray-400">
-                                            {q.source_db_id?.split('_')[0] || 'Unknown Source'}
+                                            {// Show source better
+                                                `${q.exam_year} | ${q.grade}학년 | ${q.exam_type}`
+                                            }
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                className="text-xs text-gray-500 hover:text-black underline"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    alert('유사 문항 검색 (Prototype): 같은 단원/난이도 문제를 찾아옵니다.');
-                                                }}
-                                            >
-                                                유사문항
-                                            </button>
-                                        </div>
+                                        <button
+                                            className="text-xs text-gray-500 hover:text-black underline"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                alert('유사 문항 검색 (Prototype)');
+                                            }}
+                                        >
+                                            유사문항
+                                        </button>
                                     </div>
                                 </div>
                             );
-                        })}
+                        }) : (
+                            <div className="col-span-2 text-center py-10 text-slate-400">
+                                {selectedDb ? '이 DB에 해당하는 문제가 아직 등록되지 않았습니다.' : '검색 결과가 없습니다.'}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -167,7 +291,7 @@ export default function QuestionBankPage() {
                         <div key={q.id} className="border rounded p-3 text-sm flex justify-between group">
                             <div>
                                 <span className="font-bold mr-2 text-indigo-600">{idx + 1}.</span>
-                                {q.subject} - {q.difficulty}
+                                {q.school} - {q.difficulty}
                             </div>
                             <button
                                 onClick={() => toggleCart(q)}

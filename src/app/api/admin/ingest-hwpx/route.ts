@@ -5,7 +5,11 @@ import { renderMathToSvg } from '@/lib/math-renderer';
 
 const STORAGE_BUCKET = 'hwpx';
 
+import { requireAdmin } from '@/utils/admin-auth';
+
 export async function POST(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
     try {
         const formData = await req.formData();
         const file = formData.get('file') as File;

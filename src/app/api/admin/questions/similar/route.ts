@@ -7,7 +7,12 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
  * Finds questions similar to the given questionId using vector similarity (cosine distance).
  * Uses pgvector's <=> operator.
  */
+import { requireAdmin } from '@/utils/admin-auth';
+
 export async function GET(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     const supabase = createAdminClient();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

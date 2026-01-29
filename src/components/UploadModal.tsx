@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { X, Upload, FileText, Trash2, CheckCircle2, AlertCircle, FileDown } from 'lucide-react';
+import { X, Upload, FileText, Trash2, CheckCircle2, AlertCircle, FileDown, Database } from 'lucide-react';
 import { PdfFileIcon, HwpFileIcon } from './FileIcons';
 
 interface UploadModalProps {
@@ -20,9 +20,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
     const router = useRouter();
 
     // Refs for file inputs
-    const pdfProbRef = useRef<HTMLInputElement>(null);
     const pdfSolRef = useRef<HTMLInputElement>(null);
-    const hwpProbRef = useRef<HTMLInputElement>(null);
     const hwpSolRef = useRef<HTMLInputElement>(null);
 
     // Form State
@@ -41,10 +39,9 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
     const [isTemplateCompliant, setIsTemplateCompliant] = useState(false);
 
     // File States
-    const [filePdfProb, setFilePdfProb] = useState<File | null>(null);
     const [filePdfSol, setFilePdfSol] = useState<File | null>(null);
-    const [fileHwpProb, setFileHwpProb] = useState<File | null>(null);
     const [fileHwpSol, setFileHwpSol] = useState<File | null>(null);
+
 
     // Validations & Loading
     const [isUploading, setIsUploading] = useState(false);
@@ -55,9 +52,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
     if (!isOpen) return null;
 
     // Prices (Updated based on user request)
-    const PRICE_PDF_PROB = 500;
     const PRICE_PDF_SOL = 1000;
-    const PRICE_HWP_PROB = 1500;
     const PRICE_HWP_SOL = 2000;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setFile: React.Dispatch<React.SetStateAction<File | null>>) => {
@@ -101,7 +96,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             school: selectedSchool,
             region: selectedRegion,
             district: selectedDistrict,
-            exam_year: Number(year),
+            // year column missing in DB, relying on title regex fallback
             grade: Number(grade),
             semester: Number(semester),
             exam_type: examType,
@@ -117,6 +112,8 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         if (dbError) throw dbError;
     };
 
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
@@ -128,15 +125,13 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             if (!title) throw new Error('제목을 입력해주세요.');
 
             // Check if at least one file is selected
-            if (!filePdfProb && !filePdfSol && !fileHwpProb && !fileHwpSol) {
-                throw new Error('최소한 하나의 파일을 업로드해야 합니다.');
+            if (!filePdfSol && !fileHwpSol) {
+                throw new Error('최소한 하나의 파일(PDF 또는 HWP)을 등록해야 합니다.');
             }
 
             const uploads = [];
 
-            if (filePdfProb) uploads.push(uploadSingleFile(filePdfProb, 'PDF', '문제', PRICE_PDF_PROB));
             if (filePdfSol) uploads.push(uploadSingleFile(filePdfSol, 'PDF', '해설', PRICE_PDF_SOL));
-            if (fileHwpProb) uploads.push(uploadSingleFile(fileHwpProb, 'HWP', '문제', PRICE_HWP_PROB));
             if (fileHwpSol) uploads.push(uploadSingleFile(fileHwpSol, 'HWP', '해설', PRICE_HWP_SOL));
 
             await Promise.all(uploads);
@@ -214,6 +209,8 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             />
         </div>
     );
+
+
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -326,31 +323,11 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                     <div className="space-y-4">
                         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                             <span className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                            파일 업로드
-                            <span className="text-[10px] font-normal text-slate-500 ml-2">* 최소 1개 이상의 파일을 등록해주세요.</span>
+                            파일 및 DB 등록
+                            <span className="text-[10px] font-normal text-slate-500 ml-2">* 최소 1개 이상의 항목을 등록해주세요.</span>
                         </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FileUploadSlot
-                                label="PDF 문제 파일"
-                                subLabel="미리보기 제공용"
-                                file={filePdfProb}
-                                setFile={setFilePdfProb}
-                                accept=".pdf"
-                                price={PRICE_PDF_PROB}
-                                inputRef={pdfProbRef}
-                                Icon={PdfFileIcon}
-                            />
-                            <FileUploadSlot
-                                label="HWP/HML 문제 파일"
-                                subLabel="편집 가능 원본"
-                                file={fileHwpProb}
-                                setFile={setFileHwpProb}
-                                accept=".hwp,.hwpx,.hml"
-                                price={PRICE_HWP_PROB}
-                                inputRef={hwpProbRef}
-                                Icon={HwpFileIcon}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <FileUploadSlot
                                 label="PDF 문제+해설"
                                 subLabel="문제와 해설이 포함된 파일"
@@ -371,6 +348,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                                 inputRef={hwpSolRef}
                                 Icon={HwpFileIcon}
                             />
+
                         </div>
                     </div>
 
@@ -428,3 +406,4 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         </div>
     );
 }
+

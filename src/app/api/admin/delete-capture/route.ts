@@ -1,7 +1,12 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireAdmin } from '@/utils/admin-auth';
+
 export async function POST(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     try {
         const { imageId, imageUrl } = await req.json();
 

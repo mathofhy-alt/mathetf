@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
 // GET: Filter by work_status
+import { requireAdmin } from '@/utils/admin-auth';
+
+// GET: Filter by work_status
 export async function GET(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     const supabase = createAdminClient();
     const { searchParams } = new URL(req.url);
 
@@ -29,7 +35,8 @@ export async function GET(req: NextRequest) {
     }
 
     if (q) {
-        query = query.ilike('plain_text', `%${q}%`);
+        // Search both plain_text (content) and source_db_id (school/exam info)
+        query = query.or(`plain_text.ilike.%${q}%,source_db_id.ilike.%${q}%`);
     }
     if (school) {
         query = query.ilike('source_db_id', `%${school}%`);
@@ -37,6 +44,17 @@ export async function GET(req: NextRequest) {
     if (subject) {
         query = query.eq('subject', subject);
     }
+
+    // New Filters
+    const grade = searchParams.get('grade');
+    const year = searchParams.get('year');
+    const semester = searchParams.get('semester');
+    const examType = searchParams.get('examType');
+
+    if (grade) query = query.eq('grade', grade);
+    if (year) query = query.eq('year', year); // Corrected column name
+    if (semester) query = query.eq('semester', semester);
+    // if (examType) query = query.eq('exam_type', examType); // Commenting out until verified
 
     query = query.order('created_at', { ascending: false });
     query = query.range(start, start + limit - 1);
@@ -57,6 +75,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     const supabase = createAdminClient();
 
     try {
@@ -83,6 +104,9 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     const supabase = createAdminClient();
 
     try {

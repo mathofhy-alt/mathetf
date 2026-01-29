@@ -18,8 +18,21 @@ export default function AdminQuestionsPage() {
 
     // Filters
     const [search, setSearch] = useState('');
-    const [school, setSchool] = useState('');
+    // Cascading Filter State
+    const [selectedRegion, setSelectedRegion] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('');
+    const [selectedSchool, setSelectedSchool] = useState('');
+
+    // Dynamic School Data
+    const [regions, setRegions] = useState<string[]>([]);
+    const [districtsMap, setDistrictsMap] = useState<Record<string, string[]>>({});
+    const [schoolsMap, setSchoolsMap] = useState<Record<string, Record<string, string[]>>>({});
+    const [isLoadingSchools, setIsLoadingSchools] = useState(true);
+
     const [subject, setSubject] = useState('');
+    const [year, setYear] = useState('');
+    const [grade, setGrade] = useState('');
+    const [examScope, setExamScope] = useState(''); // Combined Semester + Type
     const [page, setPage] = useState(1);
 
     // Bulk Update State
@@ -45,6 +58,76 @@ export default function AdminQuestionsPage() {
     // Embedding Generation State
     const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
+
+    // DB Activation State
+    const [isActivating, setIsActivating] = useState(false);
+
+    // Fetch School Data (Copied from page.tsx)
+    useEffect(() => {
+        const fetchSchoolData = async () => {
+            const supabase = createClient();
+            let allSchoolData: any[] = [];
+            let from = 0;
+            const step = 1000;
+            let loopError: any = null;
+
+            while (true) {
+                const { data, error } = await supabase
+                    .from('schools')
+                    .select('region, district, name')
+                    .range(from, from + step - 1);
+
+                if (error) {
+                    console.error('Error fetching schools:', error);
+                    loopError = error;
+                    break;
+                }
+
+                if (!data || data.length === 0) break;
+
+                allSchoolData = [...allSchoolData, ...data];
+
+                if (data.length < step) break; // Reached end
+                from += step;
+            }
+
+            if (allSchoolData.length > 0) {
+                const data = allSchoolData;
+                const newRegions = new Set<string>();
+                const newDistricts: Record<string, Set<string>> = {};
+                const newSchools: Record<string, Record<string, string[]>> = {};
+
+                data.forEach(item => {
+                    newRegions.add(item.region);
+
+                    if (!newDistricts[item.region]) newDistricts[item.region] = new Set();
+                    newDistricts[item.region].add(item.district);
+
+                    if (!newSchools[item.region]) newSchools[item.region] = {};
+                    if (!newSchools[item.region][item.district]) newSchools[item.region][item.district] = [];
+                    newSchools[item.region][item.district].push(item.name);
+                });
+
+                setRegions(Array.from(newRegions).sort());
+
+                const finalDistricts: Record<string, string[]> = {};
+                Object.keys(newDistricts).forEach(r => {
+                    finalDistricts[r] = Array.from(newDistricts[r]).sort();
+                });
+                setDistrictsMap(finalDistricts);
+
+                // Sort schools
+                Object.keys(newSchools).forEach(r => {
+                    Object.keys(newSchools[r]).forEach(d => {
+                        newSchools[r][d].sort();
+                    });
+                });
+                setSchoolsMap(newSchools);
+            }
+            setIsLoadingSchools(false);
+        };
+        fetchSchoolData();
+    }, []);
 
     // Detailed Edit Modal State
     const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
@@ -505,6 +588,104 @@ export default function AdminQuestionsPage() {
         }
     };
 
+    // Derived Data
+    const districts = selectedRegion ? districtsMap[selectedRegion] || [] : [];
+    const schools = (selectedRegion && selectedDistrict) ? schoolsMap[selectedRegion]?.[selectedDistrict] || [] : [];
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        fetchQuestions();
+    };
+
+    const fetchQuestions = async () => {
+        setLoading(true);
+        setSelectedIds(new Set());
+
+        try {
+            // Map Exam Scope to API Semester string (e.g. "1-중간고사" -> "1학기중간")
+            let apiSemester = '';
+            let apiExamType = '';
+            if (examScope) {
+                const [sem, type] = examScope.split('-');
+                apiSemester = `${sem}학기${type === '중간고사' ? '중간' : '기말'}`;
+                apiExamType = type;
+            }
+
+            // Map Grade (e.g. "1" -> "고1")
+            let apiGrade = '';
+            if (grade) {
+                apiGrade = `고${grade}`;
+            }
+
+            const params = new URLSearchParams({
+                q: search,
+                school: selectedSchool,
+                subject,
+                year,
+                grade: apiGrade, // Send mapped grade
+                semester: apiSemester, // Send mapped semester
+                examType: apiExamType, // Also send exact type if API supports it (it does now)
+                page: page.toString(),
+                status: currentTab === 'sorted' ? 'sorted' : 'unsorted'
+            });
+
+            const res = await fetch(`/api/admin/questions?${params.toString()}`);
+            const data = await res.json();
+
+            if (data.success) {
+                setQuestions(data.data);
+                setTotal(data.count);
+            }
+        } catch (error) {
+            console.error('Failed to fetch questions:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleActivateDB = async () => {
+        if (!selectedSchool || !year || !grade || !examScope || !subject) {
+            alert("DB 활성화를 위해서는 모든 필터(학교, 연도, 학년, 시험범위, 과목)를 선택해야 합니다.");
+            return;
+        }
+
+        const [semStr, typeStr] = examScope.split('-');
+        // Display nice semester string
+        const displaySem = `${semStr}학기 ${typeStr}`;
+        const displayGrade = `고${grade}학년`;
+
+        if (!confirm(`${selectedSchool} ${year} ${displayGrade} ${displaySem} ${subject}\n\n이 조건으로 '개인 DB'(가격: 10,000P)를 판매 활성화하시겠습니까?`)) return;
+
+        setIsActivating(true);
+        try {
+            const res = await fetch('/api/admin/activate-db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    school: selectedSchool,
+                    year,
+                    grade: `고${grade}`,
+                    semester: Number(semStr),
+                    exam_type: typeStr,
+                    subject
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                alert('개인 DB 판매가 성공적으로 활성화되었습니다! 메인 페이지에서 확인하세요.');
+            } else {
+                alert('활성화 실패: ' + data.error);
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert('오류가 발생했습니다.');
+        } finally {
+            setIsActivating(false);
+        }
+    };
+
     const handleDeleteCapture = async (imageId: string, imageUrl: string) => {
         try {
             const res = await fetch('/api/admin/delete-capture', {
@@ -532,44 +713,6 @@ export default function AdminQuestionsPage() {
             console.error(e);
             alert('삭제 중 오류가 발생했습니다.');
         }
-    };
-
-    const fetchQuestions = async () => {
-        setLoading(true);
-        setSelectedIds(new Set());
-
-        try {
-            const params = new URLSearchParams({
-                q: search,
-                school,
-                subject,
-                page: page.toString(),
-                status: currentTab === 'sorted' ? 'sorted' : 'unsorted'
-            });
-
-            const res = await fetch(`/api/admin/questions?${params.toString()}`);
-            const data = await res.json();
-
-            if (data.success) {
-                setQuestions(data.data);
-                setTotal(data.count);
-            }
-        } catch (error) {
-            console.error('Failed to fetch questions:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Re-fetch when tab changes
-    useEffect(() => {
-        fetchQuestions();
-    }, [page, currentTab]); // Depend on currentTab
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        setPage(1);
-        fetchQuestions();
     };
 
     return (
@@ -623,53 +766,155 @@ export default function AdminQuestionsPage() {
                 </button>
             </div>
 
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-                    {currentTab === 'sorted' ? '소팅 완료된 문항' : '기출 문항 관리'}
-                    <span className="text-gray-400 font-normal text-xl ml-2">({total}문제)</span>
-                </h1>
-                <div className="flex items-center gap-4">
-                    {/* Search Stats */}
-                    <div className="px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold">
-                        {selectedIds.size}개 선택됨
+            {/* Header Area */}
+            <div className="flex flex-col gap-6">
+                <div className="flex justify-between items-end border-b pb-4">
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+                            {currentTab === 'sorted' ? '소팅 완료된 문항' : '기출 문항 관리'}
+                            <span className="text-gray-400 font-normal text-xl ml-2">({total}문제)</span>
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">
+                            {currentTab === 'sorted'
+                                ? '검토가 완료되어 DB에 등록된 문항들입니다.'
+                                : '새로 업로드되어 분류 작업이 필요한 문항들입니다.'}
+                        </p>
                     </div>
-                    {/* Search Bar */}
-                    <form onSubmit={handleSearch} className="flex gap-2">
+                    <div className="flex items-center gap-4">
+                        <div className="px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold">
+                            {selectedIds.size}개 선택됨
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filter Toolbar */}
+                <form onSubmit={handleSearch} className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
+                    {/* Row 1: Location & School */}
+                    <div className="flex flex-wrap gap-2 items-center text-sm">
+                        <span className="font-bold text-gray-500 w-16">학교설정</span>
                         <select
-                            className="border rounded-lg px-3 py-2 text-sm"
-                            value={school}
-                            onChange={(e) => setSchool(e.target.value)}
+                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            value={selectedRegion}
+                            onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); setSelectedSchool(''); }}
                         >
-                            <option value="">모든 학교</option>
-                            <option value="경기고">경기고</option>
-                            <option value="서울고">서울고</option>
-                            <option value="휘문고">휘문고</option>
+                            <option value="">시/도</option>
+                            {regions.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
+
                         <select
-                            className="border rounded-lg px-3 py-2 text-sm"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            value={selectedDistrict}
+                            onChange={e => { setSelectedDistrict(e.target.value); setSelectedSchool(''); }}
+                            disabled={!selectedRegion}
+                        >
+                            <option value="">구/군</option>
+                            {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+
+                        <select
+                            className="border-slate-200 rounded-lg px-3 py-2 min-w-[160px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            value={selectedSchool}
+                            onChange={e => setSelectedSchool(e.target.value)}
+                            disabled={!selectedDistrict}
+                        >
+                            <option value="">학교 전체</option>
+                            {schools.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="h-px bg-gray-100"></div>
+
+                    {/* Row 2: Exam Meta Filters & Search */}
+                    <div className="flex flex-wrap gap-2 items-center text-sm">
+                        <span className="font-bold text-gray-500 w-16">시험속성</span>
+                        <select
+                            className="border-slate-200 rounded-lg px-3 py-2 w-24 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            value={year}
+                            onChange={(e) => setYear(e.target.value)}
+                        >
+                            <option value="">연도</option>
+                            {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            value={examScope}
+                            onChange={(e) => setExamScope(e.target.value)}
+                        >
+                            <option value="">시험 전체</option>
+                            <option value="1-중간고사">1학기 중간</option>
+                            <option value="1-기말고사">1학기 기말</option>
+                            <option value="2-중간고사">2학기 중간</option>
+                            <option value="2-기말고사">2학기 기말</option>
+                        </select>
+
+                        <select
+                            className="border-slate-200 rounded-lg px-3 py-2 w-24 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            value={grade}
+                            onChange={(e) => setGrade(e.target.value)}
+                        >
+                            <option value="">학년</option>
+                            <option value="1">1학년</option>
+                            <option value="2">2학년</option>
+                            <option value="3">3학년</option>
+                        </select>
+
+                        <select
+                            className="border-slate-200 rounded-lg px-3 py-2 w-28 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
                         >
-                            <option value="">모든 과목</option>
+                            <option value="">과목</option>
+                            <option value="공통수학1">공통수학1</option>
+                            <option value="공통수학2">공통수학2</option>
+                            <option value="대수">대수</option>
+                            <option value="미적분I">미적분I</option>
+                            <option value="확률과통계">확률과통계</option>
+                            <option value="미적분II">미적분II</option>
+                            <option value="기하">기하</option>
                             <option value="수학(상)">수학(상)</option>
                             <option value="수학(하)">수학(하)</option>
-                            <option value="수1">수1</option>
-                            <option value="수2">수2</option>
+                            <option value="수학I">수학I</option>
+                            <option value="수학II">수학II</option>
                             <option value="미적분">미적분</option>
-                            <option value="확통">확통</option>
                         </select>
-                        <input
-                            type="text"
-                            placeholder="문항 내용 검색..."
-                            className="border rounded-lg px-3 py-2 text-sm w-64"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">
-                            검색
-                        </button>
-                    </form>
-                </div>
+
+                        <div className="ml-auto flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                            <input
+                                type="text"
+                                placeholder="학교 이름 검색..."
+                                className="border-slate-200 rounded-lg px-4 py-2 flex-grow min-w-[200px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <button
+                                type="submit"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-sm"
+                            >
+                                검색
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleActivateDB}
+                                disabled={isActivating || !selectedSchool || !year || !grade || !examScope || !subject}
+                                className={`
+                                    px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-sm whitespace-nowrap
+                                    ${!selectedSchool || !year || !grade || !examScope || !subject
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-md'}
+                                `}
+                            >
+                                {isActivating ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <>🚀 DB 판매 활성화</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
 
             {/* Bulk Actions */}

@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import HeroBanner from '@/components/HeroBanner';
 import RightSidebar from '@/components/RightSidebar';
-import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
+import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 
@@ -30,6 +30,7 @@ export default function ExamPlatform() {
             pdfSol?: FileItem;
             hwpProb?: FileItem;
             hwpSol?: FileItem;
+            db?: FileItem; // Added Personal DB
         };
     }
 
@@ -76,12 +77,12 @@ export default function ExamPlatform() {
 
         // 1. Region Filter
         if (selectedRegion) {
-            const firstFile = group.files.pdfProb || group.files.pdfSol || group.files.hwpProb || group.files.hwpSol;
+            const firstFile = group.files.pdfProb || group.files.pdfSol || group.files.hwpProb || group.files.hwpSol || group.files.db;
             if (firstFile && firstFile.region !== selectedRegion) return false;
         }
         // 2. District Filter
         if (selectedDistrict) {
-            const firstFile = group.files.pdfProb || group.files.pdfSol || group.files.hwpProb || group.files.hwpSol;
+            const firstFile = group.files.pdfProb || group.files.pdfSol || group.files.hwpProb || group.files.hwpSol || group.files.db;
             if (firstFile && firstFile.district !== selectedDistrict) return false;
         }
         // 3. School Filter
@@ -200,12 +201,15 @@ export default function ExamPlatform() {
                 data.forEach((item: any) => {
                     // Include subject in the key to differentiate exams
                     const subjectKey = item.subject || 'Unknown';
-                    const key = `${item.school}-${item.exam_year}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
+                    // Derive year from title since exam_year column is missing
+                    const yearDerived = item.exam_year || parseInt(item.title?.match(/\d{4}/)?.[0] || '2024');
+
+                    const key = `${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
 
                     if (!groups[key]) {
                         groups[key] = {
                             key,
-                            title: `[${item.school}] ${item.exam_year}년 ${item.grade}학년 ${item.semester}학기 ${item.exam_type} ${item.subject || ''}`,
+                            title: `[${item.school}] ${yearDerived}년 ${item.grade}학년 ${item.semester}학기 ${item.exam_type} ${item.subject || ''}`,
                             school: item.school,
                             grade: item.grade,
                             semester: item.semester,
@@ -246,6 +250,8 @@ export default function ExamPlatform() {
                     } else if (item.file_type === 'HWP') {
                         if (item.content_type === '문제') groups[key].files.hwpProb = fileItem;
                         else groups[key].files.hwpSol = fileItem;
+                    } else if (item.file_type === 'DB') {
+                        groups[key].files.db = fileItem;
                     }
                 });
 
@@ -281,7 +287,7 @@ export default function ExamPlatform() {
                 .maybeSingle();
 
             if (!existingPurchase) {
-                if (!confirm(`${file.price}P를 사용하여 다운로드하시겠습니까?`)) return;
+                if (!confirm(`${file.price}P를 사용하여 ${file.type === 'DB' ? 'DB 접근 권한을 구매' : '다운로드'}하시겠습니까?`)) return;
 
                 const { data: result, error } = await supabase.rpc('purchase_exam_material', {
                     buyer_id: user.id,
@@ -299,6 +305,12 @@ export default function ExamPlatform() {
                 }
 
                 fetchMyPoints(user.id);
+                // For DB, we just stop here after purchase
+                if (file.type === 'DB') {
+                    alert('개인 DB 구매가 완료되었습니다. 이제 시험지 만들기 탭에서 이 DB를 소스로 사용할 수 있습니다.');
+                    return;
+                }
+
             } else {
                 // Check Limits
                 const purchaseDate = new Date(existingPurchase.created_at);
@@ -306,20 +318,39 @@ export default function ExamPlatform() {
                 const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                if (diffDays > 7) {
+                // DB items usually don't expire in the same way, or maybe they do?
+                // User said "10000P". If it's permanent access or not isn't specified, but assuming same ruled for now or lenient.
+                // But for "Access", we shouldn't really block it if purchased.
+                // However, existing logic blocks > 7 days.
+                // If user wants it to be usable in "Make Exam", maybe we should relax expiry for DB?
+                // For now, I'll keep the same expiry logic to avoid business logic assumptions, 
+                // OR I'll add a check: if (file.type !== 'DB') check expiry.
+                // Given the high price (10000P vs 1000P), it might be expected to last longer or indefinitely.
+                // But let's stick to current logic unless it blocks immediate usage.
+
+                if (diffDays > 7 && file.type !== 'DB') {
                     alert('다운로드 기한(7일)이 만료되었습니다. 다시 구매해주세요.');
                     return;
                 }
 
-                if ((existingPurchase.download_count || 0) >= 3) {
-                    alert('다운로드 횟수(3회)를 초과했습니다. 다시 구매해주세요.');
-                    return;
-                }
+                // If it is DB, maybe we don't care about "download count".
+                if (file.type !== 'DB') {
+                    if ((existingPurchase.download_count || 0) >= 3) {
+                        alert('다운로드 횟수(3회)를 초과했습니다. 다시 구매해주세요.');
+                        return;
+                    }
 
-                // Increment download count
-                await supabase.from('purchases')
-                    .update({ download_count: (existingPurchase.download_count || 0) + 1 })
-                    .eq('id', existingPurchase.id);
+                    // Increment download count
+                    await supabase.from('purchases')
+                        .update({ download_count: (existingPurchase.download_count || 0) + 1 })
+                        .eq('id', existingPurchase.id);
+                }
+            }
+
+            // If Type is DB, we don't download anything.
+            if (file.type === 'DB') {
+                alert('이미 구매한 DB입니다. 시험지 만들기 탭에서 확인하세요.');
+                return;
             }
 
             // 2. Download Logic
@@ -443,11 +474,7 @@ export default function ExamPlatform() {
                                 </div>
                             </div>
 
-                            {/* Checkbox Row */}
-                            <div className="flex items-center gap-6 text-sm text-slate-600 mb-6 px-1">
-                                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="w-4 h-4 accent-brand-600" /> 해설있는 기출만</label>
-                                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="w-4 h-4 accent-brand-600" /> 해설없는 기출만</label>
-                            </div>
+                            {/* Checkbox Row (REMOVED) */}
 
                             {/* Search Row */}
                             <div className="flex gap-2 items-center">
@@ -469,46 +496,27 @@ export default function ExamPlatform() {
 
                             <div className="bg-slate-50 text-slate-500 text-xs font-bold py-2 px-4 grid grid-cols-12 text-center border-b border-slate-200 gap-2 items-center">
                                 <div className="col-span-5 text-left pl-4">시험명</div>
-                                <div className="col-span-1">학년/학기</div>
+                                <div className="col-span-2">학년/학기</div>
                                 <div className="col-span-1">등록일</div>
                                 <div className="col-span-1">작성자</div>
-                                <div className="col-span-4">다운로드 (PDF / HWP)</div>
+                                <div className="col-span-3">다운로드 (PDF / HWP / DB)</div>
                             </div>
 
                             <div className="divide-y divide-slate-100">
                                 {filteredFiles.length > 0 ? filteredFiles.map(group => (
                                     <div key={group.key} className="grid grid-cols-12 items-center py-4 px-4 hover:bg-slate-50 gap-2 text-sm text-center">
                                         <div className="col-span-5 text-left pl-4">
-                                            <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base">
+                                            <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base break-keep">
                                                 {group.title}
                                             </div>
-                                            <div className="text-xs text-slate-400 mt-1">
-                                                {group.school} | {group.key.split('-')[4]} | {group.subject}
-                                            </div>
+                                            {/* Subtitle removed as it overlaps with title info */}
                                         </div>
-                                        <div className="col-span-1 text-slate-600">{group.grade}학년 {group.semester}학기</div>
-                                        <div className="col-span-1 text-slate-400 text-xs">{group.date}</div>
+                                        <div className="col-span-2 text-slate-600 whitespace-nowrap">{group.grade}학년 {group.semester}학기</div>
+                                        <div className="col-span-1 text-slate-400 text-xs whitespace-nowrap">{group.date}</div>
                                         <div className="col-span-1 text-slate-600 truncate text-xs">{group.uploader}</div>
 
-                                        <div className="col-span-4 flex items-center justify-center gap-3">
-                                            {/* PDF Problem */}
-                                            {group.files.pdfProb ? (
-                                                <button
-                                                    onClick={() => handleDownload(group.files.pdfProb!)}
-                                                    title={`PDF 문제 (${group.files.pdfProb.price}원)`}
-                                                    className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
-                                                >
-                                                    <PdfFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[10px] font-bold text-slate-600 mt-1">문제만</span>
-                                                    <span className="text-[9px] text-slate-400">{group.files.pdfProb.price}P</span>
-                                                </button>
-                                            ) : (
-                                                <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
-                                                    <PdfFileIcon size={28} grayscale={true} />
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-1">문제만</span>
-                                                    <span className="text-[9px] text-slate-300">미등록</span>
-                                                </div>
-                                            )}
+                                        <div className="col-span-3 flex items-center justify-center gap-3">
+                                            {/* PDF Problem (REMOVED) */}
 
                                             {/* PDF Solution */}
                                             {group.files.pdfSol ? (
@@ -518,37 +526,20 @@ export default function ExamPlatform() {
                                                     className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
                                                 >
                                                     <PdfFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[10px] font-bold text-slate-600 mt-1">문제+해설</span>
+                                                    <span className="text-[10px] font-bold text-slate-600 mt-1 whitespace-nowrap">문제+해설</span>
                                                     <span className="text-[9px] text-slate-400">{group.files.pdfSol.price}P</span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                     <PdfFileIcon size={28} grayscale={true} />
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-1">문제+해설</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
                                                     <span className="text-[9px] text-slate-300">미등록</span>
                                                 </div>
                                             )}
 
                                             <div className="w-px h-8 bg-slate-200 mx-1"></div>
 
-                                            {/* HWP Problem */}
-                                            {group.files.hwpProb ? (
-                                                <button
-                                                    onClick={() => handleDownload(group.files.hwpProb!)}
-                                                    title={`HWP 문제 (${group.files.hwpProb.price}원)`}
-                                                    className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
-                                                >
-                                                    <HwpFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[10px] font-bold text-slate-600 mt-1">문제만</span>
-                                                    <span className="text-[9px] text-slate-400">{group.files.hwpProb.price}P</span>
-                                                </button>
-                                            ) : (
-                                                <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
-                                                    <HwpFileIcon size={28} grayscale={true} />
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-1">문제만</span>
-                                                    <span className="text-[9px] text-slate-300">미등록</span>
-                                                </div>
-                                            )}
+                                            {/* HWP Problem (REMOVED) */}
 
                                             {/* HWP Solution */}
                                             {group.files.hwpSol ? (
@@ -558,14 +549,35 @@ export default function ExamPlatform() {
                                                     className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
                                                 >
                                                     <HwpFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[10px] font-bold text-slate-600 mt-1">문제+해설</span>
+                                                    <span className="text-[10px] font-bold text-slate-600 mt-1 whitespace-nowrap">문제+해설</span>
                                                     <span className="text-[9px] text-slate-400">{group.files.hwpSol.price}P</span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                     <HwpFileIcon size={28} grayscale={true} />
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-1">문제+해설</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
                                                     <span className="text-[9px] text-slate-300">미등록</span>
+                                                </div>
+                                            )}
+
+                                            <div className="w-px h-8 bg-slate-200 mx-1"></div>
+
+                                            {/* Personal DB */}
+                                            {group.files.db ? (
+                                                <button
+                                                    onClick={() => handleDownload(group.files.db!)}
+                                                    title={`개인 DB 접근 (${group.files.db.price}원)`}
+                                                    className="group flex flex-col items-center p-1 rounded hover:bg-indigo-50 transition-colors"
+                                                >
+                                                    <DbFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
+                                                    <span className="text-[10px] font-bold text-indigo-600 mt-1">개인DB</span>
+                                                    <span className="text-[9px] text-indigo-400">{group.files.db.price}P</span>
+                                                </button>
+                                            ) : (
+                                                <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
+                                                    <DbFileIcon size={28} grayscale={true} />
+                                                    <span className="text-[10px] font-bold text-slate-400 mt-1">개인DB</span>
+                                                    <span className="text-[9px] text-slate-300">대기중</span>
                                                 </div>
                                             )}
                                         </div>

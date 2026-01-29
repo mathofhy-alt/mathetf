@@ -12,13 +12,19 @@ export const dynamic = 'force-dynamic';
  * Generates HML files from selected questions with their associated images.
  * Uses the V2 generator for proper image embedding.
  */
-export async function POST(req: NextRequest) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+import { requireAdmin } from '@/utils/admin-auth';
 
-    if (!user) {
-        return new NextResponse('Unauthorized', { status: 401 });
-    }
+// ...
+
+export async function POST(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
+    const supabase = createClient();
+    // Removed duplicate auth check as requireAdmin handles it
+
+
+    // Removed duplicate auth check as requireAdmin handles it
 
     try {
         const body = await req.json();

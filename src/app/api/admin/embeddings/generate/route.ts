@@ -8,7 +8,12 @@ import { generateEmbedding } from '@/lib/embeddings';
  * Scans questions that have NULL embeddings and generates them using OpenAI.
  * Can also force update for specific IDs.
  */
+import { requireAdmin } from '@/utils/admin-auth';
+
 export async function POST(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
     const supabase = createAdminClient();
 
     try {

@@ -26,7 +26,16 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // PROTECT /admin ROUTES
+    if (request.nextUrl.pathname.startsWith('/admin')) {
+        if (!user || user.email !== 'mathofhy@naver.com') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/'
+            return NextResponse.redirect(url)
+        }
+    }
 
     return response
 }
