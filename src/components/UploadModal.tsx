@@ -71,7 +71,36 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         }
     };
 
+    const checkDuplicate = async (fileType: 'PDF' | 'HWP', contentType: '문제' | '해설') => {
+        // Build query to find match on metadata
+        const { data, error } = await supabase
+            .from('exam_materials')
+            .select('id, title') // Select title to check year
+            .eq('school', selectedSchool)
+            .eq('grade', grade)
+            .eq('semester', semester)
+            .eq('exam_type', examType)
+            .eq('subject', subject)
+            .eq('file_type', fileType)
+            .eq('content_type', contentType);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) return false;
+
+        // Check if any existing item's title contains the selected year
+        // Title format: "School Year Grade..." (e.g. "경기고 2024년 1학년...")
+        const isDuplicateDate = data.some(item => item.title.includes(`${year}년`) || item.title.includes(String(year)));
+        return isDuplicateDate;
+    };
+
     const uploadSingleFile = async (file: File, fileType: 'PDF' | 'HWP', contentType: '문제' | '해설', price: number) => {
+        // 0. Duplicate Check
+        const isDuplicate = await checkDuplicate(fileType, contentType);
+        if (isDuplicate) {
+            throw new Error(`[중복] 이미 등록된 자료입니다 (${year}년): ${fileType} ${contentType}`);
+        }
+
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
@@ -124,9 +153,9 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             if (!subject) throw new Error('과목을 선택해주세요.');
             if (!title) throw new Error('제목을 입력해주세요.');
 
-            // Check if at least one file is selected
-            if (!filePdfSol && !fileHwpSol) {
-                throw new Error('최소한 하나의 파일(PDF 또는 HWP)을 등록해야 합니다.');
+            // Require BOTH files
+            if (!filePdfSol || !fileHwpSol) {
+                throw new Error('PDF와 HWP/HML 파일을 모두 등록해야 합니다.');
             }
 
             const uploads = [];
@@ -324,7 +353,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                             <span className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold">2</span>
                             파일 및 DB 등록
-                            <span className="text-[10px] font-normal text-slate-500 ml-2">* 최소 1개 이상의 항목을 등록해주세요.</span>
+                            <span className="text-[10px] font-bold text-rose-500 ml-2">* PDF와 HWP/HML 파일을 모두 등록해야 합니다.</span>
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

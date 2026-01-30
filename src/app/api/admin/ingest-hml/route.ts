@@ -158,7 +158,8 @@ export async function POST(req: NextRequest) {
                     console.error(`[HML-V2-INGEST] Image ${binId} insert error:`, imgError);
                 }
             }
-            // 5. Insert Math Images (MathJax SVG to DB Embedding - V23 Bulletproof)
+            // 5. Insert Math Images (MathJax SVG to DB Embedding - V23 Bulletproof) - DISABLED BY USER REQUEST
+            /*
             if (q.equationScripts && q.equationScripts.length > 0) {
                 const fs = await import('fs');
                 const path = await import('path');
@@ -200,6 +201,7 @@ export async function POST(req: NextRequest) {
                     }
                 }
             }
+            */
         }
 
         return NextResponse.json({

@@ -83,6 +83,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                     </Link>
                     <nav className="hidden md:flex gap-6 text-sm font-bold text-slate-600">
                         <Link href="/" className="hover:text-brand-600 transition-colors">내신기출</Link>
+                        <Link href="/question-bank" className="hover:text-brand-600 transition-colors">시험지출제</Link>
                         <Link href="/notice" className="hover:text-brand-600 transition-colors">공지사항</Link>
                         <Link href="/suggestion" className="hover:text-brand-600 transition-colors">건의사항</Link>
                     </nav>

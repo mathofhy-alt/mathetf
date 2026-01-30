@@ -92,6 +92,9 @@ class HwpMathRenderer:
                 time.sleep(1)
 
     def _do_render(self, script):
+        # [EMERGENCY BYPASS] Stop HWP execution immediately
+        return None
+
         if not self._init_hwp():
             return None
 

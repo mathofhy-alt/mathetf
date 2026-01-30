@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const subject = searchParams.get('subject') || '';
     const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = 20;
+    const limit = 50;
     const start = (page - 1) * limit;
 
     let query = supabase
@@ -82,12 +82,16 @@ export async function DELETE(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { ids, deleteAll } = body;
+        const { ids, deleteAll, deleteUnsortedOnly } = body;
 
         let query = supabase.from('questions').delete();
 
         if (deleteAll) {
+            // DANGER: Deletes absolutely everything
             query = query.gte('question_number', 0);
+        } else if (deleteUnsortedOnly) {
+            // SAFE MODE: Deletes only questions that are NOT sorted
+            query = query.or('work_status.neq.sorted,work_status.is.null');
         } else if (ids && Array.isArray(ids) && ids.length > 0) {
             query = query.in('id', ids);
         } else {

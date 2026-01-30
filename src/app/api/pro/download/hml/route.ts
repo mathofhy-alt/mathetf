@@ -70,7 +70,10 @@ export async function POST(req: NextRequest) {
         const result = generateHmlFromTemplate(templateXml, questionsWithImages);
         const finalHml = result.hmlContent;
 
-        const filename = `exam_${new Date().getTime()}.hml`;
+        const title = body.title || 'Exam_Paper';
+        // Sanitize filename
+        const safeTitle = title.replace(/[^a-zA-Z0-9가-힣_\- ]/g, "").trim();
+        const filename = `${safeTitle}_${new Date().toISOString().slice(0, 10)}.hml`;
 
         return new NextResponse(finalHml, {
             status: 200,

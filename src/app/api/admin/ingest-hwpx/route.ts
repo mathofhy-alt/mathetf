@@ -161,7 +161,8 @@ export async function POST(req: NextRequest) {
             } else {
                 savedIds.push(data.id);
 
-                // 6. Pre-render Math Images (V28)
+                // 6. Pre-render Math Images (V28) - DISABLED BY USER REQUEST (Step 2082)
+                /*
                 if (b.equationScripts && b.equationScripts.length > 0) {
                     for (let i = 0; i < b.equationScripts.length; i++) {
                         const script = b.equationScripts[i];
@@ -184,6 +185,7 @@ export async function POST(req: NextRequest) {
                         }
                     }
                 }
+                */
             }
         }
 

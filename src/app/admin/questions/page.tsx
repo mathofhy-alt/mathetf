@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import QuestionRenderer from '@/components/QuestionRenderer';
 
 const UNIT_OPTIONS: Record<string, string[]> = {
+    '공통수학1': ['다항식', '항등식', '복소수', '이차방정식', '이차함수', '여러가지방정식', '여러가지부등식', '경우의수', '행렬'],
     '공통수학2': ['집합', '명제', '절대부등식', '함수', '역함수합성함수', '유리함수', '무리함수']
 };
 
@@ -129,6 +130,11 @@ export default function AdminQuestionsPage() {
         fetchSchoolData();
     }, []);
 
+    // [FIX] Trigger fetch on page or tab change
+    useEffect(() => {
+        fetchQuestions();
+    }, [page, currentTab]);
+
     // Detailed Edit Modal State
     const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
     const [previewTab, setPreviewTab] = useState<'preview' | 'xml' | 'text'>('preview');
@@ -202,23 +208,24 @@ export default function AdminQuestionsPage() {
         });
     };
 
-    const handleDeleteAll = async () => {
-        const input = prompt("경고: 데이터베이스의 모든 문제를 삭제합니다!\n진행하려면 '삭제'라고 입력해주세요.");
-        if (input !== '삭제') return;
+    const handleDeleteAllUnsorted = async () => {
+        const input = prompt("경고: '소팅 완료'되지 않은 모든(미분류) 문제를 삭제합니다!\n이 작업은 되돌릴 수 없습니다.\n진행하려면 '미분류삭제'라고 입력해주세요.");
+        if (input !== '미분류삭제') return;
 
         try {
             const res = await fetch('/api/admin/questions', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deleteAll: true })
+                // Use safe mode: deleteUnsortedOnly
+                body: JSON.stringify({ deleteUnsortedOnly: true })
             });
 
             if (res.ok) {
-                alert('모든 문제가 삭제되었습니다.');
+                alert('미분류 문제들이 모두 삭제되었습니다. (소팅 완료된 문제는 유지됩니다)');
                 fetchQuestions();
             } else {
                 const err = await res.json();
-                alert('전체 삭제 실패: ' + err.error);
+                alert('삭제 실패: ' + err.error);
             }
         } catch (e) {
             console.error(e);
@@ -395,7 +402,12 @@ export default function AdminQuestionsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ids: [q.id],
-                    updates: { work_status: 'sorted' }
+                    updates: {
+                        work_status: 'sorted',
+                        grade: q.grade,
+                        unit: q.unit,
+                        difficulty: q.difficulty || '1'
+                    }
                 })
             });
 
@@ -1022,12 +1034,12 @@ export default function AdminQuestionsPage() {
                         📋 수식 데이터 수집
                     </button>
 
-                    {/* Delete All (Danger) */}
+                    {/* Delete All Unsorted */}
                     <button
-                        onClick={handleDeleteAll}
+                        onClick={handleDeleteAllUnsorted}
                         className="bg-gray-800 hover:bg-red-900 text-white px-3 py-2 rounded text-xs font-medium transition-colors shadow-sm border border-gray-600"
                     >
-                        ⛔ 전체 초기화
+                        ⛔ 미분류 전체 삭제
                     </button>
 
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded ml-2">Page {page}</span>

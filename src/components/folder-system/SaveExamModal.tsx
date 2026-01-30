@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import FolderTree from './FolderTree';
+import { useState, useEffect } from 'react';
+import FolderTree from '@/components/storage/FolderTree';
 import { createClient } from '@/utils/supabase/client';
+import type { Folder } from '@/types/storage';
 
 export default function SaveExamModal({
     user,
@@ -18,28 +19,61 @@ export default function SaveExamModal({
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [title, setTitle] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [folders, setFolders] = useState<Folder[]>([]);
     const supabase = createClient();
+
+    useEffect(() => {
+        fetch('/api/storage/folders?mode=all')
+            .then(res => res.json())
+            .then(data => {
+                if (data.folders) setFolders(data.folders);
+            });
+    }, []);
 
     const handleSave = async () => {
         if (!title) return alert('시험지 제목을 입력해주세요.');
         setIsSaving(true);
 
-        const { error } = await supabase.from('exam_papers').insert({
-            user_id: user.id,
-            folder_id: selectedFolderId,
-            title: title,
-            question_ids: JSON.stringify(cart.map(q => q.id))
-        });
+        // 1. Create Exam Paper
+        const { data: paperData, error: paperError } = await supabase
+            .from('exam_papers')
+            .insert({
+                user_id: user.id,
+                folder_id: selectedFolderId, // Keep for legacy/backup
+                title: title,
+                question_ids: JSON.stringify(cart.map(q => q.id))
+            })
+            .select()
+            .single();
 
-        if (error) {
-            console.error(error);
-            alert('저장 실패: ' + error.message);
+        if (paperError) {
+            console.error(paperError);
+            alert('저장 실패: ' + paperError.message);
             setIsSaving(false);
-        } else {
-            alert('저장되었습니다.');
-            onSave();
-            onClose();
+            return;
         }
+
+        // 2. Link to Folder System (User Items)
+        if (paperData) {
+            const { error: itemError } = await supabase
+                .from('user_items')
+                .insert({
+                    user_id: user.id,
+                    folder_id: selectedFolderId, // Can be null (Root)
+                    type: 'saved_exam',
+                    reference_id: paperData.id,
+                    name: title
+                });
+
+            if (itemError) {
+                console.error('Folder link failed', itemError);
+                // Non-blocking error? User still saved exam.
+            }
+        }
+
+        alert('저장되었습니다.');
+        onSave();
+        onClose();
     };
 
     return (
@@ -66,8 +100,9 @@ export default function SaveExamModal({
                         <label className="block text-sm font-semibold mb-1">저장할 폴더 선택</label>
                         <div className="flex-1 border rounded min-h-0">
                             <FolderTree
-                                user={user}
-                                onSelectFolder={(id) => setSelectedFolderId(id)}
+                                folders={folders}
+                                currentFolderId={selectedFolderId}
+                                onFolderSelect={setSelectedFolderId}
                             />
                         </div>
                     </div>
