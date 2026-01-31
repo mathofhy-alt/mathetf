@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Folder as FolderIcon, FileText, Database, MoreVertical, Trash2, Edit2 } from 'lucide-react';
+import { Folder as FolderIcon, FileText, Database, MoreVertical, Trash2, Edit2, CheckCircle2 } from 'lucide-react';
 import type { Folder as FolderType, UserItem } from '@/types/storage';
 import { DbFileIcon } from '@/components/FileIcons';
 
@@ -14,9 +14,10 @@ interface FileGridProps {
     onDelete: (type: 'folder' | 'item', id: string) => void;
     onContextMenu: (e: React.MouseEvent, type: 'folder' | 'item', id: string) => void;
     onMoveItem: (itemId: string, targetFolderId: string | null) => void; // DnD
+    selectedIds?: string[];
 }
 
-export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onContextMenu, onMoveItem }: FileGridProps) {
+export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onContextMenu, onMoveItem, selectedIds = [] }: FileGridProps) {
 
     const handleDragStart = (e: React.DragEvent, type: 'folder' | 'item', id: string) => {
         e.dataTransfer.setData('application/json', JSON.stringify({ type, id }));
@@ -71,31 +72,41 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
             ))}
 
             {/* Render Items */}
-            {items.map(item => (
-                <div
-                    key={item.id}
-                    className="group relative flex flex-col items-center p-4 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-brand-200 cursor-pointer transition-all shadow-sm hover:shadow-md"
-                    onClick={() => onItemClick(item)}
-                    onContextMenu={(e) => {
-                        e.preventDefault();
-                        onContextMenu(e, 'item', item.id);
-                    }}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'item', item.id)}
-                >
-                    <div className="mb-2 group-hover:scale-110 transition-transform">
-                        {item.type === 'personal_db' ? (
-                            <DbFileIcon size={40} className="drop-shadow-sm" />
-                        ) : (
-                            <FileText size={40} className="text-slate-400" />
+            {items.map(item => {
+                const isSelected = selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id));
+                return (
+                    <div
+                        key={item.id}
+                        className={`group relative flex flex-col items-center p-4 bg-white border rounded-xl hover:bg-slate-50 cursor-pointer transition-all shadow-sm hover:shadow-md
+                            ${isSelected ? 'ring-2 ring-indigo-500 bg-indigo-50 border-indigo-500' : 'border-slate-200 hover:border-brand-200'}
+                        `}
+                        onClick={() => onItemClick(item)}
+                        onContextMenu={(e) => {
+                            e.preventDefault();
+                            onContextMenu(e, 'item', item.id);
+                        }}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'item', item.id)}
+                    >
+                        {isSelected && (
+                            <div className="absolute top-2 right-2 text-indigo-600 bg-white rounded-full p-0.5 shadow-sm z-10">
+                                <CheckCircle2 size={20} className="fill-indigo-100" />
+                            </div>
                         )}
-                    </div>
+                        <div className="mb-2 group-hover:scale-110 transition-transform">
+                            {item.type === 'personal_db' ? (
+                                <DbFileIcon size={40} className="drop-shadow-sm" />
+                            ) : (
+                                <FileText size={40} className="text-blue-500" />
+                            )}
+                        </div>
 
-                    <span className="text-xs text-center font-medium text-slate-700 line-clamp-2 w-full px-1 break-keep min-h-[2.5em] flex items-center justify-center">
-                        {item.name || '이름 없음'}
-                    </span>
-                </div>
-            ))}
+                        <span className="text-xs text-center font-medium text-slate-700 line-clamp-2 w-full px-1 break-keep min-h-[2.5em] flex items-center justify-center">
+                            {item.name || '이름 없음'}
+                        </span>
+                    </div>
+                );
+            })}
         </div>
     );
 }

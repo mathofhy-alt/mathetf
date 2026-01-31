@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
             status: 200,
             headers: {
                 'Content-Type': 'application/x-hwp',
-                'Content-Disposition': `attachment; filename="${filename}"`,
+                'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
             },
         });
 

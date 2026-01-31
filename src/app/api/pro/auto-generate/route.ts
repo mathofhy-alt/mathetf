@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 
 export async function POST(req: NextRequest) {
     try {
-        const { subject, difficulty, count } = await req.json();
+        const { subject, unit, difficulty, count } = await req.json();
 
         const supabase = createClient();
 
@@ -13,7 +13,25 @@ export async function POST(req: NextRequest) {
         let query = supabase.from('questions').select('*');
 
         if (subject) query = query.eq('subject', subject);
-        if (difficulty) query = query.eq('difficulty', difficulty);
+        if (unit && Array.isArray(unit) && unit.length > 0) {
+            query = query.in('unit', unit);
+        } else if (unit && typeof unit === 'string') {
+            query = query.eq('unit', unit);
+        }
+
+        if (difficulty) {
+            const diffNum = parseInt(String(difficulty), 10);
+            if (!isNaN(diffNum)) {
+                // Fuzzy match +/- 1
+                const diffs = [diffNum - 1, diffNum, diffNum + 1]
+                    .filter(d => d >= 1 && d <= 10)
+                    .map(String);
+                query = query.in('difficulty', diffs);
+            } else {
+                // Fallback for non-numeric difficulty (e.g. 'Easy') - though we switched to 1-10
+                query = query.eq('difficulty', difficulty);
+            }
+        }
 
         // Random ordering
         // Note: Supabase JS doesn't have a direct .random() modifier in the builder easily exposed without RPC usually,

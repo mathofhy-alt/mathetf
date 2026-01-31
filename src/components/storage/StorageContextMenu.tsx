@@ -10,10 +10,11 @@ interface ContextMenuProps {
     onClose: () => void;
     onRename: () => void;
     onDelete: () => void;
+    onDownload?: () => void;
     onMove?: () => void; // Optional for future "Move To" dialog
 }
 
-export default function StorageContextMenu({ x, y, type, onClose, onRename, onDelete, onMove }: ContextMenuProps) {
+export default function StorageContextMenu({ x, y, type, onClose, onRename, onDelete, onMove, onDownload }: ContextMenuProps) {
     const ref = useRef<HTMLDivElement>(null);
 
     // Click outside to close
@@ -43,6 +44,18 @@ export default function StorageContextMenu({ x, y, type, onClose, onRename, onDe
             >
                 <Edit2 size={14} /> 이름 변경
             </button>
+            {type === 'item' && (
+                <button
+                    className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700"
+                    onClick={() => {
+                        // Trigger download directly
+                        if (onDownload) onDownload();
+                        onClose();
+                    }}
+                >
+                    <FolderInput size={14} className="rotate-180" /> 다운로드
+                </button>
+            )}
             <button
                 className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2 text-red-600"
                 onClick={() => {

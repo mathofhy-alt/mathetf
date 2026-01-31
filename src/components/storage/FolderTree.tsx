@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Folder, ChevronRight, ChevronDown } from 'lucide-react';
+import { Folder, ChevronRight, ChevronDown, Database } from 'lucide-react';
 import type { Folder as FolderType } from '@/types/storage';
 
 interface FolderTreeProps {
@@ -57,7 +57,12 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                     <span className="w-4"></span> // Spacer
                 )}
 
-                <Folder size={16} className={isSelected ? 'fill-blue-200 text-blue-600' : 'text-slate-400 group-hover:text-slate-500'} />
+                {(() => {
+                    if (folder.name === '구매한 학교 기출') {
+                        return <Database size={16} className={isSelected ? 'fill-indigo-200 text-indigo-600' : 'text-indigo-400 group-hover:text-indigo-500'} />;
+                    }
+                    return <Folder size={16} className={isSelected ? 'fill-blue-200 text-blue-600' : 'text-slate-400 group-hover:text-slate-500'} />;
+                })()}
                 <span className="text-sm truncate">{folder.name}</span>
             </div>
 

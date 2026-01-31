@@ -406,7 +406,7 @@ export default function AdminQuestionsPage() {
                         work_status: 'sorted',
                         grade: q.grade,
                         unit: q.unit,
-                        difficulty: q.difficulty || '1'
+                        difficulty: (q.difficulty && q.difficulty !== 'null') ? q.difficulty : '1'
                     }
                 })
             });

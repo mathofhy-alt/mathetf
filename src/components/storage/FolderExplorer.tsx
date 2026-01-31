@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FolderPlus, RefreshCw, Loader2, Home, DownloadCloud } from 'lucide-react';
+import { FolderPlus, RefreshCw, Loader2, Home, DownloadCloud, CheckSquare } from 'lucide-react';
 import FolderTree from './FolderTree';
 import FileGrid from './FileGrid';
 import StorageContextMenu from './StorageContextMenu';
@@ -9,9 +9,11 @@ import type { Folder, UserItem } from '@/types/storage';
 
 interface FolderExplorerProps {
     onItemSelect: (item: UserItem) => void;
+    onSelectAll?: (items: UserItem[]) => void;
+    selectedIds?: string[];
 }
 
-export default function FolderExplorer({ onItemSelect }: FolderExplorerProps) {
+export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [] }: FolderExplorerProps) {
     const [allFolders, setAllFolders] = useState<Folder[]>([]);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewFolders, setViewFolders] = useState<Folder[]>([]);
@@ -104,6 +106,12 @@ export default function FolderExplorer({ onItemSelect }: FolderExplorerProps) {
         }
     };
 
+    const handleDownload = () => {
+        if (!contextMenu || contextMenu.type !== 'item') return;
+        // Trigger download via API
+        window.location.href = `/api/storage/download?id=${contextMenu.id}`;
+    };
+
 
     const handleSync = async () => {
         if (!confirm('구매한 DB 목록을 보관함으로 가져오시겠습니까? (새로 구매한 항목만 추가됩니다)')) return;
@@ -191,6 +199,17 @@ export default function FolderExplorer({ onItemSelect }: FolderExplorerProps) {
                         >
                             <FolderPlus size={16} /> 새 폴더
                         </button>
+                        {onSelectAll && (
+                            <button
+                                onClick={() => {
+                                    const dbItems = viewItems.filter(i => i.type === 'personal_db');
+                                    if (dbItems.length > 0) onSelectAll(dbItems);
+                                }}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-sm font-medium transition-colors"
+                            >
+                                <CheckSquare size={16} /> 전체 선택
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -198,7 +217,7 @@ export default function FolderExplorer({ onItemSelect }: FolderExplorerProps) {
                     onClick={() => setContextMenu(null)}
                     onContextMenu={(e) => {
                         e.preventDefault();
-                        setContextMenu(null); // Clear on background click
+                        setContextMenu(null);
                     }}
                 >
                     {loading && (
@@ -211,12 +230,13 @@ export default function FolderExplorer({ onItemSelect }: FolderExplorerProps) {
                         items={viewItems}
                         onFolderClick={(f) => setCurrentFolderId(f.id)}
                         onItemClick={onItemSelect}
-                        onRename={(t, i, n) => { /* unused direct call */ }}
+                        onRename={(t, i, n) => { /* unused */ }}
                         onDelete={handleDelete}
                         onContextMenu={(e, type, id) => {
                             setContextMenu({ x: e.clientX, y: e.clientY, type, id });
                         }}
                         onMoveItem={handleMoveItem}
+                        selectedIds={selectedIds}
                     />
                 </div>
             </div>
@@ -229,6 +249,7 @@ export default function FolderExplorer({ onItemSelect }: FolderExplorerProps) {
                     onClose={() => setContextMenu(null)}
                     onRename={handleRename}
                     onDelete={handleDeleteFromContext}
+                    onDownload={handleDownload}
                 />
             )}
         </div>
