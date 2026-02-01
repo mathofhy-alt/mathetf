@@ -55,6 +55,7 @@ export default function ExamPlatform() {
     const [districtsMap, setDistrictsMap] = useState<Record<string, string[]>>({});
     const [schoolsMap, setSchoolsMap] = useState<Record<string, Record<string, string[]>>>({});
     const [isLoadingSchools, setIsLoadingSchools] = useState(true);
+    const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
 
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
@@ -114,6 +115,16 @@ export default function ExamPlatform() {
         if (data) {
             setPurchasedPoints(data.purchased_points || 0);
             setEarnedPoints(data.earned_points || 0);
+        }
+
+        // Fetch purchased exams to distinguish in UI
+        const { data: purchaseData } = await supabase
+            .from('purchases')
+            .select('exam_id')
+            .eq('user_id', userId);
+
+        if (purchaseData) {
+            setPurchasedIds(new Set(purchaseData.map(p => p.exam_id)));
         }
     };
 
@@ -307,6 +318,7 @@ export default function ExamPlatform() {
                 fetchMyPoints(user.id);
                 // For DB, we just stop here after purchase
                 if (file.type === 'DB') {
+                    setPurchasedIds(prev => new Set([...Array.from(prev), file.id]));
                     alert('개인 DB 구매가 완료되었습니다. 이제 시험지 만들기 탭에서 이 DB를 소스로 사용할 수 있습니다.');
                     return;
                 }
@@ -566,12 +578,18 @@ export default function ExamPlatform() {
                                             {group.files.db ? (
                                                 <button
                                                     onClick={() => handleDownload(group.files.db!)}
-                                                    title={`개인 DB 접근 (${group.files.db.price}원)`}
-                                                    className="group flex flex-col items-center p-1 rounded hover:bg-indigo-50 transition-colors"
+                                                    title={purchasedIds.has(group.files.db.id) ? "이미 구매한 DB입니다" : `개인 DB 접근 (${group.files.db.price}원)`}
+                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.db.id) ? 'bg-indigo-50/50' : 'hover:bg-indigo-50'}`}
                                                 >
-                                                    <DbFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[10px] font-bold text-indigo-600 mt-1">개인DB</span>
-                                                    <span className="text-[9px] text-indigo-400">{group.files.db.price}P</span>
+                                                    <DbFileIcon
+                                                        size={28}
+                                                        purchased={purchasedIds.has(group.files.db.id)}
+                                                        className="drop-shadow-sm group-hover:scale-110 transition-transform"
+                                                    />
+                                                    <span className={`text-[10px] font-bold mt-1 ${purchasedIds.has(group.files.db.id) ? 'text-indigo-600' : 'text-indigo-600'}`}>개인DB</span>
+                                                    <span className={`text-[9px] ${purchasedIds.has(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-indigo-400'}`}>
+                                                        {purchasedIds.has(group.files.db.id) ? '구매완료' : `${group.files.db.price}P`}
+                                                    </span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">

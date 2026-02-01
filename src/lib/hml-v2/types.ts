@@ -70,6 +70,8 @@ export interface DbQuestionImage {
     data: string;
     size_bytes: number;
     created_at: string;
+    // New field for compression optimization
+    compressed?: boolean;
 }
 
 // ============== Generator Input ==============

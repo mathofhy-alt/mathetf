@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 
 export const dynamic = 'force-dynamic'; // Prevent caching
 
@@ -20,59 +21,168 @@ export async function POST(req: NextRequest) {
 
         let questions: any[] = rawQuestions || [];
 
-        // Fetch if IDs provided but no questions (or partial)
-        if (ids && ids.length > 0 && questions.length === 0) {
-            console.log('[SaveAPI] Fetching questions from DB...');
-            const { data, error } = await supabase
+        // Always fetch from DB if IDs are provided to ensure we have complete records (including images)
+        if (ids && ids.length > 0) {
+            console.log('[SaveAPI] Fetching full data from DB...');
+            // 1. Fetch questions
+            const { data: qData, error: qError } = await supabase
                 .from('questions')
-                .select('*, question_images(*)') // Include images!
+                .select('*')
                 .in('id', ids);
 
-            if (error) {
-                console.error('[SaveAPI] DB Fetch Error:', error);
-                throw new Error("DB Error");
+            if (qError) throw new Error("DB Fetch Error (Questions): " + qError.message);
+
+            // 2. Fetch images separately (Admin API pattern)
+            const { data: imgData, error: imgError } = await supabase
+                .from('question_images')
+                .select('*')
+                .in('question_id', ids);
+
+            if (imgError) console.warn('[SaveAPI] Image fetch warning:', imgError.message);
+
+            // [FIX] Resolve image URLs to Base64 (Manual Captures use URLs)
+            if (imgData && imgData.length > 0) {
+                console.log(`[SaveAPI] Resolving/Decompressing ${imgData.length} images...`);
+                await Promise.all(imgData.map(async (img) => {
+                    // Case 1: URL -> Base64
+                    if (img.data && (img.data.startsWith('http://') || img.data.startsWith('https://'))) {
+                        try {
+                            const res = await fetch(img.data);
+                            if (res.ok) {
+                                const buffer = await res.arrayBuffer();
+                                img.data = Buffer.from(buffer).toString('base64');
+                                // Update format based on content-type if possible
+                                const contentType = res.headers.get('content-type');
+                                if (contentType?.includes('png')) img.format = 'png';
+                                else if (contentType?.includes('jpeg') || contentType?.includes('jpg')) img.format = 'jpg';
+                                else if (contentType?.includes('gif')) img.format = 'gif';
+                                else if (contentType?.includes('bmp')) img.format = 'bmp';
+                            }
+                        } catch (err) {
+                            console.warn(`[SaveAPI] Failed to resolve image URL: ${img.data}`, err);
+                        }
+                    }
+                    // Case 2: Native Compressed Data (Start with 72 f2 or other non-image headers)
+                    // HML Native images are often DEFLATE raw streams.
+                    // Since we can't easily check '72f2' on Base64 string efficiently without buffer alloc,
+                    // We will try to inflate IF it is NOT a valid image header.
+                    // BMP: BM, PNG: .PNG, JPG: FF D8
+                    else if (img.data && typeof img.data === 'string') {
+                        try {
+                            let buffer = Buffer.from(img.data, 'base64');
+                            const head = buffer.subarray(0, 2).toString('ascii');
+                            const headHex = buffer.subarray(0, 2).toString('hex');
+
+                            // If IT IS NOT a common image header (BM, PNG-ish, JPG-ish)
+                            const isBmp = head === 'BM';
+                            // PNG starts with 89 50 4E 47 (approx)
+                            const isPng = headHex === '8950';
+                            // JPG starts with FF D8
+                            const isJpg = headHex === 'ffd8';
+
+                            if (!isBmp && !isPng && !isJpg) {
+                                // Check for zlib/deflate
+                                // Try inflateRaw first (no header, common in HWP stream)
+                                try {
+                                    // Synchronous is fine for now, or async if needed.
+                                    // Using sync for simplicity in map
+                                    const inflated = zlib.inflateRawSync(buffer);
+                                    console.log(`[SaveAPI] Decompressed image ${img.id} (${img.original_bin_id}) from ${buffer.length} to ${inflated.length}`);
+
+                                    // [OPTIMIZATION] Re-compress using Raw Deflate (like original)
+                                    // Standard zlib.deflateSync adds a header (78 9C) which Hancom might reject if it expects Raw.
+                                    try {
+                                        const deflated = zlib.deflateRawSync(inflated);
+                                        console.log(`[SaveAPI] Re-compressed image ${img.id} (Raw Deflate) (Size: ${inflated.length} -> ${deflated.length})`);
+                                        img.data = deflated.toString('base64');
+                                        // Original Uncompressed Size is needed for Size attribute in BINDATA
+                                        img.size_bytes = inflated.length;
+                                        img.compressed = true;
+                                    } catch (defErr) {
+                                        console.warn(`[SaveAPI] Re-compression failed for ${img.id}`, defErr);
+                                        // Fallback to uncompressed
+                                        img.data = inflated.toString('base64');
+                                        img.size_bytes = inflated.length;
+                                    }
+
+                                    // If we inflated it, it's likely BMP or original format.
+                                    // Check header of inflated
+                                    const newHead = inflated.subarray(0, 2).toString('ascii');
+                                    if (newHead === 'BM') img.format = 'bmp';
+
+                                } catch (zErr) {
+                                    // Try standard inflate (zlib header)
+                                    try {
+                                        const inflated = zlib.inflateSync(buffer);
+                                        console.log(`[SaveAPI] Decompressed (ZLIB) image ${img.id} (${img.original_bin_id})`);
+                                        img.data = inflated.toString('base64');
+                                    } catch (zErr2) {
+                                        // Not compressed or unknown format. Keep original.
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`[SaveAPI] Error checking compression for ${img.id}`, e);
+                        }
+                    }
+                }));
             }
 
-            if (data) {
-                console.log(`[SaveAPI] Fetched ${data.length} questions.`);
-                // Correct ordering
-                const qMap = new Map();
-                data.forEach(q => qMap.set(q.id, q));
+            // Group images by question_id
+            const imagesByQuestion = new Map<string, any[]>();
+            if (imgData) {
+                for (const img of imgData) {
+                    const qid = img.question_id;
+                    if (!imagesByQuestion.has(qid)) imagesByQuestion.set(qid, []);
+                    imagesByQuestion.get(qid)!.push(img);
+                }
+            }
+
+            if (qData) {
+                console.log(`[SaveAPI] Fetched ${qData.length} questions and ${imgData?.length || 0} images.`);
+                // Reset questions array
+                questions = [];
+                // Correct ordering based on input IDs
+                const qMap = new Map(qData.map(q => [q.id, q]));
                 ids.forEach((id: string) => {
                     const q = qMap.get(id);
-                    if (q) questions.push(q);
+                    if (q) {
+                        // Attach images to the question object for the map below
+                        q.images = imagesByQuestion.get(q.id) || [];
+                        questions.push(q);
+                    }
                 });
             }
         }
 
         if (questions.length === 0) return NextResponse.json({ success: false, error: 'No questions provided' }, { status: 400 });
 
-        // Prepare Questions (same as download route)
-        console.log('[SaveAPI] Preparing questions...');
+        // Prepare Questions
         questions.forEach((q, idx) => {
             if (!q.content_xml || q.content_xml.trim().length === 0) {
-                q.content_xml = `<P ParaShape="0" Style="0"><TEXT CharShape="0">[Error] Content Missing for Q${q.id}</TEXT></P>`;
+                q.content_xml = q.fragment_xml || `<P ParaShape="0" Style="0"><TEXT CharShape="0">[Error] Content Missing</TEXT></P>`;
             }
             q.question_number = idx + 1;
         });
 
-        // Load Template
+        // Load Template (Align with Admin fallback)
         console.log('[SaveAPI] Loading template...');
         let templatePath = path.join(process.cwd(), '재조립양식.hml');
+        if (!fs.existsSync(templatePath)) {
+            templatePath = path.join(process.cwd(), 'hml v2-test-tem.hml'); // Match Admin
+        }
         if (!fs.existsSync(templatePath)) {
             templatePath = path.join(process.cwd(), 'template.hml');
         }
         if (!fs.existsSync(templatePath)) throw new Error('Template file missing');
 
         const templateXml = fs.readFileSync(templatePath, 'utf-8');
-        console.log('[SaveAPI] Template loaded.');
 
         // Generate HML
-        console.log('[SaveAPI] Initializing HML Generator...');
         const { generateHmlFromTemplate } = await import('@/lib/hml-v2/generator');
         const questionsWithImages = questions.map(q => ({
             question: q,
-            images: q.images || q.question_images || [] // Handle both formats
+            images: q.images || []
         }));
 
         console.log('[SaveAPI] Generating HML...');

@@ -56,10 +56,11 @@ export const HwpFileIcon: React.FC<FileIconProps> = ({ className = '', size = 24
     );
 };
 
-export const DbFileIcon: React.FC<FileIconProps> = ({ className = '', size = 24, grayscale = false }) => {
-    const mainFill = grayscale ? "#F3F4F6" : "#F0FDF4";
-    const strokeColor = grayscale ? "#9CA3AF" : "#16A34A";
-    const labelFill = grayscale ? "#9CA3AF" : "#16A34A";
+export const DbFileIcon: React.FC<FileIconProps & { purchased?: boolean }> = ({ className = '', size = 24, grayscale = false, purchased = false }) => {
+    // If purchased, use Indigo. If grayscale (not registered), use Gray. Otherwise (available), use Green.
+    const mainFill = grayscale ? "#F3F4F6" : (purchased ? "#EEF2FF" : "#F0FDF4");
+    const strokeColor = grayscale ? "#9CA3AF" : (purchased ? "#4F46E5" : "#16A34A");
+    const labelFill = grayscale ? "#9CA3AF" : (purchased ? "#4F46E5" : "#16A34A");
 
     return (
         <svg

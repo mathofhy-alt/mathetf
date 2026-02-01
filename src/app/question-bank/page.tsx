@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import SaveLocationModal from '@/components/storage/SaveLocationModal';
 import AutoGenModal from '@/components/question-bank/AutoGenModal';
@@ -23,31 +23,36 @@ export default function QuestionBankPage() {
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState<any[]>([]);
 
+    // Derived State for performance (O(1) lookup)
+    const cartIdSet = useMemo(() => new Set((cart || []).filter(item => item && item.id).map(item => item.id)), [cart]);
+
     // Load Cart from LocalStorage
     useEffect(() => {
-        const savedCart = localStorage.getItem('exam_cart');
-        if (savedCart) {
+        const savedCartIds = localStorage.getItem('exam_cart_ids'); // Use IDs only
+        if (savedCartIds && savedCartIds !== 'undefined' && savedCartIds !== 'null') {
             try {
-                setCart(JSON.parse(savedCart));
+                const parsedIds = JSON.parse(savedCartIds);
+                if (Array.isArray(parsedIds)) {
+                    // Initialize cart with skeleton objects. 
+                    // The Save API and highlight logic only need the .id property.
+                    setCart(parsedIds.map(id => ({ id })));
+                }
             } catch (e) {
                 console.error("Failed to load cart", e);
+                setCart([]);
             }
         }
     }, []);
 
-    // Save Cart to LocalStorage
+    // Save Cart to LocalStorage (Store ONLY IDs to save space and prevent Quota errors)
     useEffect(() => {
-        if (cart.length > 0) { // Only save if not empty to avoid overwriting with initial empty state on load (race condition usually invalid in simple hooks but good practice)
-            // Actually, if we load empty, we shouldn't save empty immediately.
-            // But the load effect runs once.
-            localStorage.setItem('exam_cart', JSON.stringify(cart));
-        } else {
-            // If cart is empty, should we clear storage?
-            // If initial load was empty, fine. 
-            // If user cleared cart, we should clear storage.
-            // To distinguish initial load vs user clear, we can skip saving on first render.
-            // But simpler: just save.
-            localStorage.setItem('exam_cart', JSON.stringify(cart));
+        try {
+            const idsOnly = (cart || []).filter(item => item && item.id).map(item => item.id);
+            localStorage.setItem('exam_cart_ids', JSON.stringify(idsOnly));
+            // Cleanup legacy storage if exists
+            localStorage.removeItem('exam_cart');
+        } catch (e) {
+            console.error("Failed to save cart to localStorage", e);
         }
     }, [cart]);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -274,6 +279,22 @@ export default function QuestionBankPage() {
         }
     };
 
+    const handleSelectAllToggle = () => {
+        if (!questions || questions.length === 0) return;
+
+        const allInSearchInCart = questions.every(q => q && cartIdSet.has(q.id));
+
+        if (allInSearchInCart) {
+            // Remove all current search results from cart
+            const searchIds = new Set(questions.filter(q => q && q.id).map(q => q.id));
+            setCart(prev => (Array.isArray(prev) ? prev : []).filter(c => c && !searchIds.has(c.id)));
+        } else {
+            // Add all current search results to cart (avoiding duplicates)
+            const toAdd = questions.filter(q => q && q.id && !cartIdSet.has(q.id));
+            setCart(prev => [...(Array.isArray(prev) ? prev : []), ...toAdd]);
+        }
+    };
+
     // Open Config Modal
     const handleGenerate = () => {
         if (cart.length === 0) return;
@@ -298,7 +319,7 @@ export default function QuestionBankPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    questions: cart,
+                    ids: cart.map(q => q.id),
                     title: examTitle,
                     folderId: folderId || 'root'
                 }),
@@ -452,6 +473,14 @@ export default function QuestionBankPage() {
                             {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
                         </h1>
                         <div className="flex gap-2">
+                            {questions.length > 0 && (
+                                <button
+                                    onClick={handleSelectAllToggle}
+                                    className="border border-slate-300 text-slate-600 px-4 py-2 rounded-lg hover:bg-white hover:text-indigo-600 hover:border-indigo-600 shadow-sm transition font-bold"
+                                >
+                                    {questions.every(q => q && cartIdSet.has(q.id)) ? '전체 해제' : '전체 선택'}
+                                </button>
+                            )}
                             <button
                                 onClick={handleGenerate}
                                 disabled={cart.length === 0 || isGenerating}
@@ -484,7 +513,7 @@ export default function QuestionBankPage() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
                             {questions.length > 0 ? questions.map((q) => {
-                                const inCart = !!cart.find(c => c.id === q.id);
+                                const inCart = q && cartIdSet.has(q.id);
                                 return (
                                     <div
                                         key={q.id}

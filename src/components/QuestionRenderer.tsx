@@ -241,7 +241,11 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 );
             });
 
-            return elements;
+            return (
+                <>
+                    {elements}
+                </>
+            );
 
         } catch (e) {
             console.error("Render Error", e);

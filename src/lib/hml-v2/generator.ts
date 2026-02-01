@@ -216,7 +216,9 @@ export function generateHmlFromTemplate(
         let currentRole = '';
 
         const children = Array.from(root.childNodes);
+        console.log(`[HML-V2 DEBUG] Question ${qIndex} has ${children.length} root child nodes`);
         for (const child of children) {
+            console.log(`[HML-V2 DEBUG]   - Node: ${child.nodeName}, Content Snippet: ${child.textContent?.substring(0, 20)}`);
             if (child.nodeType !== 1) continue;
             const el = child as Element;
             const role = el.getAttribute('data-hml-style') || '';
@@ -257,9 +259,11 @@ export function generateHmlFromTemplate(
         }
 
         let questionXml = finalNodes.join('\n');
+        console.log(`[HML-V2 DEBUG] questionXml length: ${questionXml.length}`);
 
         // Remap BinItem/BinData
         remap.forEach((newId, oldId) => {
+            console.log(`[HML-V2 DEBUG] Remapping ${oldId} -> ${newId}`);
             // First, normalize IMAGE tags to use BinItem (Hancom requirement)
             // If the source has BinData on IMAGE, convert it to BinItem locally for the regex to catch
             // Or just handle it in the global replace.
@@ -270,22 +274,25 @@ export function generateHmlFromTemplate(
             // In BODY, IMAGE tags should use BinItem.
             const pattern = new RegExp(`(BinItem|BinData)="${oldId}"`, 'g');
             questionXml = questionXml.replace(pattern, (match, attr) => {
-                // Force attributes found in control file: Alpha="0" Bright="0" Contrast="0" Effect="RealPic"
-                // The regex match replaces 'BinItem="ID"' part.
-                // But we need to make sure we don't break other attributes or duplicate them. 
-                // A safer bet is just to correct the ID reference attribute name first.
-                return `BinItem="${newId}"`;
+                // Use a marker to avoid re-matching in the same loop
+                return `BinItem="__REMAP_${newId}__"`;
             });
+        });
 
-            // Add mandatory Effect="RealPic" to IMAGE if missing
-            questionXml = questionXml.replace(/<IMAGE\b([^>]*?)(\/?)>/g, (match, attrs, selfClose) => {
-                let newAttrs = attrs;
-                if (!newAttrs.includes('Effect="')) newAttrs += ' Effect="RealPic"';
-                if (!newAttrs.includes('Alpha="')) newAttrs += ' Alpha="0"';
-                if (!newAttrs.includes('Bright="')) newAttrs += ' Bright="0"';
-                if (!newAttrs.includes('Contrast="')) newAttrs += ' Contrast="0"';
-                return `<IMAGE${newAttrs}${selfClose}>`;
-            });
+        // After all remappings are done, replace the temporary markers with the actual new IDs
+        // This prevents issues where an oldId might be equal to a newId from a previous remapping
+        questionXml = questionXml.replace(/BinItem="__REMAP_(\d+)__"/g, (match, newId) => {
+            return `BinItem="${newId}"`;
+        });
+
+        // Add mandatory Effect="RealPic" to IMAGE if missing
+        questionXml = questionXml.replace(/<IMAGE\b([^>]*?)(\/?)>/g, (match, attrs, selfClose) => {
+            let newAttrs = attrs;
+            if (!newAttrs.includes('Effect="')) newAttrs += ' Effect="RealPic"';
+            if (!newAttrs.includes('Alpha="')) newAttrs += ' Alpha="0"';
+            if (!newAttrs.includes('Bright="')) newAttrs += ' Bright="0"';
+            if (!newAttrs.includes('Contrast="')) newAttrs += ' Contrast="0"';
+            return `<IMAGE${newAttrs}${selfClose}>`;
         });
 
         // Add mandatory TreatAsChar to PICTURE if missing
@@ -389,12 +396,14 @@ export function generateHmlFromTemplate(
             // Windows-friendly CRLF
             const wrappedBase64 = cleanBase64.match(/.{1,76}/g)?.join('\r\n') || cleanBase64;
 
-            // Hancom Control File Observation:
-            // Matches text length including newlines.
-            const size = wrappedBase64.length;
+            // Base64 length is NOT the correct Size for HML BINDATA
+            // It should be the byte size of the original data.
+            // If the data is Base64, original size is approx length * 3/4
+            // But we might have the actual size in the DB record.
+            const rawData = Buffer.from(base64, 'base64');
+            const binarySize = image.size_bytes || rawData.length;
 
-            // STRICT MATCH: Remove Compress="false" as it is absent in Control File.
-            binDataXml += `<BINDATA Id="${newId}" Encoding="Base64" Size="${size}">${wrappedBase64}</BINDATA>`;
+            binDataXml += `<BINDATA Id="${newId}" Encoding="Base64" Size="${binarySize}"${image.compressed ? ' Compress="true"' : ''}>${wrappedBase64}</BINDATA>`;
         }
 
         if (currentHml.includes('<BINDATASTORAGE')) {

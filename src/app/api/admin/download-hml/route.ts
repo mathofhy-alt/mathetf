@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { generateHmlFile } from '@/lib/hml-v2/generator';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,69 @@ export async function POST(req: NextRequest) {
 
         if (imgError) {
             console.warn('[HML-V2-DOWNLOAD] Image fetch warning:', imgError.message);
+        }
+
+        // [FIX] Resolve image URLs to Base64 (Manual Captures use URLs)
+        if (images && images.length > 0) {
+            console.log(`[HML-V2-DOWNLOAD] Resolving ${images.length} images...`);
+            await Promise.all(images.map(async (img) => {
+                if (img.data && (img.data.startsWith('http://') || img.data.startsWith('https://'))) {
+                    try {
+                        const res = await fetch(img.data);
+                        if (res.ok) {
+                            const buffer = await res.arrayBuffer();
+                            img.data = Buffer.from(buffer).toString('base64');
+                            const contentType = res.headers.get('content-type');
+                            if (contentType?.includes('png')) img.format = 'png';
+                            else if (contentType?.includes('jpeg') || contentType?.includes('jpg')) img.format = 'jpg';
+                            else if (contentType?.includes('bmp')) img.format = 'bmp';
+                        }
+                    } catch (err) {
+                        console.warn(`[HML-V2-DOWNLOAD] Failed to resolve image URL: ${img.data}`, err);
+                    }
+                }
+                // Case 2: Native Compressed Data fallback
+                else if (img.data && typeof img.data === 'string') {
+                    try {
+                        let buffer = Buffer.from(img.data, 'base64');
+                        const head = buffer.subarray(0, 2).toString('ascii');
+                        const headHex = buffer.subarray(0, 2).toString('hex');
+                        const isBmp = head === 'BM';
+                        const isPng = headHex === '8950';
+                        const isJpg = headHex === 'ffd8';
+
+                        if (!isBmp && !isPng && !isJpg) {
+                            try {
+                                const inflated = zlib.inflateRawSync(buffer);
+                                console.log(`[HML-V2-DOWNLOAD] Decompressed image ${img.original_bin_id} (${buffer.length} -> ${inflated.length})`);
+
+                                // [OPTIMIZATION] Re-compress using Raw Deflate (like original)
+                                try {
+                                    const deflated = zlib.deflateRawSync(inflated);
+                                    console.log(`[HML-V2-DOWNLOAD] Re-compressed image ${img.original_bin_id} (Raw Deflate) (Size: ${inflated.length} -> ${deflated.length})`);
+                                    img.data = deflated.toString('base64');
+                                    img.size_bytes = inflated.length; // Uncompressed Size
+                                    img.compressed = true;
+                                } catch (defErr) {
+                                    console.warn(`[HML-V2-DOWNLOAD] Re-compression failed for ${img.original_bin_id}`, defErr);
+                                    img.data = inflated.toString('base64');
+                                    img.size_bytes = inflated.length;
+                                }
+
+                                const newHead = inflated.subarray(0, 2).toString('ascii');
+                                if (newHead === 'BM') img.format = 'bmp';
+                            } catch (zErr) {
+                                try {
+                                    const inflated = zlib.inflateSync(buffer);
+                                    img.data = inflated.toString('base64');
+                                } catch (zErr2) { }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[HML-V2-DOWNLOAD] Decompression check failed', e);
+                    }
+                }
+            }));
         }
 
         // Group images by question_id
