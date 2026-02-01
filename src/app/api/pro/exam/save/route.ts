@@ -101,6 +101,21 @@ export async function POST(req: NextRequest) {
             throw new Error(`Upload failed: ${uploadError.message}`);
         }
 
+        // --- Upload Metadata Sidecar (.json) ---
+        const metaFilename = `${fileId}.json`;
+        const metaPath = `${user.id}/${metaFilename}`;
+        const metaData = {
+            source_db_ids: Array.from(new Set(questions.map(q => q.source_db_id).filter(Boolean)))
+        };
+
+        console.log(`[SaveAPI] Uploading Metadata Sidecar: ${metaPath}`);
+        await supabase.storage
+            .from('exams')
+            .upload(metaPath, JSON.stringify(metaData), {
+                contentType: 'application/json',
+                upsert: false
+            });
+
         // --- Create User Item ---
         console.log('[SaveAPI] Creating User Item in DB...');
         const displayTitle = title || 'Exam_Paper';

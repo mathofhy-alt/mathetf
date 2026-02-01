@@ -8,6 +8,7 @@ import FolderExplorer from '@/components/storage/FolderExplorer';
 import FilterSidebar from '@/components/question-bank/FilterSidebar';
 import QuestionPreview from '@/components/question-bank/QuestionPreview';
 import QuestionRenderer from '@/components/QuestionRenderer';
+import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 import ExamCart from '@/components/question-bank/ExamCart';
 import ConfigModal from '@/components/question-bank/ConfigModal';
 import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsModal';
@@ -330,6 +331,8 @@ export default function QuestionBankPage() {
         setIsUploadModalOpen(true);
     };
 
+    const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+
     return (
         <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
             <Header
@@ -358,6 +361,14 @@ export default function QuestionBankPage() {
                                     onSelectAll={handleDbSelectAll}
                                     selectedIds={selectedDbIds}
                                 />
+                            </div>
+                            <div className="p-4 border-t bg-slate-50 flex justify-end">
+                                <button
+                                    onClick={() => setShowDuplicateModal(true)} // Open check instead of closing directly
+                                    className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition"
+                                >
+                                    선택 완료
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -605,6 +616,7 @@ export default function QuestionBankPage() {
                         onClose={() => setSolutionTarget(null)}
                     />
                 )}
+
             </div>
 
             <UploadModal
@@ -615,6 +627,31 @@ export default function QuestionBankPage() {
                 districtsMap={{}}
                 schoolsMap={{}}
             />
+
+            {showDuplicateModal && (
+                <DuplicateCheckModal
+                    isOpen={showDuplicateModal}
+                    onClose={() => {
+                        setShowDuplicateModal(false);
+                        setShowStorageModal(false);
+                    }}
+                    onCheck={(blockedIds: string[], examName: string) => {
+                        const initialCount = selectedDbIds.length;
+                        const filteredIds = selectedDbIds.filter(id => !blockedIds.includes(id));
+                        const removedCount = initialCount - filteredIds.length;
+
+                        setSelectedDbIds(filteredIds);
+                        setShowDuplicateModal(false);
+                        setShowStorageModal(false);
+
+                        if (removedCount > 0) {
+                            alert(`"${examName}"에 사용된 소스 ${removedCount}개를 제외했습니다.`);
+                        } else {
+                            alert('중복된 소스가 없습니다.');
+                        }
+                    }}
+                />
+            )}
         </div >
     );
 }
