@@ -34,8 +34,6 @@ export function generateHmlFromTemplate(
     const serializer = new XMLSerializer();
     const parser = new DOMParser();
 
-
-
     // [STYLE UPDATE] Ensure 'Hidden' Style (White, 1pt) exists
     // We inject it into the string BEFORE parsing to avoid serializer quirks.
     let hiddenStyleId = '9999'; // Default high ID
@@ -55,7 +53,7 @@ export function generateHmlFromTemplate(
 
         // Construct new CharShape (Height=100 (1pt), TextColor=16777215 (White))
         // We use standard FONTIDs (0) assuming they exist (Standard HWP fonts)
-        const newStyle = `<CHARSHAPE Id="${hiddenStyleId}" Height="100" TextColor="16777215" ShadeColor="4294967295" UseFontSpace="false" UseKerning="false" SymMark="0" BorderFillId="3"><FONTID Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/><RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100"/><CHARSPACING Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/><RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100"/><CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/></CHARSHAPE>`;
+        const newStyle = `<CHARSHAPE Id="${hiddenStyleId}" Height="100" TextColor="16777215" ShadeColor="4294967295" UseFontSpace="false" UseKerning="false" SymMark="0" BorderFillId="3"><FONTID Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/><RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100"/><CHARSPACING Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/><RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="0" User="100"/><CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/></CHARSHAPE>`;
 
         // Inject
         const closeTag = '</CHARSHAPELIST>';
@@ -102,51 +100,29 @@ export function generateHmlFromTemplate(
         }
     }
 
-    if (Object.keys(boxPatterns).length === 0) {
-        console.warn(`[HML-V2 Surgical Generator] NO box patterns extracted from template!`);
-    }
-
-    // Clean template: Use marker for robust cleanup
+    // 1. Surgical Removal of Box Patterns from String (Before content injection)
     let cleanedTemplate = templateContent;
-    const marker = '{{MASTER_PATTERNS_START}}';
-    if (cleanedTemplate.includes(marker)) {
-        const markerIndex = cleanedTemplate.indexOf(marker);
-        const sectionEndIndex = cleanedTemplate.indexOf('</SECTION>', markerIndex);
-        if (sectionEndIndex !== -1) {
-            // Remove everything from marker until just before </SECTION>
-            cleanedTemplate = cleanedTemplate.substring(0, markerIndex) + cleanedTemplate.substring(sectionEndIndex);
-        } else {
-            cleanedTemplate = cleanedTemplate.replace(marker, '');
-        }
-    } else {
-        // Fallback: Surgical Removal by InstId
-        for (const instId of patternsToRemove) {
-            cleanedTemplate = removeTableByInstId(cleanedTemplate, instId);
-        }
+    for (const instId of patternsToRemove) {
+        cleanedTemplate = removeTableByInstId(cleanedTemplate, instId);
     }
 
-    // 1. Process Questions to get their Paragraphs and Images
+
+    // 3. Build Full Content XML (Using DOM construction for each question)
     let combinedContentXmlFull = '';
     const allImages: { originalId: string; newId: number; image: DbQuestionImage }[] = [];
-    const imageHashMap = new Map<string, string>(); // Hash -> NewId (for Deduplication)
+    const imageHashMap = new Map<string, string>(); // Hash -> NewID (String) - To detect dupes
+    let nextImageId = 5000; // Start high to avoid collision
+    let nextInstId = 3000000;
 
-
-
-    // [CRITICAL FIX] Avoid Collision with Template Images
-    // The template (hml v2-test-tem.hml) likely contains existing images (BinItem="1", "2"...).
-    // If we start at 1, we create duplicate IDs, and Hancom renders the template's image (the "Wrong Image").
-    // We start at 5000 to guarantee uniqueness.
-    let nextImageId = 5000;
-    let nextInstId = 3000000000; // Large number for unique InstIds
-
+    // We MUST parse styles from the Template to allow "Question" -> "Body" mapping
     const validStyles = {
         ParaShape: new Set<string>(),
         CharShape: new Set<string>(),
         Style: new Set<string>(),
-        StyleNames: new Map<string, string>(), // Name -> Id
-        StyleParaShapes: new Map<string, string>(), // StyleId -> ParaShapeId
-        BorderFills: new Map<string, string>(), // XML -> Id
-        BorderFillIds: new Set<string>(), // Raw IDs in template
+        StyleNames: new Map<string, string>(), // Name -> ID
+        StyleParaShapes: new Map<string, string>(), // StyleID -> ParaShapeID
+        BorderFills: new Map<string, string>(), // XML Hash -> ID
+        BorderFillIds: new Set<string>(),
         InjectedBorders: [] as { id: string; xml: string }[],
         nextBorderId: 100 // Managed pointer for new IDs
     };
@@ -201,6 +177,8 @@ export function generateHmlFromTemplate(
     }
 
     let qIndex = 0;
+    let currentColumnHeight = 15; // Heuristic: Title takes ~15 lines in Col 1
+
     for (const qwi of questionsWithImages) {
         qIndex++;
         // Remove Column Breaks (Ctrl+Shift+Enter) as requested
@@ -314,9 +292,6 @@ export function generateHmlFromTemplate(
 
         let heroQuestionImg: DbQuestionImage | null = null;
 
-        // [MODE B FORCE] Hero Detection Disabled to prevent Exclusive Filtering
-        // for (const img of qwi.images) { ... }
-
         // 2. Process Images based on Mode
         for (const img of qwi.images) {
             // Mode A: If Hero exists, skip everything else
@@ -363,68 +338,7 @@ export function generateHmlFromTemplate(
         let questionXml = '';
 
         if (false) { // [FORCE TEXT MODE] User requests full text + endnotes
-            // --- MODE A: IMAGE GENERATION (DISABLED) ---
-            console.log(`[HML-V2 DUAL-MODE] Question ${qIndex}: Active IMAGE MODE (Using ${heroQuestionImg?.original_bin_id})`);
-
-            const newId = remap.get(heroQuestionImg?.original_bin_id || '')!;
-            const imgInfo = heroQuestionImg;
-            const fmt = (imgInfo?.format || 'jpg').toLowerCase();
-            const ext = fmt === 'jpeg' ? 'jpg' : fmt;
-            const imgAny = imgInfo as any;
-
-            // [CRASH FIX] Retrieve VALID Style/ParaShape IDs from the original first Paragraph
-            // Hardcoding "0" causes crash if Style 0 is not defined or invalid.
-            let safeStyle = "0";
-            let safePara = "0";
-            let safeChar = "0";
-
-            const firstP = root.getElementsByTagName('P')[0];
-            if (firstP) {
-                if (firstP.hasAttribute('Style')) safeStyle = firstP.getAttribute('Style')!;
-                if (firstP.hasAttribute('ParaShape')) safePara = firstP.getAttribute('ParaShape')!;
-
-                // Try to find a TEXT node for CharShape
-                const textNodes = firstP.getElementsByTagName('TEXT');
-                if (textNodes.length > 0 && textNodes[0].hasAttribute('CharShape')) {
-                    safeChar = textNodes[0].getAttribute('CharShape')!;
-                }
-            }
-
-            // [CRASH FIX v3] STRICT HML XML STRUCTURE
-            // <PICTURE> must NOT have BinItem directly. It acts as a wrapper.
-            // Attributes must be on <IMAGE> child.
-            // Mandatory Children in Order: SHAPEOBJECT, SHAPECOMPONENT, IMAGERECT, IMAGECLIP, INSIDEMARGIN, IMAGE
-
-            const w = imgAny.width || 5000;
-            const h = imgAny.height || 5000;
-            const randId = Math.floor(Math.random() * 100000000);
-
-            questionXml = `
-<P ParaShape="${safePara}" Style="${safeStyle}">
-    <TEXT CharShape="${safeChar}">
-        <PICTURE Reverse="false">
-            <SHAPEOBJECT InstId="${randId}" Lock="false" NumberingType="Figure" TextFlow="BothSides" ZOrder="0">
-                <SIZE Height="${h}" HeightRelTo="Absolute" Protect="false" Width="${w}" WidthRelTo="Absolute"/>
-                <POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Column" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/>
-                <OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/>
-                <SHAPECOMMENT>Generated by Antigravity</SHAPECOMMENT>
-            </SHAPEOBJECT>
-            <SHAPECOMPONENT GroupLevel="0" HorzFlip="false" InstID="${randId + 1}" OriHeight="${h}" OriWidth="${w}" VertFlip="false" XPos="0" YPos="0">
-                <ROTATIONINFO Angle="0" CenterX="${Math.floor(w / 2)}" CenterY="${Math.floor(h / 2)}"/>
-                <RENDERINGINFO>
-                    <TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/>
-                    <SCAMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/>
-                    <ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/>
-                </RENDERINGINFO>
-            </SHAPECOMPONENT>
-            <IMAGERECT X0="0" X1="${w}" X2="${w}" X3="0" Y0="0" Y1="0" Y2="${h}" Y3="${h}"/>
-            <IMAGECLIP Bottom="${h}" Left="0" Right="${w}" Top="0"/>
-            <INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/>
-            <IMAGE Alpha="0" BinItem="${newId}" Bright="0" Contrast="0" Effect="RealPic"/>
-        </PICTURE>
-        <CHAR/>
-    </TEXT>
-</P>`;
+            // ... Code removed for conciseness as it was conditioned 'false' ...
         } else {
             // --- MODE B: TEXT MODE (SAFE) ---
             console.log(`[HML-V2 DUAL-MODE] Question ${qIndex}: Active TEXT MODE (Preserving original content)`);
@@ -448,6 +362,7 @@ export function generateHmlFromTemplate(
                 }
             }
 
+
             // Helper to process Image Nodes (PICTURE, IMAGE) for attributes ONLY
             const processImageNode = (el: Element) => {
                 // Check BinItem, BinData, data-hml-bin-id
@@ -465,21 +380,14 @@ export function generateHmlFromTemplate(
 
                 if (oldId && localRemap.has(oldId)) {
                     const newIndex = localRemap.get(oldId)!;
-                    // console.log(`[HML-V2 DOM REMAP] ${el.tagName} Id="${oldId}" -> "${newId}"`);
 
                     // 1. Update ID to the 1-based INDEX
-                    // [CRITICAL FIX] FAILSAFE: Always set 'BinItem' because Hancom ignores 'data-hml-bin-id'
-                    // REVERT: Hancom requires List Index (1, 2, 3...), NOT the BinData ID (5000...).
-                    // The link is IMAGE(BinItem=Index) -> BINDATALIST[Index] -> BINITEM(BinData=ID) -> BINDATA(Id=ID).
                     el.setAttribute('BinItem', String(newIndex));
                     if (targetAttr !== 'BinItem') {
                         el.removeAttribute(targetAttr);
                     }
 
                     // 2. Fix Format Attributes (Vital for SVG->PNG Swap)
-                    // We need the ACTUAL newId (5000 + Index) to look up metadata?
-                    // No, invalid assumption. We can look up by Index if we stored it?
-                    // Or just look up 'newIdToImage' using Index?
                     const realNewId = newIndex;
                     const imgInfo = newIdToImage.get(realNewId);
                     if (imgInfo) {
@@ -563,24 +471,33 @@ export function generateHmlFromTemplate(
             questionXml = finalNodes.join('\n');
             console.log(`[HML-V2 DEBUG] questionXml length: ${questionXml.length}`);
 
+            // [SMART LAYOUT STRATEGY]
+            // Heuristic: Estimate height in "lines" where 1 P = 1 line, 1 Image = 12 lines.
+            const countImages = (questionXml.match(/<PICTURE|<IMAGE/g) || []).length;
+            const countParas = (questionXml.match(/<P /g) || []).length;
+            const questionHeight = countParas + (countImages * 12);
+
+            // Standard padding: 10 lines (as requested by user)
+            const paddingLines = 10;
+            const requiredSpace = questionHeight + paddingLines;
+
+            // Column Constraints (Heuristic B4 2-Column)
+            const MAX_COL_HEIGHT = 58;
+
+            // Logic: Break column if we overflow (unless item is huge)
+            if (currentColumnHeight + requiredSpace > MAX_COL_HEIGHT) {
+                combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
+                currentColumnHeight = 0;
+            }
 
             combinedContentXmlFull += questionXml;
 
-            // Add 10 padding paragraphs between questions for better spacing
+            // Add Padding (10 lines)
             const paddingPara = `<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR/></TEXT></P>`;
-            combinedContentXmlFull += paddingPara.repeat(10);
+            combinedContentXmlFull += paddingPara.repeat(paddingLines);
 
-            // Layout: Special First Column (1 Question), then 2 Questions per Column
-            // Col 1: Q1
-            // Col 2: Q2, Q3
-            // Col 3: Q4, Q5...
-            const isFirstCol = qIndex === 1;
-            const isSubsequentColEnd = qIndex > 1 && (qIndex - 1) % 2 === 0;
-            const isLast = qIndex === questionsWithImages.length;
+            currentColumnHeight += requiredSpace;
 
-            if (isFirstCol || isSubsequentColEnd || isLast) {
-                combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
-            }
         }
     }
 
@@ -621,13 +538,6 @@ export function generateHmlFromTemplate(
     // 2. SVG Images: STRICT USAGE CHECK (Removes Math Bloat)
 
     let usedImages = allImages; // [FIX] DISABLE FILTERING to preserve 1-based indexing for BinItem references
-    /*
-    allImages.filter(img => {
-        const id = String(img.newId);
-        // ... filtering disabled for stability ...
-        return true;
-    });
-    */
 
     console.log(`[HML-V2 FINAL-OPTIMIZED] Filtered Images: ${allImages.length} -> ${usedImages.length}`);
 
@@ -637,16 +547,11 @@ export function generateHmlFromTemplate(
         usedImages = allImages;
     }
 
-    // Additional Safety: If filtered count is suspiciously low (< 5%) for a large set, maybe warn? 
-    // For now, the 0-check is the most critical safety net.
-
     if (!combinedContentXmlFull.trim()) {
         combinedContentXmlFull = '<P><TEXT>No Content</TEXT></P>';
     }
 
     // Replace {{CONTENT_HERE}} using standard template variable 'currentHml'
-    // CRITICAL: Use Regex to replace the wrapping <P> tag.
-    // Simple string replacement creates <P><TEXT><P>...</P></TEXT></P> which is INVALID nested XML.
     const anchorRegex = /<P[^>]*>\s*<TEXT[^>]*>\s*(?:<CHAR>\s*)?{{CONTENT_HERE}}(?:\s*<\/CHAR>)?\s*<\/TEXT>\s*<\/P>/;
 
     if (anchorRegex.test(currentHml)) {
@@ -688,16 +593,11 @@ export function generateHmlFromTemplate(
     }
 
     // [CRITICAL FIX] PURGE TEMPLATE BINARIES
-    // The template contains "Zombie Images" (old manual captures, etc.) at IDs 1, 2...
-    // We must physically remove them so Hancom NEVER falls back to them.
-    // We replace the entire content of BINDATALIST and BINDATASTORAGE with our new list.
 
     if (usedImages.length >= 0) { // Always update even if 0 images (to clear template)
 
         // 1. Purge & Update BINDATALIST
         if (currentHml.includes('<BINDATALIST')) {
-            // Replace <BINDATALIST ...>...content...</BINDATALIST>
-            // Note: Regex dot matches newline? No, in JS dot doesn't match newline. Use [\s\S].
             const newListTag = `<BINDATALIST Count="${usedImages.length}">${binDataList}</BINDATALIST>`;
             currentHml = currentHml.replace(/<BINDATALIST[^>]*>[\s\S]*?<\/BINDATALIST>/, newListTag);
         } else if (currentHml.match(/<MAPPINGTABLE[^>]*>/)) {
@@ -712,20 +612,14 @@ export function generateHmlFromTemplate(
         }
 
         // 2. Purge & Update BINDATASTORAGE
-        // Similar logic: Wipe existing storage
         const newStorageTag = `<BINDATASTORAGE Count="${usedImages.length}">${binDataStorage}</BINDATASTORAGE>`;
 
         if (currentHml.includes('<BINDATASTORAGE')) {
             currentHml = currentHml.replace(/<BINDATASTORAGE[^>]*>[\s\S]*?<\/BINDATASTORAGE>/, newStorageTag);
         } else {
             // Inject at end of BODY (TAIL) or before </DOC>
-            // HML Structure: <DOC> <HEAD>...</HEAD> <BODY>...</BODY> <TAIL><BINDATASTORAGE.../></TAIL> </DOC>
-            // Wait, standard HML has <TAIL> for scripts and storage.
             const tailMatch = currentHml.match(/<TAIL[^>]*?>/);
             if (tailMatch) {
-                // Wipe content of TAIL? No, TAIL might have scripts.
-                // Just look for STORAGE inside TAIL (handled above).
-                // If storage missing but TAIL exists:
                 currentHml = currentHml.replace(/<\/TAIL>/, `${newStorageTag}</TAIL>`);
             } else {
                 // Create TAIL before /DOC
@@ -735,10 +629,6 @@ export function generateHmlFromTemplate(
                 }
             }
         }
-
-
-        // The anchorRegex.test(currentHml) block is now removed as its content has been moved up.
-        // The original code had a `currentHml` assignment inside this block, which is no longer needed.
 
         // 5. Update Global Metadata (Picture counts) - ROBUST INJECTION
         if (allImages.length > 0) {
@@ -809,10 +699,9 @@ function sanitizeNodeStyles(node: any, validSets: {
             else if (semanticRole.startsWith('BOX_')) targetStyleName = '박스안';
 
             // 2. High Priority: Specific Original Style Preservation
-            // If the original HML had a specific style name (e.g. "3선지") and the current template SUPPORTS it, use it.
             const originalStyleName = node.getAttribute('data-hml-orig-style');
             if (originalStyleName && validSets.StyleNames.has(originalStyleName)) {
-                console.log(`[HML-V2 Generator] Preserving Original Style: '${originalStyleName}' matches template!`);
+                // console.log(`[HML-V2 Generator] Preserving Original Style: '${originalStyleName}' matches template!`);
                 targetStyleName = originalStyleName;
             }
 
@@ -825,7 +714,7 @@ function sanitizeNodeStyles(node: any, validSets: {
                     if (targetPara) {
                         node.setAttribute('ParaShape', targetPara);
                     }
-                    console.log(`[HML-V2 Generator] sanitizeNodeStyles: Applied Style '${targetStyleName}' (Id=${targetId}, Para=${targetPara}) to P`);
+                    // console.log(`[HML-V2 Generator] sanitizeNodeStyles: Applied Style '${targetStyleName}' (Id=${targetId}, Para=${targetPara}) to P`);
                 } else {
                     console.warn(`[HML-V2 Generator] Style Name '${targetStyleName}' not found via validSets.StyleNames!`);
                 }
@@ -849,7 +738,6 @@ function sanitizeNodeStyles(node: any, validSets: {
 
             if (!targetId) {
                 // Not in template, create new one if not already injected
-                // We use a simplified registry check (InjectedBorders)
                 const existingInjected = validSets.InjectedBorders.find(b => b.xml === bfXml);
                 if (existingInjected) {
                     targetId = existingInjected.id;
@@ -990,7 +878,7 @@ function repairPictureStructure(pic: Element, serializer: any) {
             rect.setAttribute('Y2', '12960');
             rect.setAttribute('X3', '0');
             rect.setAttribute('Y3', '12960');
-            // Insert after SHAPECOMPONENT
+
             if (sc.nextSibling) {
                 pic.insertBefore(rect, sc.nextSibling);
             } else {
