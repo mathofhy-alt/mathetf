@@ -141,6 +141,17 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                         <span className="text-xs text-center font-medium text-slate-700 line-clamp-2 w-full px-1 break-keep min-h-[2.5em] flex items-center justify-center">
                             {item.name || '이름 없음'}
                         </span>
+                        {/* Stats Display */}
+                        {item.type === 'saved_exam' && (
+                            <div className="flex flex-col items-center mt-1 space-y-0.5">
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                    문항수: {(item.details?.question_count || 0)}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                    난이도: {(item.details?.average_difficulty ? Number(item.details.average_difficulty).toFixed(2) : '-')}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 );
             })}

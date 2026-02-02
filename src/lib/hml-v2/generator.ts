@@ -7,13 +7,29 @@
  */
 
 import { DOMParser, XMLSerializer } from 'xmldom';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { GenerateResult, DbQuestionImage, QuestionWithImages } from './types';
 
 export function generateHmlFromTemplate(
     templateContent: string,
-    questionsWithImages: QuestionWithImages[]
+    questionsWithImages: QuestionWithImages[],
+    options?: { title?: string; date?: string }
 ): GenerateResult {
     console.log(`[HML-V2 Surgical Generator] Processing ${questionsWithImages.length} questions`);
+
+    // [METADATA INJECTION] Replace {{TITLE}} and {{DATE}}
+    if (options) {
+        if (options.title) {
+            // Simple replaceAll equivalent
+            templateContent = templateContent.split('{{TITLE}}').join(options.title);
+            console.log(`[HML-V2 Generator] Injected Title: ${options.title}`);
+        }
+        if (options.date) {
+            templateContent = templateContent.split('{{DATE}}').join(options.date);
+            console.log(`[HML-V2 Generator] Injected Date: ${options.date}`);
+        }
+    }
 
     const serializer = new XMLSerializer();
     const parser = new DOMParser();
@@ -1095,13 +1111,14 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
 export function generateHmlFile(
     templateContent: string,
     questions: any[],
-    imagesByQuestion: Map<string, DbQuestionImage[]>
+    imagesByQuestion: Map<string, DbQuestionImage[]>,
+    options?: { title?: string; date?: string }
 ): GenerateResult {
     const questionsWithImages: QuestionWithImages[] = questions.map(q => ({
         question: q,
         images: imagesByQuestion.get(q.id) || []
     }));
-    return generateHmlFromTemplate(templateContent, questionsWithImages);
+    return generateHmlFromTemplate(templateContent, questionsWithImages, options);
 }
 
 

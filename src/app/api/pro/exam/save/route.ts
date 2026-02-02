@@ -136,10 +136,6 @@ export async function POST(req: NextRequest) {
                         }
                     }
                     // Case 2: Native Compressed Data (Start with 72 f2 or other non-image headers)
-                    // HML Native images are often DEFLATE raw streams.
-                    // Since we can't easily check '72f2' on Base64 string efficiently without buffer alloc,
-                    // We will try to inflate IF it is NOT a valid image header.
-                    // BMP: BM, PNG: .PNG, JPG: FF D8
                     else if (img.data && typeof img.data === 'string') {
                         try {
                             let buffer = Buffer.from(img.data, 'base64');
@@ -152,23 +148,17 @@ export async function POST(req: NextRequest) {
                                 img.size_bytes = buffer.length;
                                 img.format = resizeResult.format || 'jpg';
                                 console.log(`[SaveAPI] Resized Base64 image ${img.id}`);
-                                // Skip further compression checks if resized (already optimized JPG)
                                 return;
                             }
 
                             const head = buffer.subarray(0, 2).toString('ascii');
                             const headHex = buffer.subarray(0, 2).toString('hex');
 
-                            // If IT IS NOT a common image header (BM, PNG-ish, JPG-ish)
                             const isBmp = head === 'BM';
-                            // PNG starts with 89 50 4E 47 (approx)
                             const isPng = headHex === '8950';
-                            // JPG starts with FF D8
                             const isJpg = headHex === 'ffd8';
 
                             if (!isBmp && !isPng && !isJpg) {
-                                // Check for zlib/deflate
-                                // Try inflateRaw first (no header, common in HWP stream)
                                 try {
                                     const inflated = zlib.inflateRawSync(buffer);
 
@@ -183,7 +173,6 @@ export async function POST(req: NextRequest) {
                                         return;
                                     }
 
-                                    // [OPTIMIZATION] Re-compress using Raw Deflate (like original)
                                     try {
                                         const deflated = zlib.deflateRawSync(inflated, { level: 9 });
                                         img.data = deflated.toString('base64');
@@ -280,8 +269,7 @@ export async function POST(req: NextRequest) {
             q.question_number = idx + 1;
         });
 
-        // Load Template (Align with Admin fallback)
-        console.log('[SaveAPI] Loading template...');
+        // Load Template
         let templatePath = path.join(process.cwd(), '재조립양식.hml');
         if (!fs.existsSync(templatePath)) {
             templatePath = path.join(process.cwd(), 'hml v2-test-tem.hml'); // Match Admin
@@ -295,50 +283,69 @@ export async function POST(req: NextRequest) {
 
         // Generate HML
         const { generateHmlFromTemplate } = await import('@/lib/hml-v2/generator');
-        const questionsWithImages = questions.map(q => ({
-            question: q,
-            images: q.images || []
-        }));
 
-        console.log('[SaveAPI] Generating HML...');
-        const result = generateHmlFromTemplate(templateXml, questionsWithImages);
+        // [DEBUG VALIDATION]
+        if (!Array.isArray(questions)) {
+            throw new Error(`Questions is not an array: ${typeof questions}`);
+        }
+
+        const questionsWithImages = questions.map((q, idx) => {
+            if (!q) throw new Error(`Question at index ${idx} is null/undefined`);
+            return {
+                question: q,
+                images: q.images || []
+            };
+        });
+
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
+
+        // [FIX] Correct Argument Passing: (string, array, object)
+        const result = await generateHmlFromTemplate(
+            templateXml,
+            questionsWithImages,
+            {
+                title: title || 'Exam_Paper',
+                date: dateStr
+            }
+        );
+
+        if (!result) throw new Error("Generator returned null/undefined");
+
         const finalHml = result.hmlContent;
         log(`[SaveAPI] FINAL STATS:`);
         log(`  - Template Size: ${templateXml.length}`);
         log(`  - Image Count: ${result.imageCount}`);
         log(`  - Total HML Size: ${finalHml.length}`);
 
-        // Debug: Log first 1000 chars of HML to see if there's obvious bloat at start
-        log(`  - HML Head Snippet: ${finalHml.substring(0, 500)}`);
-
-        console.log(`[SaveAPI] HML Generated. Size: ${finalHml.length}`);
-
         // --- Storage Upload ---
-        // Fix: Use UUID for filename to satisfy DB constraints (reference_id must be UUID) and avoid encoding issues
         const fileId = crypto.randomUUID();
         const storageFilename = `${fileId}.hml`;
         const filePath = `${user.id}/${storageFilename}`;
 
-        console.log(`[SaveAPI] Uploading to Storage: ${filePath}`);
-        // For Storage, we upload to the path
         const { error: uploadError } = await supabase
             .storage
-            .from('exams') // Bucket name
+            .from('exams')
             .upload(filePath, finalHml, {
                 contentType: 'application/x-hwp',
                 upsert: false
             });
 
-        if (uploadError) {
-            console.error('[SaveAPI] Upload Error:', uploadError);
-            throw new Error(`Upload failed: ${uploadError.message}`);
-        }
+        if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
         // --- Upload Metadata Sidecar (.json) ---
         const metaFilename = `${fileId}.json`;
         const metaPath = `${user.id}/${metaFilename}`;
+
+        // Calculate average difficulty
+        const totalDifficulty = questions.reduce((sum: number, q: any) => sum + (Number(q.difficulty) || 0), 0);
+        const avgDifficulty = questions.length > 0 ? Number((totalDifficulty / questions.length).toFixed(2)) : 0;
+
         const metaData = {
-            source_db_ids: Array.from(new Set(questions.map(q => q.source_db_id).filter(Boolean)))
+            source_db_ids: Array.from(new Set(questions.map((q: any) => q.source_db_id).filter(Boolean))),
+            question_count: questions.length,
+            average_difficulty: avgDifficulty,
+            title: title || 'Exam_Paper',
+            created_at: new Date().toISOString()
         };
 
         console.log(`[SaveAPI] Uploading Metadata Sidecar: ${metaPath}`);
@@ -349,35 +356,9 @@ export async function POST(req: NextRequest) {
                 upsert: false
             });
 
-        // --- DEBUG MANIFEST (Temporary for diagnosing size issues) ---
-        const debugManifest = {
-            timestamp: new Date().toISOString(),
-            templateUsed: templatePath,
-            totalQuestions: questions.length,
-            ids: ids,
-            images: questions.flatMap(q => (q.images || []).map((img: any) => ({
-                id: img.id,
-                original_bin_id: img.original_bin_id,
-                originalSize: img.size_bytes, // Note: This might be updated size if recompressed
-                dataLength: (img.data || '').length,
-                format: img.format,
-                compressed: img.compressed
-            }))),
-            // Track duplicate usage manually here if not tracking in generator
-        };
-
-        const debugPath = `${user.id}/${fileId}_debug.json`;
-        console.log(`[SaveAPI] Uploading Debug Manifest: ${debugPath}`);
-        await supabase.storage
-            .from('exams')
-            .upload(debugPath, JSON.stringify(debugManifest, null, 2), {
-                contentType: 'application/json',
-                upsert: false
-            });
-
-
         // --- Create User Item ---
-        console.log('[SaveAPI] Creating User Item in DB...');
+        // Do NOT insert into deleted 'saved_exams' table.
+        // Do NOT insert into 'user_items' details (column likely missing).
         const displayTitle = title || 'Exam_Paper';
 
         const { data: itemData, error: itemError } = await supabase
@@ -387,15 +368,12 @@ export async function POST(req: NextRequest) {
                 folder_id: folderId === 'root' ? null : folderId,
                 type: 'saved_exam',
                 name: displayTitle,
-                reference_id: fileId // Store UUID not path!
+                reference_id: fileId
             })
             .select()
             .single();
 
-        if (itemError) {
-            console.error('[SaveAPI] Item Creation Error:', itemError);
-            throw new Error(`Item creation failed: ${itemError.message}`);
-        }
+        if (itemError) throw new Error(`Item creation failed: ${itemError.message}`);
 
         console.log('[SaveAPI] Success!');
         return NextResponse.json({ success: true, item: itemData });

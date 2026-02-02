@@ -321,7 +321,14 @@ export async function POST(req: NextRequest) {
             images: imagesByQuestion.get(q.id) || []
         }));
 
-        const result = generateHmlFromTemplate(templateContent, questionsWithImages);
+        const title = (body && body.title) || 'Admin_Exam_V3';
+        const dateObj = new Date();
+        const dateStr = `${dateObj.getFullYear()}년 ${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일`;
+
+        const result = generateHmlFromTemplate(templateContent, questionsWithImages, {
+            title: title,
+            date: dateStr
+        });
 
         try {
             fs.appendFileSync('node_hml_debug.log', `[${new Date().toISOString()}] FINAL HML SIZE: ${result.hmlContent.length} chars. ImageCount: ${result.imageCount}\n`);

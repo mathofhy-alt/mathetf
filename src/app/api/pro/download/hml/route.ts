@@ -67,13 +67,18 @@ export async function POST(req: NextRequest) {
             images: q.images || []
         }));
 
-        const result = generateHmlFromTemplate(templateXml, questionsWithImages);
-        const finalHml = result.hmlContent;
-
         const title = body.title || 'Exam_Paper';
         // Sanitize filename
         const safeTitle = title.replace(/[^a-zA-Z0-9가-힣_\- ]/g, "").trim();
-        const filename = `${safeTitle}_${new Date().toISOString().slice(0, 10)}.hml`;
+        const dateObj = new Date();
+        const dateStr = `${dateObj.getFullYear()}년 ${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일`;
+        const filename = `${safeTitle}_${dateObj.toISOString().slice(0, 10)}.hml`;
+
+        const result = generateHmlFromTemplate(templateXml, questionsWithImages, {
+            title: title,
+            date: dateStr
+        });
+        const finalHml = result.hmlContent;
 
         return new NextResponse(finalHml, {
             status: 200,
