@@ -18,13 +18,18 @@ export const dynamic = 'force-dynamic';
 import { requireAdmin } from '@/utils/admin-auth';
 
 // [HELPER] Universal Resize Logic
+const LOG_PATH = 'C:\\Users\\matho\\OneDrive\\바탕 화면\\안티그래비티 - 복사본\\node_hml_debug_ABSOLUTE.log';
+
+function log(msg: string) {
+    try { fs.appendFileSync(LOG_PATH, `[${new Date().toISOString()}] ${msg}\n`); } catch (e) { }
+}
+
 function tryResizeImage(buffer: Buffer, originalId: string): { buffer: Buffer, resized: boolean, format?: string } {
-    // Threshold: 100KB
-    if (buffer.length <= 100 * 1024) return { buffer, resized: false };
+    // Threshold: 10KB (Aggressive Debugging)
+    if (buffer.length <= 10 * 1024) return { buffer, resized: false };
 
     try {
-        // Log Input
-        try { fs.appendFileSync('node_hml_debug.log', `[${new Date().toISOString()}] CHECK RESIZE ${originalId} Size: ${buffer.length}\n`); } catch (e) { }
+        log(`CHECK RESIZE ${originalId} Size: ${buffer.length}`);
 
         const tempId = Math.random().toString(36).substring(7);
         const tempInput = path.join(os.tmpdir(), `resize_in_${tempId}.bin`);
@@ -35,30 +40,29 @@ function tryResizeImage(buffer: Buffer, originalId: string): { buffer: Buffer, r
         const pythonPath = path.resolve(process.cwd(), 'hwpx-python-tool', 'venv', 'Scripts', 'python.exe');
         const scriptPath = path.resolve(process.cwd(), 'resize_image.py');
 
+        // Check paths
+        if (!fs.existsSync(pythonPath)) log(`ERROR: Python not found at ${pythonPath}`);
+        if (!fs.existsSync(scriptPath)) log(`ERROR: Script not found at ${scriptPath}`);
+
         execFileSync(pythonPath, [scriptPath, tempInput, tempOutput]);
 
         if (fs.existsSync(tempOutput)) {
             const outBuffer = fs.readFileSync(tempOutput);
-
-            // Cleanup
             fs.unlinkSync(tempInput);
             fs.unlinkSync(tempOutput);
-
-            try { fs.appendFileSync('node_hml_debug.log', `[${new Date().toISOString()}] RESIZED ${originalId}: ${buffer.length} -> ${outBuffer.length}\n`); } catch (e) { }
-
+            log(`RESIZED ${originalId}: ${buffer.length} -> ${outBuffer.length}`);
             return { buffer: outBuffer, resized: true, format: 'jpg' };
         } else {
-            try { fs.appendFileSync('node_hml_debug.log', `[${new Date().toISOString()}] RESIZE FAILED (No Output) ${originalId}\n`); } catch (e) { }
+            log(`RESIZE FAILED (No Output) ${originalId}`);
         }
     } catch (err: any) {
-        try { fs.appendFileSync('node_hml_debug.log', `[${new Date().toISOString()}] RESIZE CRASH ${originalId}: ${err.message}\n`); } catch (e) { }
-        console.warn(`[HML-V2] Resize failed for ${originalId}`, err);
+        log(`RESIZE CRASH ${originalId}: ${err.message}`);
     }
     return { buffer, resized: false };
 }
 
 export async function POST(req: NextRequest) {
-    try { fs.appendFileSync('C:\\Users\\matho\\OneDrive\\바탕 화면\\안티그래비티 - 복사본\\node_hml_debug_ABSOLUTE.log', `[${new Date().toISOString()}] [V2-ENDPOINT-HIT] Request Received\n`); } catch (e) { }
+    log('--- V3 ENDPOINT HIT ---');
 
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;

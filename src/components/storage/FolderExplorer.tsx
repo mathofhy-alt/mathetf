@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FolderPlus, RefreshCw, Loader2, Home, DownloadCloud, CheckSquare } from 'lucide-react';
+import { FolderPlus, RefreshCw, Loader2, Home, DownloadCloud, CheckSquare, Trash2 } from 'lucide-react';
 import FolderTree from './FolderTree';
 import FileGrid from './FileGrid';
 import StorageContextMenu from './StorageContextMenu';
@@ -148,6 +148,63 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
         return path;
     };
 
+    const handleSingleDownload = (type: 'folder' | 'item', id: string) => {
+        if (type === 'item') {
+            window.location.href = `/api/storage/download?id=${id}`;
+        }
+    };
+
+    const handleBulkDownload = () => {
+        if (selectedIds.length === 0) return;
+        const itemsToDownload = viewItems.filter(i => selectedIds.includes(i.id) || (i.reference_id && selectedIds.includes(i.reference_id)));
+
+        let delayedCount = 0;
+        itemsToDownload.forEach(item => {
+            if (item.type === 'saved_exam') {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = `/api/storage/download?id=${item.id}`;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, delayedCount * 1000);
+                delayedCount++;
+            }
+        });
+
+        if (delayedCount === 0) alert('다운로드 가능한 항목이 없습니다.');
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`선택한 ${selectedIds.length}개 항목을 삭제하시겠습니까?`)) return;
+
+        setLoading(true);
+
+        for (const selId of selectedIds) {
+            // Resolve real UserItem ID from viewItems
+            // Because selectedIds might contain reference_id (for DBs) or id (for Exams)
+            // We look for an item where (id == selId) OR (reference_id == selId)
+            const item = viewItems.find(i => i.id === selId || i.reference_id === selId);
+
+            if (item) {
+                await fetch(`/api/storage/items?id=${item.id}`, { method: 'DELETE' });
+            } else {
+                // Fallback: If not in viewItems, try deleting assuming selId is the ID?
+                // But risking 404 if it was a reference_id.
+                // Safest is to skip or try deleting only if it looks like a UUID?
+                // Actually, cross-folder selection isn't supported by UI yet.
+                // So if not found, it's likely already gone or invalid.
+                // console.warn(`Item ${selId} not found in current view.`);
+            }
+        }
+
+        setRefreshTrigger(p => p + 1);
+        setLoading(false);
+        if (onSelectAll) onSelectAll([]); // Clear selection after delete
+    };
+
     return (
         <div className="flex h-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
             {/* Sidebar: Tree */}
@@ -186,6 +243,23 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         ))}
                     </div>
                     <div className="flex items-center gap-2">
+                        {selectedIds.length > 0 && (
+                            <>
+                                <button
+                                    onClick={handleBulkDownload}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-sm font-medium transition-colors"
+                                >
+                                    <DownloadCloud size={16} /> 선택 다운로드
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium transition-colors"
+                                >
+                                    <Trash2 size={16} /> 선택 삭제
+                                </button>
+                                <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                            </>
+                        )}
                         <button
                             onClick={handleSync}
                             className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium transition-colors"
@@ -202,8 +276,8 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         {onSelectAll && (
                             <button
                                 onClick={() => {
-                                    const dbItems = viewItems.filter(i => i.type === 'personal_db');
-                                    if (dbItems.length > 0) onSelectAll(dbItems);
+                                    const itemsToSelect = viewItems.filter(i => i.type === 'personal_db' || i.type === 'saved_exam');
+                                    if (itemsToSelect.length > 0) onSelectAll(itemsToSelect);
                                 }}
                                 className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-sm font-medium transition-colors"
                             >
@@ -232,6 +306,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         onItemClick={onItemSelect}
                         onRename={(t, i, n) => { /* unused */ }}
                         onDelete={handleDelete}
+                        onDownload={handleSingleDownload}
                         onContextMenu={(e, type, id) => {
                             setContextMenu({ x: e.clientX, y: e.clientY, type, id });
                         }}
@@ -241,17 +316,19 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                 </div>
             </div>
 
-            {contextMenu && (
-                <StorageContextMenu
-                    x={contextMenu.x}
-                    y={contextMenu.y}
-                    type={contextMenu.type}
-                    onClose={() => setContextMenu(null)}
-                    onRename={handleRename}
-                    onDelete={handleDeleteFromContext}
-                    onDownload={handleDownload}
-                />
-            )}
-        </div>
+            {
+                contextMenu && (
+                    <StorageContextMenu
+                        x={contextMenu.x}
+                        y={contextMenu.y}
+                        type={contextMenu.type}
+                        onClose={() => setContextMenu(null)}
+                        onRename={handleRename}
+                        onDelete={handleDeleteFromContext}
+                        onDownload={handleDownload}
+                    />
+                )
+            }
+        </div >
     );
 }

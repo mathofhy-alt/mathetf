@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Folder as FolderIcon, FileText, Database, MoreVertical, Trash2, Edit2, CheckCircle2 } from 'lucide-react';
+import { Folder as FolderIcon, FileText, Database, MoreVertical, Trash2, Edit2, CheckCircle2, DownloadCloud } from 'lucide-react';
 import type { Folder as FolderType, UserItem } from '@/types/storage';
 import { DbFileIcon } from '@/components/FileIcons';
 
@@ -12,12 +12,13 @@ interface FileGridProps {
     onItemClick: (item: UserItem) => void;
     onRename: (type: 'folder' | 'item', id: string, name: string) => void;
     onDelete: (type: 'folder' | 'item', id: string) => void;
+    onDownload?: (type: 'folder' | 'item', id: string) => void;
     onContextMenu: (e: React.MouseEvent, type: 'folder' | 'item', id: string) => void;
     onMoveItem: (itemId: string, targetFolderId: string | null) => void; // DnD
     selectedIds?: string[];
 }
 
-export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onContextMenu, onMoveItem, selectedIds = [] }: FileGridProps) {
+export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, selectedIds = [] }: FileGridProps) {
 
     const handleDragStart = (e: React.DragEvent, type: 'folder' | 'item', id: string) => {
         e.dataTransfer.setData('application/json', JSON.stringify({ type, id }));
@@ -63,6 +64,18 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => handleDropOnFolder(e, folder.id)}
                 >
+                    <button
+                        className="absolute top-2 right-2 p-1.5 bg-white text-slate-400 hover:text-red-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-red-50"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`'${folder.name}' 폴더를 삭제하시겠습니까?`)) {
+                                onDelete('folder', folder.id);
+                            }
+                        }}
+                        title="삭제"
+                    >
+                        <Trash2 size={14} />
+                    </button>
                     <FolderIcon size={48} className="text-yellow-400 fill-yellow-100 mb-2 group-hover:scale-110 transition-transform" />
                     <span className="text-xs text-center font-medium text-slate-700 truncate w-full px-2 select-none">
                         {folder.name}
@@ -88,6 +101,30 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                         draggable
                         onDragStart={(e) => handleDragStart(e, 'item', item.id)}
                     >
+                        <button
+                            className="absolute top-2 left-2 p-1.5 bg-white text-slate-400 hover:text-red-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-red-50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`'${item.name || '항목'}'을(를) 삭제하시겠습니까?`)) {
+                                    onDelete('item', item.id);
+                                }
+                            }}
+                            title="삭제"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                        {onDownload && (
+                            <button
+                                className="absolute top-2 left-10 p-1.5 bg-white text-slate-400 hover:text-blue-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-blue-50"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDownload('item', item.id);
+                                }}
+                                title="다운로드"
+                            >
+                                <DownloadCloud size={14} />
+                            </button>
+                        )}
                         {isSelected && (
                             <div className="absolute top-2 right-2 text-indigo-600 bg-white rounded-full p-0.5 shadow-sm z-10">
                                 <CheckCircle2 size={20} className="fill-indigo-100" />

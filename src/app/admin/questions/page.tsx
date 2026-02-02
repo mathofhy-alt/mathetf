@@ -241,8 +241,8 @@ export default function AdminQuestionsPage() {
         }
 
         try {
-            // Use HML V2 Download API
-            const res = await fetch('/api/admin/download-hml', {
+            // Use HML V3 Download API (Bypass Stale Server)
+            const res = await fetch('/api/admin/download-hml-v3', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1019,7 +1019,7 @@ export default function AdminQuestionsPage() {
                         disabled={selectedIds.size === 0}
                         className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-3 py-2 rounded text-sm font-medium transition-colors shadow-sm flex items-center gap-1"
                     >
-                        <span>📥 다운로드</span>
+                        <span>📥 시험지 생성 (V3 활성)</span>
                     </button>
 
                     {/* Spacer */}

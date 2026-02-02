@@ -262,10 +262,9 @@ export default function QuestionBankPage() {
     const handleStorageItemSelect = (item: UserItem) => {
         if (item.type === 'personal_db') {
             handleDbToggle(item.reference_id);
-            // Don't close modal immediately to allow multi-select
-            // setShowStorageModal(false); 
         } else if (item.type === 'saved_exam') {
-            window.location.href = `/api/storage/download?id=${item.id}`;
+            // Toggle selection for Bulk Actions
+            handleDbToggle(item.id);
         } else {
             alert('알 수 없는 파일 형식입니다.');
         }
