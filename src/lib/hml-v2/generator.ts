@@ -196,7 +196,7 @@ export function generateHmlFromTemplate(
                     psGutter.insertBefore(margin, psGutter.firstChild);
                 }
                 margin.setAttribute('LineSpacingType', 'Fixed');
-                margin.setAttribute('LineSpacing', '25000'); // 250pt
+                margin.setAttribute('LineSpacing', '40000'); // [V61] 400pt (Increased from 250pt)
 
                 psList.appendChild(psGutter);
                 validStyles.ParaShape.add(gutterPsId);
@@ -395,7 +395,7 @@ export function generateHmlFromTemplate(
     }
 
     let qIndex = 0;
-    let currentColumnHeight = 15; // Heuristic: Title takes ~15 lines in Col 1
+    let currentColumnHeight = 5; // [V60] Title takes ~5 lines (Reduced from 15)
     const allEndnotes: Element[] = []; // [NEW] Collect all endnotes for final restoration
 
     for (const qwi of questionsWithImages) {
@@ -823,14 +823,15 @@ export function generateHmlFromTemplate(
 
             // [V47] SMART LAYOUT STRATEGY (Restored & Refined)
             // Heuristic: Estimate height in "lines". 1 P = 1 line, 1 Image = 15 lines.
-            // 150pt gutter is exactly 10 lines in our 15pt-per-unit heuristic.
+            // [V61] 400pt gutter is ~16 lines in our heuristic (Increased from 250pt/10 lines)
             const countImages = (questionXml.match(/<PICTURE|<IMAGE/g) || []).length;
             const countParas = (questionXml.match(/<P /g) || []).length;
-            const questionHeight = countParas + (countImages * 15);
-            const gutterHeight = 10;
+            const MAX_COL_HEIGHT = 65; // [V63] Adjusted to 65 (User request)
+            const questionHeight = (countParas * 1) + (countImages * 10);
+            const gutterHeight = 16;
             const totalRequiredSpace = questionHeight + gutterHeight;
 
-            const MAX_COL_HEIGHT = 45; // Standard 2-column B4 page heuristic
+            console.log(`[HML-V2 LAYOUT] Q${qIndex}: Paras=${countParas}, Images=${countImages} -> Height=${questionHeight}, Total=${totalRequiredSpace} (Col: ${currentColumnHeight}/${MAX_COL_HEIGHT})`);
 
             // Logic: Break column if we overflow (including the 10-line gutter)
             if (currentColumnHeight + totalRequiredSpace > MAX_COL_HEIGHT) {
