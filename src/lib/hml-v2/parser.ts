@@ -222,23 +222,59 @@ function extractQuestions(
 
     // Find question boundaries
     const startIndices: number[] = [];
+    const extractedNumbers: Map<number, number> = new Map(); // Index -> Extracted Number
+
     for (let i = 0; i < allElements.length; i++) {
         const el = allElements[i];
-        // Question start is usually a P with an ENDNOTE
-        const endnotes = getTags(el, 'ENDNOTE');
-        let hasQuestionBoundary = false;
+        const tName = el.tagName.toUpperCase().replace('HP:', '');
 
+        let hasQuestionBoundary = false;
+        let foundNumber: number | null = null;
+
+        // 1. Standard HWP Boundary: ENDNOTE with AUTONUM
+        const endnotes = getTags(el, 'ENDNOTE');
         for (const en of endnotes) {
             const autonums = getTags(en, 'AUTONUM');
-            if (autonums.length > 0 && autonums[0].getAttribute('Number')) {
-                hasQuestionBoundary = true;
-                break;
+            if (autonums.length > 0) {
+                const numAttr = autonums[0].getAttribute('Number');
+                if (numAttr) {
+                    hasQuestionBoundary = true;
+                    foundNumber = parseInt(numAttr, 10);
+                    break;
+                }
+            }
+        }
+
+        // 2. Style-Based Boundary (Kyunggi Girls/Sookmyung Style)
+        if (!hasQuestionBoundary && tName === 'P') {
+            const styleId = el.getAttribute('Style');
+            const styleName = styleId ? (styleMap.get(styleId) || '') : '';
+
+            if (styleName === '문항_스타일1' || styleName === '문제1') {
+                const pText = getPlainText([el]);
+                // Regex for numbers like "6.", "6)", "⑥", "6번"
+                const match = pText.match(/^(\d+)([\.\)]|번)?/);
+                const circleMatch = pText.match(/^([\u2460-\u2473])/);
+
+                if (match) {
+                    hasQuestionBoundary = true;
+                    foundNumber = parseInt(match[1], 10);
+                } else if (circleMatch) {
+                    hasQuestionBoundary = true;
+                    // Map circle numbers index if needed, but for now just count
+                    foundNumber = circleMatch[0].charCodeAt(0) - 0x2460 + 1;
+                }
             }
         }
 
         if (hasQuestionBoundary) {
             startIndices.push(i);
-            console.log(`[HML-V2 Parser] Question boundary at Index[${i}]`);
+            if (foundNumber !== null) {
+                extractedNumbers.set(i, foundNumber);
+                console.log(`[HML-V2 Parser] Question boundary at Index[${i}] with Number: ${foundNumber}`);
+            } else {
+                console.log(`[HML-V2 Parser] Question boundary at Index[${i}] (Implicit Number)`);
+            }
         }
     }
 
@@ -359,12 +395,13 @@ function extractQuestions(
             }
         }
 
-        console.log(`[HML-V2 Parser] Q${questions.length + 1}: ${questionElements.length} elements, ${bundledXml.length} chars`);
+        const qNumber = extractedNumbers.get(startIdx) || (questions.length + 1);
+        console.log(`[HML-V2 Parser] Q${questions.length + 1}: index=${startIdx}, extractedNum=${extractedNumbers.get(startIdx)}, finalNum=${qNumber}`);
 
         const equationScripts = extractEquationScripts(questionElements);
 
         questions.push({
-            questionNumber: questions.length + 1,
+            questionNumber: qNumber,
             contentXml: bundledXml,
             plainText: getPlainText(questionElements).slice(0, 300),
             imageRefs,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Folder, ChevronRight, ChevronDown, Database } from 'lucide-react';
+import { Folder, ChevronRight, ChevronDown, Database, Trash2 } from 'lucide-react';
 import type { Folder as FolderType } from '@/types/storage';
 
 interface FolderTreeProps {
@@ -9,9 +9,10 @@ interface FolderTreeProps {
     currentFolderId: string | null; // null represents Root
     onFolderSelect: (folderId: string | null) => void;
     onMoveItem?: (itemId: string, targetFolderId: string | null) => void; // DnD Optional
+    onDelete?: (type: 'folder', id: string) => void;
 }
 
-const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveItem, depth = 0 }: any) => {
+const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveItem, onDelete, depth = 0 }: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const subFolders = allFolders.filter((f: any) => f.parent_id === folder.id);
     const hasChildren = subFolders.length > 0;
@@ -33,7 +34,7 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
     return (
         <div className="select-none">
             <div
-                className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors ${isSelected ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
+                className={`group flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors ${isSelected ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
                 style={{ paddingLeft: `${depth * 16 + 8}px` }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -63,7 +64,22 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                     }
                     return <Folder size={16} className={isSelected ? 'fill-blue-200 text-blue-600' : 'text-slate-400 group-hover:text-slate-500'} />;
                 })()}
-                <span className="text-sm truncate">{folder.name}</span>
+                <span className="text-sm truncate flex-1">{folder.name}</span>
+
+                {onDelete && folder.name !== '구매한 학교 기출' && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`'${folder.name}' 폴더를 삭제하시겠습니까?`)) {
+                                onDelete('folder', folder.id);
+                            }
+                        }}
+                        className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="폴더 삭제"
+                    >
+                        <Trash2 size={12} />
+                    </button>
+                )}
             </div>
 
             {isOpen && hasChildren && (
@@ -76,6 +92,7 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                             currentFolderId={currentFolderId}
                             onSelect={onSelect}
                             onMoveItem={onMoveItem}
+                            onDelete={onDelete}
                             depth={depth + 1}
                         />
                     ))}
@@ -85,7 +102,7 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
     );
 };
 
-export default function FolderTree({ folders, currentFolderId, onFolderSelect, onMoveItem }: FolderTreeProps) {
+export default function FolderTree({ folders, currentFolderId, onFolderSelect, onMoveItem, onDelete }: FolderTreeProps) {
     // Root level folders (parent_id is null)
     const rootFolders = folders.filter(f => f.parent_id === null);
 
@@ -119,6 +136,7 @@ export default function FolderTree({ folders, currentFolderId, onFolderSelect, o
                     currentFolderId={currentFolderId}
                     onSelect={onFolderSelect}
                     onMoveItem={onMoveItem}
+                    onDelete={onDelete}
                 />
             ))}
         </div>

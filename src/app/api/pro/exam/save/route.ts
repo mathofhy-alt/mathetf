@@ -368,7 +368,8 @@ export async function POST(req: NextRequest) {
                 folder_id: folderId === 'root' ? null : folderId,
                 type: 'saved_exam',
                 name: displayTitle,
-                reference_id: fileId
+                reference_id: fileId,
+                details: metaData
             })
             .select()
             .single();

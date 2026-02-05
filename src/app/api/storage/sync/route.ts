@@ -24,30 +24,44 @@ export async function POST(req: NextRequest) {
     // 2. Find or Create "Purchased DBs" folder
     const FOLDER_NAME = '구매한 학교 기출';
 
-    let { data: folder } = await supabase
+    // Fetch ALL matching folders to handle duplicates and update them all
+    let { data: folders } = await supabase
         .from('folders')
-        .select('id')
+        .select('id, folder_type')
         .eq('user_id', user.id)
         .eq('name', FOLDER_NAME)
-        .is('parent_id', null) // Root level only
-        .single();
+        .is('parent_id', null);
 
-    if (!folder) {
+    let targetFolder;
+
+    if (!folders || folders.length === 0) {
         const { data: newFolder, error: createError } = await supabase
             .from('folders')
             .insert({
                 user_id: user.id,
                 name: FOLDER_NAME,
-                parent_id: null
+                parent_id: null,
+                folder_type: 'db'
             })
             .select()
             .single();
 
         if (createError) return NextResponse.json({ error: createError.message }, { status: 500 });
-        folder = newFolder;
+        targetFolder = newFolder;
+    } else {
+        // Fix: Update ALL matching folders to type 'db' to ensure visibility
+        const foldersToUpdate = folders.filter(f => f.folder_type !== 'db');
+        if (foldersToUpdate.length > 0) {
+            const ids = foldersToUpdate.map(f => f.id);
+            await supabase
+                .from('folders')
+                .update({ folder_type: 'db' })
+                .in('id', ids);
+        }
+        targetFolder = folders[0];
     }
 
-    if (!folder) return NextResponse.json({ error: 'Folder creation failed' }, { status: 500 });
+    if (!targetFolder) return NextResponse.json({ error: 'Folder creation failed' }, { status: 500 });
 
     // 3. Fetch existing linked items
     const { data: existingItems } = await supabase
@@ -63,7 +77,7 @@ export async function POST(req: NextRequest) {
         .filter(p => !existingRefIds.has(p.exam_materials.id))
         .map(p => ({
             user_id: user.id,
-            folder_id: folder.id, // Sync to specific folder
+            folder_id: targetFolder.id, // Sync to specific folder
             type: 'personal_db',
             reference_id: p.exam_materials.id,
             name: p.exam_materials.title

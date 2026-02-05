@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import QuestionRenderer from '@/components/QuestionRenderer';
+import InputModal from '@/components/common/InputModal';
 
 const UNIT_OPTIONS: Record<string, string[]> = {
     '공통수학1': ['다항식', '항등식', '복소수', '이차방정식', '이차함수', '여러가지방정식', '여러가지부등식', '경우의수', '행렬'],
@@ -48,6 +49,7 @@ export default function AdminQuestionsPage() {
 
     // Cart / Selection
     const [selectedIds, setSelectedIds] = useState<Set<any>>(new Set());
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [expandedSolutions, setExpandedSolutions] = useState<Set<string>>(new Set());
 
     // Similarity Search State
@@ -208,10 +210,17 @@ export default function AdminQuestionsPage() {
         });
     };
 
-    const handleDeleteAllUnsorted = async () => {
-        const input = prompt("경고: '소팅 완료'되지 않은 모든(미분류) 문제를 삭제합니다!\n이 작업은 되돌릴 수 없습니다.\n진행하려면 '미분류삭제'라고 입력해주세요.");
-        if (input !== '미분류삭제') return;
+    const handleDeleteAllUnsorted = () => {
+        setIsDeleteModalOpen(true);
+    };
 
+    const onConfirmDeleteUnsorted = async (input: string) => {
+        if (input !== '미분류삭제') {
+            alert("'미분류삭제'를 정확히 입력해주세요.");
+            return;
+        }
+
+        setIsDeleteModalOpen(false);
         try {
             const res = await fetch('/api/admin/questions', {
                 method: 'DELETE',
@@ -229,7 +238,7 @@ export default function AdminQuestionsPage() {
             }
         } catch (e) {
             console.error(e);
-            alert('삭제 중 오류가 발생했습니다.');
+            alert('삭제 과정에서 오류가 발생했습니다.');
         }
     };
 
@@ -378,13 +387,14 @@ export default function AdminQuestionsPage() {
             });
 
             if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
                 setQuestions(prev => prev.map(item =>
                     item.id === q.id ? { ...item, difficulty: oldDiff } : item
                 ));
                 if (selectedQuestion && selectedQuestion.id === q.id) {
                     setSelectedQuestion((prev: any) => ({ ...prev, difficulty: oldDiff }));
                 }
-                alert('수정 실패');
+                alert('수정 실패: ' + (err.error || '알 수 없는 오류'));
             }
         } catch (e) {
             console.error(e);
@@ -447,7 +457,7 @@ export default function AdminQuestionsPage() {
 
     const handleManualCapture = async (q: any, captureType: 'question' | 'solution' = 'question') => {
         try {
-            const captureRes = await fetch('http://localhost:5000/trigger-manual-capture', {
+            const captureRes = await fetch('http://localhost:5001/trigger-manual-capture', {
                 method: 'POST'
             });
 
@@ -459,7 +469,7 @@ export default function AdminQuestionsPage() {
 
             const { file_path } = await captureRes.json();
 
-            const fileRes = await fetch(`http://localhost:5000/get-capture?path=${encodeURIComponent(file_path)}`);
+            const fileRes = await fetch(`http://localhost:5001/get-capture?path=${encodeURIComponent(file_path)}`);
             if (!fileRes.ok) {
                 const err = await fileRes.json();
                 throw new Error(`로컬 파일을 가져오지 못했습니다: ${err.error}`);
@@ -1805,6 +1815,17 @@ export default function AdminQuestionsPage() {
                         </div>
                     </div>
                 </div>
+            )}
+            {isDeleteModalOpen && (
+                <InputModal
+                    title="미분류 문제 일괄 삭제"
+                    label="삭제하려면 '미분류삭제'라고 입력해주세요."
+                    description="경고: 소팅 완료되지 않은 모든 문제가 영구 삭제됩니다."
+                    placeholder="미분류삭제"
+                    confirmLabel="삭제하기"
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={onConfirmDeleteUnsorted}
+                />
             )}
         </div>
     );

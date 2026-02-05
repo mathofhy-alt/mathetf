@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
                                 if (dlError) {
                                     console.error(`[HML-V2-DOWNLOAD] Supabase Download FAILED for ${img.original_bin_id}:`, dlError);
                                 } else if (blob) {
-                                    let buffer = await blob.arrayBuffer();
+                                    let buffer: Buffer | ArrayBufferLike = await blob.arrayBuffer();
 
                                     // [FIX] Apply Universal Resizing
                                     const resizeResult = tryResizeImage(Buffer.from(buffer), img.original_bin_id);
@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
                         // [OPTIMIZATION] Downscale Large Images via Python (Pillow)
                         const resizeResult = tryResizeImage(buffer, img.original_bin_id);
                         if (resizeResult.resized) {
-                            buffer = resizeResult.buffer;
+                            buffer = resizeResult.buffer as Buffer;
                             img.data = buffer.toString('base64');
                             img.size_bytes = buffer.length;
                             (img as any).image_size = buffer.length;
@@ -213,6 +213,11 @@ export async function POST(req: NextRequest) {
                         const isBmp = head === 'BM';
                         const isPng = headHex === '8950';
                         const isJpg = headHex === 'ffd8';
+
+                        // [FIX] Explicitly set format if detected (vital for Generator)
+                        if (isBmp) img.format = 'bmp';
+                        else if (isPng) img.format = 'png';
+                        else if (isJpg) img.format = 'jpg';
 
                         if (!isBmp && !isPng && !isJpg) {
                             try {

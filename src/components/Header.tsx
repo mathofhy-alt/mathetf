@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Upload, Coins, User as UserIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface HeaderProps {
     user?: User | null;
@@ -21,6 +21,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const [earnedPoints, setEarnedPoints] = useState(propEarned || 0);
     const supabase = createClient();
     const router = useRouter();
+    const pathname = usePathname();
 
     // If props are provided, sync them
     useEffect(() => {
@@ -110,10 +111,12 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             </Link>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2">
-                            <Link href="/login" className="px-4 py-1.5 text-slate-600 font-bold text-sm hover:bg-slate-50 border border-slate-200 rounded">로그인</Link>
-                            <Link href="/signup" className="px-4 py-1.5 bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 rounded">회원가입</Link>
-                        </div>
+                        !['/login', '/signup', '/'].includes(pathname) && (
+                            <div className="flex items-center gap-2">
+                                <Link href="/login" className="px-4 py-1.5 text-slate-600 font-bold text-sm hover:bg-slate-50 border border-slate-200 rounded">로그인</Link>
+                                <Link href="/signup" className="px-4 py-1.5 bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 rounded">회원가입</Link>
+                            </div>
+                        )
                     )}
                 </div>
             </div>

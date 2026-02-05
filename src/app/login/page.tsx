@@ -3,7 +3,7 @@ import { headers } from "next/headers"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { login } from "./actions"
-import KakaoLoginButton from "@/components/KakaoLoginButton"
+
 import LoginAlert from "@/components/LoginAlert"
 
 export default function Login({
@@ -43,13 +43,7 @@ export default function Login({
                 className="animate-in flex-1 flex flex-col w-full justify-center gap-2 text-foreground"
                 action={signIn}
             >
-                <KakaoLoginButton />
 
-                <div className="flex items-center gap-2 my-4">
-                    <div className="h-[1px] bg-foreground/10 flex-1"></div>
-                    <span className="text-sm text-foreground/50">또는</span>
-                    <div className="h-[1px] bg-foreground/10 flex-1"></div>
-                </div>
 
                 <label className="text-md" htmlFor="email">
                     이메일

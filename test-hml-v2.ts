@@ -10,14 +10,15 @@
  * Run: npx ts-node test-hml-v2.ts
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { parseHmlV2 } from './src/lib/hml-v2/parser';
-import { generateHmlV2, generateHmlFromTemplate } from './src/lib/hml-v2/generator';
-import type { QuestionWithImages, DbQuestion, DbQuestionImage } from './src/lib/hml-v2/types';
+const fs = require('fs');
+const path = require('path');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { parseHmlV2 } = require('./src/lib/hml-v2/parser.ts');
+const { generateHmlV2, generateHmlFromTemplate } = require('./src/lib/hml-v2/generator.ts');
+// import type { QuestionWithImages, DbQuestion, DbQuestionImage } from './src/lib/hml-v2/types';
 
 const TEST_INPUT = '시험지_2026-01-15 (36).hml';
-const TEST_OUTPUT = 'test_hml_v2_real_output.hml';
+const TEST_OUTPUT = 'test_output_endnote.hml';
 
 async function main() {
     console.log('=== HML V2 Round-Trip Test ===\n');

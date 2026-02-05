@@ -5,15 +5,17 @@ import { FolderPlus, RefreshCw, Loader2, Home, DownloadCloud, CheckSquare, Trash
 import FolderTree from './FolderTree';
 import FileGrid from './FileGrid';
 import StorageContextMenu from './StorageContextMenu';
+import InputModal from '../common/InputModal';
 import type { Folder, UserItem } from '@/types/storage';
 
 interface FolderExplorerProps {
     onItemSelect: (item: UserItem) => void;
     onSelectAll?: (items: UserItem[]) => void;
     selectedIds?: string[];
+    filterType?: 'all' | 'db' | 'exam';
 }
 
-export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [] }: FolderExplorerProps) {
+export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all' }: FolderExplorerProps) {
     const [allFolders, setAllFolders] = useState<Folder[]>([]);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewFolders, setViewFolders] = useState<Folder[]>([]);
@@ -22,60 +24,130 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'folder' | 'item', id: string } | null>(null);
+    const [inputModal, setInputModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        label: string;
+        initialValue: string;
+        icon: 'folder' | 'edit';
+        onConfirm: (val: string) => void;
+    }>({
+        isOpen: false,
+        title: '',
+        label: '',
+        initialValue: '',
+        icon: 'edit',
+        onConfirm: () => { }
+    });
 
     // Initial Load: Fetch All Folders for Tree
     useEffect(() => {
-        fetch('/api/storage/folders?mode=all')
+        // Pass filterType to API to get relevant folders only
+        const typeParam = filterType === 'all' ? '' : `&folderType=${filterType}`;
+        fetch(`/api/storage/folders?mode=all${typeParam}`)
             .then(res => res.json())
             .then(data => {
                 if (data.folders) setAllFolders(data.folders);
-            });
-    }, [refreshTrigger]);
+            })
+            .catch(err => console.error("Tree Fetch Error:", err));
+    }, [refreshTrigger, filterType]);
 
     // View Fetch: Fetch content for current folder
     useEffect(() => {
         setLoading(true);
         const pid = currentFolderId === null ? 'root' : currentFolderId;
-        fetch(`/api/storage/folders?parentId=${pid}`)
-            .then(res => res.json())
+        const typeParam = filterType === 'all' ? '' : `&folderType=${filterType}`;
+        fetch(`/api/storage/folders?parentId=${pid}${typeParam}`)
+            .then(async res => {
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = {};
+                }
+
+                if (!res.ok) {
+                    throw new Error(data.error || `Status ${res.status}`);
+                }
+                return data;
+            })
             .then(data => {
-                if (data.folders) setViewFolders(data.folders);
-                if (data.items) setViewItems(data.items);
+                if (data.error) throw new Error(data.error);
+
+                if (data.folders) {
+                    setViewFolders(data.folders);
+                }
+
+                if (data.items) {
+                    // Client-side filtering based on filterType
+                    let filteredItems = data.items;
+                    if (filterType === 'db') {
+                        filteredItems = filteredItems.filter((i: UserItem) => i.type === 'personal_db');
+                    } else if (filterType === 'exam') {
+                        filteredItems = filteredItems.filter((i: UserItem) => i.type === 'saved_exam');
+                    }
+                    setViewItems(filteredItems);
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Folder Fetch Error:", err);
                 setLoading(false);
             });
-    }, [currentFolderId, refreshTrigger]);
+    }, [currentFolderId, refreshTrigger, filterType]);
 
-    const handleCreateFolder = async () => {
-        const name = prompt('새 폴더 이름:');
-        if (!name) return;
-
-        await fetch('/api/storage/folders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, parentId: currentFolderId === null ? 'root' : currentFolderId })
+    const handleCreateFolder = () => {
+        setInputModal({
+            isOpen: true,
+            title: '새 폴더 생성',
+            label: '폴더 이름을 입력하세요',
+            initialValue: '',
+            icon: 'folder',
+            onConfirm: async (name: string) => {
+                await fetch('/api/storage/folders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        parentId: currentFolderId === null ? 'root' : currentFolderId,
+                        folderType: filterType === 'all' ? 'exam' : filterType
+                    })
+                });
+                setRefreshTrigger(p => p + 1);
+                setInputModal(prev => ({ ...prev, isOpen: false }));
+            }
         });
-        setRefreshTrigger(p => p + 1);
     };
 
-    const handleRename = async () => {
+    const handleRename = () => {
         if (!contextMenu) return;
         const { type, id } = contextMenu;
 
-        // Find current name logic...
         let currentName = '';
         if (type === 'folder') currentName = allFolders.find(f => f.id === id)?.name || '';
         else currentName = viewItems.find(i => i.id === id)?.name || '';
 
-        const newName = prompt('새 이름 입력:', currentName);
-        if (!newName || newName === currentName) return;
-
-        const endpoint = type === 'folder' ? '/api/storage/folders' : '/api/storage/items';
-        await fetch(endpoint, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, name: newName })
+        setInputModal({
+            isOpen: true,
+            title: '이름 변경',
+            label: '새 이름을 입력하세요',
+            initialValue: currentName,
+            icon: 'edit',
+            onConfirm: async (newName: string) => {
+                if (!newName || newName === currentName) {
+                    setInputModal(prev => ({ ...prev, isOpen: false }));
+                    return;
+                }
+                const endpoint = type === 'folder' ? '/api/storage/folders' : '/api/storage/items';
+                await fetch(endpoint, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, name: newName })
+                });
+                setRefreshTrigger(p => p + 1);
+                setInputModal(prev => ({ ...prev, isOpen: false }));
+            }
         });
-        setRefreshTrigger(p => p + 1);
     };
 
     const handleMoveItem = async (itemId: string, targetFolderId: string | null) => {
@@ -221,6 +293,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         currentFolderId={currentFolderId}
                         onFolderSelect={setCurrentFolderId}
                         onMoveItem={handleMoveItem}
+                        onDelete={handleDelete}
                     />
                 </div>
             </div>
@@ -326,6 +399,18 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         onRename={handleRename}
                         onDelete={handleDeleteFromContext}
                         onDownload={handleDownload}
+                    />
+                )
+            }
+            {
+                inputModal.isOpen && (
+                    <InputModal
+                        title={inputModal.title}
+                        label={inputModal.label}
+                        initialValue={inputModal.initialValue}
+                        icon={inputModal.icon}
+                        onClose={() => setInputModal(p => ({ ...p, isOpen: false }))}
+                        onConfirm={inputModal.onConfirm}
                     />
                 )
             }

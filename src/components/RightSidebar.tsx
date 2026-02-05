@@ -98,7 +98,7 @@ export default function RightSidebar({ user, points }: { user: any, points: numb
                             </Link>
                         </div>
                         <div className="text-center mt-2">
-                            <Link href="/forgot-password" className="text-xs text-slate-400 hover:text-slate-600">아이디/비밀번호 찾기</Link>
+                            <Link href="/forgot-password" className="text-xs text-slate-400 hover:text-slate-600">비밀번호 재설정</Link>
                         </div>
                     </form>
                 )}

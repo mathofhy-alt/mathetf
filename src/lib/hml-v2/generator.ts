@@ -16,6 +16,7 @@ export function generateHmlFromTemplate(
     questionsWithImages: QuestionWithImages[],
     options?: { title?: string; date?: string }
 ): GenerateResult {
+    console.log("DEBUG: GENERATOR FUNCTION START");
     console.log(`[HML-V2 Surgical Generator] Processing ${questionsWithImages.length} questions`);
 
     // [METADATA INJECTION] Replace {{TITLE}} and {{DATE}}
@@ -31,39 +32,134 @@ export function generateHmlFromTemplate(
         }
     }
 
+
+
+    // [V37 GLOBAL FIX] SANITIZE PARAMARGINS
+    // Scan ALL <PARAMARGIN> tags. If Indent is negative and Left is insufficient, text is off-page.
+    // Fix: Set Left = abs(Indent) to ensure Hanging Indent starts at visual 0.
+    templateContent = templateContent.replace(/<PARAMARGIN [^>]*>/g, (match) => {
+        const indentMatch = match.match(/Indent="(-?\d+)"/);
+        if (indentMatch) {
+            const indentVal = parseInt(indentMatch[1]);
+            if (indentVal < 0) {
+                const requiredLeft = Math.abs(indentVal);
+                const leftMatch = match.match(/Left="(\d+)"/);
+                const currentLeft = leftMatch ? parseInt(leftMatch[1]) : 0;
+
+                if (currentLeft < requiredLeft) {
+                    console.log(`[HML-V2] V37 Global Patch: Correcting Negative Indent ${indentVal} with Left ${currentLeft} -> ${requiredLeft}`);
+                    if (leftMatch) {
+                        return match.replace(/Left="\d+"/, `Left="${requiredLeft}"`);
+                    } else {
+                        return match.replace('<PARAMARGIN', `<PARAMARGIN Left="${requiredLeft}"`);
+                    }
+                }
+            }
+        }
+        return match;
+    });
+
+    // [V34] ROBUST STYLE DETECTION
+    let styleIdToApply = "1";
+    let targetParaId = "";
+    let targetCharId = "";
+
+    try {
+        const nameKeywords = "(문제|문항|Question|Item|문항_스타일)";
+        const styles: { id: string, name: string, ps: string, cs: string }[] = [];
+
+        // Find all STYLE tags and extract attributes regardless of order
+        const styleBlocks = templateContent.match(/<STYLE [^>]*>/gi) || [];
+        for (const block of styleBlocks) {
+            const nameMatch = block.match(/Name="([^"]*)"/);
+            const idMatch = block.match(/Id="(\d+)"/);
+            const psMatch = block.match(/ParaShape="(\d+)"/);
+            const csMatch = block.match(/CharShape="(\d+)"/);
+
+            if (nameMatch && idMatch && psMatch && csMatch) {
+                if (new RegExp(nameKeywords, "i").test(nameMatch[1])) {
+                    styles.push({ name: nameMatch[1], id: idMatch[1], ps: psMatch[1], cs: csMatch[1] });
+                }
+            }
+        }
+
+        if (styles.length > 0) {
+            // Prioritize Style Id="1" (Ctrl+2) or "문제1"
+            const best = styles.find(s => s.id === "1") || styles.find(s => s.name.includes("문제1")) || styles[0];
+            styleIdToApply = best.id;
+            targetParaId = best.ps;
+            targetCharId = best.cs;
+            console.log(`[HML-V2] V35 Style Picked: "${best.name}" (ID: ${styleIdToApply}, PS: ${targetParaId}, CS: ${targetCharId})`);
+        } else {
+            // Absolute Fallback for Standard Template
+            const fallback = templateContent.match(/<STYLE [^>]*Id="1"[^>]*ParaShape="(\d+)"[^>]*CharShape="(\d+)"/i)
+                || templateContent.match(/<STYLE [^>]*CharShape="(\d+)"[^>]*Id="1"[^>]*ParaShape="(\d+)"/i);
+            if (fallback) {
+                styleIdToApply = "1";
+                // Handle different capture groups based on match
+                if (fallback[0].indexOf('ParaShape') < fallback[0].indexOf('CharShape')) {
+                    targetParaId = fallback[1];
+                    targetCharId = fallback[2];
+                } else {
+                    targetCharId = fallback[1];
+                    targetParaId = fallback[2];
+                }
+                console.log(`[HML-V2] V35 Style Picked (Fallback): ID: ${styleIdToApply}, PS: ${targetParaId}, CS: ${targetCharId}`);
+            }
+        }
+
+        if (targetParaId) {
+            // [FIX V36] Match PARASHAPE *and* its child PARAMARGIN (Group 1, 2, 3)
+            // We need to fix attributes on PARAMARGIN, not PARASHAPE
+            const complexRegex = new RegExp(`(<PARASHAPE [^>]*Id="${targetParaId}"[^>]*>)(\\s*)(<PARAMARGIN [^>]*>)`, 'g');
+
+            templateContent = templateContent.replace(complexRegex, (match, paraTag, spacing, marginTag) => {
+                // 1. Disable HeadingType - REMOVED (V38)
+                // We strict preserve the template's HeadingType so users can use Ctrl+2 (Auto Numbering)
+                let newParaTag = paraTag;
+
+                // 2. Fix Indent on PARAMARGIN
+                let newMarginTag = marginTag;
+                const indentMatch = marginTag.match(/Indent="(-?\d+)"/);
+
+                if (indentMatch) {
+                    const indentVal = parseInt(indentMatch[1]);
+                    if (indentVal < 0) {
+                        const requiredLeft = Math.abs(indentVal);
+                        const leftMatch = marginTag.match(/Left="(\d+)"/);
+                        const currentLeft = leftMatch ? parseInt(leftMatch[1]) : 0;
+
+                        if (currentLeft < requiredLeft) {
+                            console.log(`[HML-V2] V36 Patch: ParaShape ${targetParaId} (Indent ${indentVal}) - Adjusting Left ${currentLeft} -> ${requiredLeft}`);
+                            if (leftMatch) {
+                                newMarginTag = newMarginTag.replace(/Left="\d+"/, `Left="${requiredLeft}"`);
+                            } else {
+                                newMarginTag = newMarginTag.replace('<PARAMARGIN', `<PARAMARGIN Left="${requiredLeft}"`);
+                            }
+                        }
+                    }
+                }
+                return newParaTag + spacing + newMarginTag;
+            });
+        }
+
+        // Nuclear Margin Compensation for <PARAMARGIN> too
+        if (templateContent.includes(`Id="${targetParaId}"`)) {
+            templateContent = templateContent.replace(
+                new RegExp(`(<PARAMARGIN [^>]*Id="${targetParaId}"[^>]*Indent="-)(\\d+)("[^>]*Left=")(\\d+)(")`, 'g'),
+                (m, p1, indent, p3, left, p5) => {
+                    return `${p1}${indent}${p3}${indent}${p5}`;
+                }
+            );
+        }
+    } catch (e) {
+        console.error(`[HML-V2] V33 Style surgery error:`, e);
+    }
+
     const serializer = new XMLSerializer();
     const parser = new DOMParser();
 
-    // [STYLE UPDATE] Ensure 'Hidden' Style (White, 1pt) exists
-    // We inject it into the string BEFORE parsing to avoid serializer quirks.
-    let hiddenStyleId = '9999'; // Default high ID
-    const charShapeListMatch = templateContent.match(/<CHARSHAPELIST Count="(\d+)">/);
-    if (charShapeListMatch) {
-        let count = parseInt(charShapeListMatch[1], 10);
 
-        // Find max ID to pick a safe new ID
-        let maxId = 0;
-        const idRegex = /<CHARSHAPE[^>]*Id="(\d+)"/g;
-        let match;
-        while ((match = idRegex.exec(templateContent)) !== null) {
-            const id = parseInt(match[1], 10);
-            if (id > maxId) maxId = id;
-        }
-        hiddenStyleId = String(maxId + 1);
-
-        // Construct new CharShape (Height=100 (1pt), TextColor=16777215 (White))
-        // We use standard FONTIDs (0) assuming they exist (Standard HWP fonts)
-        const newStyle = `<CHARSHAPE Id="${hiddenStyleId}" Height="100" TextColor="16777215" ShadeColor="4294967295" UseFontSpace="false" UseKerning="false" SymMark="0" BorderFillId="3"><FONTID Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/><RATIO Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="100" User="100"/><CHARSPACING Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/><RELSIZE Hangul="100" Hanja="100" Japanese="100" Latin="100" Other="100" Symbol="0" User="100"/><CHAROFFSET Hangul="0" Hanja="0" Japanese="0" Latin="0" Other="0" Symbol="0" User="0"/></CHARSHAPE>`;
-
-        // Inject
-        const closeTag = '</CHARSHAPELIST>';
-        if (templateContent.includes(closeTag)) {
-            templateContent = templateContent.replace(closeTag, newStyle + closeTag);
-            // Update Count
-            templateContent = templateContent.replace(charShapeListMatch[0], `<CHARSHAPELIST Count="${count + 1}">`);
-            console.log(`[HML-V2 Generator] Injected Hidden Style Id="${hiddenStyleId}"`);
-        }
-    }
 
     // 0. Extract Box Patterns from Template
     const templateDoc = parser.parseFromString(templateContent, 'text/xml');
@@ -76,25 +172,33 @@ export function generateHmlFromTemplate(
         let role = '';
 
         for (const p of ps) {
-            const pText = (p.textContent || '').trim();
-            if (pText === '보기박스') { role = 'BOX_BOGI'; break; }
-            if (pText === '조건박스') { role = 'BOX_JOKUN'; break; }
-            if (pText === '미주박스') { role = 'BOX_MIJU'; break; }
-            if (pText === '박스안') { role = 'BOX_INNER'; break; }
+            const pText = (p.textContent || '').replace(/\s+/g, '').toLowerCase(); // Normalize whitespace and case
+            if (pText.includes('보기박스')) { role = 'BOX_BOGI'; break; }
+            if (pText.includes('조건박스')) { role = 'BOX_JOKUN'; break; }
+            if (pText.includes('미주박스') || pText.includes('해설박스') || pText.includes('정답박스') || pText.includes('해설') || pText.includes('정답')) {
+                role = 'BOX_MIJU'; break;
+            }
+            if (pText.includes('박스안')) { role = 'BOX_INNER'; break; }
         }
 
         if (role) {
+            console.log(`[HML-V2 DEBUG] Extracted BOX pattern for role: ${role}`);
             // Store the pattern
-            console.log(`[HML-V2 Surgical Generator] Extracted pattern for role: ${role}`);
             boxPatterns[role] = serializer.serializeToString(table);
 
             // Find InstId for Surgical Removal
+            // We search for SHAPEOBJECT specifically to get the InstId
             const so = table.getElementsByTagName('SHAPEOBJECT')[0];
-            if (so) {
-                const instId = so.getAttribute('InstId');
-                if (instId) {
-                    patternsToRemove.push(instId);
-                    console.log(`[HML-V2 Surgical Generator] Marked table for removal (InstId=${instId})`);
+            const instId = so ? so.getAttribute('InstId') : table.getAttribute('InstId');
+
+            if (instId) {
+                patternsToRemove.push(instId);
+            } else {
+                // Fallback: search for any InstId in the table's XML if not found via DOM
+                const tableXml = serializer.serializeToString(table);
+                const instMatch = tableXml.match(/InstId="(\d+)"/);
+                if (instMatch) {
+                    patternsToRemove.push(instMatch[1]);
                 }
             }
         }
@@ -120,11 +224,38 @@ export function generateHmlFromTemplate(
         CharShape: new Set<string>(),
         Style: new Set<string>(),
         StyleNames: new Map<string, string>(), // Name -> ID
+        NormalizedStyleNames: new Map<string, string>(), // Normalized Name -> ID
         StyleParaShapes: new Map<string, string>(), // StyleID -> ParaShapeID
         BorderFills: new Map<string, string>(), // XML Hash -> ID
         BorderFillIds: new Set<string>(),
         InjectedBorders: [] as { id: string; xml: string }[],
         nextBorderId: 100 // Managed pointer for new IDs
+    };
+
+    const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase();
+    const getStyleId = (targetName: string) => {
+        const normTarget = normalize(targetName);
+        if (validStyles.StyleNames.has(targetName)) return validStyles.StyleNames.get(targetName)!;
+        const normMatch = validStyles.NormalizedStyleNames.get(normTarget);
+        if (normMatch) return normMatch;
+
+        // NUCLEAR FALLBACK: If "문제1" is absolutely missing, search for similar roles
+        if (normTarget === '문제1') {
+            let fallbackId = '';
+            validStyles.StyleNames.forEach((id, name) => {
+                if (fallbackId) return;
+                const n = normalize(name);
+                if (n.includes('해설') || n.includes('정답') || n.includes('미주') || n.includes('본문1')) {
+                    console.log(`[HML-V2 NUCLEAR-STYLE] "문제1" missing. Using "${name}" (ID: ${id}) instead.`);
+                    fallbackId = id;
+                }
+            });
+            if (fallbackId) return fallbackId;
+            // Absolute last resort: Style ID "2" or "1" if they exist
+            if (validStyles.Style.has('2')) return '2';
+            if (validStyles.Style.has('1')) return '1';
+        }
+        return '';
     };
 
 
@@ -141,6 +272,8 @@ export function generateHmlFromTemplate(
                     set.add(id);
                     if (name && nameMap) {
                         nameMap.set(name, id);
+                        validStyles.NormalizedStyleNames.set(normalize(name), id);
+                        console.log(`[HML-V2 STYLE-DB] Style: "${name}" (ID: ${id})`);
                     }
                     if (tagName === 'STYLE' && paraShape && styleParaMap) {
                         styleParaMap.set(id, paraShape);
@@ -178,6 +311,7 @@ export function generateHmlFromTemplate(
 
     let qIndex = 0;
     let currentColumnHeight = 15; // Heuristic: Title takes ~15 lines in Col 1
+    const allEndnotes: Element[] = []; // [NEW] Collect all endnotes for final restoration
 
     for (const qwi of questionsWithImages) {
         qIndex++;
@@ -187,93 +321,136 @@ export function generateHmlFromTemplate(
             .replace(/<(?:hp:)?COLBREAK[^>]*?>/gi, '')
             .replace(/ColumnBreak="true"/gi, '')
             .replace(/ColumnBreak="1"/gi, '');
+        // Add ENDNOTE detection logging
+        // [FIX V20] Regex-based search for ANY version of endnote tag
+        if (/<[^>]*?ENDNOTE/i.test(cleanContent)) {
+            console.log(`[HML-V2 DEBUG] Question ${qwi.question.id} contains suspected ENDNOTE tag via Regex.`);
+        } else {
+            console.warn(`[HML-V2 DEBUG] Question ${qwi.question.id} has NO ENDNOTE tags via Regex! Content length: ${cleanContent.length}`);
+        }
+
         const qDoc = parser.parseFromString(`<WRAP>${cleanContent}</WRAP>`, 'text/xml');
         const root = qDoc.documentElement;
 
-        // Safety: Ensure only the first paragraph is treated as the "Question Start" (Style: 문제1)
-        // This prevents every line getting a number (1. 2. 3.) if Parser tagged them all as QUESTION
+        // [FIX V15] IMMEDIATE ENDNOTE ACCUMULATION (Before any mutations)
+        // [FIX V19] Robust tag search to handle potential namespaces like hp:ENDNOTE
+        const findEndnotes = (parent: Element): Element[] => {
+            const results: Element[] = [];
+            const tags = ['ENDNOTE', 'hp:ENDNOTE', 'hp:endnote', 'endnote'];
+            for (const tag of tags) {
+                const found = Array.from(parent.getElementsByTagName(tag));
+                results.push(...found);
+            }
+            // Filter unique by reference just in case
+            return Array.from(new Set(results));
+        };
+
+        const endnotesInQ = findEndnotes(root);
+        console.log(`[HML-V2 DEBUG] Question ${qwi.question.id} findEndnotes() count: ${endnotesInQ.length}`);
+        if (endnotesInQ.length > 0) {
+            console.log(`[HML-V2 DEBUG] Question ${qwi.question.id}: Found ${endnotesInQ.length} endnotes. Accumulating clones.`);
+            for (const en of endnotesInQ) {
+                allEndnotes.push(en.cloneNode(true) as Element);
+            }
+        }
+
+        // [V30] PRESERVE PARSER HINTS
+        // [V30] ROBUST PARAGRAPH DETECTION
         const allPs = root.getElementsByTagName('P');
-        for (let i = 1; i < allPs.length; i++) {
-            const p = allPs[i];
-            if (p.getAttribute('data-hml-style') === 'QUESTION') {
-                p.removeAttribute('data-hml-style'); // Fallback to safe default or "Body" style
-            }
-        }
-        // Auto-Numbering: Apply '문제1' Style (Ctrl+2) to first paragraph
-        // This force-applies the Style ID and its associated ParaShape ID
-        const firstP = root.getElementsByTagName('P')[0];
-        if (firstP) {
-            const TARGET_STYLE_NAME = '문제1';
-            const styleId = validStyles.StyleNames.get(TARGET_STYLE_NAME);
-
-            if (styleId) {
-                firstP.setAttribute('Style', styleId);
-                const paraShapeId = validStyles.StyleParaShapes.get(styleId);
-                if (paraShapeId) {
-                    firstP.setAttribute('ParaShape', paraShapeId);
+        // [V31] Top-level Paras Only (Exclude nested ones in tables)
+        const topPs = Array.from(allPs).filter(p => p.parentNode === root);
+        // A paragraph is 'visual' if it has text OR images/tables/equations.
+        const isVisualPara = (p: Element) => {
+            if (p.textContent && p.textContent.trim().length > 0) return true;
+            // Check for children that aren't TEXT (e.g. IMAGE, PICTURE, EQUATION, TABLE)
+            const children = Array.from(p.childNodes);
+            for (const child of children) {
+                const nodeName = child.nodeName.toUpperCase();
+                if (['IMAGE', 'PICTURE', 'EQUATION', 'TABLE', 'DRAWINGOBJECT', 'SHAPEOBJECT'].includes(nodeName)) return true;
+                // Also check inside children if they are wrappers
+                if (child.nodeType === 1) { // Element
+                    const el = child as Element;
+                    if (el.getElementsByTagName('EQUATION').length > 0) return true;
+                    if (el.getElementsByTagName('PICTURE').length > 0) return true;
+                    if (el.getElementsByTagName('TABLE').length > 0) return true;
                 }
-
-                // Force 'HamchoromBatang' (CharShape 11) on all TEXT nodes in this paragraph
-                // This overrides the Style's default font (ShinMyeongjo)
-                const textNodes = firstP.getElementsByTagName('TEXT');
-                for (let k = 0; k < textNodes.length; k++) {
-                    // Check if CharShape 11 is valid (it should be in this template)
-                    if (validStyles.CharShape.has('11')) {
-                        textNodes[k].setAttribute('CharShape', '11');
-                    } else {
-                        // Fallback/Warning if template changed
-                        console.warn('[HML-V2 Generator] CharShape "11" (Hamchorom) not found in template! Keeping default.');
-                    }
-                }
-
-                console.log(`[HML-V2 Generator] Manual Injection: Applied '문제1' (Id=${styleId}, Para=${paraShapeId}) + Hamchorom(CharShape=11) to First Paragraph`);
-            } else {
-                console.warn(`[HML-V2 Generator] Manual Injection FAILED: '문제1' style not found!`);
             }
+            return false;
+        };
+
+        const questionPs = topPs.filter((p: any) => p.getAttribute('data-hml-style') === 'QUESTION');
+        let firstVisualP: Element | null = null;
+
+        if (questionPs.length > 0) {
+            firstVisualP = questionPs[0];
+        } else {
+            for (let i = 0; i < topPs.length; i++) {
+                const p = topPs[i] as Element;
+                if (isVisualPara(p)) {
+                    firstVisualP = p;
+                    break;
+                }
+            }
+            if (!firstVisualP && topPs.length > 0) firstVisualP = topPs[0] as Element;
         }
 
-        // [HACK] Hide Endnote References (Miju)
-        // User requested to make them White and Size 1.
-        // We look for <ENDNOTE> tags and apply CharShape="3" (Height=100, Color=White assumed from Template)
-        const endnotes = root.getElementsByTagName('ENDNOTE');
-        if (endnotes.length > 0) {
-            // Check if CharShape 3 exists (Hidden Style)
-            const HIDDEN_STYLE_ID = hiddenStyleId;
-            console.log(`[HML-GEN] Found ${endnotes.length} Endnotes. checking style ${HIDDEN_STYLE_ID}...`);
-            if (validStyles.CharShape.has(HIDDEN_STYLE_ID)) {
-                console.log('[HML-GEN] CharShape 3 exists. Applying hidden style...');
-                // IMPORTANT: Iterate BACKWARDS because getElementsByTagName returns a LIVE collection.
-                // Modifying the DOM (removing elements) shifts indices.
-                for (let k = endnotes.length - 1; k >= 0; k--) {
-                    const en = endnotes[k];
-                    // The Endnote reference style is determined by the enclosing TEXT tag's CharShape.
-                    // We must find the parent TEXT tag.
-                    let parentText = en.parentNode as Element;
-                    if (parentText && parentText.nodeName === 'TEXT') {
-                        console.log(`[HML-GEN] Wrapping Endnote ${k} in hidden text.`);
-                        const newText = qDoc.createElement('TEXT');
-                        newText.setAttribute('CharShape', HIDDEN_STYLE_ID);
+        if (firstVisualP) {
+            // [V33] Use the surgical result for consistency
+            const styleId = styleIdToApply;
+            const paraShapeId = targetParaId || validStyles.StyleParaShapes.get(styleId) || '1';
+            const charShapeId = targetCharId || '0';
 
-                        // Move EN from parent to new wrapper
-                        parentText.removeChild(en);
+            console.log(`[HML-V2 NUM] Q${qIndex} Applying StyleID: ${styleId}, ParaShapeID: ${paraShapeId}, CharShapeID: ${charShapeId}`);
 
-                        // Insert New Text before Parent
-                        // This safely places the hidden reference immediately before the text it was attached to
-                        if (parentText.parentNode) {
-                            parentText.parentNode.insertBefore(newText, parentText);
-                        }
+            // Apply style and parashape to the paragraph
+            firstVisualP.setAttribute('Style', styleId);
+            firstVisualP.setAttribute('ParaShape', paraShapeId);
 
-                        // Add a specialized CHAR?
-                        // HWPML often relies on a placeholder char.
-                        // But usually for Control Chars, just the tag is enough.
-                        // However, to be safe and ensure "Text" node validity:
-                        const dummyChar = qDoc.createElement('CHAR');
-                        dummyChar.textContent = ' ';
-                        newText.appendChild(dummyChar);
-                        newText.appendChild(en);
-                    }
+            // [FIX V33] Force Style's CharShape on all nodes to ensure font consistency
+            const textNodesInP = Array.from(firstVisualP.getElementsByTagName('TEXT'));
+            for (const tn of textNodesInP) {
+                tn.setAttribute('CharShape', charShapeId);
+            }
+
+            // Also apply to ALL paragraphs tagged as QUESTION by the parser
+            // (Excluding the first one we already handled)
+            for (const p of questionPs) {
+                if (p !== firstVisualP) {
+                    p.setAttribute('Style', styleId);
+                    p.setAttribute('ParaShape', paraShapeId);
+                    p.removeAttribute('data-hml-style');
                 }
             }
+            if (firstVisualP.hasAttribute('data-hml-style')) firstVisualP.removeAttribute('data-hml-style');
+
+            // [FIX V6] Cleanup V5/V4 attempts
+            // removed NewList="false" (ineffective)
+
+            // Strategy: Find first text node in this visual paragraph
+            let targetTextNode: any = null;
+            for (let k = 0; k < textNodesInP.length; k++) {
+                if (textNodesInP[k].textContent && textNodesInP[k].textContent.trim().length > 0) {
+                    targetTextNode = textNodesInP[k];
+                    break;
+                }
+            }
+
+            // If the paragraph has text content but no TEXT nodes (rare), create one
+            if (!targetTextNode) {
+                targetTextNode = qDoc.createElement('TEXT');
+                // No longer setting CharShape here, it's done in the loop above
+                firstVisualP.appendChild(targetTextNode);
+            }
+
+            // [V29] REMOVED FORCED NUMBERING & STRIPPING
+            // User requested removal of "forcedly put numbers".
+            // We now rely on the original content_xml tags and text.
+
+
+            console.log(`[HML-V2 Generator] V29: Forced Numbering Injected REMOVED for Q${qIndex}`);
+
+        } else {
+            console.warn(`[HML-V2 Generator] No visual paragraph found for Q${qIndex}. Cannot apply manual numbering.`);
         }
 
         // Remap images for this question with Deduplication
@@ -442,9 +619,10 @@ export function generateHmlFromTemplate(
                     } else {
                         // Flush previous group
                         if (currentRole.startsWith('BOX_')) {
-                            console.log(`[HML-V2 Surgical Generator] Flushing box group for role: ${currentRole} (Size: ${currentGroup.length})`);
+                            // console.log(`[HML-V2 Surgical Generator] Flushing box group for role: ${currentRole} (Size: ${currentGroup.length})`);
                             finalNodes.push(wrapInBoxPattern(currentGroup, currentRole, boxPatterns, serializer, parser, nextInstId++, validStyles));
                         } else {
+                            // This case shouldn't really happen with current logic as non-boxes aren't in groups
                             currentGroup.forEach(node => {
                                 sanitizeNodeStyles(node, validStyles, serializer);
                                 finalNodes.push(serializer.serializeToString(node));
@@ -454,12 +632,15 @@ export function generateHmlFromTemplate(
                         currentRole = role;
                     }
                 } else {
-                    // Not a box role
+                    // Not a box role (P, ENDNOTE, TABLE, etc.)
+                    // 1. Flush any active BOX group
                     if (currentRole.startsWith('BOX_')) {
                         finalNodes.push(wrapInBoxPattern(currentGroup, currentRole, boxPatterns, serializer, parser, nextInstId++, validStyles));
                         currentGroup = [];
                         currentRole = '';
                     }
+
+                    // 2. Process and Serialize the node
                     sanitizeNodeStyles(el, validStyles, serializer);
                     finalNodes.push(serializer.serializeToString(el));
                 }
@@ -472,17 +653,18 @@ export function generateHmlFromTemplate(
             console.log(`[HML-V2 DEBUG] questionXml length: ${questionXml.length}`);
 
             // [SMART LAYOUT STRATEGY]
-            // Heuristic: Estimate height in "lines" where 1 P = 1 line, 1 Image = 12 lines.
+            // Heuristic: Estimate height in "lines" where 1 P = 1 line, 1 Image = 15 lines (increased for safety).
             const countImages = (questionXml.match(/<PICTURE|<IMAGE/g) || []).length;
             const countParas = (questionXml.match(/<P /g) || []).length;
-            const questionHeight = countParas + (countImages * 12);
+            const questionHeight = countParas + (countImages * 15);
 
-            // Standard padding: 10 lines (as requested by user)
-            const paddingLines = 10;
+            // Standard padding: 10 lines
+            const paddingLines = 2; // Reduced padding
             const requiredSpace = questionHeight + paddingLines;
 
             // Column Constraints (Heuristic B4 2-Column)
-            const MAX_COL_HEIGHT = 58;
+            // Reduced to 45 to provoke breaks earlier and avoid squeezing at bottom.
+            const MAX_COL_HEIGHT = 45;
 
             // Logic: Break column if we overflow (unless item is huge)
             if (currentColumnHeight + requiredSpace > MAX_COL_HEIGHT) {
@@ -492,12 +674,112 @@ export function generateHmlFromTemplate(
 
             combinedContentXmlFull += questionXml;
 
-            // Add Padding (10 lines)
-            const paddingPara = `<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR/></TEXT></P>`;
-            combinedContentXmlFull += paddingPara.repeat(paddingLines);
+            // Add Padding (DISABLED to fix numbering continuity)
+            // const paddingPara = `<P ParaShape="0" Style="0"><TEXT CharShape="0"><CHAR/></TEXT></P>`;
+            // combinedContentXmlFull += paddingPara.repeat(paddingLines);
 
             currentColumnHeight += requiredSpace;
 
+        }
+    }
+
+    // [FIX V12] ENDNOTE RESTORATION (Miju Box)
+    // If we accumulated endnotes and have a BOX_MIJU template pattern, inject it now.
+    console.log(`[HML-V2 DEBUG] Final Check: ${allEndnotes.length} endnotes accumulated. BOX_MIJU pattern exists: ${!!boxPatterns['BOX_MIJU']}`);
+    if (allEndnotes.length > 0) {
+        if (boxPatterns['BOX_MIJU']) {
+            console.log(`[HML-V2 Generator] V19: Restoring ${allEndnotes.length} endnotes into BOX_MIJU pattern.`);
+
+            const styleId = getStyleId('문제1') || getStyleId('Question 1') || '0';
+            const paraShapeId = validStyles.StyleParaShapes.get(styleId) || '0';
+            console.log(`[HML-V2 restored] Using StyleID: ${styleId}, ParaShapeID: ${paraShapeId} for endnotes.`);
+            const workingDoc = parser.parseFromString('<root/>', 'text/xml');
+
+            const finalizedEndnotePs: Element[] = [];
+
+            console.log(`[HML-V2 RESTORE] Starting endnote restoration for ${allEndnotes.length} notes.`);
+
+            for (let enIdx = 0; enIdx < allEndnotes.length; enIdx++) {
+                const en = allEndnotes[enIdx];
+                const numberStr = `${enIdx + 1}. `;
+                const paras = Array.from(en.getElementsByTagName('P'));
+
+                for (let pIdx = 0; pIdx < paras.length; pIdx++) {
+                    const p = paras[pIdx].cloneNode(true) as Element;
+                    p.setAttribute('Style', styleId);
+                    p.setAttribute('ParaShape', paraShapeId);
+
+                    if (pIdx === 0) {
+                        let tNode = p.getElementsByTagName('TEXT')[0];
+                        if (!tNode) {
+                            tNode = workingDoc.createElement('TEXT');
+                            if (validStyles.CharShape.has('11')) tNode.setAttribute('CharShape', '11');
+                            p.appendChild(tNode);
+                        }
+                        // Insert number at the very beginning of the TEXT node
+                        const newNumNode = workingDoc.createTextNode(numberStr);
+                        if (tNode.firstChild) {
+                            tNode.insertBefore(newNumNode, tNode.firstChild);
+                        } else {
+                            tNode.appendChild(newNumNode);
+                        }
+                    }
+                    finalizedEndnotePs.push(p);
+                }
+            }
+
+            if (finalizedEndnotePs.length > 0) {
+                const mijuBoxXml = wrapInBoxPattern(
+                    finalizedEndnotePs,
+                    'BOX_MIJU',
+                    boxPatterns,
+                    serializer,
+                    parser,
+                    nextInstId++,
+                    validStyles
+                );
+                combinedContentXmlFull += mijuBoxXml;
+            }
+        } else {
+            console.log(`[HML-V2 Generator] V19: BOX_MIJU pattern NOT found/empty. Appending raw endnotes as fallback. `);
+            const styleId = getStyleId('문제1') || getStyleId('Question 1') || '0';
+            const paraShapeId = validStyles.StyleParaShapes.get(styleId) || '0';
+            console.log(`[HML-V2 restored-fallback] Using StyleID: ${styleId}, ParaShapeID: ${paraShapeId} for endnote fallback.`);
+            const workingDoc = parser.parseFromString('<root/>', 'text/xml');
+
+            allEndnotes.forEach((en, idx) => {
+                const numberStr = `${idx + 1}. `;
+                const innerPs = Array.from(en.getElementsByTagName('P'));
+
+                if (innerPs.length > 0) {
+                    innerPs.forEach((p, pIdx) => {
+                        const clonedP = p.cloneNode(true) as Element;
+                        clonedP.setAttribute('Style', styleId);
+                        clonedP.setAttribute('ParaShape', paraShapeId);
+                        if (pIdx === 0) {
+                            let tNode = clonedP.getElementsByTagName('TEXT')[0];
+                            if (!tNode) {
+                                tNode = workingDoc.createElement('TEXT');
+                                if (validStyles.CharShape.has('11')) tNode.setAttribute('CharShape', '11');
+                                clonedP.appendChild(tNode);
+                            }
+                            const newNumNode = workingDoc.createTextNode(numberStr);
+                            if (tNode.firstChild) {
+                                tNode.insertBefore(newNumNode, tNode.firstChild);
+                            } else {
+                                tNode.appendChild(newNumNode);
+                            }
+                        }
+                        const pXml = serializer.serializeToString(clonedP);
+                        combinedContentXmlFull += pXml;
+                    });
+                } else {
+                    // Raw text or empty? Preserve anyway.
+                    const text = en.textContent || '';
+                    const fallbackP = `<P ParaShape="${paraShapeId}" Style="${styleId}"><TEXT CharShape="11">${numberStr}${text}</TEXT></P>`;
+                    combinedContentXmlFull += fallbackP;
+                }
+            });
         }
     }
 
@@ -518,6 +800,17 @@ export function generateHmlFromTemplate(
                 return `<BORDERFILLLIST Count="${newCount}"${rest}>`;
             });
             cleanedTemplate = cleanedTemplate.replace('</BORDERFILLLIST>', `${injectedXml}</BORDERFILLLIST>`);
+        }
+    }
+
+    // [FIX V15] Inject ENDNOTEPR into Header if missing
+    // Hancom requires this tag to render endnote content.
+    if (allEndnotes.length > 0 && !cleanedTemplate.includes('<ENDNOTEPR')) {
+        const endnotePr = `<ENDNOTEPR AutoNum="true" StartNum="1" Numbering="Arabic" />`;
+        if (cleanedTemplate.includes('</DOCSETTING>')) {
+            cleanedTemplate = cleanedTemplate.replace('</DOCSETTING>', `${endnotePr}</DOCSETTING>`);
+        } else if (cleanedTemplate.includes('<HEAD>')) {
+            cleanedTemplate = cleanedTemplate.replace('<HEAD>', `<HEAD><DOCSETTING>${endnotePr}</DOCSETTING>`);
         }
     }
 
@@ -552,14 +845,27 @@ export function generateHmlFromTemplate(
     }
 
     // Replace {{CONTENT_HERE}} using standard template variable 'currentHml'
-    const anchorRegex = /<P[^>]*>\s*<TEXT[^>]*>\s*(?:<CHAR>\s*)?{{CONTENT_HERE}}(?:\s*<\/CHAR>)?\s*<\/TEXT>\s*<\/P>/;
+    const anchorRegex = /<P[^>]*>\s*<TEXT[^>]*>\s*(?:<CHAR>\s*)?{{CONTENT_HERE}}(?:\s*<\/CHAR>)?\s*<\/TEXT>\s*<\/P>/i;
 
-    if (anchorRegex.test(currentHml)) {
-        currentHml = currentHml.replace(anchorRegex, combinedContentXmlFull);
-    } else if (currentHml.includes('{{CONTENT_HERE}}')) {
-        // Fallback for simple anchor
-        currentHml = currentHml.replace('{{CONTENT_HERE}}', combinedContentXmlFull);
-    } else {
+    // [FIX V34] Ensure anchor replacement happens only once and robustly
+    let replaced = false;
+    currentHml = currentHml.replace(anchorRegex, (match) => {
+        if (!replaced) {
+            replaced = true;
+            console.log(`[HML-V2] V34: Replaced anchor using Regex match.`);
+            return combinedContentXmlFull;
+        }
+        return match; // Return original match for subsequent occurrences (shouldn't happen)
+    });
+
+    if (!replaced && currentHml.includes('{{CONTENT_HERE}}')) {
+        const splitParts = currentHml.split('{{CONTENT_HERE}}');
+        currentHml = splitParts[0] + combinedContentXmlFull + splitParts.slice(1).join('{{CONTENT_HERE}}');
+        console.log(`[HML-V2] V34: Replaced anchor using literal search.`);
+        replaced = true;
+    }
+
+    if (!replaced) {
         console.warn('[HML-V2 Surgical Generator] Anchor "{{CONTENT_HERE}}" NOT found in template! Injecting at end of SECTION.');
         // Fallback: Inject before </SECTION>
         const secEnd = currentHml.lastIndexOf('</SECTION>');
@@ -596,18 +902,21 @@ export function generateHmlFromTemplate(
 
     if (usedImages.length >= 0) { // Always update even if 0 images (to clear template)
 
-        // 1. Purge & Update BINDATALIST
+        // 1. [FIX V35] Place BINDATALIST AFTER MAPPINGTABLE (as a sibling)
+        const newBinDataListTag = `<BINDATALIST Count="${usedImages.length}">${binDataList}</BINDATALIST>`;
+
         if (currentHml.includes('<BINDATALIST')) {
-            const newListTag = `<BINDATALIST Count="${usedImages.length}">${binDataList}</BINDATALIST>`;
-            currentHml = currentHml.replace(/<BINDATALIST[^>]*>[\s\S]*?<\/BINDATALIST>/, newListTag);
-        } else if (currentHml.match(/<MAPPINGTABLE[^>]*>/)) {
-            currentHml = currentHml.replace(/<MAPPINGTABLE([^>]*)>/, `<MAPPINGTABLE$1><BINDATALIST Count="${usedImages.length}">${binDataList}</BINDATALIST>`);
+            // Replace existing BINDATALIST
+            currentHml = currentHml.replace(/<BINDATALIST[^>]*>[\s\S]*?<\/BINDATALIST>/, newBinDataListTag);
+        } else if (currentHml.includes('</MAPPINGTABLE>')) {
+            // [FIX V39] Inject INSIDE MAPPINGTABLE (Must be a child of MAPPINGTABLE)
+            currentHml = currentHml.replace('</MAPPINGTABLE>', `${newBinDataListTag}</MAPPINGTABLE>`);
         } else {
-            // Inject into HEAD if missing
+            // Create MAPPINGTABLE if missing (unlikely for a valid template)
             const headTagMatch = currentHml.match(/<HEAD[^>]*?>/);
             if (headTagMatch) {
                 const headTag = headTagMatch[0];
-                currentHml = currentHml.replace(headTag, `${headTag}<MAPPINGTABLE><BINDATALIST Count="${usedImages.length}">${binDataList}</BINDATALIST></MAPPINGTABLE>`);
+                currentHml = currentHml.replace(headTag, `${headTag}<MAPPINGTABLE>${newBinDataListTag}</MAPPINGTABLE>`);
             }
         }
 
@@ -657,7 +966,7 @@ export function generateHmlFromTemplate(
                 }
             }
         }
-    }
+    } // This is the closing brace for `if (usedImages.length >= 0)`
 
     return {
         hmlContent: currentHml,
@@ -665,8 +974,6 @@ export function generateHmlFromTemplate(
         imageCount: allImages.length
     };
 }
-
-
 
 
 function sanitizeNodeStyles(node: any, validSets: {

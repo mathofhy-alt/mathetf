@@ -24,7 +24,7 @@ export async function renderMathToSvg(hwpScript: string): Promise<string> {
   try {
     // 1. Attempt Python Native Rendering (V28)
     try {
-      const response = await fetch('http://127.0.0.1:5000/render-math', {
+      const response = await fetch('http://127.0.0.1:5001/render-math', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ script: hwpScript.trim() }),

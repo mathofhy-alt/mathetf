@@ -4,6 +4,7 @@ export type Folder = {
     parent_id: string | null;
     name: string;
     created_at: string;
+    folder_type?: 'db' | 'exam' | 'all';
 };
 
 export type StorageItemType = 'personal_db' | 'saved_exam';

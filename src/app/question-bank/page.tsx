@@ -76,6 +76,7 @@ export default function QuestionBankPage() {
 
     // Storage Explorer State
     const [showStorageModal, setShowStorageModal] = useState(false);
+    const [storageModalMode, setStorageModalMode] = useState<'all' | 'db' | 'exam'>('all');
 
     // Question Preview State
     const [previewQuestion, setPreviewQuestion] = useState<any>(null);
@@ -112,7 +113,7 @@ export default function QuestionBankPage() {
             .select(`
                 *,
                 exam_materials!inner (
-                    id, title, school, grade, semester, exam_type, subject, file_type, exam_year, year
+                    id, title, school, grade, semester, exam_type, subject, file_type
                 )
             `)
             .eq('user_id', userId)
@@ -142,18 +143,15 @@ export default function QuestionBankPage() {
         if (dbFilter.length > 0) {
             // Find all selected DBs
             const selectedDbs = purchasedDbs.filter(d => dbFilter.includes(d.id));
+
             if (selectedDbs.length > 0) {
-                // Construct OR query for shared filter logic
-                // Since user wants to search ACROSS these DBs, we filter by their distinct properties.
-                // However, usually Personal DBs are specific. The most robust way is to filter by `source_db_id` if we had it.
-                // Assuming we don't, we will use valid metadata combinations.
-                // Actually, the simplest approach for "My DBs" is often just "School + Year" etc.
-                // BUT, Supabase OR syntax is `or(and(school.eq.A,year.eq.2023),and(school.eq.B...))`
+                // FALLBACK: source_db_id in questions table appears to be stale/mismatched for some schools.
+                // We will use strict metadata matching (School + Grade + Year + Semester).
 
                 const orConditions = selectedDbs.map(db => {
-                    // Map Grade: 1 -> 고1
+                    // Map Grade: '1' -> '고1', '고1' -> '고1'
                     let gradeVal = db.grade;
-                    if (['1', '2', '3'].includes(String(db.grade).replace('고', ''))) {
+                    if (db.grade && ['1', '2', '3'].includes(String(db.grade).replace('고', ''))) {
                         gradeVal = `고${String(db.grade).replace('고', '')}`;
                     }
 
@@ -165,13 +163,17 @@ export default function QuestionBankPage() {
                     }
 
                     let parts = [
-                        `school.eq.${db.school}`,
-                        `grade.eq.${gradeVal}`,
-                        `exam_type.eq.${db.exam_type}`
+                        `school.eq.${db.school}`
                     ];
 
+                    if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
                     if (yearVal) parts.push(`year.eq.${yearVal}`);
-                    if (db.semester) parts.push(`semester.eq.${db.semester}`);
+                    // Semester mismatch: DB has '2', Questions have '2학기기말'.
+                    // Removing strict check to ensure matches.
+                    // if (db.semester) parts.push(`semester.eq.${db.semester}`);
+
+                    // Also attempt to match legacy ID if it happens to be correct
+                    // parts.push(`source_db_id.eq.${db.id}`); // Can't mix with AND easily here without making it restrictive.
 
                     return `and(${parts.join(',')})`;
                 });
@@ -179,6 +181,9 @@ export default function QuestionBankPage() {
                 if (orConditions.length > 0) {
                     query = query.or(orConditions.join(','));
                 }
+            } else {
+                // Prevent leak
+                query = query.eq('id', '00000000-0000-0000-0000-000000000000');
             }
         }
 
@@ -369,7 +374,13 @@ export default function QuestionBankPage() {
                         <div className="bg-white w-full max-w-5xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                             <div className="p-4 border-b flex justify-between items-center bg-slate-50">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
-                                    <FolderIcon className="text-blue-600" /> 내 보관함
+                                    {storageModalMode === 'db' ? (
+                                        <><Database className="text-blue-600" /> DB 문제 선택</>
+                                    ) : storageModalMode === 'exam' ? (
+                                        <><FolderIcon className="text-purple-600" /> 만든 시험지 선택</>
+                                    ) : (
+                                        <><FolderIcon className="text-gray-600" /> 내 보관함</>
+                                    )}
                                 </h3>
                                 <button onClick={() => setShowStorageModal(false)} className="p-2 hover:bg-slate-200 rounded-full">
                                     <X />
@@ -380,6 +391,7 @@ export default function QuestionBankPage() {
                                     onItemSelect={handleStorageItemSelect}
                                     onSelectAll={handleDbSelectAll}
                                     selectedIds={selectedDbIds}
+                                    filterType={storageModalMode}
                                 />
                             </div>
                             <div className="p-4 border-t bg-slate-50 flex justify-end">
@@ -406,33 +418,39 @@ export default function QuestionBankPage() {
                     <div className="p-4 border-b space-y-2">
                         <h2 className="font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
 
-                        {/* Personal DB Selector */}
-                        <button
-                            onClick={() => setShowStorageModal(true)}
-                            className="w-full py-2 px-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center justify-center gap-2 font-bold text-sm transition-colors"
-                        >
-                            <Database size={16} />
-                            내 보관함에서 선택
-                        </button>
+                        {/* Personal DB Selector & Exam Selector */}
+                        <div className="flex gap-2 mb-2">
+                            <button
+                                onClick={() => {
+                                    setStorageModalMode('db');
+                                    setShowStorageModal(true);
+                                }}
+                                className="flex-1 py-3 px-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                            >
+                                <Database size={16} />
+                                DB 문제
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setStorageModalMode('exam');
+                                    setShowStorageModal(true);
+                                }}
+                                className="flex-1 py-3 px-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl hover:bg-purple-100 flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                            >
+                                <FolderIcon size={16} />
+                                만든 시험지
+                            </button>
+                        </div>
 
                         {selectedDbIds.length > 0 ? (
-                            <div className="space-y-4">
-                                {purchasedDbs.filter(d => selectedDbIds.includes(d.id)).map((db, idx) => (
-                                    <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 relative group">
-                                        <button
-                                            onClick={() => handleDbToggle(db.id)}
-                                            className="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition-colors"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                        <p className="font-bold text-slate-800 text-sm mb-1">{db.school}</p>
-                                        <p className="text-xs text-slate-500 mb-0.5">{db.exam_year} {db.grade}학년 {db.semester}</p>
-                                        <p className="text-xs text-slate-400">{db.subject}</p>
-                                    </div>
-                                ))}
-                                <div className="text-right text-xs text-slate-400">
-                                    총 {selectedDbIds.length}개 선택됨
-                                </div>
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center">
+                                <p className="text-indigo-900 font-bold text-lg mb-1">{selectedDbIds.length}개 선택됨</p>
+                                <button
+                                    onClick={() => setSelectedDbIds([])}
+                                    className="text-xs text-indigo-500 hover:text-indigo-700 underline"
+                                >
+                                    전체 해제
+                                </button>
                             </div>
                         ) : (
                             <div className="text-xs text-slate-400 text-center py-4 border border-dashed rounded-lg bg-slate-50">
@@ -496,14 +514,7 @@ export default function QuestionBankPage() {
                         </div>
                     </header>
 
-                    {/* Search Bar */}
-                    <div className="mb-6">
-                        <input
-                            type="text"
-                            placeholder="문제 내용 검색..."
-                            className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                        />
-                    </div>
+
 
                     {loading ? (
                         <div className="flex justify-center py-20">

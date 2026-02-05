@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { Folder, FolderPlus, X, Check, Loader2 } from 'lucide-react';
 import FolderTree from './FolderTree';
+import InputModal from '../common/InputModal';
 import type { Folder as FolderType } from '@/types/storage';
 
 interface SaveLocationModalProps {
@@ -17,6 +18,7 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
     const [folders, setFolders] = useState<FolderType[]>([]);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isInputModalOpen, setIsInputModalOpen] = useState(false);
 
     useEffect(() => {
         // Fetch all folders for the tree
@@ -32,10 +34,12 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
             });
     }, []);
 
-    const handleCreateFolder = async () => {
-        const name = prompt('새 폴더 이름:');
-        if (!name) return;
+    const handleCreateFolder = () => {
+        setIsInputModalOpen(true);
+    };
 
+    const onConfirmCreateFolder = async (name: string) => {
+        setIsInputModalOpen(false);
         try {
             const res = await fetch('/api/storage/folders', {
                 method: 'POST',
@@ -134,6 +138,15 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
                     </button>
                 </div>
             </div>
+            {isInputModalOpen && (
+                <InputModal
+                    title="새 폴더 생성"
+                    label="폴더 이름을 입력하세요"
+                    icon="folder"
+                    onClose={() => setIsInputModalOpen(false)}
+                    onConfirm={onConfirmCreateFolder}
+                />
+            )}
         </div>
     );
 }

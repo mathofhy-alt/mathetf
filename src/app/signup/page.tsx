@@ -27,6 +27,9 @@ export default function SignupPage() {
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
 
+    const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+    const [checkedEmail, setCheckedEmail] = useState('');
+
     const router = useRouter();
     const supabase = createClient();
 
@@ -36,6 +39,34 @@ export default function SignupPage() {
             return;
         }
         setStep(2);
+    };
+
+    const handleCheckEmail = async () => {
+        if (!email) {
+            alert('이메일을 입력해주세요.');
+            return;
+        }
+        if (!email.includes('@')) {
+            alert('올바른 이메일 형식이 아닙니다.');
+            return;
+        }
+
+        setEmailStatus('checking');
+        try {
+            const { data, error } = await supabase.rpc('check_email_exists', { email_input: email });
+            if (error) throw error;
+
+            if (data === true) {
+                setEmailStatus('taken');
+            } else {
+                setEmailStatus('available');
+                setCheckedEmail(email);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('중복 확인 중 오류가 발생했습니다.');
+            setEmailStatus('idle');
+        }
     };
 
     const handleSignup = async (e: React.FormEvent) => {
@@ -75,7 +106,6 @@ export default function SignupPage() {
             if (error) throw error;
 
             setSuccessMsg('회원가입 인증 메일이 발송되었습니다. 이메일을 확인해주세요!');
-            // Optional: Redirect after a delay or show success screen
         } catch (error: any) {
             console.error('Signup error:', error);
             setErrorMsg(error.message || '회원가입 중 오류가 발생했습니다.');
@@ -107,8 +137,8 @@ export default function SignupPage() {
                             입력하신 이메일로 인증 메일을 보냈습니다.<br />
                             메일함에서 인증 버튼을 클릭하면 가입이 완료됩니다.
                         </p>
-                        <Link href="/login" className="block w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">
-                            로그인 페이지로 이동
+                        <Link href="/" className="block w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">
+                            홈으로 이동
                         </Link>
                     </div>
                 ) : (
@@ -290,14 +320,37 @@ export default function SignupPage() {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-1">이메일 (아이디)</label>
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
-                                            placeholder="example@email.com"
-                                            required
-                                        />
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => {
+                                                    setEmail(e.target.value);
+                                                    if (emailStatus === 'available') setEmailStatus('idle'); // Reset checking if changed
+                                                }}
+                                                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
+                                                placeholder="example@email.com"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleCheckEmail}
+                                                disabled={emailStatus === 'checking' || (emailStatus === 'available' && email === checkedEmail)}
+                                                className={`px-3 py-2 text-sm font-bold rounded-lg border transition-colors whitespace-nowrap
+                                                    ${emailStatus === 'available' && email === checkedEmail
+                                                        ? 'bg-green-50 text-green-600 border-green-200'
+                                                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                                            >
+                                                {emailStatus === 'checking' ? '확인 중...' :
+                                                    emailStatus === 'available' && email === checkedEmail ? '사용 가능' : '중복확인'}
+                                            </button>
+                                        </div>
+                                        {emailStatus === 'available' && email === checkedEmail && (
+                                            <p className="text-xs text-green-600 mt-1 pl-1">사용 가능한 이메일입니다.</p>
+                                        )}
+                                        {emailStatus === 'taken' && (
+                                            <p className="text-xs text-red-500 mt-1 pl-1">이미 사용 중인 이메일입니다.</p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-1">닉네임</label>
@@ -363,13 +416,14 @@ export default function SignupPage() {
                             </form>
                         )}
                         <div className="text-center mt-6">
-                            <Link href="/login" className="text-sm text-slate-500 underline">
-                                이미 계정이 있으신가요? 로그인
+                            <Link href="/" className="text-sm text-slate-500 underline">
+                                이미 계정이 있으신가요? 홈으로 이동
                             </Link>
                         </div>
                     </>
-                )}
-            </div>
-        </div>
+                )
+                }
+            </div >
+        </div >
     );
 }

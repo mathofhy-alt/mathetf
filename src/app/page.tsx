@@ -527,7 +527,7 @@ export default function ExamPlatform() {
                                         <div className="col-span-1 text-slate-400 text-xs whitespace-nowrap">{group.date}</div>
                                         <div className="col-span-1 text-slate-600 truncate text-xs">{group.uploader}</div>
 
-                                        <div className="col-span-3 flex items-center justify-center gap-3">
+                                        <div className="col-span-3 flex items-start justify-center gap-3">
                                             {/* PDF Problem (REMOVED) */}
 
                                             {/* PDF Solution */}
@@ -538,18 +538,18 @@ export default function ExamPlatform() {
                                                     className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
                                                 >
                                                     <PdfFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[10px] font-bold text-slate-600 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[9px] text-slate-400">{group.files.pdfSol.price}P</span>
+                                                    <span className="text-xs font-bold text-slate-700 mt-1 whitespace-nowrap">문제+해설</span>
+                                                    <span className="text-[11px] text-slate-500 font-medium">{group.files.pdfSol.price}P</span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                     <PdfFileIcon size={28} grayscale={true} />
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[9px] text-slate-300">미등록</span>
+                                                    <span className="text-xs font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
+                                                    <span className="text-[11px] text-slate-300 font-medium">미등록</span>
                                                 </div>
                                             )}
 
-                                            <div className="w-px h-8 bg-slate-200 mx-1"></div>
+                                            <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
 
                                             {/* HWP Problem (REMOVED) */}
 
@@ -561,18 +561,18 @@ export default function ExamPlatform() {
                                                     className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
                                                 >
                                                     <HwpFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-[10px] font-bold text-slate-600 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[9px] text-slate-400">{group.files.hwpSol.price}P</span>
+                                                    <span className="text-xs font-bold text-slate-700 mt-1 whitespace-nowrap">문제+해설</span>
+                                                    <span className="text-[11px] text-slate-500 font-medium">{group.files.hwpSol.price}P</span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                     <HwpFileIcon size={28} grayscale={true} />
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[9px] text-slate-300">미등록</span>
+                                                    <span className="text-xs font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
+                                                    <span className="text-[11px] text-slate-300 font-medium">미등록</span>
                                                 </div>
                                             )}
 
-                                            <div className="w-px h-8 bg-slate-200 mx-1"></div>
+                                            <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
 
                                             {/* Personal DB */}
                                             {group.files.db ? (
@@ -586,16 +586,16 @@ export default function ExamPlatform() {
                                                         purchased={purchasedIds.has(group.files.db.id)}
                                                         className="drop-shadow-sm group-hover:scale-110 transition-transform"
                                                     />
-                                                    <span className={`text-[10px] font-bold mt-1 ${purchasedIds.has(group.files.db.id) ? 'text-indigo-600' : 'text-indigo-600'}`}>개인DB</span>
-                                                    <span className={`text-[9px] ${purchasedIds.has(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-indigo-400'}`}>
+                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-600' : 'text-indigo-600'}`}>개인DB</span>
+                                                    <span className={`text-[11px] whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-indigo-400 font-medium'}`}>
                                                         {purchasedIds.has(group.files.db.id) ? '구매완료' : `${group.files.db.price}P`}
                                                     </span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                     <DbFileIcon size={28} grayscale={true} />
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-1">개인DB</span>
-                                                    <span className="text-[9px] text-slate-300">대기중</span>
+                                                    <span className="text-xs font-bold text-slate-400 mt-1 whitespace-nowrap">개인DB</span>
+                                                    <span className="text-[11px] text-slate-300 font-medium">대기중</span>
                                                 </div>
                                             )}
                                         </div>
