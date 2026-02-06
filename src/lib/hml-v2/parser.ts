@@ -259,10 +259,6 @@ function extractQuestions(
                 if (match) {
                     hasQuestionBoundary = true;
                     foundNumber = parseInt(match[1], 10);
-                } else if (circleMatch) {
-                    hasQuestionBoundary = true;
-                    // Map circle numbers index if needed, but for now just count
-                    foundNumber = circleMatch[0].charCodeAt(0) - 0x2460 + 1;
                 }
             }
         }
@@ -578,7 +574,11 @@ function tagSemanticRole(element: Element, styleMap: Map<string, string>) {
             let role = '';
 
             // Role Mapping Logic (Ordered by specificity)
-            if (styleName.includes('해설') || styleName.includes('미주')) {
+            const pText = getPlainText([element]);
+            if (pText.match(/^[\s\u00A0]*[\u2460-\u2473]/)) {
+                // [V65] If starts with circle number (①-⑳), always treat as CHOICE regardless of style name (Sookmyung fix)
+                role = 'CHOICE';
+            } else if (styleName.includes('해설') || styleName.includes('미주')) {
                 role = 'BOX_MIJU';
             } else if (styleName.includes('조건')) {
                 role = 'BOX_JOKUN';
