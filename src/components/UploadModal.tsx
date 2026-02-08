@@ -121,7 +121,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
 
         const { error: dbError } = await supabase.from('exam_materials').insert({
             uploader_id: user.id,
-            uploader_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Unknown',
+            uploader_name: user?.email?.split('@')[0] || user?.user_metadata?.full_name || 'Unknown',
             school: selectedSchool,
             region: selectedRegion,
             district: selectedDistrict,

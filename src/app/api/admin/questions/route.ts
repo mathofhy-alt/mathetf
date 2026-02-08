@@ -125,11 +125,25 @@ export async function PATCH(req: NextRequest) {
         }
 
         // Sanitize allowed updates
-        const allowedFields = ['grade', 'unit', 'difficulty', 'region', 'district', 'school', 'year', 'semester', 'work_status'];
+        const allowedFields = ['grade', 'unit', 'key_concepts', 'difficulty', 'region', 'district', 'school', 'year', 'semester', 'work_status'];
         const cleanUpdates: any = {};
         for (const key of allowedFields) {
             if (updates[key] !== undefined) {
-                cleanUpdates[key] = updates[key];
+                let value = updates[key];
+                // Auto-convert key_concepts to array and ensure '#' prefix
+                if (key === 'key_concepts') {
+                    let tags: string[] = [];
+                    if (typeof value === 'string') {
+                        tags = value.split(',').map((t: string) => t.trim()).filter(Boolean);
+                    } else if (Array.isArray(value)) {
+                        tags = value.map((t: any) => String(t).trim()).filter(Boolean);
+                    }
+
+                    if (tags.length > 0 || Array.isArray(value)) {
+                        value = tags.map(t => t.startsWith('#') ? t : `#${t}`);
+                    }
+                }
+                cleanUpdates[key] = value;
             }
         }
 

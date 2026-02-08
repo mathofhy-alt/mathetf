@@ -168,12 +168,23 @@ export default function QuestionBankPage() {
 
                     if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
                     if (yearVal) parts.push(`year.eq.${yearVal}`);
-                    // Semester mismatch: DB has '2', Questions have '2학기기말'.
-                    // Removing strict check to ensure matches.
-                    // if (db.semester) parts.push(`semester.eq.${db.semester}`);
 
-                    // Also attempt to match legacy ID if it happens to be correct
-                    // parts.push(`source_db_id.eq.${db.id}`); // Can't mix with AND easily here without making it restrictive.
+                    // Map Semester & Exam Type (e.g. "1" + "중간고사" -> "1학기중간")
+                    if (db.semester && db.exam_type) {
+                        const semNum = String(db.semester).replace('학기', '');
+                        const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
+                        if (typeShort) {
+                            parts.push(`semester.eq.${semNum}학기${typeShort}`);
+                        }
+                    } else if (db.semester) {
+                        // Fallback for semester only
+                        const semNum = String(db.semester).replace('학기', '');
+                        parts.push(`semester.ilike.${semNum}학기%`);
+                    }
+
+                    if (db.subject) {
+                        parts.push(`subject.eq.${db.subject}`);
+                    }
 
                     return `and(${parts.join(',')})`;
                 });
@@ -191,6 +202,10 @@ export default function QuestionBankPage() {
         if (advancedFilters) {
             if (advancedFilters.units && advancedFilters.units.length > 0) {
                 query = query.in('unit', advancedFilters.units);
+            }
+            if (advancedFilters.concepts && advancedFilters.concepts.length > 0) {
+                // Use PostgREST array 'overlaps' operator for text[] column to implement OR logic
+                query = query.overlaps('key_concepts', advancedFilters.concepts);
             }
             if (advancedFilters.difficulty && advancedFilters.difficulty.length > 0) {
                 query = query.in('difficulty', advancedFilters.difficulty);
@@ -541,9 +556,13 @@ export default function QuestionBankPage() {
                                                 <span className="text-sm font-bold text-gray-700">
                                                     {q.school} {q.exam_year}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
-                                                    {q.grade}학년 {q.semester} | {q.exam_type}
-                                                </span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {(Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',')).map((tag: string) => tag.trim()).filter(Boolean).map((tag: string) => (
+                                                        <span key={`${q.id}-${tag}`} className="bg-indigo-50 text-indigo-600 text-[10px] px-1.5 py-0.5 rounded border border-indigo-100 font-medium whitespace-nowrap">
+                                                            #{tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-xs px-2 py-1 rounded-full font-bold ${String(q.difficulty) === 'Hard' || String(q.difficulty) === '상' ? 'bg-red-100 text-red-700' :

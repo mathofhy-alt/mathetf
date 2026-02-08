@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 
 export interface FilterState {
     units: string[];
+    concepts: string[];
     difficulty: string[];
     // questionType removed
     subjects: string[]; // Keep for compatibility, though we prioritize units
@@ -19,9 +20,15 @@ const UNIT_PRESETS: Record<string, string[]> = {
     '공통수학2': ['집합', '명제', '절대부등식', '함수', '역함수합성함수', '유리함수', '무리함수']
 };
 
+interface UnitNode {
+    name: string;
+    concepts: string[];
+    isExpanded: boolean;
+}
+
 interface TreeNode {
     subject: string;
-    units: string[];
+    unitNodes: UnitNode[];
     isExpanded: boolean;
 }
 
@@ -38,6 +45,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
     // Filter States
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+    const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
     const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([]); // Strings "1".."10"
     const [keywordInput, setKeywordInput] = useState('');
     const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
@@ -51,17 +59,20 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
             setLoadingUnits(true);
 
             // 1. Initialize Tree with Presets (Skeleton)
-            const skeleton: Record<string, Set<string>> = {};
+            const skeleton: Record<string, Record<string, Set<string>>> = {};
             SUBJECT_ORDER.forEach(sub => {
-                skeleton[sub] = new Set(UNIT_PRESETS[sub] || []);
+                skeleton[sub] = {};
+                (UNIT_PRESETS[sub] || []).forEach(u => {
+                    skeleton[sub][u] = new Set<string>();
+                });
             });
 
-            // 2. Fetch distinct Subject/Unit from DB if DBs are selected
+            // 2. Fetch distinct Subject/Unit/Concept from DB if DBs are selected
             if (selectedDbIds && selectedDbIds.length > 0 && purchasedDbs) {
                 const selectedDbs = purchasedDbs.filter(d => selectedDbIds.includes(d.id));
 
                 if (selectedDbs.length > 0) {
-                    let query = supabase.from('questions').select('subject, unit').eq('work_status', 'sorted');
+                    let query = supabase.from('questions').select('subject, unit, key_concepts').eq('work_status', 'sorted');
 
                     const orConditions = selectedDbs.map(db => {
                         let gradeVal = db.grade;
@@ -80,7 +91,22 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         let parts = [`school.eq.${db.school}`];
                         if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
                         if (yearVal) parts.push(`year.eq.${yearVal}`);
-                        if (db.subject) parts.push(`subject.eq.${db.subject}`);
+
+                        // Map Semester & Exam Type (e.g. "1" + "중간고사" -> "1학기중간")
+                        if (db.semester && db.exam_type) {
+                            const semNum = String(db.semester).replace('학기', '');
+                            const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
+                            if (typeShort) {
+                                parts.push(`semester.eq.${semNum}학기${typeShort}`);
+                            }
+                        } else if (db.semester) {
+                            const semNum = String(db.semester).replace('학기', '');
+                            parts.push(`semester.ilike.${semNum}학기%`);
+                        }
+
+                        if (db.subject) {
+                            parts.push(`subject.eq.${db.subject}`);
+                        }
 
                         return `and(${parts.join(',')})`;
                     });
@@ -93,25 +119,30 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     if (data) {
                         data.forEach((q: any) => {
                             if (q.subject && q.unit) {
-                                // Normalize subject if slightly different? Assume exact match to ORDER or add to '기타'?
-                                // If subject is not in ORDER, we skip it or add to a 'Others'?
-                                // For now, simple match.
-                                if (skeleton[q.subject]) {
-                                    skeleton[q.subject].add(q.unit);
+                                if (!skeleton[q.subject]) skeleton[q.subject] = {};
+                                if (!skeleton[q.subject][q.unit]) skeleton[q.subject][q.unit] = new Set<string>();
+                                if (q.key_concepts) {
+                                    let tags: string[] = [];
+                                    if (Array.isArray(q.key_concepts)) {
+                                        tags = q.key_concepts;
+                                    } else if (typeof q.key_concepts === 'string') {
+                                        tags = q.key_concepts.split(',').map((t: string) => t.trim()).filter(Boolean);
+                                    }
+                                    tags.forEach((tag: string) => skeleton[q.subject][q.unit].add(tag));
                                 }
                             }
                         });
                     }
                 }
-            } else if (dbFilter) {
-                // Global mode logic (optional, rarely used now)
             }
 
             // 3. Flatten to Array
             const newTree: TreeNode[] = SUBJECT_ORDER.map(sub => {
-                const units = Array.from(skeleton[sub] || []);
+                const unitMap = skeleton[sub] || {};
+                const unitNames = Object.keys(unitMap);
                 const presetList = UNIT_PRESETS[sub] || [];
-                units.sort((a, b) => {
+
+                unitNames.sort((a, b) => {
                     const idxA = presetList.indexOf(a);
                     const idxB = presetList.indexOf(b);
                     if (idxA !== -1 && idxB !== -1) return idxA - idxB;
@@ -120,12 +151,18 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     return a.localeCompare(b);
                 });
 
+                const unitNodes: UnitNode[] = unitNames.map(uName => ({
+                    name: uName,
+                    concepts: Array.from(unitMap[uName]).sort(),
+                    isExpanded: false
+                }));
+
                 return {
                     subject: sub,
-                    units,
+                    unitNodes,
                     isExpanded: false // Start collapsed
                 };
-            }).filter(node => node.units.length > 0);
+            }).filter(node => node.unitNodes.length > 0);
 
             setTreeData(newTree);
             setLoadingUnits(false);
@@ -138,11 +175,12 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     useEffect(() => {
         onFilterChange({
             units: selectedUnits,
+            concepts: selectedConcepts,
             difficulty: selectedDifficulty,
             subjects: [], // Empty subjects implies we rely on units for granularity
             keywords: activeKeywords
         });
-    }, [selectedUnits, selectedDifficulty, activeKeywords]);
+    }, [selectedUnits, selectedConcepts, selectedDifficulty, activeKeywords]);
 
     const toggleSelection = (list: string[], item: string, setList: (L: string[]) => void) => {
         if (list.includes(item)) {
@@ -171,39 +209,35 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             <div className="text-xs text-slate-400">표시할 과목이 없습니다.</div>
                         )}
                         {treeData.map((node) => {
-                            // Check if all units are selected
-                            const allSelected = node.units.length > 0 && node.units.every(u => selectedUnits.includes(u));
-                            const someSelected = node.units.some(u => selectedUnits.includes(u));
+                            // Subject selection logic
+                            const allUnitsInNode = node.unitNodes.map(un => un.name);
+                            const allUnitsSelected = allUnitsInNode.length > 0 && allUnitsInNode.every(u => selectedUnits.includes(u));
+                            const someUnitsSelected = allUnitsInNode.some(u => selectedUnits.includes(u));
 
                             return (
                                 <div key={node.subject} className="space-y-1">
-                                    {/* Subject Header */}
+                                    {/* Level 1: Subject Header */}
                                     <div className="flex items-center justify-between group">
                                         <div className="flex items-center gap-2">
-                                            {/* Checkbox: Selection Only */}
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // Toggle All Units for this subject
-                                                    if (allSelected) {
-                                                        // Deselect all
-                                                        setSelectedUnits(prev => prev.filter(u => !node.units.includes(u)));
+                                                    if (allUnitsSelected) {
+                                                        setSelectedUnits(prev => prev.filter(u => !allUnitsInNode.includes(u)));
                                                     } else {
-                                                        // Select all
                                                         const newUnits = new Set(selectedUnits);
-                                                        node.units.forEach(u => newUnits.add(u));
+                                                        allUnitsInNode.forEach(u => newUnits.add(u));
                                                         setSelectedUnits(Array.from(newUnits));
                                                     }
                                                 }}
-                                                className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${allSelected ? 'bg-indigo-600 border-indigo-600' :
-                                                    someSelected ? 'bg-indigo-50 border-indigo-400' : 'border-slate-300'
+                                                className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${allUnitsSelected ? 'bg-indigo-600 border-indigo-600' :
+                                                    someUnitsSelected ? 'bg-indigo-50 border-indigo-400' : 'border-slate-300'
                                                     }`}
                                             >
-                                                {allSelected && <Check size={12} className="text-white" />}
-                                                {!allSelected && someSelected && <div className="w-2 h-2 bg-indigo-500 rounded-sm" />}
+                                                {allUnitsSelected && <Check size={12} className="text-white" />}
+                                                {!allUnitsSelected && someUnitsSelected && <div className="w-2 h-2 bg-indigo-500 rounded-sm" />}
                                             </button>
 
-                                            {/* Subject Text: Expansion Only */}
                                             <button
                                                 onClick={() => {
                                                     setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
@@ -214,7 +248,6 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                             </button>
                                         </div>
 
-                                        {/* Chevron: Expansion Only */}
                                         <button
                                             onClick={() => {
                                                 setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
@@ -225,26 +258,77 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                         </button>
                                     </div>
 
-                                    {/* Units List */}
+                                    {/* Level 2: Units List */}
                                     {node.isExpanded && (
-                                        <div className="pl-6 space-y-1 border-l-2 border-slate-100 ml-2 mt-1">
-                                            {node.units.map(unit => (
-                                                <label key={unit} className="flex items-start gap-2 cursor-pointer group py-1 hover:bg-slate-50 rounded px-1 -ml-1">
-                                                    <div className={`mt-0.5 w-3.5 h-3.5 border rounded flex items-center justify-center flex-shrink-0 transition-colors ${selectedUnits.includes(unit) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 group-hover:border-indigo-400'
-                                                        }`}>
-                                                        {selectedUnits.includes(unit) && <Check size={10} className="text-white" />}
+                                        <div className="pl-4 space-y-1 border-l border-slate-100 ml-2 mt-1">
+                                            {node.unitNodes.map(uNode => {
+                                                const isUnitSelected = selectedUnits.includes(uNode.name);
+                                                const allConceptsSelected = uNode.concepts.length > 0 && uNode.concepts.every(c => selectedConcepts.includes(c));
+                                                const someConceptsSelected = uNode.concepts.some(c => selectedConcepts.includes(c));
+
+                                                return (
+                                                    <div key={uNode.name} className="space-y-1">
+                                                        <div className="flex items-center justify-between group py-0.5">
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        toggleSelection(selectedUnits, uNode.name, setSelectedUnits);
+                                                                    }}
+                                                                    className={`w-3.5 h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'}`}
+                                                                >
+                                                                    {isUnitSelected && <Check size={10} className="text-white" />}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setTreeData(prev => prev.map(n => n.subject === node.subject ? {
+                                                                            ...n,
+                                                                            unitNodes: n.unitNodes.map(un => un.name === uNode.name ? { ...un, isExpanded: !un.isExpanded } : un)
+                                                                        } : n));
+                                                                    }}
+                                                                    className={`text-xs flex-1 text-left ${isUnitSelected ? 'text-indigo-700 font-bold' : 'text-slate-600'} hover:text-indigo-500 transition-colors`}
+                                                                >
+                                                                    {uNode.name}
+                                                                </button>
+                                                            </div>
+                                                            {uNode.concepts.length > 0 && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setTreeData(prev => prev.map(n => n.subject === node.subject ? {
+                                                                            ...n,
+                                                                            unitNodes: n.unitNodes.map(un => un.name === uNode.name ? { ...un, isExpanded: !un.isExpanded } : un)
+                                                                        } : n));
+                                                                    }}
+                                                                    className="text-slate-300 hover:text-indigo-400"
+                                                                >
+                                                                    {uNode.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Level 3: Tags List */}
+                                                        {uNode.isExpanded && uNode.concepts.length > 0 && (
+                                                            <div className="pl-5 space-y-1 border-l border-slate-50 ml-1.5 mb-2">
+                                                                {uNode.concepts.map(concept => (
+                                                                    <label key={concept} className="flex items-center gap-2 cursor-pointer group py-0.5">
+                                                                        <div className={`w-3 h-3 border rounded flex items-center justify-center transition-colors ${selectedConcepts.includes(concept) ? 'bg-blue-500 border-blue-500' : 'border-slate-200 group-hover:border-blue-400'}`}>
+                                                                            {selectedConcepts.includes(concept) && <Check size={8} className="text-white" />}
+                                                                        </div>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="hidden"
+                                                                            checked={selectedConcepts.includes(concept)}
+                                                                            onChange={() => toggleSelection(selectedConcepts, concept, setSelectedConcepts)}
+                                                                        />
+                                                                        <span className={`text-[11px] ${selectedConcepts.includes(concept) ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>
+                                                                            #{concept}
+                                                                        </span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <input
-                                                        type="checkbox"
-                                                        className="hidden"
-                                                        checked={selectedUnits.includes(unit)}
-                                                        onChange={() => toggleSelection(selectedUnits, unit, setSelectedUnits)}
-                                                    />
-                                                    <span className={`text-xs ${selectedUnits.includes(unit) ? 'text-indigo-700 font-medium' : 'text-slate-600'}`}>
-                                                        {unit}
-                                                    </span>
-                                                </label>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>

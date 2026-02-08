@@ -324,45 +324,11 @@ export default function ExamPlatform() {
                 }
 
             } else {
-                // Check Limits
-                const purchaseDate = new Date(existingPurchase.created_at);
-                const now = new Date();
-                const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                // DB items usually don't expire in the same way, or maybe they do?
-                // User said "10000P". If it's permanent access or not isn't specified, but assuming same ruled for now or lenient.
-                // But for "Access", we shouldn't really block it if purchased.
-                // However, existing logic blocks > 7 days.
-                // If user wants it to be usable in "Make Exam", maybe we should relax expiry for DB?
-                // For now, I'll keep the same expiry logic to avoid business logic assumptions, 
-                // OR I'll add a check: if (file.type !== 'DB') check expiry.
-                // Given the high price (10000P vs 1000P), it might be expected to last longer or indefinitely.
-                // But let's stick to current logic unless it blocks immediate usage.
-
-                if (diffDays > 7 && file.type !== 'DB') {
-                    alert('다운로드 기한(7일)이 만료되었습니다. 다시 구매해주세요.');
+                // [V66] Removed 7-day expiry and 3-download count limit (User Request: Lifetime access)
+                if (file.type === 'DB') {
+                    alert('이미 구매한 DB입니다. 시험지 만들기 탭에서 확인하세요.');
                     return;
                 }
-
-                // If it is DB, maybe we don't care about "download count".
-                if (file.type !== 'DB') {
-                    if ((existingPurchase.download_count || 0) >= 3) {
-                        alert('다운로드 횟수(3회)를 초과했습니다. 다시 구매해주세요.');
-                        return;
-                    }
-
-                    // Increment download count
-                    await supabase.from('purchases')
-                        .update({ download_count: (existingPurchase.download_count || 0) + 1 })
-                        .eq('id', existingPurchase.id);
-                }
-            }
-
-            // If Type is DB, we don't download anything.
-            if (file.type === 'DB') {
-                alert('이미 구매한 DB입니다. 시험지 만들기 탭에서 확인하세요.');
-                return;
             }
 
             // 2. Download Logic

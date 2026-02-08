@@ -4,10 +4,14 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import InputModal from '@/components/common/InputModal';
+import { X, Search, Database } from 'lucide-react';
 
 const UNIT_OPTIONS: Record<string, string[]> = {
     '공통수학1': ['다항식', '항등식', '복소수', '이차방정식', '이차함수', '여러가지방정식', '여러가지부등식', '경우의수', '행렬'],
-    '공통수학2': ['집합', '명제', '절대부등식', '함수', '역함수합성함수', '유리함수', '무리함수']
+    '공통수학2': ['집합', '명제', '절대부등식', '함수', '역함수합성함수', '유리함수', '무리함수'],
+    '대수': ['지수와로그', '지수함수와로그함수', '삼각함수', '수열'],
+    '미적분1': ['수열의극한', '급수', '지수로그함수의미분', '삼각함수의미분', '여러가지미분법', '도함수의활용', '여러가지적분법', '정적분의활용'],
+    '기하': ['이차곡선', '평면벡터', '공간도형과공간좌표']
 };
 
 export default function AdminQuestionsPage() {
@@ -41,6 +45,7 @@ export default function AdminQuestionsPage() {
     const [bulkUpdate, setBulkUpdate] = useState({
         grade: '',
         unit: '',
+        key_concepts: '', // Now multi-tags separated by comma
         difficulty: ''
     });
 
@@ -64,6 +69,49 @@ export default function AdminQuestionsPage() {
 
     // DB Activation State
     const [isActivating, setIsActivating] = useState(false);
+
+    // Concept Suggestions State
+    const [conceptSuggestions, setConceptSuggestions] = useState<Record<string, string[]>>({});
+
+    const fetchConceptSuggestions = async () => {
+        const supabase = createClient();
+        const { data, error } = await supabase
+            .from('questions')
+            .select('unit, key_concepts')
+            .not('key_concepts', 'is', null);
+
+        if (error) {
+            console.error('Error fetching concept suggestions:', error);
+            return;
+        }
+
+        if (data) {
+            const suggestions: Record<string, Set<string>> = {};
+            data.forEach(item => {
+                if (item.unit && item.key_concepts) {
+                    const unit = item.unit.trim();
+                    // Handle both array and string (comma-separated) formats
+                    let tags: string[] = [];
+                    if (Array.isArray(item.key_concepts)) {
+                        tags = item.key_concepts;
+                    } else if (typeof item.key_concepts === 'string') {
+                        tags = item.key_concepts.split(',').map((t: string) => t.trim()).filter(Boolean);
+                    }
+                    if (!suggestions[unit]) suggestions[unit] = new Set();
+                    tags.forEach((tag: string) => suggestions[unit].add(tag));
+                }
+            });
+            const finalSuggestions: Record<string, string[]> = {};
+            for (const unit in suggestions) {
+                finalSuggestions[unit] = Array.from(suggestions[unit]).sort();
+            }
+            setConceptSuggestions(finalSuggestions);
+        }
+    };
+
+    useEffect(() => {
+        fetchConceptSuggestions();
+    }, []);
 
     // Fetch School Data (Copied from page.tsx)
     useEffect(() => {
@@ -302,6 +350,7 @@ export default function AdminQuestionsPage() {
         const updates: any = {};
         if (bulkUpdate.grade) updates.grade = bulkUpdate.grade;
         if (bulkUpdate.unit) updates.unit = bulkUpdate.unit;
+        if (bulkUpdate.key_concepts) updates.key_concepts = bulkUpdate.key_concepts;
         if (bulkUpdate.difficulty) updates.difficulty = bulkUpdate.difficulty;
 
         if (Object.keys(updates).length === 0) {
@@ -324,7 +373,8 @@ export default function AdminQuestionsPage() {
             if (res.ok) {
                 alert('일괄 수정되었습니다.');
                 fetchQuestions();
-                setBulkUpdate({ grade: '', unit: '', difficulty: '' }); // Reset form
+                fetchConceptSuggestions();
+                setBulkUpdate({ grade: '', unit: '', key_concepts: '', difficulty: '' }); // Reset form
             } else {
                 const err = await res.json();
                 alert('수정 실패: ' + err.error);
@@ -345,6 +395,7 @@ export default function AdminQuestionsPage() {
                     updates: {
                         grade: q.grade,
                         unit: q.unit,
+                        key_concepts: q.key_concepts,
                         difficulty: q.difficulty,
                         plain_text: q.plain_text
                     }
@@ -354,6 +405,7 @@ export default function AdminQuestionsPage() {
             if (res.ok) {
                 alert('저장되었습니다.');
                 fetchQuestions();
+                fetchConceptSuggestions();
                 setSelectedQuestion(null);
             } else {
                 const err = await res.json();
@@ -416,6 +468,7 @@ export default function AdminQuestionsPage() {
                         work_status: 'sorted',
                         grade: q.grade,
                         unit: q.unit,
+                        concept: q.concept,
                         difficulty: (q.difficulty && q.difficulty !== 'null') ? q.difficulty : '1'
                     }
                 })
@@ -425,6 +478,8 @@ export default function AdminQuestionsPage() {
                 // Revert on failure
                 fetchQuestions(); // Refresh is safer than manual revert logic
                 alert('소팅 상태 업데이트 실패');
+            } else {
+                fetchConceptSuggestions();
             }
         } catch (e) {
             console.error(e);
@@ -971,6 +1026,20 @@ export default function AdminQuestionsPage() {
                         value={bulkUpdate.unit}
                         onChange={e => setBulkUpdate({ ...bulkUpdate, unit: e.target.value })}
                     />
+                    <input
+                        className="border rounded px-2 py-1.5 text-sm w-32"
+                        placeholder="태그 일괄 변경"
+                        title="쉼표(,)로 구분하여 여러 태그 입력 가능"
+                        list="concept-list-all"
+                        value={bulkUpdate.key_concepts}
+                        onChange={e => setBulkUpdate({ ...bulkUpdate, key_concepts: e.target.value })}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleBulkUpdate();
+                            }
+                        }}
+                    />
                     <select
                         className="border rounded px-2 py-1.5 text-sm w-24"
                         value={bulkUpdate.difficulty}
@@ -1193,6 +1262,84 @@ export default function AdminQuestionsPage() {
                                             )}
                                         </div>
 
+                                        <div>
+                                            <div className="w-full border rounded px-1.5 py-1 text-sm bg-white focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500 min-h-[38px] flex flex-wrap gap-1 items-center">
+                                                {/* Display current tags as pills */}
+                                                {(Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
+                                                    <span key={`${tag}-${idx}`} className="bg-blue-50 text-blue-600 text-[11px] px-1.5 py-0.5 rounded-md border border-blue-100 flex items-center gap-1 group cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                                                        onClick={() => {
+                                                            const currentTags = Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                            const newTags = currentTags.filter((_: string, i: number) => i !== idx);
+                                                            setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
+                                                            fetch('/api/admin/questions', {
+                                                                method: 'PATCH',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newTags } })
+                                                            }).then(res => { if (res.ok) fetchConceptSuggestions(); });
+                                                        }}
+                                                    >
+                                                        {tag}
+                                                        <X size={10} className="text-blue-400 group-hover:text-red-400" />
+                                                    </span>
+                                                ))}
+                                                <input
+                                                    className="flex-1 outline-none min-w-[60px] text-sm bg-transparent"
+                                                    placeholder={(!q.key_concepts || q.key_concepts.length === 0) ? "태그 입력 후 Enter..." : ""}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ',') {
+                                                            e.preventDefault();
+                                                            const val = e.currentTarget.value.trim().replace(/,/g, '');
+                                                            if (val) {
+                                                                const currentTags = Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                                if (!currentTags.includes(val)) {
+                                                                    const newTags = [...currentTags, val];
+                                                                    setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
+                                                                    fetch('/api/admin/questions', {
+                                                                        method: 'PATCH',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newTags } })
+                                                                    }).then(res => { if (res.ok) fetchConceptSuggestions(); });
+                                                                }
+                                                                e.currentTarget.value = '';
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            {/* Quick Recommendations */}
+                                            {(() => {
+                                                const unitKey = (q.unit || '').trim();
+                                                const recs = conceptSuggestions[unitKey] || [];
+                                                const currentTags = Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                const filteredRecs = recs.filter(tag => !currentTags.includes(tag));
+
+                                                if (filteredRecs.length === 0) return null;
+
+                                                return (
+                                                    <div className="mt-1 flex flex-wrap gap-1">
+                                                        <span className="text-[9px] text-gray-400 font-bold mr-1">추천:</span>
+                                                        {filteredRecs.map(tag => (
+                                                            <button
+                                                                key={tag}
+                                                                onClick={() => {
+                                                                    const newVal = [...currentTags, tag];
+                                                                    setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newVal } : item));
+                                                                    fetch('/api/admin/questions', {
+                                                                        method: 'PATCH',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newVal } })
+                                                                    }).then(res => { if (res.ok) fetchConceptSuggestions(); });
+                                                                }}
+                                                                className="text-[9px] px-1.5 py-0.5 rounded border bg-white text-blue-600 border-blue-100 hover:bg-blue-50 transition-colors"
+                                                            >
+                                                                + {tag}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">학년</label>
@@ -1372,42 +1519,118 @@ export default function AdminQuestionsPage() {
 
                                     {/* Difficulty & Unit Badge (Overlay at bottom) */}
                                     <div className="px-3 py-2 bg-white/90 border-t flex justify-between items-center text-xs">
-                                        <div className="flex items-center gap-1 overflow-hidden">
-                                            <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded truncate max-w-[100px]">
-                                                {q.unit || '단원 미분류'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                            <select
-                                                className={`border rounded px-1.5 py-0.5 text-xs font-bold appearance-none text-center w-10 ${parseInt(q.difficulty) >= 8 ? 'bg-red-50 text-red-600 border-red-200' :
-                                                    parseInt(q.difficulty) >= 5 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                                                        'bg-green-50 text-green-700 border-green-200'
-                                                    }`}
-                                                value={q.difficulty || '1'}
-                                                onChange={(e) => handleQuickDifficultyChange(q, e.target.value)}
-                                            >
-                                                {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-                                                    <option key={n} value={n}>{n}</option>
-                                                ))}
-                                            </select>
+                                        <div className="flex flex-col gap-1 flex-1 min-w-0 mr-2" onClick={e => e.stopPropagation()}>
+                                            <div className="flex items-center gap-1">
+                                                <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded truncate max-w-[80px] flex-shrink-0">
+                                                    {q.unit || '단원 미분류'}
+                                                </span>
+                                                <div className="flex-1 border border-blue-100 rounded px-1 py-0.5 text-[10px] bg-blue-50/30 flex flex-wrap gap-0.5 items-center min-h-[22px] focus-within:bg-white focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                                                    {(Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
+                                                        <span key={`${tag}-${idx}`} className="bg-white text-blue-600 px-1 py-0 rounded border border-blue-100 flex items-center gap-0.5 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                                            onClick={() => {
+                                                                const currentTags = Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                                const newTags = currentTags.filter((_: string, i: number) => i !== idx);
+                                                                setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
+                                                                fetch('/api/admin/questions', {
+                                                                    method: 'PATCH',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newTags } })
+                                                                }).then(res => { if (res.ok) fetchConceptSuggestions(); });
+                                                            }}
+                                                        >
+                                                            {tag}
+                                                            <X size={8} className="opacity-50" />
+                                                        </span>
+                                                    ))}
+                                                    <input
+                                                        className="flex-1 outline-none bg-transparent min-w-[40px]"
+                                                        placeholder={(!q.key_concepts || q.key_concepts.length === 0) ? "엔터로 추가" : ""}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' || e.key === ',') {
+                                                                e.preventDefault();
+                                                                const val = e.currentTarget.value.trim().replace(/,/g, '');
+                                                                if (val) {
+                                                                    const currentTags = Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                                    if (!currentTags.includes(val)) {
+                                                                        const newTags = [...currentTags, val];
+                                                                        setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
+                                                                        fetch('/api/admin/questions', {
+                                                                            method: 'PATCH',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newTags } })
+                                                                        }).then(res => { if (res.ok) fetchConceptSuggestions(); });
+                                                                    }
+                                                                    e.currentTarget.value = '';
+                                                                }
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* Quick Recommendations (Vertical Layout) */}
+                                            {(() => {
+                                                const unitKey = (q.unit || '').trim();
+                                                const recs = conceptSuggestions[unitKey] || [];
+                                                const currentTags = Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                const filteredRecs = recs.filter(tag => !currentTags.includes(tag));
 
-                                            {/* Sort Action Button */}
-                                            {currentTab === 'unsorted' ? (
-                                                <button
-                                                    onClick={() => handleMarkSorted(q)}
-                                                    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors shadow-sm"
-                                                >
-                                                    소팅완료
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleMarkUnsorted(q)}
-                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-xs font-bold transition-colors"
-                                                >
-                                                    재검토
-                                                </button>
-                                            )}
+                                                if (filteredRecs.length === 0) return null;
+
+                                                return (
+                                                    <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                                        <span className="text-[8px] text-gray-400 font-bold mr-0.5">추천:</span>
+                                                        {filteredRecs.map(tag => (
+                                                            <button
+                                                                key={tag}
+                                                                onClick={() => {
+                                                                    const newVal = [...currentTags, tag];
+                                                                    setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newVal } : item));
+                                                                    fetch('/api/admin/questions', {
+                                                                        method: 'PATCH',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newVal } })
+                                                                    }).then(res => { if (res.ok) fetchConceptSuggestions(); });
+                                                                }}
+                                                                className="text-[8px] px-1 py-0 rounded border bg-white text-blue-600 border-blue-100 hover:bg-blue-50 transition-colors"
+                                                            >
+                                                                + {tag}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
+                                    </div>
+                                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                        <select
+                                            className={`border rounded px-1.5 py-0.5 text-xs font-bold appearance-none text-center w-10 ${parseInt(q.difficulty) >= 8 ? 'bg-red-50 text-red-600 border-red-200' :
+                                                parseInt(q.difficulty) >= 5 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                    'bg-green-50 text-green-700 border-green-200'
+                                                }`}
+                                            value={q.difficulty || '1'}
+                                            onChange={(e) => handleQuickDifficultyChange(q, e.target.value)}
+                                        >
+                                            {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                                                <option key={n} value={n}>{n}</option>
+                                            ))}
+                                        </select>
+
+                                        {/* Sort Action Button */}
+                                        {currentTab === 'sorted' ? (
+                                            <button
+                                                onClick={() => handleMarkUnsorted(q)}
+                                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-xs font-bold transition-colors"
+                                            >
+                                                재검토
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleMarkSorted(q)}
+                                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors shadow-sm"
+                                            >
+                                                소팅완료
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1473,12 +1696,11 @@ export default function AdminQuestionsPage() {
                                         onClick={(e) => { e.stopPropagation(); handleFindSimilar(q); }}
                                         className="flex-1 bg-purple-50 border border-purple-100 text-purple-600 py-1.5 rounded text-xs font-medium hover:bg-purple-100 transition-colors flex items-center justify-center gap-1"
                                     >
-                                        🔍 유사
+                                        <Search size={12} /> 유사
                                     </button>
                                 </div>
                             </div>
-                        )
-                    ))}
+                        )))}
                 </div>
             )}
 
@@ -1487,7 +1709,7 @@ export default function AdminQuestionsPage() {
                 <button
                     disabled={page === 1}
                     onClick={() => setPage(p => p - 1)}
-                    className="px-4 py-2 border rounded disabled:opacity-50 text-sm hover:bg-gray-50"
+                    className="px-4 py-2 border rounded disabled:opacity-50 text-sm hover:bg-gray-50 flex items-center gap-1"
                 >
                     이전
                 </button>
@@ -1501,332 +1723,415 @@ export default function AdminQuestionsPage() {
             </div>
 
             {/* Edit Modal */}
-            {selectedQuestion && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
-                        <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
-                            <h3 className="font-bold text-lg text-gray-800">
-                                문제 정보 수정 (ID: {selectedQuestion.question_number})
-                            </h3>
-                            <button onClick={() => setSelectedQuestion(null)} className="text-gray-500 hover:text-gray-800">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
+            {
+                selectedQuestion && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
+                            <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                                <h3 className="font-bold text-lg text-gray-800">
+                                    문제 정보 수정 (ID: {selectedQuestion.question_number})
+                                </h3>
+                                <button onClick={() => setSelectedQuestion(null)} className="text-gray-500 hover:text-gray-800">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
 
-                        <div className="flex-1 overflow-auto p-6 md:grid md:grid-cols-2 md:gap-6">
-                            {/* Left Col: Metadata Form */}
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
+                            <div className="flex-1 overflow-auto p-6 md:grid md:grid-cols-2 md:gap-6">
+                                {/* Left Col: Metadata Form */}
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">지역 (Region)</label>
+                                            <input
+                                                className="w-full border p-2 rounded text-sm"
+                                                value={selectedQuestion.region || ''}
+                                                onChange={e => setSelectedQuestion({ ...selectedQuestion, region: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">구/군 (District)</label>
+                                            <input
+                                                className="w-full border p-2 rounded text-sm"
+                                                value={selectedQuestion.district || ''}
+                                                onChange={e => setSelectedQuestion({ ...selectedQuestion, district: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">지역 (Region)</label>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">학교 (School)</label>
                                         <input
                                             className="w-full border p-2 rounded text-sm"
-                                            value={selectedQuestion.region || ''}
-                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, region: e.target.value })}
+                                            value={selectedQuestion.school || ''}
+                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, school: e.target.value })}
                                         />
                                     </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">연도</label>
+                                            <input
+                                                className="w-full border p-2 rounded text-sm"
+                                                value={selectedQuestion.year || ''}
+                                                onChange={e => setSelectedQuestion({ ...selectedQuestion, year: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">학기</label>
+                                            <select
+                                                className="w-full border p-2 rounded text-sm"
+                                                value={selectedQuestion.semester || ''}
+                                                onChange={e => setSelectedQuestion({ ...selectedQuestion, semester: e.target.value })}
+                                            >
+                                                <option value="1학기중간">1학기중간</option>
+                                                <option value="1학기기말">1학기기말</option>
+                                                <option value="2학기중간">2학기중간</option>
+                                                <option value="2학기기말">2학기기말</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t pt-4 mt-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">학년 (Grade)</label>
+                                                <select
+                                                    className="w-full border p-2 rounded text-sm"
+                                                    value={selectedQuestion.grade || '고1'}
+                                                    onChange={e => setSelectedQuestion({ ...selectedQuestion, grade: e.target.value })}
+                                                >
+                                                    <option value="고1">고1</option>
+                                                    <option value="고2">고2</option>
+                                                    <option value="고3">고3</option>
+                                                    <option value="중1">중1</option>
+                                                    <option value="중2">중2</option>
+                                                    <option value="중3">중3</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">난이도 (1-10)</label>
+                                                <select
+                                                    className="w-full border p-2 rounded text-sm bg-yellow-50"
+                                                    value={selectedQuestion.difficulty || '1'}
+                                                    onChange={e => handleQuickDifficultyChange(selectedQuestion, e.target.value)}
+                                                >
+                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                                                        <option key={n} value={n}>{n}</option>
+                                                    ))}
+                                                </select>
+                                                <p className="text-[10px] text-gray-400 mt-1">* 선택 즉시 저장됩니다.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">구/군 (District)</label>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">단원명 (Unit)</label>
                                         <input
                                             className="w-full border p-2 rounded text-sm"
-                                            value={selectedQuestion.district || ''}
-                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, district: e.target.value })}
+                                            placeholder="예: 다항식"
+                                            value={selectedQuestion.unit || ''}
+                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, unit: e.target.value })}
                                         />
                                     </div>
-                                </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">학교 (School)</label>
-                                    <input
-                                        className="w-full border p-2 rounded text-sm"
-                                        value={selectedQuestion.school || ''}
-                                        onChange={e => setSelectedQuestion({ ...selectedQuestion, school: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">연도</label>
-                                        <input
-                                            className="w-full border p-2 rounded text-sm"
-                                            value={selectedQuestion.year || ''}
-                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, year: e.target.value })}
-                                        />
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">태그 (Tags, 쉼표 구분)</label>
+                                        <div className="mb-2 flex flex-wrap gap-1.5">
+                                            {/* Dynamic Unit Recommendations */}
+                                            {(() => {
+                                                const unitKey = (selectedQuestion.unit || '').trim();
+                                                const recs = conceptSuggestions[unitKey] || [];
+                                                const currentTags = Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : (selectedQuestion.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                const filteredRecs = recs.filter(tag => !currentTags.includes(tag));
+
+                                                if (filteredRecs.length === 0) return null;
+
+                                                return (
+                                                    <div className="w-full flex flex-wrap gap-1.5 mb-2 p-2 bg-gray-50 rounded border border-dashed">
+                                                        <span className="w-full text-[10px] text-gray-400 font-bold mb-1">이 단원의 기존 태그 (클릭하여 추가)</span>
+                                                        {filteredRecs.sort().map(tag => (
+                                                            <button
+                                                                key={`unit-tag-${tag}`}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedQuestion({ ...selectedQuestion, key_concepts: [...currentTags, tag] });
+                                                                }}
+                                                                className="bg-gray-200 hover:bg-blue-100 hover:text-blue-700 text-gray-600 px-2 py-0.5 rounded text-[11px] transition-colors"
+                                                            >
+                                                                + {tag}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                        <div className="w-full border p-2 rounded text-sm bg-blue-50/20 border-blue-100 flex flex-wrap gap-1.5 items-center min-h-[42px] focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all">
+                                            {(Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : (selectedQuestion.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
+                                                <span key={`${tag}-${idx}`} className="bg-white text-blue-600 px-2 py-0.5 rounded border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                                                    onClick={() => {
+                                                        const currentTags = Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : (selectedQuestion.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                        const newTags = currentTags.filter((_: string, i: number) => i !== idx);
+                                                        setSelectedQuestion({ ...selectedQuestion, key_concepts: newTags });
+                                                    }}
+                                                >
+                                                    {tag}
+                                                    <X size={12} className="opacity-60" />
+                                                </span>
+                                            ))}
+                                            <input
+                                                className="flex-1 outline-none bg-transparent min-w-[100px]"
+                                                placeholder="태그 입력 후 Enter..."
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter' || e.key === ',') {
+                                                        e.preventDefault();
+                                                        const val = e.currentTarget.value.trim().replace(/,/g, '');
+                                                        if (val) {
+                                                            const currentTags = Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : (selectedQuestion.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean);
+                                                            if (!currentTags.includes(val)) {
+                                                                setSelectedQuestion({ ...selectedQuestion, key_concepts: [...currentTags, val] });
+                                                            }
+                                                            e.currentTarget.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     </div>
+
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">학기</label>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">과목 (Subject)</label>
                                         <select
                                             className="w-full border p-2 rounded text-sm"
-                                            value={selectedQuestion.semester || ''}
-                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, semester: e.target.value })}
+                                            value={selectedQuestion.subject || ''}
+                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, subject: e.target.value })}
                                         >
-                                            <option value="1학기중간">1학기중간</option>
-                                            <option value="1학기기말">1학기기말</option>
-                                            <option value="2학기중간">2학기중간</option>
-                                            <option value="2학기기말">2학기기말</option>
+                                            <option value="공통수학1">공통수학1</option>
+                                            <option value="공통수학2">공통수학2</option>
+                                            <option value="대수">대수</option>
+                                            <option value="미적분1">미적분1</option>
+                                            <option value="미적분2">미적분2</option>
+                                            <option value="기하">기하</option>
+                                            <option value="확통">확통</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="border-t pt-4 mt-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">학년 (Grade)</label>
-                                            <select
-                                                className="w-full border p-2 rounded text-sm"
-                                                value={selectedQuestion.grade || '고1'}
-                                                onChange={e => setSelectedQuestion({ ...selectedQuestion, grade: e.target.value })}
-                                            >
-                                                <option value="고1">고1</option>
-                                                <option value="고2">고2</option>
-                                                <option value="고3">고3</option>
-                                                <option value="중1">중1</option>
-                                                <option value="중2">중2</option>
-                                                <option value="중3">중3</option>
-                                            </select>
-                                        </div>
+                                {/* Right Col: Content Preview */}
+                                <div className="mt-6 md:mt-0 flex flex-col h-full space-y-4">
+                                    <div className="flex border-b">
+                                        {/* Tabs */}
+                                        <button
+                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'preview' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setPreviewTab('preview')}
+                                        >
+                                            미리보기 (Image)
+                                        </button>
+                                        <button
+                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'text' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setPreviewTab('text')}
+                                        >
+                                            Plain Text
+                                        </button>
+                                        <button
+                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'xml' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setPreviewTab('xml')}
+                                        >
+                                            Source XML
+                                        </button>
+                                    </div>
 
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">난이도 (1-10)</label>
-                                            <select
-                                                className="w-full border p-2 rounded text-sm bg-yellow-50"
-                                                value={selectedQuestion.difficulty || '1'}
-                                                onChange={e => handleQuickDifficultyChange(selectedQuestion, e.target.value)}
-                                            >
-                                                {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-                                                    <option key={n} value={n}>{n}</option>
-                                                ))}
-                                            </select>
-                                            <p className="text-[10px] text-gray-400 mt-1">* 선택 즉시 저장됩니다.</p>
-                                        </div>
+                                    <div className="flex-1 overflow-auto bg-gray-50 rounded border relative">
+                                        {previewTab === 'preview' && (
+                                            <div className="p-4">
+                                                <QuestionRenderer
+                                                    xmlContent={selectedQuestion.content_xml}
+                                                    showDownloadAction={true}
+                                                    fileName={`Q${selectedQuestion.question_number}_${selectedQuestion.subject || 'math'}`}
+                                                    externalImages={selectedQuestion.question_images}
+                                                    onDeleteCapture={handleDeleteCapture}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {previewTab === 'text' && (
+                                            <div className="h-full flex flex-col">
+                                                <textarea
+                                                    className="w-full h-full p-3 text-sm bg-transparent border-none resize-none focus:ring-0"
+                                                    value={selectedQuestion.plain_text || ''}
+                                                    onChange={e => setSelectedQuestion({ ...selectedQuestion, plain_text: e.target.value })}
+                                                />
+                                                <p className="text-xs text-gray-400 p-2 text-right">검색 인덱스용 텍스트입니다.</p>
+                                            </div>
+                                        )}
+
+                                        {previewTab === 'xml' && (
+                                            <div className="h-full">
+                                                <textarea
+                                                    readOnly
+                                                    className="w-full h-full p-3 font-mono text-xs bg-slate-800 text-green-400 border-none resize-none focus:ring-0"
+                                                    value={selectedQuestion.content_xml || ''}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">단원명 (Unit)</label>
-                                    <input
-                                        className="w-full border p-2 rounded text-sm"
-                                        placeholder="예: 다항식"
-                                        value={selectedQuestion.unit || ''}
-                                        onChange={e => setSelectedQuestion({ ...selectedQuestion, unit: e.target.value })}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">과목 (Subject)</label>
-                                    <select
-                                        className="w-full border p-2 rounded text-sm"
-                                        value={selectedQuestion.subject || ''}
-                                        onChange={e => setSelectedQuestion({ ...selectedQuestion, subject: e.target.value })}
-                                    >
-                                        <option value="공통수학1">공통수학1</option>
-                                        <option value="공통수학2">공통수학2</option>
-                                        <option value="대수">대수</option>
-                                        <option value="미적분1">미적분1</option>
-                                        <option value="미적분2">미적분2</option>
-                                        <option value="기하">기하</option>
-                                        <option value="확통">확통</option>
-                                    </select>
-                                </div>
                             </div>
 
-                            {/* Right Col: Content Preview */}
-                            <div className="mt-6 md:mt-0 flex flex-col h-full space-y-4">
-                                <div className="flex border-b">
-                                    {/* Tabs */}
+                            {/* Footer Actions */}
+                            <div className="p-4 border-t bg-gray-50 rounded-b-lg flex justify-between">
+                                <div className="text-xs text-gray-400 self-center">
+                                    Source ID: {selectedQuestion.source_db_id}
+                                </div>
+                                <div className="space-x-2">
                                     <button
-                                        className={`px-4 py-2 text-sm font-medium ${previewTab === 'preview' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                        onClick={() => setPreviewTab('preview')}
+                                        onClick={() => setSelectedQuestion(null)}
+                                        className="px-4 py-2 bg-white text-gray-700 border rounded text-sm hover:bg-gray-100"
                                     >
-                                        미리보기 (Image)
+                                        취소
                                     </button>
                                     <button
-                                        className={`px-4 py-2 text-sm font-medium ${previewTab === 'text' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                        onClick={() => setPreviewTab('text')}
+                                        onClick={() => handleSaveQuestion(selectedQuestion)}
+                                        className="px-6 py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 shadow-sm"
                                     >
-                                        Plain Text
-                                    </button>
-                                    <button
-                                        className={`px-4 py-2 text-sm font-medium ${previewTab === 'xml' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                        onClick={() => setPreviewTab('xml')}
-                                    >
-                                        Source XML
+                                        저장
                                     </button>
                                 </div>
-
-                                <div className="flex-1 overflow-auto bg-gray-50 rounded border relative">
-                                    {previewTab === 'preview' && (
-                                        <div className="p-4">
-                                            <QuestionRenderer
-                                                xmlContent={selectedQuestion.content_xml}
-                                                showDownloadAction={true}
-                                                fileName={`Q${selectedQuestion.question_number}_${selectedQuestion.subject || 'math'}`}
-                                                externalImages={selectedQuestion.question_images}
-                                                onDeleteCapture={handleDeleteCapture}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {previewTab === 'text' && (
-                                        <div className="h-full flex flex-col">
-                                            <textarea
-                                                className="w-full h-full p-3 text-sm bg-transparent border-none resize-none focus:ring-0"
-                                                value={selectedQuestion.plain_text || ''}
-                                                onChange={e => setSelectedQuestion({ ...selectedQuestion, plain_text: e.target.value })}
-                                            />
-                                            <p className="text-xs text-gray-400 p-2 text-right">검색 인덱스용 텍스트입니다.</p>
-                                        </div>
-                                    )}
-
-                                    {previewTab === 'xml' && (
-                                        <div className="h-full">
-                                            <textarea
-                                                readOnly
-                                                className="w-full h-full p-3 font-mono text-xs bg-slate-800 text-green-400 border-none resize-none focus:ring-0"
-                                                value={selectedQuestion.content_xml || ''}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer Actions */}
-                        <div className="p-4 border-t bg-gray-50 rounded-b-lg flex justify-between">
-                            <div className="text-xs text-gray-400 self-center">
-                                Source ID: {selectedQuestion.source_db_id}
-                            </div>
-                            <div className="space-x-2">
-                                <button
-                                    onClick={() => setSelectedQuestion(null)}
-                                    className="px-4 py-2 bg-white text-gray-700 border rounded text-sm hover:bg-gray-100"
-                                >
-                                    취소
-                                </button>
-                                <button
-                                    onClick={() => handleSaveQuestion(selectedQuestion)}
-                                    className="px-6 py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 shadow-sm"
-                                >
-                                    저장
-                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Similarity Search Result Modal */}
-            {isSimilarModalOpen && similarityTarget && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" onClick={() => setIsSimilarModalOpen(false)}>
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-                            <div className="flex items-center gap-3">
-                                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">🔍 유사 문항 검색</span>
-                                <h3 className="font-bold text-lg text-gray-800">
-                                    Q{similarityTarget.question_number} ({similarityTarget.school} {similarityTarget.year}) 와(과) 비슷한 문제
-                                </h3>
+            {
+                isSimilarModalOpen && similarityTarget && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" onClick={() => setIsSimilarModalOpen(false)}>
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                            <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                                <div className="flex items-center gap-3">
+                                    <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">🔍 유사 문항 검색</span>
+                                    <h3 className="font-bold text-lg text-gray-800">
+                                        Q{similarityTarget.question_number} ({similarityTarget.school} {similarityTarget.year}) 와(과) 비슷한 문제
+                                    </h3>
+                                </div>
+                                <button onClick={() => setIsSimilarModalOpen(false)} className="text-gray-400 hover:text-gray-800 text-2xl font-bold">&times;</button>
                             </div>
-                            <button onClick={() => setIsSimilarModalOpen(false)} className="text-gray-400 hover:text-gray-800 text-2xl font-bold">&times;</button>
-                        </div>
 
-                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-                            {/* Left: Original Question */}
-                            <div className="w-full md:w-1/3 border-r bg-gray-50/50 p-4 overflow-y-auto hidden md:block">
-                                <h4 className="font-bold text-gray-500 mb-4 text-sm uppercase tracking-wide">기준 문제 (Source)</h4>
-                                <div className="bg-white p-4 rounded-xl border shadow-sm">
-                                    <QuestionRenderer
-                                        xmlContent={similarityTarget.content_xml}
-                                        externalImages={similarityTarget.question_images}
-                                        className="text-lg"
-                                    />
-                                    <div className="mt-4 pt-4 border-t text-sm text-gray-600 space-y-1">
-                                        <p>🏷️ 학년: <span className="font-bold">{similarityTarget.grade}</span></p>
-                                        <p>📚 단원: <span className="font-bold">{similarityTarget.unit}</span></p>
-                                        <p>📊 난이도: <span className="font-bold">{similarityTarget.difficulty}</span></p>
+                            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                                {/* Left: Original Question */}
+                                <div className="w-full md:w-1/3 border-r bg-gray-50/50 p-4 overflow-y-auto hidden md:block">
+                                    <h4 className="font-bold text-gray-500 mb-4 text-sm uppercase tracking-wide">기준 문제 (Source)</h4>
+                                    <div className="bg-white p-4 rounded-xl border shadow-sm">
+                                        <QuestionRenderer
+                                            xmlContent={similarityTarget.content_xml}
+                                            externalImages={similarityTarget.question_images}
+                                            className="text-lg"
+                                        />
+                                        <div className="mt-4 pt-4 border-t text-sm text-gray-600 space-y-1">
+                                            <p>🏷️ 학년: <span className="font-bold">{similarityTarget.grade}</span></p>
+                                            <p>📚 단원: <span className="font-bold">{similarityTarget.unit}</span></p>
+                                            <p>📊 난이도: <span className="font-bold">{similarityTarget.difficulty}</span></p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Right: Similar Questions List */}
-                            <div className="w-full md:w-2/3 p-6 overflow-y-auto bg-gray-50">
-                                {loadingSimilar ? (
-                                    <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-4">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                                        <p className="animate-pulse">유사한 문제를 찾고 있습니다...</p>
-                                    </div>
-                                ) : similarQuestions.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                                        <div className="text-6xl mb-4">🤷‍♂️</div>
-                                        <p>유사한 문제를 찾지 못했습니다.</p>
-                                        <p className="text-sm mt-2">임베딩 데이터가 생성되었는지 확인해주세요.</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        {similarQuestions.map((simQ, idx) => (
-                                            <div key={simQ.id} className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-                                                <div className="p-3 bg-purple-50/50 border-b flex justify-between items-center">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">{idx + 1}위</span>
-                                                        <span className="text-sm font-bold text-purple-900">{Math.round(simQ.similarity * 100)}% 일치</span>
+                                {/* Right: Similar Questions List */}
+                                <div className="w-full md:w-2/3 p-6 overflow-y-auto bg-gray-50">
+                                    {loadingSimilar ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-4">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                                            <p className="animate-pulse">유사한 문제를 찾고 있습니다...</p>
+                                        </div>
+                                    ) : similarQuestions.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                            <div className="text-6xl mb-4">🤷‍♂️</div>
+                                            <p>유사한 문제를 찾지 못했습니다.</p>
+                                            <p className="text-sm mt-2">임베딩 데이터가 생성되었는지 확인해주세요.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            {similarQuestions.map((simQ, idx) => (
+                                                <div key={simQ.id} className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                                                    <div className="p-3 bg-purple-50/50 border-b flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">{idx + 1}위</span>
+                                                            <span className="text-sm font-bold text-purple-900">{Math.round(simQ.similarity * 100)}% 일치</span>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {simQ.year} {simQ.school} {simQ.grade}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {simQ.year} {simQ.school} {simQ.grade}
+                                                    <div className="p-4 flex-1 overflow-hidden" style={{ minHeight: '300px' }}>
+                                                        {/* Prioritize Manual Capture (Question) */}
+                                                        {(() => {
+                                                            const manualCapture = simQ.question_images?.find((img: any) => img.original_bin_id?.startsWith("MANUAL_Q_"));
+                                                            if (manualCapture) {
+                                                                return (
+                                                                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                                                        <img
+                                                                            src={manualCapture.data || manualCapture.public_url}
+                                                                            alt="Manual Capture"
+                                                                            className="max-w-full max-h-full object-contain"
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            } else {
+                                                                // Fallback to plain text if no image
+                                                                return simQ.plain_text ? (
+                                                                    <p className="whitespace-pre-wrap text-sm">{simQ.plain_text.slice(0, 200)}...</p>
+                                                                ) : (
+                                                                    <p className="text-gray-400 italic">내용 미리보기 없음</p>
+                                                                );
+                                                            }
+                                                        })()}
+                                                        <div className="mt-4 text-center">
+                                                            <button
+                                                                className="text-purple-600 hover:text-purple-800 text-sm font-bold underline"
+                                                                onClick={async () => {
+                                                                    alert(`상세 보기 기능은 준비 중입니다. (ID: ${simQ.id})`);
+                                                                }}
+                                                            >
+                                                                자세히 보기
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="p-4 flex-1 overflow-hidden" style={{ minHeight: '300px' }}>
-                                                    {/* Prioritize Manual Capture (Question) */}
-                                                    {(() => {
-                                                        const manualCapture = simQ.question_images?.find((img: any) => img.original_bin_id?.startsWith("MANUAL_Q_"));
-                                                        if (manualCapture) {
-                                                            return (
-                                                                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                                                    <img
-                                                                        src={manualCapture.data || manualCapture.public_url}
-                                                                        alt="Manual Capture"
-                                                                        className="max-w-full max-h-full object-contain"
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        } else {
-                                                            // Fallback to plain text if no image
-                                                            return simQ.plain_text ? (
-                                                                <p className="whitespace-pre-wrap text-sm">{simQ.plain_text.slice(0, 200)}...</p>
-                                                            ) : (
-                                                                <p className="text-gray-400 italic">내용 미리보기 없음</p>
-                                                            );
-                                                        }
-                                                    })()}
-                                                    <div className="mt-4 text-center">
-                                                        <button
-                                                            className="text-purple-600 hover:text-purple-800 text-sm font-bold underline"
-                                                            onClick={async () => {
-                                                                alert(`상세 보기 기능은 준비 중입니다. (ID: ${simQ.id})`);
-                                                            }}
-                                                        >
-                                                            자세히 보기
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-            {isDeleteModalOpen && (
-                <InputModal
-                    title="미분류 문제 일괄 삭제"
-                    label="삭제하려면 '미분류삭제'라고 입력해주세요."
-                    description="경고: 소팅 완료되지 않은 모든 문제가 영구 삭제됩니다."
-                    placeholder="미분류삭제"
-                    confirmLabel="삭제하기"
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onConfirm={onConfirmDeleteUnsorted}
-                />
-            )}
-        </div>
+                )
+            }
+            {
+                isDeleteModalOpen && (
+                    <InputModal
+                        title="미분류 문제 일괄 삭제"
+                        label="삭제하려면 '미분류삭제'라고 입력해주세요."
+                        description="경고: 소팅 완료되지 않은 모든 문제가 영구 삭제됩니다."
+                        placeholder="미분류삭제"
+                        confirmLabel="삭제하기"
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onConfirm={onConfirmDeleteUnsorted}
+                    />
+                )
+            }
+            {/* Concept Suggestion Datalists */}
+            <datalist id="concept-list-all">
+                {Array.from(new Set(Object.values(conceptSuggestions).flat())).sort().map(c => (
+                    <option key={c} value={c} />
+                ))}
+            </datalist>
+            {
+                Object.entries(conceptSuggestions).map(([unit, concepts]) => (
+                    <datalist key={unit} id={`concept-list-${unit}`}>
+                        {concepts.map(c => <option key={c} value={c} />)}
+                    </datalist>
+                ))
+            }
+        </div >
     );
 }

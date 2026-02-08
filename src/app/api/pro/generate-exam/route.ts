@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { HwpxMerger } from '@/lib/hwpx-merger';
+import { HwpxMerger } from '@/lib/hwpx/merger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,7 +26,18 @@ export async function POST(req: NextRequest) {
     const path = require('path');
     const templatePath = path.join(process.cwd(), 'standard_template.hwpx');
     const outputFilename = `exam_${Date.now()}.hwpx`;
-    const hwpxBuffer = await HwpxMerger.merge(templatePath, outputFilename, questions);
+    const hwpxBuffer = await HwpxMerger.merge({
+      templatePath,
+      outputFilename,
+      sources: questions.map(q => ({
+        id: q.id,
+        content_xml: q.content_xml,
+        original_name: 'exam_question',
+        file_id: q.id,
+        path: ''
+      })),
+      bucket: 'exam-materials'
+    });
 
     // Return as Download
     return new NextResponse(Buffer.from(hwpxBuffer), {
