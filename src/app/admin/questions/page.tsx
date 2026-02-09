@@ -39,7 +39,14 @@ export default function AdminQuestionsPage() {
     const [year, setYear] = useState('');
     const [grade, setGrade] = useState('');
     const [examScope, setExamScope] = useState(''); // Combined Semester + Type
+    const [selectedUnit, setSelectedUnit] = useState(''); // New: Unit filter state
     const [page, setPage] = useState(1);
+
+    // School Autocomplete state
+    const [allSchoolNames, setAllSchoolNames] = useState<string[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestionIndex, setSuggestionIndex] = useState(-1);
+    const [filteredSchools, setFilteredSchools] = useState<string[]>([]);
 
     // Bulk Update State
     const [bulkUpdate, setBulkUpdate] = useState({
@@ -174,16 +181,52 @@ export default function AdminQuestionsPage() {
                     });
                 });
                 setSchoolsMap(newSchools);
+
+                // Flat list for autocomplete
+                const flatSchools = data.map((i: any) => i.name as string);
+                setAllSchoolNames(Array.from(new Set(flatSchools)).sort());
             }
             setIsLoadingSchools(false);
         };
         fetchSchoolData();
     }, []);
 
+    // School Autocomplete Logic
+    useEffect(() => {
+        if (search.trim().length > 0 && !search.startsWith('#')) {
+            const filtered = allSchoolNames
+                .filter(name => name.toLowerCase().includes(search.toLowerCase()))
+                .slice(0, 10); // Limit to 10 suggestions
+            setFilteredSchools(filtered);
+            setShowSuggestions(filtered.length > 0);
+            setSuggestionIndex(-1);
+        } else {
+            setShowSuggestions(false);
+        }
+    }, [search, allSchoolNames]);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!showSuggestions) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSuggestionIndex((prev: number) => (prev < filteredSchools.length - 1 ? prev + 1 : prev));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSuggestionIndex((prev: number) => (prev > 0 ? prev - 1 : prev));
+        } else if (e.key === 'Enter' && suggestionIndex >= 0) {
+            e.preventDefault();
+            setSearch(filteredSchools[suggestionIndex]);
+            setShowSuggestions(false);
+        } else if (e.key === 'Escape') {
+            setShowSuggestions(false);
+        }
+    };
+
     // [FIX] Trigger fetch on page or tab change
     useEffect(() => {
         fetchQuestions();
-    }, [page, currentTab]);
+    }, [page, currentTab, selectedUnit]); // Add selectedUnit to trigger fetch
 
     // Detailed Edit Modal State
     const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
@@ -393,11 +436,18 @@ export default function AdminQuestionsPage() {
                 body: JSON.stringify({
                     ids: [q.id],
                     updates: {
+                        question_number: q.question_number,
+                        school: q.school,
+                        year: q.year,
+                        semester: q.semester,
                         grade: q.grade,
+                        subject: q.subject,
                         unit: q.unit,
                         key_concepts: q.key_concepts,
                         difficulty: q.difficulty,
-                        plain_text: q.plain_text
+                        plain_text: q.plain_text,
+                        region: q.region,
+                        district: q.district
                     }
                 })
             });
@@ -699,6 +749,7 @@ export default function AdminQuestionsPage() {
                 q: search,
                 school: selectedSchool,
                 subject,
+                unit: selectedUnit, // Added unit filter
                 year,
                 grade: apiGrade, // Send mapped grade
                 semester: apiSemester, // Send mapped semester
@@ -941,7 +992,7 @@ export default function AdminQuestionsPage() {
                         <select
                             className="border-slate-200 rounded-lg px-3 py-2 w-28 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
+                            onChange={(e) => { setSubject(e.target.value); setSelectedUnit(''); }}
                         >
                             <option value="">과목</option>
                             <option value="공통수학1">공통수학1</option>
@@ -958,14 +1009,50 @@ export default function AdminQuestionsPage() {
                             <option value="미적분">미적분</option>
                         </select>
 
-                        <div className="ml-auto flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                        {/* Row 2.5: Unit Filter (Conditional) */}
+                        <select
+                            className="border-slate-200 rounded-lg px-3 py-2 w-48 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 border-dashed"
+                            value={selectedUnit}
+                            onChange={(e) => setSelectedUnit(e.target.value)}
+                        >
+                            <option value="">단원 전체</option>
+                            {subject && UNIT_OPTIONS[subject]?.map(u => (
+                                <option key={u} value={u}>{u}</option>
+                            ))}
+                        </select>
+
+                        <div className="ml-auto flex gap-2 w-full md:w-auto mt-2 md:mt-0 relative">
                             <input
                                 type="text"
-                                placeholder="학교 이름 검색..."
-                                className="border-slate-200 rounded-lg px-4 py-2 flex-grow min-w-[200px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                placeholder="학교, 단원, 태그(#), 내용 검색..."
+                                className="border-slate-200 rounded-lg px-4 py-2 flex-grow min-w-[300px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                             />
+
+                            {showSuggestions && (
+                                <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-[100] mt-1 overflow-hidden">
+                                    {filteredSchools.map((school, idx) => (
+                                        <div
+                                            key={school}
+                                            className={`px-4 py-2 cursor-pointer transition-colors ${idx === suggestionIndex ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-50'
+                                                }`}
+                                            onClick={() => {
+                                                setSearch(school);
+                                                setShowSuggestions(false);
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Search size={14} className="text-slate-400" />
+                                                <span>{school}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-sm"
@@ -1728,9 +1815,18 @@ export default function AdminQuestionsPage() {
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
                             <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
-                                <h3 className="font-bold text-lg text-gray-800">
-                                    문제 정보 수정 (ID: {selectedQuestion.question_number})
-                                </h3>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-bold text-lg text-gray-800">문제 정보 수정</h3>
+                                    <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                        <span className="text-blue-600 font-black text-sm">#</span>
+                                        <input
+                                            type="number"
+                                            className="w-16 bg-transparent font-black text-blue-600 text-sm outline-none"
+                                            value={selectedQuestion.question_number || ''}
+                                            onChange={e => setSelectedQuestion({ ...selectedQuestion, question_number: parseInt(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                </div>
                                 <button onClick={() => setSelectedQuestion(null)} className="text-gray-500 hover:text-gray-800">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                 </button>

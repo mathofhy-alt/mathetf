@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const q = searchParams.get('q') || '';
     const school = searchParams.get('school') || '';
     const subject = searchParams.get('subject') || '';
+    const unit = searchParams.get('unit') || ''; // Add specific unit filter
     const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
     const page = parseInt(searchParams.get('page') || '1');
     const limit = 50;
@@ -35,8 +36,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (q) {
-        // Search both plain_text (content) and source_db_id (school/exam info)
-        query = query.or(`plain_text.ilike.%${q}%,source_db_id.ilike.%${q}%`);
+        // Tag search if starts with #
+        if (q.startsWith('#')) {
+            query = query.contains('key_concepts', [q]);
+        } else {
+            // Search plain_text (content), source_db_id (school/exam info), and unit
+            query = query.or(`plain_text.ilike.%${q}%,source_db_id.ilike.%${q}%,unit.ilike.%${q}%`);
+        }
     }
     if (school) {
         query = query.ilike('source_db_id', `%${school}%`);
@@ -44,19 +50,26 @@ export async function GET(req: NextRequest) {
     if (subject) {
         query = query.eq('subject', subject);
     }
+    if (unit) {
+        query = query.eq('unit', unit);
+    }
 
     // New Filters
     const grade = searchParams.get('grade');
     const year = searchParams.get('year');
     const semester = searchParams.get('semester');
-    const examType = searchParams.get('examType');
 
     if (grade) query = query.eq('grade', grade);
-    if (year) query = query.eq('year', year); // Corrected column name
+    if (year) query = query.eq('year', year);
     if (semester) query = query.eq('semester', semester);
-    // if (examType) query = query.eq('exam_type', examType); // Commenting out until verified
 
-    query = query.order('created_at', { ascending: false });
+    // Multi-level sorting: Year (Newest first), Semester, School, and Number
+    query = query
+        .order('year', { ascending: false })
+        .order('semester', { ascending: true })
+        .order('school', { ascending: true })
+        .order('question_number', { ascending: true })
+        .order('created_at', { ascending: false }); // Final fallback
     query = query.range(start, start + limit - 1);
 
     const { data, error, count } = await query;
@@ -125,7 +138,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         // Sanitize allowed updates
-        const allowedFields = ['grade', 'unit', 'key_concepts', 'difficulty', 'region', 'district', 'school', 'year', 'semester', 'work_status'];
+        const allowedFields = ['question_number', 'subject', 'grade', 'unit', 'key_concepts', 'difficulty', 'region', 'district', 'school', 'year', 'semester', 'work_status'];
         const cleanUpdates: any = {};
         for (const key of allowedFields) {
             if (updates[key] !== undefined) {
