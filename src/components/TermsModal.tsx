@@ -57,7 +57,7 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                                     <span className="font-bold">저작권 보증:</span> 판매자는 업로드하는 자료가 제3자의 저작권을 침해하지 않음을 보증해야 합니다. 이와 관련한 모든 법적 분쟁의 책임은 업로더(판매자) 본인에게 있으며, 회사는 플랫폼 제공자로서 이에 대해 책임을 지지 않습니다.
                                 </li>
                                 <li>
-                                    <span className="font-bold">표준 양식 준수:</span> 모든 자료는 회사가 배포한 <span className="font-bold text-rose-500">'수학ETF 전용 한글 양식'</span>을 사용하여 작성되어야 합니다. 타 사이트의 워터마크가 포함되거나 양식을 무단 변형한 자료는 운영진 판단하에 즉시 판매가 중단될 수 있습니다.
+                                    <span className="font-bold">표준 양식 준수:</span> 모든 자료는 회사가 배포한 <span className="font-bold text-rose-500">&apos;수학ETF 전용 한글 양식&apos;</span>을 사용하여 작성되어야 합니다. 타 사이트의 워터마크가 포함되거나 양식을 무단 변형한 자료는 운영진 판단하에 즉시 판매가 중단될 수 있습니다.
                                 </li>
                                 <li>
                                     <span className="font-bold">운영자 개입 권한:</span> 자료 내 치명적인 오타나 수식 오류가 다수(3개소 이상) 발견되어 학습에 부적합하다고 판단될 경우, 회사는 판매자의 별도 동의 없이 판매 정지 및 구매자에 대한 포인트 반환 조치를 취할 수 있습니다.
