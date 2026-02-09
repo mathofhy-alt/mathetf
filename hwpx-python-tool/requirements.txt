@@ -1,3 +1,10 @@
 Flask>=3.0.0
 Werkzeug>=3.0.0
 APScheduler>=3.10.0
+pywin32
+pygetwindow
+pyautogui
+opencv-python
+numpy
+Pillow
+flask-cors

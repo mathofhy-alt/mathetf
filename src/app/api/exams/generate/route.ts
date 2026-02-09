@@ -49,7 +49,16 @@ export async function POST(req: NextRequest) {
         const templatePath = path.join(process.cwd(), 'standard_template.hwpx');
         const outputName = `exam_${Date.now()}.hwpx`;
 
-        const examBuffer = await HwpxMerger.merge(templatePath, outputName, sources);
+        const examBuffer = await HwpxMerger.merge({
+            templatePath,
+            outputFilename: outputName,
+            sources: sources.map((s, idx) => ({
+                ...s,
+                id: questionIds[idx], // or some unique id
+                path: `raw_uploads/${s.file_id}.hwpx`
+            })),
+            bucket: 'hwpx'
+        });
 
         // 4. Return Download
         // Cast buffer to any or use explicit Response constructor if NextResponse complains about Buffer type

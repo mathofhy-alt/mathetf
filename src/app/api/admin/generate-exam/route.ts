@@ -21,38 +21,41 @@ export async function POST(req: NextRequest) {
         // 1. Fetch Questions
         const { data: questions, error } = await supabase
             .from('questions')
-            .select('id, content_xml')
+            .select('id, file_id, content_xml')
             .in('id', questionIds)
-            .order('id'); // Or preserve selection order if provided?
+            .order('id');
 
         if (error) {
             console.error('[API] DB Fetch Error:', error);
             throw error;
         }
 
-        console.log(`[API] DB Fetched ${questions?.length ?? 0} questions.`);
-
         if (!questions || questions.length === 0) {
-            console.error('[API] No questions found in DB for given IDs');
             return NextResponse.json({ error: 'Questions not found' }, { status: 404 });
         }
 
-        // Checking content of first question to ensure it's not empty
-        if (questions.length > 0) {
-            console.log(`[API] Sample Content (Q1):`, questions[0].content_xml?.substring(0, 100) + '...');
-        }
-
         // 2. Merge into HWPX
-        // Note: This is an expensive operation. In production, this might move to a background job.
-        const hwpxBuffer = await HwpxMerger.merge(questions);
+        const path = require('path');
+        const hwpxBuffer = await HwpxMerger.merge({
+            templatePath: path.join(process.cwd(), 'standard_template.hwpx'),
+            outputFilename: 'exam.hwpx',
+            sources: questions.map(q => ({
+                id: q.id,
+                file_id: q.file_id,
+                path: `raw_uploads/${q.file_id}.hwpx`,
+                content_xml: q.content_xml,
+                original_name: 'question'
+            })),
+            bucket: 'hwpx'
+        });
+
         console.log(`[API] HWPX Buffer created. Size: ${hwpxBuffer.byteLength} bytes.`);
 
         // 3. Return File
-        // We return as a specific content type so the browser triggers download
-        return new NextResponse(Buffer.from(hwpxBuffer), {
+        return new NextResponse(hwpxBuffer as any, {
             status: 200,
             headers: {
-                'Content-Type': 'application/hwp+zip',
+                'Content-Type': 'application/vnd.hancom.hwpx+zip',
                 'Content-Disposition': `attachment; filename="exam.hwpx"`,
             }
         });
