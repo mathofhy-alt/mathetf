@@ -1,3 +1,5 @@
+import OpenAI from 'openai';
+
 /**
  * Generates vector embeddings for the given text using OpenAI's text-embedding-3-small model.
  * The model produces 1536-dimensional vectors.
