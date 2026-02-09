@@ -1,17 +1,12 @@
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
 /**
  * Generates vector embeddings for the given text using OpenAI's text-embedding-3-small model.
  * The model produces 1536-dimensional vectors.
- * 
- * @param text The input text to embed.
- * @returns A number array representing the embedding vector.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+
     try {
         // Sanitize input: Remove excessive whitespace
         const cleanedText = text.replace(/\s+/g, ' ').trim();
