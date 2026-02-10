@@ -12,15 +12,16 @@ export async function GET(req: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // 1. Prepare Base Queries
+        // 1. Prepare Base Queries with Selective Select
+        // We only fetch what's needed for the UI (ID, Name, Type, Reference, Details)
         let folderQuery = supabase
             .from('folders')
-            .select('*')
+            .select('id, name, parent_id, folder_type')
             .eq('user_id', user.id);
 
         let itemQuery = supabase
             .from('user_items')
-            .select('*')
+            .select('id, folder_id, type, name, reference_id, details, created_at')
             .eq('user_id', user.id);
 
         // 2. Apply folderType Filter (Efficiency)
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
 
         // Execute in parallel for speed
         const [foldersRes, itemsRes] = await Promise.all([
-            folderQuery.order('name'),
+            folderQuery.order('name', { ascending: true }),
             itemQuery.order('created_at', { ascending: false })
         ]);
 

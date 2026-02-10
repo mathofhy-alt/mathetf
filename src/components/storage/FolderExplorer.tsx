@@ -23,6 +23,9 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
     const [loading, setLoading] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+    // [V67] Component Cache for Instant Navigation
+    const [contentCache, setContentCache] = useState<Record<string, { folders: Folder[], items: UserItem[] }>>({});
+
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'folder' | 'item', id: string } | null>(null);
     const [inputModal, setInputModal] = useState<{
         isOpen: boolean;
@@ -42,20 +45,31 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
 
     // Initial Load: Fetch All Folders for Tree
     useEffect(() => {
-        // Pass filterType to API to get relevant folders only
+        // Tree only needs to fetch on refresh or filterType change
         const typeParam = filterType === 'all' ? '' : `&folderType=${filterType}`;
         fetch(`/api/storage/folders?mode=all${typeParam}`)
             .then(res => res.json())
             .then(data => {
                 if (data.folders) setAllFolders(data.folders);
+                // Reset cache on filter change or manual refresh
+                setContentCache({});
             })
             .catch(err => console.error("Tree Fetch Error:", err));
     }, [refreshTrigger, filterType]);
 
     // View Fetch: Fetch content for current folder
     useEffect(() => {
-        setLoading(true);
         const pid = currentFolderId === null ? 'root' : currentFolderId;
+        const cacheKey = `${pid}_${filterType}`;
+
+        // Return cached content if available for instant feel
+        if (contentCache[cacheKey]) {
+            setViewFolders(contentCache[cacheKey].folders);
+            setViewItems(contentCache[cacheKey].items);
+            return;
+        }
+
+        setLoading(true);
         const typeParam = filterType === 'all' ? '' : `&folderType=${filterType}`;
         fetch(`/api/storage/folders?parentId=${pid}${typeParam}`)
             .then(async res => {
@@ -74,21 +88,25 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
             .then(data => {
                 if (data.error) throw new Error(data.error);
 
-                if (data.folders) {
-                    setViewFolders(data.folders);
-                }
+                const folders = data.folders || [];
+                const items = data.items || [];
 
-                if (data.items) {
-                    // Server now handles filtering via folderType param.
-                    setViewItems(data.items);
-                }
+                setViewFolders(folders);
+                setViewItems(items);
+
+                // Update Cache
+                setContentCache(prev => ({
+                    ...prev,
+                    [cacheKey]: { folders, items }
+                }));
+
                 setLoading(false);
             })
             .catch(err => {
                 console.error("Folder Fetch Error:", err);
                 setLoading(false);
             });
-    }, [currentFolderId, refreshTrigger, filterType]);
+    }, [currentFolderId, refreshTrigger, filterType]); // contentCache NOT in dependency to avoid loop
 
     const handleCreateFolder = () => {
         setInputModal({
