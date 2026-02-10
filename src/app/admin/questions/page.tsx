@@ -562,7 +562,8 @@ export default function AdminQuestionsPage() {
 
     const handleManualCapture = async (q: any, captureType: 'question' | 'solution' = 'question') => {
         try {
-            const captureRes = await fetch('http://localhost:5001/trigger-manual-capture', {
+            const pythonBaseUrl = process.env.NEXT_PUBLIC_PYTHON_SERVICE_URL || 'http://localhost:5001';
+            const captureRes = await fetch(`${pythonBaseUrl}/trigger-manual-capture`, {
                 method: 'POST'
             });
 
@@ -574,7 +575,7 @@ export default function AdminQuestionsPage() {
 
             const { file_path } = await captureRes.json();
 
-            const fileRes = await fetch(`http://localhost:5001/get-capture?path=${encodeURIComponent(file_path)}`);
+            const fileRes = await fetch(`${pythonBaseUrl}/get-capture?path=${encodeURIComponent(file_path)}`);
             if (!fileRes.ok) {
                 const err = await fileRes.json();
                 throw new Error(`로컬 파일을 가져오지 못했습니다: ${err.error}`);

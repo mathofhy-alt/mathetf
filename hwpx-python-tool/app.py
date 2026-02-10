@@ -20,7 +20,7 @@ from multiprocessing import Pool, cpu_count
 
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3000"]}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 제한
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'output'
