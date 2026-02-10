@@ -44,35 +44,91 @@ export async function GET(req: NextRequest) {
             }, { status: 400 });
         }
 
-        // 2. Perform Vector Search via RPC
-        // We prioritize questions from the same unit.
+        // 2. Fetch User's Purchased DBs
+        const { data: purchases, error: purchaseError } = await supabase
+            .from('purchases')
+            .select(`
+                exam_materials!inner (
+                    id, title, school, grade, semester, exam_type, subject, file_type
+                )
+            `)
+            .eq('user_id', user.id)
+            .eq('exam_materials.file_type', 'DB');
+
+        if (purchaseError) {
+            console.error("Purchase Fetch Error:", purchaseError);
+            return NextResponse.json({ success: false, error: 'Failed to fetch purchased databases' }, { status: 500 });
+        }
+
+        if (!purchases || purchases.length === 0) {
+            return NextResponse.json({ success: false, error: 'No purchased databases found. Please select a database first.' }, { status: 403 });
+        }
+
+        const purchasedDbs = purchases.map((p: any) => p.exam_materials);
+
+        // 3. Perform Vector Search via RPC
         const { data: similarQuestions, error: searchError } = await supabase
             .rpc('match_questions', {
                 query_embedding: source.embedding,
                 match_threshold: 1 - threshold,
-                match_count: limit * 10, // Fetch more to allow filtering
+                match_count: limit * 20, // Fetch more to allow filtering
                 filter_exclude_id: id,
-                // Optional: Pass target unit if we want strict filtering, 
-                // but usually similarity takes care of it. 
-                // Let's pass it to boost/filter if the RPC supports it.
-                // Based on admin route, RPC signature supports target_unit.
                 target_unit: source.unit
             });
 
         if (searchError) throw searchError;
 
-        // Filter and Slice
-        // We enforce strict unit matching in post-processing as requested by the user.
-        // Even though we pass target_unit to RPC, we double-check here to be sure.
+        // 4. Filter results based on purchased DB metadata
+        const metadataFilter = (q: any) => {
+            return purchasedDbs.some((db: any) => {
+                // School Check
+                if (q.school !== db.school) return false;
+
+                // Grade Mapping & Check
+                let dbGrade = db.grade;
+                if (dbGrade && ['1', '2', '3'].includes(String(dbGrade).replace('고', ''))) {
+                    dbGrade = `고${String(dbGrade).replace('고', '')}`;
+                }
+                if (q.grade !== dbGrade) return false;
+
+                // Year Mapping & Check
+                let dbYear = db.exam_year || db.year;
+                if (!dbYear && db.title) {
+                    const match = db.title.match(/20[0-9]{2}/);
+                    if (match) dbYear = match[0];
+                }
+                if (dbYear && q.year !== dbYear) return false;
+
+                // Semester/ExamType Mapping
+                if (db.semester && db.exam_type) {
+                    const semNum = String(db.semester).replace('학기', '');
+                    const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
+                    if (typeShort) {
+                        const expectedSem = `${semNum}학기${typeShort}`;
+                        if (q.semester !== expectedSem) return false;
+                    }
+                }
+
+                // Subject Check
+                if (db.subject && q.subject !== db.subject) return false;
+
+                return true;
+            });
+        };
+
         let results = similarQuestions || [];
 
+        // Filter by Purchased DBs
+        results = results.filter(metadataFilter);
+
+        // Filter by Unit (Strict matching as requested previously)
         if (source.unit) {
             results = results.filter((q: any) => q.unit === source.unit);
         }
 
         results = results.slice(0, limit);
 
-        // 3. Fetch images
+        // 5. Fetch images
         if (results.length > 0) {
             const resultIds = results.map((r: any) => r.id);
             const { data: images } = await supabase

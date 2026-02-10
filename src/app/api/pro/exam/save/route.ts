@@ -14,6 +14,21 @@ export async function POST(req: NextRequest) {
     if (!user) return new NextResponse('Unauthorized', { status: 401 });
 
     try {
+        // [V73] Limit: Max 20 exams per user
+        const { count, error: countError } = await supabase
+            .from('user_items')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('type', 'saved_exam');
+
+        if (countError) throw new Error("Count check failed");
+        if (count !== null && count >= 20) {
+            return NextResponse.json({
+                success: false,
+                error: '시험지는 최대 20개까지만 생성할 수 있습니다. 기존 시험지를 삭제한 후 다시 시도해주세요.'
+            }, { status: 403 });
+        }
+
         console.log('[SaveAPI] Request received');
         const body = await req.json();
         const { ids, questions: rawQuestions, title, folderId } = body;
@@ -198,6 +213,7 @@ export async function POST(req: NextRequest) {
 
         const metaData = {
             source_db_ids: Array.from(new Set(questions.map((q: any) => q.source_db_id).filter(Boolean))),
+            question_ids: questions.map((q: any) => q.id), // [V73] For re-editing
             question_count: questions.length,
             average_difficulty: avgDifficulty,
             title: titleStr,

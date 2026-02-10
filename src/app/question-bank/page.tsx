@@ -15,7 +15,7 @@ import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsMo
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
-import { Folder as FolderIcon, Database, X } from 'lucide-react';
+import { Folder as FolderIcon, Database, X, Trash2, FileText, Search } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
 
 export default function QuestionBankPage() {
@@ -60,6 +60,8 @@ export default function QuestionBankPage() {
     const [similarTarget, setSimilarTarget] = useState<any | null>(null);
     const [solutionTarget, setSolutionTarget] = useState<any | null>(null);
     const [showConfigModal, setShowConfigModal] = useState(false);
+    const [viewMode, setViewMode] = useState<'search' | 'review'>('search');
+    const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [showAutoModal, setShowAutoModal] = useState(false);
     const [user, setUser] = useState<any>(null);
 
@@ -78,6 +80,8 @@ export default function QuestionBankPage() {
     const [showStorageModal, setShowStorageModal] = useState(false);
     const [storageModalMode, setStorageModalMode] = useState<'all' | 'db' | 'exam'>('all');
     const [storageInitialData, setStorageInitialData] = useState<any>(null);
+    const [storageRefreshKey, setStorageRefreshKey] = useState(0);
+    const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
 
     // Pre-fetch Storage Data for Instant Feel
     useEffect(() => {
@@ -293,15 +297,117 @@ export default function QuestionBankPage() {
         // No auto fetch
     };
 
-    const handleStorageItemSelect = (item: UserItem) => {
+    const handleStorageItemSelect = async (item: UserItem) => {
         if (item.type === 'personal_db') {
             handleDbToggle(item.reference_id);
         } else if (item.type === 'saved_exam') {
-            // Toggle selection for Bulk Actions
-            handleDbToggle(item.id);
+            // [V73] Toggle Selection instead of instant load
+            setSelectedExamIds(prev => {
+                if (prev.includes(item.id)) return prev.filter(id => id !== item.id);
+                return [...prev, item.id];
+            });
         } else {
             alert('알 수 없는 파일 형식입니다.');
         }
+    };
+
+    // [V73] Dedicated Load function for editing
+    const handleEditSelectedExam = async () => {
+        if (selectedExamIds.length === 0) return alert('수정할 시험지를 선택해주세요.');
+        if (selectedExamIds.length > 1) return alert('한 번에 하나의 시험지만 수정할 수 있습니다.');
+
+        const examId = selectedExamIds[0];
+        setLoading(true);
+        try {
+            // Fetch the item to get details (question_ids)
+            const { data: item, error: itemError } = await supabase
+                .from('user_items')
+                .select('*')
+                .eq('id', examId)
+                .single();
+
+            if (itemError || !item) throw new Error("시험지 정보를 불러올 수 없습니다.");
+
+            const qIds = item.details?.question_ids;
+            if (!qIds || !Array.isArray(qIds) || qIds.length === 0) {
+                return alert('이 시험지는 재편집 기능을 지원하지 않는 이전 버전입니다. \n방금 업데이트 이후로 새롭게 생성한 시험지부터 재편집이 가능합니다.');
+            }
+
+            const { data, error } = await supabase
+                .from('questions')
+                .select('*, question_images(*)')
+                .in('id', qIds);
+
+            if (error) throw error;
+            if (!data || data.length === 0) throw new Error('문항 데이터를 불러올 수 없습니다.');
+
+            const sortedData = qIds.map(id => data.find(q => q.id === id)).filter(Boolean);
+            setCart(sortedData);
+            setViewMode('review');
+            setShowStorageModal(false);
+            setSelectedExamIds([]); // Reset selection
+            alert(`"${item.name}" 시험지 구성을 불러왔습니다. 수정 후 새로운 이름으로 저장할 수 있습니다.`);
+        } catch (err: any) {
+            console.error("Failed to load exam questions:", err);
+            alert("시험지 데이터를 불러오는데 실패했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // [V73] Bulk Delete for Exams
+    const handleBulkDeleteExams = async () => {
+        if (selectedExamIds.length === 0) return alert('삭제할 시험지를 선택해주세요.');
+        if (!confirm(`${selectedExamIds.length}개의 시험지를 영구 삭제하시겠습니까?`)) return;
+
+        setLoading(true);
+        try {
+            for (const id of selectedExamIds) {
+                await fetch(`/api/storage/items?id=${id}`, { method: 'DELETE' });
+            }
+            setSelectedExamIds([]);
+            setStorageRefreshKey(prev => prev + 1);
+            alert('삭제되었습니다.');
+        } catch (e) {
+            console.error(e);
+            alert('삭제 중 오류가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // [V73] Bulk Download for Exams
+    const handleBulkDownloadExams = async () => {
+        if (selectedExamIds.length === 0) return alert('다운로드할 시험지를 선택해주세요.');
+
+        setLoading(true);
+        try {
+            selectedExamIds.forEach((id, idx) => {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = `/api/storage/download?id=${id}`;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, idx * 1000); // 1s delay
+            });
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSimilarReplace = (oldQ: any, newQ: any) => {
+        setCart(prev => {
+            const idx = prev.findIndex(item => item.id === oldQ.id);
+            if (idx === -1) return prev;
+            const newCart = [...prev];
+            newCart[idx] = newQ;
+            return newCart;
+        });
+        setSimilarTarget(null);
     };
 
     const toggleCart = (question: any) => {
@@ -328,10 +434,56 @@ export default function QuestionBankPage() {
         }
     };
 
-    // Open Config Modal
+    // 1. Initial Review Block (Switch to Review Mode)
     const handleGenerate = () => {
         if (cart.length === 0) return;
-        setShowConfigModal(true);
+        setViewMode('review');
+    };
+
+    // Sorting Logic for Review Mode
+    const getDifficultyValue = (diff: any) => {
+        if (!diff) return 5; // Default middle
+        // If numeric (1-10)
+        const num = parseInt(String(diff));
+        if (!isNaN(num)) return num;
+
+        // If categorical
+        const map: { [key: string]: number } = {
+            '하': 2, 'Easy': 2,
+            '중': 5, 'Medium': 5,
+            '상': 8, 'Hard': 8
+        };
+        return map[String(diff)] || 5;
+    };
+
+    const sortCart = (option: 'original' | 'diff-asc' | 'diff-desc' | 'selection') => {
+        let sorted = [...cart];
+        if (option === 'diff-asc') sorted.sort((a, b) => getDifficultyValue(a.difficulty) - getDifficultyValue(b.difficulty));
+        else if (option === 'diff-desc') sorted.sort((a, b) => getDifficultyValue(b.difficulty) - getDifficultyValue(a.difficulty));
+        else if (option === 'original') sorted.sort((a, b) => (a.question_number || 0) - (b.question_number || 0));
+        setCart(sorted);
+    };
+
+    // Drag and Drop Handlers
+    const handleDragStart = (idx: number) => {
+        setDraggingIndex(idx);
+    };
+
+    const handleDragOver = (e: React.DragEvent, idx: number) => {
+        e.preventDefault();
+        if (draggingIndex === null || draggingIndex === idx) return;
+
+        const newCart = [...cart];
+        const draggedItem = newCart[draggingIndex];
+        newCart.splice(draggingIndex, 1);
+        newCart.splice(idx, 0, draggedItem);
+
+        setDraggingIndex(idx);
+        setCart(newCart);
+    };
+
+    const handleDragEnd = () => {
+        setDraggingIndex(null);
     };
 
     const [examTitle, setExamTitle] = useState('');
@@ -368,6 +520,15 @@ export default function QuestionBankPage() {
             setCart([]);
             localStorage.removeItem('exam_cart');
             setShowSaveModal(false);
+            setViewMode('search');
+
+            // [V72] Refresh storage data & Invalidate cache
+            setStorageRefreshKey(prev => prev + 1);
+            fetch('/api/storage/folders?mode=all')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && !data.error) setStorageInitialData(data);
+                });
 
             // Optional: Open Storage Modal to show the result?
             // setShowStorageModal(true);
@@ -418,17 +579,80 @@ export default function QuestionBankPage() {
                             <FolderExplorer
                                 onItemSelect={handleStorageItemSelect}
                                 onSelectAll={handleDbSelectAll}
-                                selectedIds={selectedDbIds}
+                                selectedIds={storageModalMode === 'exam' ? selectedExamIds : selectedDbIds}
                                 filterType={storageModalMode}
                                 initialData={storageInitialData}
+                                refreshKey={storageRefreshKey}
                             />
                         </div>
-                        <div className="p-4 border-t bg-slate-50 flex justify-end">
+                        <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
+                            <div className="flex gap-2">
+                                {/* Actions for Exams */}
+                                {storageModalMode === 'exam' && selectedExamIds.length > 0 && (
+                                    <>
+                                        <button
+                                            onClick={handleBulkDownloadExams}
+                                            className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition flex items-center gap-2 border border-indigo-200"
+                                        >
+                                            <FileText size={16} /> 선택 다운로드 ({selectedExamIds.length})
+                                        </button>
+                                        <button
+                                            onClick={handleEditSelectedExam}
+                                            className="px-4 py-2 bg-purple-50 text-purple-700 font-bold rounded-lg hover:bg-purple-100 transition flex items-center gap-2 border border-purple-200"
+                                        >
+                                            <Search size={16} /> 수정/재편집
+                                        </button>
+                                        <button
+                                            onClick={handleBulkDeleteExams}
+                                            className="px-4 py-2 bg-red-50 text-red-700 font-bold rounded-lg hover:bg-red-100 transition flex items-center gap-2 border border-red-200"
+                                        >
+                                            <Trash2 size={16} /> 선택 삭제
+                                        </button>
+                                    </>
+                                )}
+                                {/* Actions for DBs (Legacy Support) */}
+                                {storageModalMode === 'db' && selectedDbIds.length > 0 && (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                selectedDbIds.forEach((id, idx) => {
+                                                    setTimeout(() => {
+                                                        window.location.href = `/api/storage/download?id=${id}`;
+                                                    }, idx * 1000);
+                                                });
+                                            }}
+                                            className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition flex items-center gap-2 border border-indigo-200"
+                                        >
+                                            <FileText size={16} /> 선택 다운로드
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm('선택한 DB 항목을 보관함에서 제거하시겠습니까? (실제 데이터는 보존됩니다)')) return;
+                                                for (const id of selectedDbIds) {
+                                                    await fetch(`/api/storage/items?id=${id}`, { method: 'DELETE' });
+                                                }
+                                                setSelectedDbIds([]);
+                                                setStorageRefreshKey(prev => prev + 1);
+                                            }}
+                                            className="px-4 py-2 bg-red-50 text-red-700 font-bold rounded-lg hover:bg-red-100 transition flex items-center gap-2 border border-red-200"
+                                        >
+                                            <Trash2 size={16} /> 선택 삭제
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                             <button
-                                onClick={() => setShowDuplicateModal(true)} // Open check instead of closing directly
-                                className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition"
+                                onClick={() => {
+                                    if (storageModalMode === 'db') {
+                                        setShowDuplicateModal(true);
+                                    } else {
+                                        setShowStorageModal(false);
+                                        setSelectedExamIds([]); // Reset selection on close
+                                    }
+                                }}
+                                className="px-6 py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900 transition"
                             >
-                                선택 완료
+                                {storageModalMode === 'db' ? '선택 완료' : '창 닫기'}
                             </button>
                         </div>
                     </div>
@@ -441,12 +665,11 @@ export default function QuestionBankPage() {
                     onClose={() => setPreviewQuestion(null)}
                 />
 
-                {/* Sidebar for Filters */}
-                <div className="w-64 bg-white border-r flex flex-col z-20">
+                {/* Sidebar for Filters - Hidden in Review Mode */}
+                <div className={`w-64 bg-white border-r flex flex-col z-20 transition-all duration-300 ${viewMode === 'review' ? 'opacity-0 -ml-64 invisible' : 'opacity-100 ml-0 visible'}`}>
                     <div className="p-4 border-b space-y-2">
                         <h2 className="font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
-
-                        {/* Personal DB Selector & Exam Selector */}
+                        {/* ... existing DB selectors ... */}
                         <div className="flex gap-2 mb-2">
                             <button
                                 onClick={() => {
@@ -470,21 +693,7 @@ export default function QuestionBankPage() {
                             </button>
                         </div>
 
-                        {selectedDbIds.length > 0 ? (
-                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center">
-                                <p className="text-indigo-900 font-bold text-lg mb-1">{selectedDbIds.length}개 선택됨</p>
-                                <button
-                                    onClick={() => setSelectedDbIds([])}
-                                    className="text-xs text-indigo-500 hover:text-indigo-700 underline"
-                                >
-                                    전체 해제
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="text-xs text-slate-400 text-center py-4 border border-dashed rounded-lg bg-slate-50">
-                                선택된 DB가 없습니다.
-                            </div>
-                        )}
+                        {/* Selected DB count block removed per user request */}
                     </div>
 
                     {/* Advanced Filters */}
@@ -496,7 +705,6 @@ export default function QuestionBankPage() {
                                 purchasedDbs={purchasedDbs}
                                 onFilterChange={(filters) => {
                                     setFilterState(filters);
-                                    // No auto fetch
                                 }}
                             />
                         </div>
@@ -511,88 +719,139 @@ export default function QuestionBankPage() {
                     </div>
                 </div>
 
-                {/* Main List */}
+                {/* Main List Area */}
                 <div className="flex-1 p-6 overflow-y-auto">
-                    <header className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-bold text-gray-800">
-                            {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
-                        </h1>
-                        <div className="flex gap-2">
-                            {questions.length > 0 && (
+                    {viewMode === 'search' ? (
+                        <header className="flex justify-between items-center mb-6">
+                            <h1 className="text-2xl font-bold text-gray-800">
+                                {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
+                            </h1>
+                            <div className="flex gap-2">
+                                {questions.length > 0 && (
+                                    <button
+                                        onClick={handleSelectAllToggle}
+                                        className="border border-slate-300 text-slate-600 px-4 py-2 rounded-lg hover:bg-white hover:text-indigo-600 hover:border-indigo-600 shadow-sm transition font-bold"
+                                    >
+                                        {questions.every(q => q && cartIdSet.has(q.id)) ? '전체 해제' : '전체 선택'}
+                                    </button>
+                                )}
                                 <button
-                                    onClick={handleSelectAllToggle}
-                                    className="border border-slate-300 text-slate-600 px-4 py-2 rounded-lg hover:bg-white hover:text-indigo-600 hover:border-indigo-600 shadow-sm transition font-bold"
+                                    onClick={handleGenerate}
+                                    disabled={cart.length === 0 || isGenerating}
+                                    className="bg-indigo-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm transition font-bold flex items-center gap-2"
                                 >
-                                    {questions.every(q => q && cartIdSet.has(q.id)) ? '전체 해제' : '전체 선택'}
+                                    <span>📝 시험지 생성 ({cart.length})</span>
                                 </button>
-                            )}
-                            <button
-                                onClick={handleGenerate}
-                                disabled={cart.length === 0 || isGenerating}
-                                className="bg-indigo-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm transition font-bold flex items-center gap-2"
-                            >
-                                <span>📝 시험지 생성 ({cart.length})</span>
-                            </button>
-                            <button
-                                onClick={() => setShowAutoModal(true)}
-                                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 shadow-sm transition font-bold"
-                            >
-                                ⚡ 자동 생성
-                            </button>
-                        </div>
-                    </header>
+                                <button
+                                    onClick={() => setShowAutoModal(true)}
+                                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 shadow-sm transition font-bold"
+                                >
+                                    ⚡ 자동 생성
+                                </button>
+                            </div>
+                        </header>
+                    ) : (
+                        <header className="flex flex-col gap-4 mb-8">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-black text-slate-800">시험지 문항 검토</h1>
+                                    <p className="text-sm text-slate-500 mt-1">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setViewMode('search')}
+                                        className="px-5 py-2.5 border border-slate-300 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+                                    >
+                                        <span>← 검색으로 돌아가기</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setShowConfigModal(true)}
+                                        className="px-8 py-2.5 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 shadow-lg shadow-brand-600/20 transition-all flex items-center gap-2"
+                                    >
+                                        <span>최종 생성하기 ({cart.length})</span>
+                                    </button>
+                                </div>
+                            </div>
 
+                            <div className="bg-white border rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Quick Sort</span>
+                                <div className="h-6 w-px bg-slate-200 mx-1"></div>
+                                <button onClick={() => sortCart('original')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                    원본 번호순
+                                </button>
+                                <button onClick={() => sortCart('diff-asc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                    난이도 낮은순
+                                </button>
+                                <button onClick={() => sortCart('diff-desc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                    난이도 높은순
+                                </button>
+                            </div>
+                        </header>
+                    )}
 
-
-                    {loading ? (
+                    {loading && viewMode === 'search' ? (
                         <div className="flex justify-center py-20">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-                            {questions.length > 0 ? questions.map((q) => {
+                        <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-3'} gap-6 pb-20 animate-in fade-in duration-500`}>
+                            {(viewMode === 'search' ? questions : cart).length > 0 ? (viewMode === 'search' ? questions : cart).map((q, idx) => {
                                 const inCart = q && cartIdSet.has(q.id);
                                 return (
                                     <div
-                                        key={q.id}
-                                        onClick={() => toggleCart(q)}
-                                        className={`relative rounded-2xl shadow-sm border transition cursor-pointer select-none overflow-hidden group
-                                            ${inCart ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500 shadow-md' : 'bg-white hover:shadow-lg border-gray-200'}
+                                        key={`${viewMode}-${q.id}`}
+                                        onClick={() => viewMode === 'search' && toggleCart(q)}
+                                        draggable={viewMode === 'review'}
+                                        onDragStart={() => viewMode === 'review' && handleDragStart(idx)}
+                                        onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
+                                        onDragEnd={() => viewMode === 'review' && handleDragEnd()}
+                                        className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
+                                            ${viewMode === 'review' ? (draggingIndex === idx ? 'opacity-40 scale-95 border-brand-500 border-dashed' : 'bg-white border-slate-200 cursor-move hover:border-brand-300 hover:shadow-md') :
+                                                inCart ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500 shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
                                         `}
                                     >
                                         {/* Header */}
                                         <div className="flex justify-between items-center p-4 border-b bg-gray-50/50">
                                             <div className="flex items-center gap-2">
-                                                <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-lg font-bold">
+                                                <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm ${viewMode === 'review' ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                                                    {idx + 1}
+                                                </span>
+                                                <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-md font-bold">
                                                     {q.unit || '단원 미정'}
                                                 </span>
-                                                <span className="text-sm font-bold text-gray-700">
-                                                    {q.school} {q.exam_year}
+                                                <span className="text-[11px] font-bold text-gray-500">
+                                                    원본 {q.question_number}번
                                                 </span>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {(Array.isArray(q.key_concepts) ? q.key_concepts : (q.key_concepts || '').split(',')).map((tag: string) => tag.trim()).filter(Boolean).map((tag: string) => (
-                                                        <span key={`${q.id}-${tag}`} className="bg-indigo-50 text-indigo-600 text-[10px] px-1.5 py-0.5 rounded border border-indigo-100 font-medium whitespace-nowrap">
-                                                            #{tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className={`text-xs px-2 py-1 rounded-full font-bold ${String(q.difficulty) === 'Hard' || String(q.difficulty) === '상' ? 'bg-red-100 text-red-700' :
+                                                {viewMode === 'review' && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setSimilarTarget(q); }}
+                                                        className="p-1 hover:bg-brand-50 text-slate-300 hover:text-brand-600 rounded-md transition-all flex items-center gap-1"
+                                                        title="유사문항 찾기"
+                                                    >
+                                                        <Search size={14} />
+                                                        <span className="text-[10px] font-bold">유사</span>
+                                                    </button>
+                                                )}
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${String(q.difficulty) === 'Hard' || String(q.difficulty) === '상' ? 'bg-red-100 text-red-700' :
                                                     String(q.difficulty) === 'Easy' || String(q.difficulty) === '하' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                                                     }`}>
                                                     {q.difficulty || '중'}
                                                 </span>
-                                                {inCart && (
-                                                    <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full font-bold flex items-center gap-1">
-                                                        <span>{cart.findIndex(c => c.id === q.id) + 1}번</span>
-                                                    </span>
+                                                {viewMode === 'review' && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleCart(q); }}
+                                                        className="p-1 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-md transition-all"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* Content - Vertical Renderer */}
-                                        <div className="p-4 bg-white min-h-[120px]">
+                                        {/* Content */}
+                                        <div className="p-5 bg-white flex-1 min-h-[160px]">
                                             <QuestionRenderer
                                                 xmlContent={q.content_xml}
                                                 externalImages={q.question_images}
@@ -602,27 +861,21 @@ export default function QuestionBankPage() {
                                             />
                                         </div>
 
-                                        {/* Footer / Overlay Actions */}
-                                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 z-10">
-                                            <button
-                                                className="bg-white text-slate-700 hover:text-green-600 hover:border-green-200 border border-slate-200 shadow-sm hover:shadow-md px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSolutionTarget(q);
-                                                }}
-                                            >
-                                                <span>📒</span> 해설
-                                            </button>
-                                            <div className="w-px h-3 bg-slate-300 mx-0.5"></div>
-                                            <button
-                                                className="bg-white text-slate-700 hover:text-indigo-600 hover:border-indigo-200 border border-slate-200 shadow-sm hover:shadow-md px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSimilarTarget(q);
-                                                }}
-                                            >
-                                                <span>🔍</span> 유사문항
-                                            </button>
+                                        {/* Meta/Actions Footer */}
+                                        <div className="px-4 py-3 bg-slate-50 border-t flex items-center justify-between">
+                                            <div className="text-[10px] text-slate-400 font-medium truncate flex-1 pr-2">
+                                                {q.school} {q.exam_year}
+                                            </div>
+                                            {viewMode === 'search' && (
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        className="text-slate-400 hover:text-brand-600 transition-colors"
+                                                        onClick={(e) => { e.stopPropagation(); setSolutionTarget(q); }}
+                                                    >
+                                                        <FileText size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -630,9 +883,9 @@ export default function QuestionBankPage() {
                                 <div className="col-span-full text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-4">
                                     <Database size={48} className="text-slate-200" />
                                     <p className="text-lg font-medium text-slate-500">
-                                        {selectedDbIds.length > 0 ? '조건 설정 후 "검색하기" 버튼을 눌러주세요.' : 'DB를 먼저 선택해주세요 (좌측 "내 보관함" 버튼).'}
+                                        {viewMode === 'review' ? '출제할 문항이 없습니다.' :
+                                            selectedDbIds.length > 0 ? '조건 설정 후 "검색하기" 버튼을 눌러주세요.' : 'DB를 먼저 선택해주세요.'}
                                     </p>
-                                    {selectedDbIds.length > 0 && <p className="text-sm text-slate-400">좌측 하단의 검색 버튼으로 문제를 불러올 수 있습니다.</p>}
                                 </div>
                             )}
                         </div>
@@ -674,10 +927,11 @@ export default function QuestionBankPage() {
 
                 {similarTarget && (
                     <SimilarQuestionsModal
+                        onClose={() => setSimilarTarget(null)}
                         baseQuestion={similarTarget}
                         cart={cart}
                         onToggleCart={toggleCart}
-                        onClose={() => setSimilarTarget(null)}
+                        onReplace={viewMode === 'review' ? handleSimilarReplace : undefined}
                     />
                 )}
 

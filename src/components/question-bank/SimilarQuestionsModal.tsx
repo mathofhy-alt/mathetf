@@ -10,9 +10,10 @@ interface SimilarQuestionsModalProps {
     baseQuestion: any; // The question we are finding similarities for
     cart: any[];
     onToggleCart: (question: any) => void;
+    onReplace?: (oldQuestion: any, newQuestion: any) => void;
 }
 
-export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onToggleCart }: SimilarQuestionsModalProps) {
+export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onToggleCart, onReplace }: SimilarQuestionsModalProps) {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -133,20 +134,30 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                                         {q.school}
                                                     </span>
                                                 </div>
-                                                <button
-                                                    onClick={() => onToggleCart(q)}
-                                                    className={`px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors whitespace-nowrap
-                                                        ${inCart
-                                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                                            : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50'
-                                                        }`}
-                                                >
-                                                    {inCart ? (
-                                                        <><Check size={14} /> 담김</>
-                                                    ) : (
-                                                        <><Plus size={14} /> 담기</>
+                                                <div className="flex gap-2">
+                                                    {onReplace && (
+                                                        <button
+                                                            onClick={() => onReplace(baseQuestion, q)}
+                                                            className="px-3 py-1.5 rounded-lg text-sm font-bold bg-white border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors whitespace-nowrap flex items-center gap-1"
+                                                        >
+                                                            교체
+                                                        </button>
                                                     )}
-                                                </button>
+                                                    <button
+                                                        onClick={() => onToggleCart(q)}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors whitespace-nowrap
+                                                            ${inCart
+                                                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                                : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                                                            }`}
+                                                    >
+                                                        {inCart ? (
+                                                            <><Check size={14} /> 담김</>
+                                                        ) : (
+                                                            <><Plus size={14} /> 담기</>
+                                                        )}
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Question Content */}

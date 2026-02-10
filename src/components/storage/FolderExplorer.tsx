@@ -14,9 +14,10 @@ interface FolderExplorerProps {
     selectedIds?: string[];
     filterType?: 'all' | 'db' | 'exam';
     initialData?: any; // [V68] Pre-fetched content
+    refreshKey?: number; // [V72] External trigger to invalidate cache
 }
 
-export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all', initialData }: FolderExplorerProps) {
+export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all', initialData, refreshKey = 0 }: FolderExplorerProps) {
     const [allFolders, setAllFolders] = useState<Folder[]>(initialData?.folders || []);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewFolders, setViewFolders] = useState<Folder[]>(initialData?.folders ? initialData.folders.filter((f: Folder) => !f.parent_id) : []);
@@ -101,7 +102,14 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                 console.error("Unified Load Error:", err);
                 setLoading(false);
             });
-    }, [refreshTrigger, filterType, initialData]);
+    }, [refreshTrigger, refreshKey, filterType, initialData]);
+
+    // [V72] Clear cache when external refresh is triggered
+    useEffect(() => {
+        if (refreshKey > 0) {
+            setContentCache({});
+        }
+    }, [refreshKey]);
 
     // Sub-Navigation Fetch: Only runs when currentFolderId changes to a NON-null value
     useEffect(() => {
@@ -132,7 +140,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                 console.error("Folder Navigation Error:", err);
                 setLoading(false);
             });
-    }, [currentFolderId]);
+    }, [currentFolderId, refreshKey]);
 
     const handleCreateFolder = () => {
         setInputModal({
@@ -303,13 +311,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         ))}
                     </div>
                     <div className="flex items-center gap-2">
-                        {selectedIds.length > 0 && (
-                            <>
-                                <button onClick={handleBulkDownload} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-sm font-medium transition-colors"> <DownloadCloud size={16} /> 선택 다운로드 </button>
-                                <button onClick={handleBulkDelete} className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium transition-colors"> <Trash2 size={16} /> 선택 삭제 </button>
-                                <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                            </>
-                        )}
+                        {/* Bulk action buttons moved to parent modal footer to avoid duplication */}
                         <button onClick={handleSync} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium transition-colors"> <DownloadCloud size={16} /> 가져오기 </button>
                         <button onClick={handleCreateFolder} className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors"> <FolderPlus size={16} /> 새 폴더 </button>
                         {onSelectAll && (
