@@ -12,28 +12,37 @@ export async function GET(req: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        // 1. Prepare Base Queries
         let folderQuery = supabase
             .from('folders')
             .select('*')
             .eq('user_id', user.id);
-
-        // Apply folderType filter if provided
-        if (folderType && folderType !== 'all') {
-            folderQuery = folderQuery.eq('folder_type', folderType);
-        }
-
-        // If mode is 'all', we return ALL folders (for the tree structure)
-        if (mode === 'all') {
-            const { data: folders, error } = await folderQuery;
-            if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-            return NextResponse.json({ folders });
-        }
 
         let itemQuery = supabase
             .from('user_items')
             .select('*')
             .eq('user_id', user.id);
 
+        // 2. Apply folderType Filter (Efficiency)
+        if (folderType && folderType !== 'all') {
+            folderQuery = folderQuery.eq('folder_type', folderType);
+
+            // Map folderType to user_item type
+            if (folderType === 'exam') {
+                itemQuery = itemQuery.eq('type', 'saved_exam');
+            } else if (folderType === 'db') {
+                itemQuery = itemQuery.eq('type', 'personal_db');
+            }
+        }
+
+        // 3. Mode 'all' (Tree structure) - Only returns folders
+        if (mode === 'all') {
+            const { data: folders, error } = await folderQuery.order('name');
+            if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+            return NextResponse.json({ folders });
+        }
+
+        // 4. Content Fetch for current context (Folders + Items)
         if (parentId === 'root' || !parentId) {
             folderQuery = folderQuery.is('parent_id', null);
             itemQuery = itemQuery.is('folder_id', null);
@@ -42,28 +51,22 @@ export async function GET(req: NextRequest) {
             itemQuery = itemQuery.eq('folder_id', parentId);
         }
 
-        const [folders, items] = await Promise.all([folderQuery, itemQuery]);
+        // Execute in parallel for speed
+        const [foldersRes, itemsRes] = await Promise.all([
+            folderQuery.order('name'),
+            itemQuery.order('created_at', { ascending: false })
+        ]);
 
-        if (folders.error) return NextResponse.json({ error: `Folder Query Error: ${folders.error.message}` }, { status: 500 });
-        if (items.error) return NextResponse.json({ error: `Item Query Error: ${items.error.message}` }, { status: 500 });
-
-        const rawItems = parentId && parentId !== 'root' ? (items.data || []) : [];
-
-        // Metadata fetch logic removed/simplified for now as it's not shown in previous view but was commented.
-        // Assuming the file view cut off before line 50.
-        // Actually, looking at file view in step 5856, lines 50-57 were just comments or placeholders?
-        // Ah, in step 5836, lines 50-55 were:
-        // // [Metadata Strategy V3: Storage Sidecar Fetch]
-        // // ... (rest of code) ...
-        // Wait, "The above content shows the entire, complete file contents" implies there is NO more code.
-        // So I must construct the return statement properly.
+        if (foldersRes.error) return NextResponse.json({ error: `Folder Query Error: ${foldersRes.error.message}` }, { status: 500 });
+        if (itemsRes.error) return NextResponse.json({ error: `Item Query Error: ${itemsRes.error.message}` }, { status: 500 });
 
         return NextResponse.json({
-            folders: folders.data || [],
-            items: items.data || [] // Returning basic items for now since metadata logic not visible
+            folders: foldersRes.data || [],
+            items: itemsRes.data || []
         });
 
     } catch (e: any) {
+        console.error('[StorageFoldersAPI] Fatal Error:', e);
         return NextResponse.json({ error: `Server Runtime Error: ${e.message}` }, { status: 500 });
     }
 }

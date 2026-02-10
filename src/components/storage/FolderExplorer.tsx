@@ -79,14 +79,8 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                 }
 
                 if (data.items) {
-                    // Client-side filtering based on filterType
-                    let filteredItems = data.items;
-                    if (filterType === 'db') {
-                        filteredItems = filteredItems.filter((i: UserItem) => i.type === 'personal_db');
-                    } else if (filterType === 'exam') {
-                        filteredItems = filteredItems.filter((i: UserItem) => i.type === 'saved_exam');
-                    }
-                    setViewItems(filteredItems);
+                    // Server now handles filtering via folderType param.
+                    setViewItems(data.items);
                 }
                 setLoading(false);
             })
