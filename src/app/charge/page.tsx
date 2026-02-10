@@ -15,16 +15,16 @@ declare global {
 }
 
 const POINT_PACKAGES = [
-    { points: 5000, price: 5000, label: '5,000 P' },
-    { points: 10000, price: 10000, label: '10,000 P' },
-    { points: 30000, price: 30000, label: '30,000 P' },
-    { points: 50000, price: 50000, label: '50,000 P' },
+    { points: 5000, label: '5,000 P' },
+    { points: 10000, label: '10,000 P', popular: true },
+    { points: 30000, label: '30,000 P' },
+    { points: 50000, label: '50,000 P' },
 ];
 
 export default function ChargePage() {
     const [user, setUser] = useState<User | null>(null);
     const [currentPoints, setCurrentPoints] = useState(0);
-    const [selectedPackage, setSelectedPackage] = useState(POINT_PACKAGES[1]); // Default 10000
+    const [cart, setCart] = useState<{ [points: number]: number }>({});
     const [loading, setLoading] = useState(false);
 
     const router = useRouter();
@@ -45,8 +45,28 @@ export default function ChargePage() {
         init();
     }, [router, supabase]);
 
+    const netAmount = Object.entries(cart).reduce((sum, [points, qty]) => sum + (Number(points) * qty), 0);
+    const vatAmount = Math.floor(netAmount * 0.1);
+    const totalAmount = netAmount + vatAmount;
+
+    const selectedItems = POINT_PACKAGES.filter(pkg => (cart[pkg.points] || 0) > 0);
+    const totalPoints = netAmount;
+
+    const updateQuantity = (points: number, delta: number) => {
+        setCart(prev => {
+            const current = prev[points] || 0;
+            const next = Math.max(0, Math.min(20, current + delta));
+            if (next === 0) {
+                const newCart = { ...prev };
+                delete newCart[points];
+                return newCart;
+            }
+            return { ...prev, [points]: next };
+        });
+    };
+
     const handlePayment = async () => {
-        if (!user) return;
+        if (!user || totalAmount === 0) return;
         setLoading(true);
 
         const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
@@ -58,50 +78,42 @@ export default function ChargePage() {
             return;
         }
 
-        if (!storeId || !channelKey) {
-            alert('상점 ID 또는 채널 키 설정이 누락되었습니다.');
-            setLoading(false);
-            return;
-        }
-
         const paymentId = `payment-${crypto.randomUUID()}`;
+        const orderNameStr = selectedItems.map(item => `${item.points.toLocaleString()}P x${cart[item.points]}`).join(', ');
 
         try {
             // 1. Request Payment (PortOne V2)
             const response = await window.PortOne.requestPayment({
                 storeId: storeId,
                 paymentId: paymentId,
-                orderName: `수학ETF 포인트 충전 (${selectedPackage.points}P)`,
-                totalAmount: selectedPackage.price,
+                orderName: `수학ETF 포인트 (${orderNameStr})`,
+                totalAmount: totalAmount,
                 currency: 'CURRENCY_KRW',
                 channelKey: channelKey,
-                payMethod: 'CARD', // Changed to CARD (Standard) as it is required
+                payMethod: 'CARD',
                 customer: {
                     fullName: user.email?.split('@')[0] || 'User',
                     email: user.email,
                     id: user.id,
-                    phoneNumber: '010-0000-0000', // Required field often
+                    phoneNumber: '010-0000-0000',
                 }
             });
 
             if (response.code != null) {
-                // Error occurred
                 alert(`결제 실패: ${response.message}`);
                 setLoading(false);
                 return;
             }
-
-            // 2. Determine Payment ID
-            const completedPaymentId = response.paymentId;
 
             // 3. Verify on Server
             const verifyRes = await fetch('/api/payments/complete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    paymentId: completedPaymentId,
+                    paymentId: response.paymentId,
                     orderId: paymentId,
-                    amount: selectedPackage.price,
+                    amount: totalAmount,
+                    points: totalPoints,
                     userId: user.id
                 })
             });
@@ -109,14 +121,13 @@ export default function ChargePage() {
             const verifyData = await verifyRes.json();
 
             if (verifyData.success) {
-                alert(`${selectedPackage.points.toLocaleString()} 포인트가 충전되었습니다!`);
+                alert(`${totalPoints.toLocaleString()} 포인트가 충전되었습니다!`);
                 router.push('/mypage');
             } else {
                 alert(`충전 실패: ${verifyData.message}`);
             }
 
         } catch (error: any) {
-            console.error('Payment Error Details:', error);
             alert(`결제 중 오류가 발생했습니다: ${error.message || error}`);
         } finally {
             setLoading(false);
@@ -140,48 +151,111 @@ export default function ChargePage() {
 
             <main className="max-w-[800px] mx-auto px-4 py-8">
                 <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
-                    <h2 className="text-lg font-bold text-slate-800 mb-6">충전할 금액을 선택하세요</h2>
+                    <h2 className="text-lg font-bold text-slate-800 mb-6 font-display">원하는 포인트를 담으세요</h2>
 
-                    <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                         {POINT_PACKAGES.map(pkg => (
-                            <button
+                            <div
                                 key={pkg.points}
-                                onClick={() => setSelectedPackage(pkg)}
-                                className={`p-6 rounded-lg border-2 text-left transition-all ${selectedPackage.points === pkg.points
-                                    ? 'border-brand-600 bg-brand-50'
-                                    : 'border-slate-200 hover:border-brand-200 hover:bg-slate-50'
+                                className={`p-5 rounded-xl border-2 flex items-center justify-between transition-all ${cart[pkg.points] > 0
+                                    ? 'border-brand-600 bg-brand-50/30'
+                                    : 'border-slate-100 hover:border-brand-100'
                                     }`}
                             >
-                                <div className={`text-lg font-bold mb-1 ${selectedPackage.points === pkg.points ? 'text-brand-700' : 'text-slate-800'}`}>
-                                    {pkg.label}
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${cart[pkg.points] > 0 ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-400'}`}>
+                                        <Coins size={24} />
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-slate-800">{pkg.label}</div>
+                                        <div className="text-xs text-slate-400">{(pkg.points * 1.1).toLocaleString()}원 (VAT포함)</div>
+                                    </div>
                                 </div>
-                                <div className="text-sm text-slate-500">
-                                    {pkg.price.toLocaleString()}원
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 border border-slate-200 rounded-lg p-1 bg-white">
+                                        <button
+                                            onClick={() => updateQuantity(pkg.points, -1)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-400 font-bold"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="min-w-[20px] text-center font-black text-slate-800">
+                                            {cart[pkg.points] || 0}
+                                        </span>
+                                        <button
+                                            onClick={() => updateQuantity(pkg.points, 1)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-100 text-brand-600 font-bold"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
                                 </div>
-                            </button>
+                            </div>
                         ))}
                     </div>
 
-                    <div className="border-t border-slate-200 pt-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <span className="text-slate-600 font-medium">총 결제 금액</span>
-                            <span className="text-2xl font-bold text-brand-600">{selectedPackage.price.toLocaleString()}원</span>
-                        </div>
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8 border border-slate-200 border-dashed">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">결제 내역 요약</h3>
 
-                        <button
-                            onClick={handlePayment}
-                            disabled={loading}
-                            className={`w-full py-4 rounded-lg font-bold text-lg text-white flex items-center justify-center gap-2 transition-colors ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-brand-600 hover:bg-brand-700'
-                                }`}
-                        >
-                            {loading ? '결제 진행 중...' : (
-                                <>
-                                    <CreditCard size={20} />
-                                    <span>결제하기</span>
-                                </>
-                            )}
-                        </button>
+                        {selectedItems.length > 0 ? (
+                            <div className="space-y-3 mb-6">
+                                {selectedItems.map(item => (
+                                    <div key={item.points} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-brand-600 font-bold">{item.label}</span>
+                                            <span className="text-slate-400 text-xs">× {cart[item.points]}세트</span>
+                                        </div>
+                                        <span className="font-bold text-slate-700">{(item.points * cart[item.points]).toLocaleString()}원</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-slate-400 text-sm italic">
+                                포인트를 선택하면 여기에 내역이 표시됩니다.
+                            </div>
+                        )}
+
+                        <div className="border-t border-slate-200 pt-4 flex flex-col items-end gap-2">
+                            <div className="flex justify-between w-full text-sm text-slate-500">
+                                <span>공급가액 총 합계</span>
+                                <span>{netAmount.toLocaleString()}원</span>
+                            </div>
+                            <div className="flex justify-between w-full text-sm text-slate-500 border-b border-slate-200 pb-2 mb-2">
+                                <span>부가가치세 (10%)</span>
+                                <span>{vatAmount.toLocaleString()}원</span>
+                            </div>
+                            <div className="flex justify-between w-full items-center">
+                                <span className="text-slate-800 font-bold italic">FINAL TOTAL</span>
+                                <div className="text-right">
+                                    <span className="text-3xl font-black text-brand-600">{totalAmount.toLocaleString()}원</span>
+                                    <div className="text-[10px] text-slate-400">부가가치세 포함</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <button
+                        onClick={handlePayment}
+                        disabled={loading || totalAmount === 0}
+                        className={`w-full py-5 rounded-xl font-bold text-xl text-white shadow-xl shadow-brand-600/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${loading || totalAmount === 0
+                                ? 'bg-slate-300 cursor-not-allowed shadow-none'
+                                : 'bg-brand-600 hover:bg-brand-700'
+                            }`}
+                    >
+                        {loading ? (
+                            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <>
+                                <CreditCard size={24} />
+                                <span>{totalAmount === 0 ? '구매할 포인트를 선택해주세요' : `${totalAmount.toLocaleString()}원 결제하기`}</span>
+                            </>
+                        )}
+                    </button>
+
+                    <p className="mt-6 text-center text-slate-400 text-xs leading-relaxed">
+                        선택하신 포인트는 결제 완료 즉시 계정에 반영됩니다.<br />
+                        결제 및 환불 관련 문의는 고객센터를 이용해 주세요.
+                    </p>
                 </div>
             </main>
         </div>

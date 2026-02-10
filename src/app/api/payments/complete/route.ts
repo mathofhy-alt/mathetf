@@ -3,9 +3,9 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 
 export async function POST(req: NextRequest) {
     try {
-        const { paymentId, orderId, amount, userId } = await req.json();
+        const { paymentId, orderId, amount, points, userId } = await req.json();
 
-        if (!paymentId || !amount || !userId) {
+        if (!paymentId || !amount || !points || !userId) {
             return NextResponse.json({ success: false, message: 'Invalid Data' }, { status: 400 });
         }
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
             payment_id: paymentId,
             merchant_uid: orderId || paymentId, // Fallback
             amount: amount,
-            points_added: amount, // 1:1 Ratio
+            points_added: points, // Use specified points amount
             status: 'PAID'
         });
 
@@ -55,17 +55,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, message: 'DB Error' }, { status: 500 });
         }
 
-        // Add Points
-        // We use rpc or direct update. Since we have admin client, direct update is fine.
-        // First get current points
-        const { data: profile } = await supabase.from('profiles').select('purchased_points').eq('id', userId).single();
+        // Add Points Atomically
+        const { error: rpcError } = await supabase.rpc('increment_points', {
+            target_user_id: userId,
+            amount: points // Use points for balance increment
+        });
 
-        if (profile) {
-            await supabase.from('profiles').update({
-                purchased_points: (profile.purchased_points || 0) + amount,
-                // points: profile.points + amount, // Deprecated
-                updated_at: new Date().toISOString()
-            }).eq('id', userId);
+        if (rpcError) {
+            console.error('Point Increment Error:', rpcError);
+            // Even if point increment fails, history is recorded.
+            // Ideally we should use a transaction, but RPC is a good start.
         }
 
         return NextResponse.json({ success: true });

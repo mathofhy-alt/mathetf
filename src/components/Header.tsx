@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Upload, Coins, User as UserIcon } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import DepositModal from './payments/DepositModal';
 
 interface HeaderProps {
     user?: User | null;
@@ -22,6 +23,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const supabase = createClient();
     const router = useRouter();
     const pathname = usePathname();
+    const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
     // If props are provided, sync them
     useEffect(() => {
@@ -106,9 +108,12 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 <UserIcon size={14} />
                                 <span>마이페이지</span>
                             </Link>
-                            <Link href="/charge" className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 text-xs font-bold transition-colors">
+                            <button
+                                onClick={() => setIsDepositModalOpen(true)}
+                                className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 text-xs font-bold transition-colors"
+                            >
                                 충전
-                            </Link>
+                            </button>
                         </div>
                     ) : (
                         !['/login', '/signup', '/'].includes(pathname) && (
@@ -120,6 +125,14 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                     )}
                 </div>
             </div>
+            <DepositModal
+                isOpen={isDepositModalOpen}
+                onClose={() => setIsDepositModalOpen(false)}
+                user={user}
+                onSuccess={(addedPoints) => {
+                    setPurchasedPoints(prev => prev + addedPoints);
+                }}
+            />
         </header>
     );
 }
