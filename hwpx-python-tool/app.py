@@ -13,6 +13,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from hwpx_parser import HwpxParser, parse_hwpx_file
 from hwpx_builder import create_hwpx_from_selection
+from PIL import Image
+import io
+import base64
+from multiprocessing import Pool, cpu_count
 
 
 app = Flask(__name__)
@@ -235,6 +239,62 @@ def render_math():
     except Exception as e:
         print(f"Render API error: {e}")
         return jsonify({'error': str(e)}), 500
+
+def _resize_single_worker(args):
+    """Worker for batch resizing"""
+    img_b64, max_width, quality = args
+    try:
+        img_data = base64.b64decode(img_b64)
+        with Image.open(io.BytesIO(img_data)) as img:
+            width, height = img.size
+            if width > max_width:
+                ratio = max_width / width
+                new_height = int(height * ratio)
+                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+            
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            out_io = io.BytesIO()
+            img.save(out_io, format="JPEG", quality=quality, optimize=True)
+            return {
+                "success": True, 
+                "data": base64.b64encode(out_io.getvalue()).decode('utf-8'),
+                "size": out_io.tell()
+            }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.route('/batch-resize', methods=['POST'])
+def batch_resize():
+    """Batch Resize API for Next.js Delegation"""
+    data = request.get_json()
+    if not data or 'images' not in data:
+        return jsonify({'error': '이미지 데이터가 없습니다.'}), 400
+    
+    images = data['images'] # List of Base64 strings
+    max_width = data.get('max_width', 1000)
+    quality = data.get('quality', 80)
+    
+    if not images:
+        return jsonify({'success': True, 'results': []})
+
+    worker_args = [(img, max_width, quality) for img in images]
+    
+    num_workers = min(len(images), cpu_count())
+    start_time = time.time()
+    
+    with Pool(processes=num_workers) as pool:
+        results = pool.map(_resize_single_worker, worker_args)
+    
+    elapsed = time.time() - start_time
+    print(f"[BatchResize] Processed {len(images)} images in {elapsed:.2f}s")
+    
+    return jsonify({
+        'success': True,
+        'results': results,
+        'elapsed_ms': int(elapsed * 1000)
+    })
 
 
 import subprocess
