@@ -27,8 +27,10 @@ class HwpMathRenderer:
     def _init_hwp(self):
         """
         Modified to NEVER spawn HWP automatically.
-        It waits for the user to launch HWP manually.
         """
+        # [CRITICAL] Hard Bypass for high-load production
+        return False
+
         try:
             pythoncom.CoInitialize()
             

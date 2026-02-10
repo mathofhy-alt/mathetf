@@ -110,17 +110,20 @@ export async function POST(req: NextRequest) {
             console.warn('[HML-V2-DOWNLOAD] Image fetch warning:', imgError.message);
         }
 
-        // [FIX] Resolve image URLs to Base64 (Manual Captures use URLs)
+        // [BATCH OPTIMIZATION V3] Resolve and Batch Resize
         if (images && images.length > 0) {
-            console.log(`[HML-V2-DOWNLOAD] Resolving ${images.length} images...`);
-            await Promise.all(images.map(async (img) => {
-                if (img.data && (typeof img.data === 'string') && (img.data.trim().startsWith('http://') || img.data.trim().startsWith('https://'))) {
-                    const url = img.data.trim();
-                    console.log(`[HML-V2-DOWNLOAD] Detected URL for ${img.original_bin_id}. Using Supabase Storage Download...`);
+            console.log(`[HML-V3-DOWNLOAD] Resolving ${images.length} images for batch processing...`);
 
+            const resizeTasks: { input: string, output: string, img: any }[] = [];
+            const tempFiles: string[] = [];
+
+            await Promise.all(images.map(async (img) => {
+                let buffer: Buffer | null = null;
+
+                // 1. Resolve to Buffer (URL or Base64)
+                if (img.data && (typeof img.data === 'string') && (img.data.trim().startsWith('http://') || img.data.trim().startsWith('https://'))) {
                     try {
-                        // Extract Bucket and Path from URL
-                        // Pattern: .../storage/v1/object/public/<BUCKET>/<PATH>
+                        const url = img.data.trim();
                         const publicMarker = '/public/';
                         const splitIdx = url.indexOf(publicMarker);
 
@@ -130,157 +133,101 @@ export async function POST(req: NextRequest) {
                             if (slashIdx !== -1) {
                                 const bucket = fullPath.substring(0, slashIdx);
                                 const filePath = fullPath.substring(slashIdx + 1);
-
-                                console.log(`[HML-V2-DOWNLOAD] Downloading from Bucket: '${bucket}', Path: '${filePath}'`);
-
-                                const { data: blob, error: dlError } = await supabase
-                                    .storage
-                                    .from(bucket)
-                                    .download(filePath);
-
-                                if (dlError) {
-                                    console.error(`[HML-V2-DOWNLOAD] Supabase Download FAILED for ${img.original_bin_id}:`, dlError);
-                                } else if (blob) {
-                                    let buffer: Buffer | ArrayBufferLike = await blob.arrayBuffer();
-
-                                    // [FIX] Apply Universal Resizing
-                                    const resizeResult = tryResizeImage(Buffer.from(buffer), img.original_bin_id);
-                                    if (resizeResult.resized) {
-                                        buffer = resizeResult.buffer; // ArrayBuffer compatible? Buffer is subclass
-                                        img.format = resizeResult.format || 'jpg';
-                                    }
-
-                                    const b64 = resizeResult.buffer.toString('base64');
-                                    console.log(`[HML-V2-DOWNLOAD] Download Success for ${img.original_bin_id}. Size: ${buffer.byteLength}`);
-                                    img.data = b64;
-                                    img.size_bytes = buffer.byteLength;
-                                    (img as any).image_size = buffer.byteLength;
-
-                                    // Determine format (if not forced by resize)
-                                    if (!resizeResult.resized) {
-                                        const type = blob.type;
-                                        if (type.includes('png')) img.format = 'png';
-                                        else if (type.includes('jpeg') || type.includes('jpg')) img.format = 'jpg';
-                                        else if (type.includes('bmp')) img.format = 'bmp';
-                                        else if (filePath.endsWith('.svg')) img.format = 'svg';
-                                    }
-                                }
-                            } else {
-                                console.warn(`[HML-V2-DOWNLOAD] Could not parse path from URL: ${url}`);
+                                const { data: blob } = await supabase.storage.from(bucket).download(filePath);
+                                if (blob) buffer = Buffer.from(await blob.arrayBuffer());
                             }
                         } else {
-                            // Fallback to fetch if not a Supabase Public URL (e.g. external)
-                            console.log(`[HML-V2-DOWNLOAD] Not a standard Supabase URL, falling back to fetch: ${url}`);
                             const res = await fetch(url);
-                            if (res.ok) {
-                                const buffer = await res.arrayBuffer();
-
-                                // [FIX] Apply Universal Resizing
-                                const resizeResult = tryResizeImage(Buffer.from(buffer), img.original_bin_id);
-                                if (resizeResult.resized) {
-                                    img.format = resizeResult.format || 'jpg';
-                                }
-
-                                img.data = resizeResult.buffer.toString('base64');
-                                img.size_bytes = resizeResult.buffer.byteLength;
-                                (img as any).image_size = resizeResult.buffer.byteLength;
-                            }
+                            if (res.ok) buffer = Buffer.from(await res.arrayBuffer());
                         }
-
-                    } catch (err) {
-                        console.error(`[HML-V2-DOWNLOAD] Failed to resolve image URL: ${url}`, err);
-                    }
-                }
-                // Case 2: Native Compressed Data fallback
-                else if (img.data && typeof img.data === 'string') {
+                    } catch (e) { console.warn(`[HML-V3] URL Fetch Fail: ${img.original_bin_id}`, e); }
+                } else if (img.data && typeof img.data === 'string') {
                     try {
-                        let buffer = Buffer.from(img.data, 'base64');
-                        // [FIX] Always initialize size
-                        img.size_bytes = buffer.length;
-                        (img as any).image_size = buffer.length;
-
-                        // [OPTIMIZATION] Downscale Large Images via Python (Pillow)
-                        const resizeResult = tryResizeImage(buffer, img.original_bin_id);
-                        if (resizeResult.resized) {
-                            buffer = resizeResult.buffer as Buffer;
-                            img.data = buffer.toString('base64');
-                            img.size_bytes = buffer.length;
-                            (img as any).image_size = buffer.length;
-                            img.format = resizeResult.format || 'jpg';
-                        }
-                        const head = buffer.subarray(0, 2).toString('ascii');
+                        buffer = Buffer.from(img.data, 'base64');
+                        // Decompress if needed (Same logic as save/route)
                         const headHex = buffer.subarray(0, 2).toString('hex');
-                        const isBmp = head === 'BM';
-                        const isPng = headHex === '8950';
-                        const isJpg = headHex === 'ffd8';
-
-                        // [FIX] Explicitly set format if detected (vital for Generator)
-                        if (isBmp) img.format = 'bmp';
-                        else if (isPng) img.format = 'png';
-                        else if (isJpg) img.format = 'jpg';
-
-                        if (!isBmp && !isPng && !isJpg) {
-                            try {
-                                const inflated = zlib.inflateRawSync(buffer);
-                                console.log(`[HML-V2-DOWNLOAD] Decompressed image ${img.original_bin_id} (${buffer.length} -> ${inflated.length})`);
-
-                                // [OPTIMIZATION] Re-compress using Raw Deflate (like original)
-                                try {
-                                    const deflated = zlib.deflateRawSync(inflated, { level: 9 });
-                                    console.log(`[HML-V2-DOWNLOAD] Re-compressed image ${img.original_bin_id} (Raw Deflate L9) (Size: ${inflated.length} -> ${deflated.length})`);
-                                    img.data = deflated.toString('base64');
-                                    img.size_bytes = inflated.length; // Uncompressed Size
-                                    img.compressed = true;
-                                } catch (defErr) {
-                                    console.warn(`[HML-V2-DOWNLOAD] Re-compression failed for ${img.original_bin_id}`, defErr);
-                                    img.data = inflated.toString('base64');
-                                    img.size_bytes = inflated.length;
-                                }
-
-                                const newHead = inflated.subarray(0, 2).toString('ascii');
-                                if (newHead === 'BM') img.format = 'bmp';
-                            } catch (zErr) {
-                                try {
-                                    const inflated = zlib.inflateSync(buffer);
-                                    console.log(`[HML-V2-DOWNLOAD] Decompressed (ZLIB) image ${img.original_bin_id}`);
-
-                                    // [OPTIMIZATION] Re-compress using Raw Deflate
-                                    try {
-                                        const deflated = zlib.deflateRawSync(inflated, { level: 9 });
-                                        console.log(`[HML-V2-DOWNLOAD] Re-compressed ZLIB image ${img.original_bin_id} (Size: ${inflated.length} -> ${deflated.length})`);
-                                        img.data = deflated.toString('base64');
-                                        img.size_bytes = inflated.length;
-                                        img.compressed = true;
-                                    } catch (defErr) {
-                                        img.data = inflated.toString('base64');
-                                        img.size_bytes = inflated.length;
-                                    }
-                                } catch (zErr2) { }
-                            }
-                        } else {
-                            // [OPTIMIZATION] Force Compression for BMP/PNG/JPG (Standard Images)
-                            // HML expects Deflated streams for best compatibility and size.
-                            try {
-                                const deflated = zlib.deflateRawSync(buffer, { level: 9 });
-                                // console.log(`[HML-V2-DOWNLOAD] Compressed Standard Image ${img.original_bin_id} (${buffer.length} -> ${deflated.length})`);
-                                img.data = deflated.toString('base64');
-                                img.size_bytes = buffer.length; // Original Uncompressed Size
-                                img.compressed = true;
-
-                                // Ensure Format
-                                if (isBmp) img.format = 'bmp';
-                                else if (isPng) img.format = 'png';
-                                else if (isJpg) img.format = 'jpg';
-
-                            } catch (compErr) {
-                                console.warn(`[HML-V2-DOWNLOAD] Compression failed for ${img.original_bin_id}`, compErr);
+                        if (headHex !== '8950' && headHex !== 'ffd8' && buffer.subarray(0, 2).toString('ascii') !== 'BM') {
+                            try { buffer = zlib.inflateRawSync(buffer); } catch (e) {
+                                try { buffer = zlib.inflateSync(buffer); } catch (e2) { }
                             }
                         }
-                    } catch (e) {
-                        console.warn('[HML-V2-DOWNLOAD] Decompression check failed', e);
-                    }
+                    } catch (e) { }
+                }
+
+                if (!buffer) return;
+
+                // 2. Filter for resizing (Threshold: 50KB)
+                if (buffer.length > 50 * 1024) {
+                    const tempIn = path.join(os.tmpdir(), `v3batch_in_${Math.random().toString(36).substring(7)}.bin`);
+                    const tempOut = path.join(os.tmpdir(), `v3batch_out_${Math.random().toString(36).substring(7)}.jpg`);
+                    fs.writeFileSync(tempIn, buffer);
+                    resizeTasks.push({ input: tempIn, output: tempOut, img });
+                    tempFiles.push(tempIn, tempOut);
+                } else {
+                    img.data = buffer.toString('base64');
+                    img.size_bytes = buffer.length;
+                    (img as any).image_size = buffer.length;
                 }
             }));
+
+            // 3. Execute Batch Resize
+            if (resizeTasks.length > 0) {
+                console.log(`[HML-V3-DOWNLOAD] Executing Batch Resize for ${resizeTasks.length} images...`);
+                const pythonPath = path.resolve(process.cwd(), 'hwpx-python-tool', 'venv', 'Scripts', 'python.exe');
+                const scriptPath = path.resolve(process.cwd(), 'scripts', 'batch_resize_image.py');
+
+                try {
+                    const inputJson = JSON.stringify({
+                        tasks: resizeTasks.map(t => ({ input: t.input, output: t.output })),
+                        max_width: 1000,
+                        quality: 80
+                    });
+
+                    const { spawn } = await import('child_process');
+                    const batchResult = await new Promise<any>((resolve, reject) => {
+                        const child = spawn(pythonPath, [scriptPath]);
+                        let stdout = '';
+                        let stderr = '';
+                        child.stdout.on('data', (data) => stdout += data);
+                        child.stderr.on('data', (data) => stderr += data);
+                        child.on('close', (code) => {
+                            if (code === 0) {
+                                try { resolve(JSON.parse(stdout)); }
+                                catch (e) { reject(new Error('Invalid JSON output from Python')); }
+                            } else {
+                                reject(new Error(`Python exited with code ${code}: ${stderr}`));
+                            }
+                        });
+                        child.stdin.write(inputJson);
+                        child.stdin.end();
+                    });
+
+                    if (batchResult.success) {
+                        console.log(`[HML-V3-DOWNLOAD] Batch Resize Success. Elapsed: ${batchResult.elapsed_ms}ms`);
+                        for (let i = 0; i < resizeTasks.length; i++) {
+                            const task = resizeTasks[i];
+                            if (fs.existsSync(task.output)) {
+                                const outBuffer = fs.readFileSync(task.output);
+                                if (outBuffer.length < fs.statSync(task.input).size) {
+                                    task.img.data = outBuffer.toString('base64');
+                                    task.img.size_bytes = outBuffer.length;
+                                    (task.img as any).image_size = outBuffer.length;
+                                    task.img.format = 'jpg';
+                                } else {
+                                    const origBuffer = fs.readFileSync(task.input);
+                                    task.img.data = origBuffer.toString('base64');
+                                    task.img.size_bytes = origBuffer.length;
+                                    (task.img as any).image_size = origBuffer.length;
+                                }
+                            }
+                        }
+                    }
+                } catch (err: any) {
+                    console.error(`[HML-V3-DOWNLOAD] Batch Resize Failed:`, err.message);
+                } finally {
+                    tempFiles.forEach(f => { try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) { } });
+                }
+            }
         }
 
         // Group images by question_id

@@ -100,136 +100,110 @@ export async function POST(req: NextRequest) {
 
             if (imgError) console.warn('[SaveAPI] Image fetch warning:', imgError.message);
 
-            // [FIX] Resolve image URLs to Base64 (Manual Captures use URLs)
+            // [BATCH OPTIMIZATION V2] Resolve and Batch Resize
             if (imgData && imgData.length > 0) {
-                console.log(`[SaveAPI] Resolving/Decompressing ${imgData.length} images...`);
+                console.log(`[SaveAPI] Resolving ${imgData.length} images for batch processing...`);
+
+                const resizeTasks: { input: string, output: string, img: any }[] = [];
+                const tempFiles: string[] = [];
+
                 await Promise.all(imgData.map(async (img) => {
-                    // Case 1: URL -> Base64
+                    let buffer: Buffer | null = null;
+
+                    // 1. Resolve to Buffer
                     if (img.data && (img.data.startsWith('http://') || img.data.startsWith('https://'))) {
                         try {
                             const res = await fetch(img.data);
-                            if (res.ok) {
-                                let buffer = await res.arrayBuffer();
-
-                                // [FIX] Apply Universal Resizing (ASYNC)
-                                const resizeResult = await tryResizeImageAsync(Buffer.from(buffer), img.original_bin_id);
-                                if (resizeResult.resized) {
-                                    buffer = resizeResult.buffer;
-                                    img.format = resizeResult.format || 'jpg';
-                                    console.log(`[SaveAPI] Resized URL image ${img.id}`);
-                                }
-
-                                img.data = Buffer.from(buffer).toString('base64');
-                                img.size_bytes = buffer.byteLength;
-
-                                // Update format based on content-type if possible (and not resized)
-                                if (!resizeResult.resized) {
-                                    const contentType = res.headers.get('content-type');
-                                    if (contentType?.includes('png')) img.format = 'png';
-                                    else if (contentType?.includes('jpeg') || contentType?.includes('jpg')) img.format = 'jpg';
-                                    else if (contentType?.includes('gif')) img.format = 'gif';
-                                    else if (contentType?.includes('bmp')) img.format = 'bmp';
-                                }
-                            }
-                        } catch (err) {
-                            console.warn(`[SaveAPI] Failed to resolve image URL: ${img.data}`, err);
-                        }
-                    }
-                    // Case 2: Native Compressed Data (Start with 72 f2 or other non-image headers)
-                    else if (img.data && typeof img.data === 'string') {
+                            if (res.ok) buffer = Buffer.from(await res.arrayBuffer());
+                        } catch (e) { console.warn(`[SaveAPI] URL Fetch Fail: ${img.data}`, e); }
+                    } else if (img.data && typeof img.data === 'string') {
                         try {
-                            let buffer = Buffer.from(img.data, 'base64');
-
-                            // [FIX] Apply Universal Resizing First (ASYNC)
-                            const resizeResult = await tryResizeImageAsync(buffer, img.original_bin_id);
-                            if (resizeResult.resized) {
-                                buffer = resizeResult.buffer;
-                                img.data = buffer.toString('base64');
-                                img.size_bytes = buffer.length;
-                                img.format = resizeResult.format || 'jpg';
-                                console.log(`[SaveAPI] Resized Base64 image ${img.id}`);
-                                return;
-                            }
-
-                            const head = buffer.subarray(0, 2).toString('ascii');
+                            buffer = Buffer.from(img.data, 'base64');
+                            // Decompress if needed
                             const headHex = buffer.subarray(0, 2).toString('hex');
-
-                            const isBmp = head === 'BM';
-                            const isPng = headHex === '8950';
-                            const isJpg = headHex === 'ffd8';
-
-                            if (!isBmp && !isPng && !isJpg) {
-                                try {
-                                    const inflated = zlib.inflateRawSync(buffer);
-
-                                    // [FIX] Resize Inflated Content (ASYNC)
-                                    const resizeResult2 = await tryResizeImageAsync(inflated, img.original_bin_id);
-                                    if (resizeResult2.resized) {
-                                        const redef = zlib.deflateRawSync(resizeResult2.buffer, { level: 9 });
-                                        img.data = redef.toString('base64');
-                                        img.size_bytes = resizeResult2.buffer.length;
-                                        img.compressed = true;
-                                        img.format = 'jpg';
-                                        return;
-                                    }
-
-                                    try {
-                                        const deflated = zlib.deflateRawSync(inflated, { level: 9 });
-                                        img.data = deflated.toString('base64');
-                                        img.size_bytes = inflated.length;
-                                        img.compressed = true;
-                                    } catch (defErr) {
-                                        img.data = inflated.toString('base64');
-                                        img.size_bytes = inflated.length;
-                                    }
-
-                                    const newHead = inflated.subarray(0, 2).toString('ascii');
-                                    if (newHead === 'BM') img.format = 'bmp';
-
-                                } catch (zErr) {
-                                    try {
-                                        const inflated = zlib.inflateSync(buffer);
-
-                                        // [FIX] Resize Inflated Content (ASYNC)
-                                        const resizeResult3 = await tryResizeImageAsync(inflated, img.original_bin_id);
-                                        if (resizeResult3.resized) {
-                                            const redef = zlib.deflateRawSync(resizeResult3.buffer, { level: 9 });
-                                            img.data = redef.toString('base64');
-                                            img.size_bytes = resizeResult3.buffer.length;
-                                            img.compressed = true;
-                                            img.format = 'jpg';
-                                            return;
-                                        }
-
-                                        try {
-                                            const deflated = zlib.deflateRawSync(inflated, { level: 9 });
-                                            img.data = deflated.toString('base64');
-                                            img.size_bytes = inflated.length;
-                                            img.compressed = true;
-                                        } catch (defErr) {
-                                            img.data = inflated.toString('base64');
-                                            img.size_bytes = inflated.length;
-                                        }
-                                    } catch (zErr2) { }
+                            if (headHex !== '8950' && headHex !== 'ffd8' && buffer.subarray(0, 2).toString('ascii') !== 'BM') {
+                                try { buffer = zlib.inflateRawSync(buffer); } catch (e) {
+                                    try { buffer = zlib.inflateSync(buffer); } catch (e2) { }
                                 }
-                            } else {
-                                // [OPTIMIZATION] Standard Images (BMP/JPG/PNG) -> Recompress
-                                try {
-                                    const deflated = zlib.deflateRawSync(buffer, { level: 9 });
-                                    img.data = deflated.toString('base64');
-                                    img.size_bytes = buffer.length;
-                                    img.compressed = true;
-
-                                    if (isBmp) img.format = 'bmp';
-                                    else if (isPng) img.format = 'png';
-                                    else if (isJpg) img.format = 'jpg';
-                                } catch (compErr) { }
                             }
-                        } catch (e) {
-                            console.warn(`[SaveAPI] Error checking compression for ${img.id}`, e);
-                        }
+                        } catch (e) { }
+                    }
+
+                    if (!buffer) return;
+
+                    // 2. Filter for resizing (Threshold: 50KB)
+                    if (buffer.length > 50 * 1024) {
+                        const tempIn = path.join(os.tmpdir(), `batch_in_${Math.random().toString(36).substring(7)}.bin`);
+                        const tempOut = path.join(os.tmpdir(), `batch_out_${Math.random().toString(36).substring(7)}.jpg`);
+                        fs.writeFileSync(tempIn, buffer);
+                        resizeTasks.push({ input: tempIn, output: tempOut, img });
+                        tempFiles.push(tempIn, tempOut);
+                    } else {
+                        // Smaller images: Just update if it was a URL or decompressed
+                        img.data = buffer.toString('base64');
+                        img.size_bytes = buffer.length;
                     }
                 }));
+
+                // 3. Execute Batch Resize
+                if (resizeTasks.length > 0) {
+                    console.log(`[SaveAPI] Executing Batch Resize for ${resizeTasks.length} images...`);
+                    const pythonPath = path.resolve(process.cwd(), 'hwpx-python-tool', 'venv', 'Scripts', 'python.exe');
+                    const scriptPath = path.resolve(process.cwd(), 'scripts', 'batch_resize_image.py');
+
+                    try {
+                        const inputJson = JSON.stringify({
+                            tasks: resizeTasks.map(t => ({ input: t.input, output: t.output })),
+                            max_width: 1000,
+                            quality: 80
+                        });
+
+                        // [REPLACE] Use spawn to handle large stdin safely
+                        const { spawn } = await import('child_process');
+                        const result = await new Promise<any>((resolve, reject) => {
+                            const child = spawn(pythonPath, [scriptPath]);
+                            let stdout = '';
+                            let stderr = '';
+                            child.stdout.on('data', (data) => stdout += data);
+                            child.stderr.on('data', (data) => stderr += data);
+                            child.on('close', (code) => {
+                                if (code === 0) {
+                                    try { resolve(JSON.parse(stdout)); }
+                                    catch (e) { reject(new Error('Invalid JSON output from Python')); }
+                                } else {
+                                    reject(new Error(`Python exited with code ${code}: ${stderr}`));
+                                }
+                            });
+                            child.stdin.write(inputJson);
+                            child.stdin.end();
+                        });
+
+                        if (result.success) {
+                            console.log(`[SaveAPI] Batch Resize Success. Elapsed: ${result.elapsed_ms}ms`);
+                            for (let i = 0; i < resizeTasks.length; i++) {
+                                const task = resizeTasks[i];
+                                if (fs.existsSync(task.output)) {
+                                    const outBuffer = fs.readFileSync(task.output);
+                                    if (outBuffer.length < fs.statSync(task.input).size) {
+                                        task.img.data = outBuffer.toString('base64');
+                                        task.img.size_bytes = outBuffer.length;
+                                        task.img.format = 'jpg';
+                                    } else {
+                                        // If not smaller, use original (buffer already read)
+                                        const origBuffer = fs.readFileSync(task.input);
+                                        task.img.data = origBuffer.toString('base64');
+                                        task.img.size_bytes = origBuffer.length;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (err: any) {
+                        console.error(`[SaveAPI] Batch Resize Failed:`, err.message);
+                    } finally {
+                        // Cleanup
+                        tempFiles.forEach(f => { try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) { } });
+                    }
+                }
             }
 
             // Group images by question_id
