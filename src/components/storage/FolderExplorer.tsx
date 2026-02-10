@@ -13,18 +13,26 @@ interface FolderExplorerProps {
     onSelectAll?: (items: UserItem[]) => void;
     selectedIds?: string[];
     filterType?: 'all' | 'db' | 'exam';
+    initialData?: any; // [V68] Pre-fetched content
 }
 
-export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all' }: FolderExplorerProps) {
-    const [allFolders, setAllFolders] = useState<Folder[]>([]);
+export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all', initialData }: FolderExplorerProps) {
+    const [allFolders, setAllFolders] = useState<Folder[]>(initialData?.folders || []);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-    const [viewFolders, setViewFolders] = useState<Folder[]>([]);
-    const [viewItems, setViewItems] = useState<UserItem[]>([]);
+    const [viewFolders, setViewFolders] = useState<Folder[]>(initialData?.folders ? initialData.folders.filter((f: Folder) => !f.parent_id) : []);
+    const [viewItems, setViewItems] = useState<UserItem[]>(initialData?.items || []);
     const [loading, setLoading] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // [V67] Component Cache for Instant Navigation
-    const [contentCache, setContentCache] = useState<Record<string, { folders: Folder[], items: UserItem[] }>>({});
+    const [contentCache, setContentCache] = useState<Record<string, { folders: Folder[], items: UserItem[] }>>(() => {
+        if (initialData?.isUnified) {
+            const cacheKey = `root_${filterType}`;
+            const rootFolders = initialData.folders.filter((f: Folder) => !f.parent_id);
+            return { [cacheKey]: { folders: rootFolders, items: initialData.items } };
+        }
+        return {};
+    });
 
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'folder' | 'item', id: string } | null>(null);
     const [inputModal, setInputModal] = useState<{
@@ -45,6 +53,17 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
 
     // Unified Load: Fetch Everything in ONE shot on mount/refresh
     useEffect(() => {
+        // If initialData is provided and this is a component mount (not a manual refresh), use it immediately
+        if (initialData && refreshTrigger === 0 && allFolders.length === 0) {
+            if (initialData.folders) {
+                setAllFolders(initialData.folders);
+                const rootFolders = initialData.folders.filter((f: Folder) => !f.parent_id);
+                setViewFolders(rootFolders);
+            }
+            if (initialData.items) setViewItems(initialData.items);
+            return;
+        }
+
         setLoading(true);
         const typeParam = filterType === 'all' ? '' : `&folderType=${filterType}`;
 
@@ -67,9 +86,10 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                 if (data.isUnified) {
                     const cacheKey = `root_${filterType}`;
                     const rootFolders = data.folders.filter((f: Folder) => !f.parent_id);
-                    setContentCache({
+                    setContentCache(prev => ({
+                        ...prev,
                         [cacheKey]: { folders: rootFolders, items: data.items }
-                    });
+                    }));
                 } else {
                     setContentCache({});
                 }
@@ -81,7 +101,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                 console.error("Unified Load Error:", err);
                 setLoading(false);
             });
-    }, [refreshTrigger, filterType]);
+    }, [refreshTrigger, filterType, initialData]);
 
     // Sub-Navigation Fetch: Only runs when currentFolderId changes to a NON-null value
     useEffect(() => {
