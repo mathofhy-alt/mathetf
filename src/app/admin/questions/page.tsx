@@ -564,9 +564,6 @@ export default function AdminQuestionsPage() {
         try {
             const pythonBaseUrl = process.env.NEXT_PUBLIC_PYTHON_SERVICE_URL || 'http://localhost:5001';
 
-            // Notify user that capture is starting on VPS
-            console.log("Triggering capture at:", `${pythonBaseUrl}/trigger-manual-capture`);
-            alert("캡쳐 도구를 실행합니다. VPS(원격 컴퓨터) 화면을 확인해주세요.\n(캡쳐가 완료될 때까지 잠시 기다려주세요)");
 
             const captureRes = await fetch(`${pythonBaseUrl}/trigger-manual-capture`, {
                 method: 'POST'
