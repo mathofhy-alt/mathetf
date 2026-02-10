@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
     try {
         const supabase = createClient();
         const { searchParams } = new URL(req.url);
-        const mode = searchParams.get('mode'); // 'all' for tree
+        const mode = searchParams.get('mode'); // 'all' for tree + root content or just tree
         const parentId = searchParams.get('parentId'); // 'root' or UUID
         const folderType = searchParams.get('folderType'); // 'db' | 'exam' (Optional filtering)
 
@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
         if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // 1. Prepare Base Queries with Selective Select
-        // We only fetch what's needed for the UI (ID, Name, Type, Reference, Details)
         let folderQuery = supabase
             .from('folders')
             .select('id, name, parent_id, folder_type')
@@ -24,26 +23,47 @@ export async function GET(req: NextRequest) {
             .select('id, folder_id, type, name, reference_id, details, created_at')
             .eq('user_id', user.id);
 
-        // 2. Apply folderType Filter (Efficiency)
+        // 2. Apply folderType Filter
         if (folderType && folderType !== 'all') {
             folderQuery = folderQuery.eq('folder_type', folderType);
-
-            // Map folderType to user_item type
-            if (folderType === 'exam') {
-                itemQuery = itemQuery.eq('type', 'saved_exam');
-            } else if (folderType === 'db') {
-                itemQuery = itemQuery.eq('type', 'personal_db');
-            }
+            if (folderType === 'exam') itemQuery = itemQuery.eq('type', 'saved_exam');
+            else if (folderType === 'db') itemQuery = itemQuery.eq('type', 'personal_db');
         }
 
-        // 3. Mode 'all' (Tree structure) - Only returns folders
+        // 3. Unified Mode 'all' (Tree + Root Content)
         if (mode === 'all') {
-            const { data: folders, error } = await folderQuery.order('name');
-            if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-            return NextResponse.json({ folders });
+            // In 'all' mode, we usually need the WHOLE tree for the sidebar
+            // AND the ROOT content for the initial grid view to avoid 2 calls.
+            const treeQuery = supabase
+                .from('folders')
+                .select('id, name, parent_id, folder_type')
+                .eq('user_id', user.id)
+                .order('name');
+
+            // Optionally filter tree by type too if requested
+            if (folderType && folderType !== 'all') treeQuery.eq('folder_type', folderType);
+
+            // Fetch root items specifically
+            const rootItemQuery = supabase
+                .from('user_items')
+                .select('id, folder_id, type, name, reference_id, details, created_at')
+                .eq('user_id', user.id)
+                .is('folder_id', null)
+                .order('created_at', { ascending: false });
+
+            if (folderType && folderType === 'exam') rootItemQuery.eq('type', 'saved_exam');
+            else if (folderType && folderType === 'db') rootItemQuery.eq('type', 'personal_db');
+
+            const [treeRes, rootItemsRes] = await Promise.all([treeQuery, rootItemQuery]);
+
+            return NextResponse.json({
+                folders: treeRes.data || [], // Tree folders
+                items: rootItemsRes.data || [], // Root items
+                isUnified: true
+            });
         }
 
-        // 4. Content Fetch for current context (Folders + Items)
+        // 4. Content Fetch for specific folder (Context Navigation)
         if (parentId === 'root' || !parentId) {
             folderQuery = folderQuery.is('parent_id', null);
             itemQuery = itemQuery.is('folder_id', null);
@@ -52,14 +72,13 @@ export async function GET(req: NextRequest) {
             itemQuery = itemQuery.eq('folder_id', parentId);
         }
 
-        // Execute in parallel for speed
         const [foldersRes, itemsRes] = await Promise.all([
             folderQuery.order('name', { ascending: true }),
             itemQuery.order('created_at', { ascending: false })
         ]);
 
-        if (foldersRes.error) return NextResponse.json({ error: `Folder Query Error: ${foldersRes.error.message}` }, { status: 500 });
-        if (itemsRes.error) return NextResponse.json({ error: `Item Query Error: ${itemsRes.error.message}` }, { status: 500 });
+        if (foldersRes.error) return NextResponse.json({ error: foldersRes.error.message }, { status: 500 });
+        if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 });
 
         return NextResponse.json({
             folders: foldersRes.data || [],
