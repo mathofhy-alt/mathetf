@@ -1804,7 +1804,7 @@ export default function AdminQuestionsPage() {
                     이전
                 </button>
                 <button
-                    disabled={questions.length < 20}
+                    disabled={questions.length < 30}
                     onClick={() => setPage(p => p + 1)}
                     className="px-4 py-2 border rounded disabled:opacity-50 text-sm hover:bg-gray-50"
                 >

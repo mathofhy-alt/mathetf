@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const unit = searchParams.get('unit') || ''; // Add specific unit filter
     const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = 20;
+    const limit = 30;
     const start = (page - 1) * limit;
 
     let query = supabase
