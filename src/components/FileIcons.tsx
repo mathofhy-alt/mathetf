@@ -6,10 +6,11 @@ interface FileIconProps {
     grayscale?: boolean; // New prop for grayscale mode
 }
 
-export const PdfFileIcon: React.FC<FileIconProps> = ({ className = '', size = 24, grayscale = false }) => {
-    const mainFill = grayscale ? "#F3F4F6" : "#FFEDED";
-    const strokeColor = grayscale ? "#9CA3AF" : "#E11D48";
-    const labelFill = grayscale ? "#9CA3AF" : "#E11D48";
+export const PdfFileIcon: React.FC<FileIconProps & { purchased?: boolean }> = ({ className = '', size = 24, grayscale = false, purchased = false }) => {
+    // If purchased, use Indigo. If grayscale (not registered), use Gray. Otherwise (available), use Red.
+    const mainFill = grayscale ? "#F3F4F6" : (purchased ? "#EEF2FF" : "#FFEDED");
+    const strokeColor = grayscale ? "#9CA3AF" : (purchased ? "#4F46E5" : "#E11D48");
+    const labelFill = grayscale ? "#9CA3AF" : (purchased ? "#4F46E5" : "#E11D48");
 
     return (
         <svg
@@ -31,10 +32,11 @@ export const PdfFileIcon: React.FC<FileIconProps> = ({ className = '', size = 24
     );
 };
 
-export const HwpFileIcon: React.FC<FileIconProps> = ({ className = '', size = 24, grayscale = false }) => {
-    const mainFill = grayscale ? "#F3F4F6" : "#EFF6FF";
-    const strokeColor = grayscale ? "#9CA3AF" : "#2563EB";
-    const labelFill = grayscale ? "#9CA3AF" : "#2563EB";
+export const HwpFileIcon: React.FC<FileIconProps & { purchased?: boolean }> = ({ className = '', size = 24, grayscale = false, purchased = false }) => {
+    // If purchased, use Indigo. If grayscale (not registered), use Gray. Otherwise (available), use Blue.
+    const mainFill = grayscale ? "#F3F4F6" : (purchased ? "#EEF2FF" : "#EFF6FF");
+    const strokeColor = grayscale ? "#9CA3AF" : (purchased ? "#4F46E5" : "#2563EB");
+    const labelFill = grayscale ? "#9CA3AF" : (purchased ? "#4F46E5" : "#2563EB");
 
     return (
         <svg

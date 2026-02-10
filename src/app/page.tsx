@@ -500,12 +500,18 @@ export default function ExamPlatform() {
                                             {group.files.pdfSol ? (
                                                 <button
                                                     onClick={() => handleDownload(group.files.pdfSol!)}
-                                                    title={`PDF 해설 (${group.files.pdfSol.price}원)`}
-                                                    className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
+                                                    title={purchasedIds.has(group.files.pdfSol.id) ? "이미 구매한 자료입니다" : `PDF 해설 (${group.files.pdfSol.price}원)`}
+                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.pdfSol.id) ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}
                                                 >
-                                                    <PdfFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-xs font-bold text-slate-700 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[11px] text-slate-500 font-medium">{group.files.pdfSol.price}P</span>
+                                                    <PdfFileIcon
+                                                        size={28}
+                                                        purchased={purchasedIds.has(group.files.pdfSol.id)}
+                                                        className="drop-shadow-sm group-hover:scale-110 transition-transform"
+                                                    />
+                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.pdfSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
+                                                    <span className={`text-[11px] whitespace-nowrap ${purchasedIds.has(group.files.pdfSol.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                        {purchasedIds.has(group.files.pdfSol.id) ? '구매완료' : `${group.files.pdfSol.price}P`}
+                                                    </span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
@@ -523,12 +529,18 @@ export default function ExamPlatform() {
                                             {group.files.hwpSol ? (
                                                 <button
                                                     onClick={() => handleDownload(group.files.hwpSol!)}
-                                                    title={`HWP 해설 (${group.files.hwpSol.price}원)`}
-                                                    className="group flex flex-col items-center p-1 rounded hover:bg-slate-50 transition-colors"
+                                                    title={purchasedIds.has(group.files.hwpSol.id) ? "이미 구매한 자료입니다" : `HWP 해설 (${group.files.hwpSol.price}원)`}
+                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.hwpSol.id) ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}
                                                 >
-                                                    <HwpFileIcon size={28} className="drop-shadow-sm group-hover:scale-110 transition-transform" />
-                                                    <span className="text-xs font-bold text-slate-700 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[11px] text-slate-500 font-medium">{group.files.hwpSol.price}P</span>
+                                                    <HwpFileIcon
+                                                        size={28}
+                                                        purchased={purchasedIds.has(group.files.hwpSol.id)}
+                                                        className="drop-shadow-sm group-hover:scale-110 transition-transform"
+                                                    />
+                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.hwpSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
+                                                    <span className={`text-[11px] whitespace-nowrap ${purchasedIds.has(group.files.hwpSol.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                        {purchasedIds.has(group.files.hwpSol.id) ? '구매완료' : `${group.files.hwpSol.price}P`}
+                                                    </span>
                                                 </button>
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
