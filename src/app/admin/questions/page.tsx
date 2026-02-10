@@ -563,6 +563,11 @@ export default function AdminQuestionsPage() {
     const handleManualCapture = async (q: any, captureType: 'question' | 'solution' = 'question') => {
         try {
             const pythonBaseUrl = process.env.NEXT_PUBLIC_PYTHON_SERVICE_URL || 'http://localhost:5001';
+
+            // Notify user that capture is starting on VPS
+            console.log("Triggering capture at:", `${pythonBaseUrl}/trigger-manual-capture`);
+            alert("캡쳐 도구를 실행합니다. VPS(원격 컴퓨터) 화면을 확인해주세요.\n(캡쳐가 완료될 때까지 잠시 기다려주세요)");
+
             const captureRes = await fetch(`${pythonBaseUrl}/trigger-manual-capture`, {
                 method: 'POST'
             });
@@ -2228,6 +2233,56 @@ export default function AdminQuestionsPage() {
                         {concepts.map(c => <option key={c} value={c} />)}
                     </datalist>
                 ))
+            }
+            {
+                captureError && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4" onClick={() => setCaptureError(null)}>
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="p-4 border-b bg-red-50 flex justify-between items-center text-red-700">
+                                <h3 className="font-bold">❌ 캡쳐 오류 상세 (드래그하여 복사 가능)</h3>
+                                <button onClick={() => setCaptureError(null)} className="text-gray-400 hover:text-gray-800 text-xl font-bold">&times;</button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div className="bg-red-50 p-4 rounded border border-red-100 text-red-800 text-sm font-medium">
+                                    {captureError.message}
+                                </div>
+
+                                {captureError.stdout && (
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Standard Output (STDOUT)</p>
+                                        <pre className="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-auto max-h-[150px] font-mono whitespace-pre-wrap">
+                                            {captureError.stdout}
+                                        </pre>
+                                    </div>
+                                )}
+
+                                {captureError.stderr && (
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Error Output (STDERR)</p>
+                                        <pre className="bg-gray-900 text-red-400 p-3 rounded text-xs overflow-auto max-h-[150px] font-mono whitespace-pre-wrap">
+                                            {captureError.stderr}
+                                        </pre>
+                                    </div>
+                                )}
+
+                                <div className="bg-blue-50 p-3 rounded text-[11px] text-blue-700 leading-relaxed">
+                                    💡 <b>문제 해결 팁:</b><br />
+                                    1. VPS에서 <code>python app.py</code>가 실행 중인지 확인하세요.<br />
+                                    2. 브라우저 주소창의 <b>[사이트 설정]</b>에서 **'안전하지 않은 콘텐츠'**를 **[허용]**했는지 확인하세요.<br />
+                                    3. VPS의 방화벽에서 <b>5001번 포트</b>가 열려 있는지 확인하세요.
+                                </div>
+                            </div>
+                            <div className="p-4 bg-gray-50 border-t text-right">
+                                <button
+                                    onClick={() => setCaptureError(null)}
+                                    className="px-6 py-2 bg-gray-800 text-white rounded font-bold hover:bg-gray-700"
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
             }
         </div >
     );
