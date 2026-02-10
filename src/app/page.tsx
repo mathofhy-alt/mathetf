@@ -385,6 +385,21 @@ export default function ExamPlatform() {
 
 
 
+    // [V74] Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
+
+    // Get current items
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredFiles.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedExamScope, selectedYear, searchKeyword]);
+
     return (
         <div className="min-h-screen bg-[#f3f4f6] text-slate-900 font-sans">
             <Header
@@ -481,7 +496,7 @@ export default function ExamPlatform() {
                             </div>
 
                             <div className="divide-y divide-slate-100">
-                                {filteredFiles.length > 0 ? filteredFiles.map(group => (
+                                {currentItems.length > 0 ? currentItems.map(group => (
                                     <div key={group.key} className="grid grid-cols-12 items-center py-4 px-4 hover:bg-slate-50 gap-2 text-sm text-center">
                                         <div className="col-span-5 text-left pl-4">
                                             <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base break-keep">
@@ -585,13 +600,33 @@ export default function ExamPlatform() {
                                 )}
                             </div>
 
-                            <div className="py-4 border-t border-slate-200 flex justify-center gap-1">
-                                <button className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500"><ChevronRight size={14} className="rotate-180" /></button>
-                                <button className="w-8 h-8 bg-brand-600 text-white rounded flex items-center justify-center font-bold">1</button>
-                                <button className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-600">2</button>
-                                <button className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-600">3</button>
-                                <button className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500"><ChevronRight size={14} /></button>
-                            </div>
+                            {totalPages > 1 && (
+                                <div className="py-4 border-t border-slate-200 flex justify-center gap-1">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
+                                    >
+                                        <ChevronRight size={14} className="rotate-180" />
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`w-8 h-8 rounded flex items-center justify-center font-bold transition-colors ${currentPage === page ? 'bg-brand-600 text-white' : 'border border-slate-300 hover:bg-slate-50 text-slate-600'}`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
+                                    >
+                                        <ChevronRight size={14} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
