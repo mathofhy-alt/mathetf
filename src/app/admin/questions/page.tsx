@@ -663,13 +663,14 @@ export default function AdminQuestionsPage() {
         const hasSelection = selectedIds.size > 0;
         const confirmMsg = hasSelection
             ? `선택한 ${selectedIds.size}개 문항에 대해 AI 데이터를 생성하시겠습니까?`
-            : "모든 미완료 문항에 대해 AI 데이터(벡터 임베딩)를 생성하시겠습니까?\n문제가 많을 경우 시간이 소요될 수 있습니다.";
+            : "선택된 문항이 없습니다. [데이터베이스 전체]를 스캔하여 분석 데이터가 없는 모든 문항 수백 개를 처리하시겠습니까?\n(문항이 많을 경우 시간이 소요될 수 있습니다.)";
 
         if (!confirm(confirmMsg)) return;
 
         setIsGeneratingEmbeddings(true);
         setGenerationProgress(0);
         let totalSuccess = 0;
+        let totalScanned = 0;
 
         try {
             if (hasSelection) {
@@ -689,9 +690,9 @@ export default function AdminQuestionsPage() {
                     if (!data.success) throw new Error(data.error);
 
                     totalSuccess += (data.successCount || data.processed || 0);
-                    setGenerationProgress(Math.min(i + chunkSize, idsArray.length));
+                    totalScanned += (data.scannedCount || chunk.length);
+                    setGenerationProgress(totalScanned);
 
-                    // Small delay to avoid rate limits
                     await new Promise(r => setTimeout(r, 200));
                 }
             } else {
@@ -706,19 +707,19 @@ export default function AdminQuestionsPage() {
 
                     if (!data.success) throw new Error(data.error);
 
-                    // ScannedCount tells us if the API actually tried to look at anything
                     if (!data.scannedCount || data.scannedCount === 0) {
                         break;
                     }
 
                     totalSuccess += (data.successCount || data.processed || 0);
-                    setGenerationProgress(prev => prev + (data.scannedCount || 0));
+                    totalScanned += (data.scannedCount || 0);
+                    setGenerationProgress(totalScanned);
 
                     await new Promise(r => setTimeout(r, 500));
                 }
             }
 
-            alert(`완료되었습니다! 총 ${totalSuccess}개 문항의 AI 데이터를 생성했습니다.`);
+            alert(`완료되었습니다!\n- 총 스캔: ${totalScanned}건\n- 신규 생성: ${totalSuccess}건`);
             fetchQuestions(); // Refresh to show AI badges
         } catch (e: any) {
             console.error(e);
