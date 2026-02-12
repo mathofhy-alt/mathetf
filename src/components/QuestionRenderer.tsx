@@ -159,7 +159,8 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                                     </button>
                                 )}
                             </div>
-                        ))}
+                        );
+                    })}
                     <div className={`mt-4 w-full h-[1px] ${displayMode === 'solution' ? 'bg-green-50' : 'bg-blue-50'}`} />
                 </div>
             );
