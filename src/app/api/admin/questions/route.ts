@@ -5,15 +5,6 @@ import { createClient } from '@/utils/supabase/server';
 import { requireAdmin } from '@/utils/admin-auth';
 
 // GET: Filter by work_status
-const startTime = Date.now();
-const { authorized, response } = await requireAdmin();
-const authTime = Date.now() - startTime;
-if (!authorized) return response;
-
-const supabase = createClient();
-const { searchParams } = new URL(req.url);
-
-const q = searchParams.get('q') || '';
 const school = searchParams.get('school') || '';
 const subject = searchParams.get('subject') || '';
 const unit = searchParams.get('unit') || '';
