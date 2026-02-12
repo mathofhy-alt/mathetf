@@ -5,8 +5,14 @@ import OpenAI from 'openai';
  * The model produces 1536-dimensional vectors.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
+    const apiKey = (process.env.OPENAI_API_KEY || '').trim();
+
+    if (!apiKey) {
+        throw new Error("OPENAI_API_KEY is missing or empty in environment variables.");
+    }
+
     const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+        apiKey: apiKey,
     });
 
     try {
