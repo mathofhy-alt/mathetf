@@ -39,7 +39,6 @@ export async function GET(req: NextRequest) {
             difficulty,
             source_db_id,
             created_at,
-            embedding,
             question_images (
                 id,
                 original_bin_id,
