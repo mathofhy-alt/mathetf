@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
 // GET: Filter by work_status
