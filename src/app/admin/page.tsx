@@ -1,80 +1,102 @@
-'use client';
+import { createClient } from '@/utils/supabase/server';
+import { requireAdmin } from '@/utils/admin-auth';
+import AdminDashboardClient from './AdminDashboardClient';
 
-import { useState } from 'react';
-import AdminQuestionsPage from './questions/page';
-import AdminIngestPage from './ingest/page';
-import AdminSettlementsPage from './settlements/page';
-import { Package, Upload, DollarSign } from 'lucide-react';
+export default async function AdminPage() {
+    // 1. Server-side Authentication (ONE TIME)
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
 
-export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'questions' | 'ingest' | 'settlements'>('questions');
+    const supabase = createClient();
+    const startTime = Date.now();
 
-    const tabs = [
-        { id: 'questions', label: '문제 관리', icon: Package },
-        { id: 'ingest', label: '문제 업로드', icon: Upload },
-        { id: 'settlements', label: '정산 관리', icon: DollarSign },
-    ] as const;
+    // 2. Parallel Pre-fetching (matching V90 logic for instant load)
+    const [
+        questionsRes,
+        regionsRes,
+        suggestionsRes
+    ] = await Promise.all([
+        // Initial 10 Unsorted Questions
+        supabase
+            .from('questions')
+            .select(`
+                id,
+                question_number,
+                question_index,
+                content_xml,
+                subject,
+                grade,
+                year,
+                semester,
+                school,
+                work_status,
+                unit,
+                key_concepts,
+                difficulty,
+                source_db_id,
+                created_at,
+                question_images (
+                    id,
+                    original_bin_id,
+                    format,
+                    size_bytes,
+                    data
+                )
+            `, { count: 'exact' })
+            .neq('work_status', 'sorted')
+            .order('year', { ascending: false })
+            .order('semester', { ascending: true })
+            .order('school', { ascending: true })
+            .order('question_number', { ascending: true })
+            .range(0, 9),
 
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            {/* Admin Header / Tabs */}
-            <div className="bg-white border-b shadow-sm z-10 sticky top-0">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-bold text-gray-900">관리자 대시보드</span>
-                            <span className="text-xs bg-slate-800 text-white px-2 py-1 rounded">Admin</span>
-                        </div>
+        // Initial Regions
+        supabase
+            .from('schools')
+            .select('region')
+            .limit(1000),
 
-                        {/* Tab Navigation */}
-                        <nav className="flex space-x-4">
-                            {tabs.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.id;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`
-                                            flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                                            ${isActive
-                                                ? 'bg-blue-50 text-blue-700'
-                                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                                            }
-                                        `}
-                                    >
-                                        <Icon size={18} />
-                                        {tab.label}
-                                    </button>
-                                );
-                            })}
-                        </nav>
+        // Initial Concept Suggestions
+        supabase
+            .from('questions')
+            .select('unit, key_concepts')
+            .not('key_concepts', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(500)
+    ]);
 
-                        <div className="text-sm text-gray-500">
-                            {new Date().toLocaleDateString()}
-                        </div>
-                    </div>
-                </div>
-            </div>
+    const fetchTime = Date.now() - startTime;
+    console.log(`[V91] Admin Dashboard Server Pre-fetch Time: ${fetchTime}ms`);
 
-            {/* Content Area */}
-            <main className="flex-1 overflow-auto">
-                {activeTab === 'questions' && (
-                    <div className="animate-in fade-in duration-300">
-                        <AdminQuestionsPage />
-                    </div>
-                )}
-                {activeTab === 'ingest' && (
-                    <div className="animate-in fade-in duration-300">
-                        <AdminIngestPage />
-                    </div>
-                )}
-                {activeTab === 'settlements' && (
-                    <div className="animate-in fade-in duration-300">
-                        <AdminSettlementsPage />
-                    </div>
-                )}
-            </main>
-        </div>
-    );
+    // Process Regions
+    const uniqueRegions = Array.from(new Set((regionsRes.data || []).map(i => i.region))).sort();
+
+    // Process Suggestions
+    const suggestions: Record<string, Set<string>> = {};
+    (suggestionsRes.data || []).forEach(item => {
+        if (item.unit && item.key_concepts) {
+            const unit = item.unit.trim();
+            let tags: string[] = [];
+            if (Array.isArray(item.key_concepts)) {
+                tags = item.key_concepts;
+            } else if (typeof item.key_concepts === 'string') {
+                tags = item.key_concepts.split(',').map((t: string) => t.trim()).filter(Boolean);
+            }
+            if (!suggestions[unit]) suggestions[unit] = new Set();
+            tags.forEach((tag: string) => suggestions[unit].add(tag));
+        }
+    });
+    const finalSuggestions: Record<string, string[]> = {};
+    for (const unit in suggestions) {
+        finalSuggestions[unit] = Array.from(suggestions[unit]).sort();
+    }
+
+    const initialQuestionsData = {
+        questions: questionsRes.data || [],
+        total: questionsRes.count || 0,
+        regions: uniqueRegions,
+        conceptSuggestions: finalSuggestions
+    };
+
+    return <AdminDashboardClient initialQuestionsData={initialQuestionsData} />;
 }
