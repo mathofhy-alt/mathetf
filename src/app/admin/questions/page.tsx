@@ -85,7 +85,9 @@ export default function AdminQuestionsPage() {
         const { data, error } = await supabase
             .from('questions')
             .select('unit, key_concepts')
-            .not('key_concepts', 'is', null);
+            .not('key_concepts', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(500);
 
         if (error) {
             console.error('Error fetching concept suggestions:', error);
