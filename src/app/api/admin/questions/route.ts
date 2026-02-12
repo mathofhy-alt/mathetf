@@ -5,25 +5,26 @@ import { createClient } from '@/utils/supabase/server';
 import { requireAdmin } from '@/utils/admin-auth';
 
 // GET: Filter by work_status
-export async function GET(req: NextRequest) {
-    const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+const startTime = Date.now();
+const { authorized, response } = await requireAdmin();
+const authTime = Date.now() - startTime;
+if (!authorized) return response;
 
-    const supabase = createClient();
-    const { searchParams } = new URL(req.url);
+const supabase = createClient();
+const { searchParams } = new URL(req.url);
 
-    const q = searchParams.get('q') || '';
-    const school = searchParams.get('school') || '';
-    const subject = searchParams.get('subject') || '';
-    const unit = searchParams.get('unit') || ''; // Add specific unit filter
-    const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = 10;
-    const start = (page - 1) * limit;
+const q = searchParams.get('q') || '';
+const school = searchParams.get('school') || '';
+const subject = searchParams.get('subject') || '';
+const unit = searchParams.get('unit') || '';
+const status = searchParams.get('status') || 'all';
+const page = parseInt(searchParams.get('page') || '1');
+const limit = 10;
+const start = (page - 1) * limit;
 
-    let query = supabase
-        .from('questions')
-        .select(`
+let queryBuilder = supabase
+    .from('questions')
+    .select(`
             id,
             question_number,
             question_index,
@@ -45,64 +46,70 @@ export async function GET(req: NextRequest) {
                 format,
                 size_bytes
             )
-        `, { count: 'estimated' });
+        `); // Disabled count to test speed
 
-    // Status Filter (Simplified)
-    if (status === 'sorted') {
-        query = query.eq('work_status', 'sorted');
-    } else if (status === 'unsorted') {
-        // Just exclude sorted to make it faster
-        query = query.neq('work_status', 'sorted');
+// Status Filter (Simplified)
+if (status === 'sorted') {
+    queryBuilder = queryBuilder.eq('work_status', 'sorted');
+} else if (status === 'unsorted') {
+    queryBuilder = queryBuilder.neq('work_status', 'sorted');
+}
+
+if (q && q.trim() !== '') {
+    if (q.startsWith('#')) {
+        queryBuilder = queryBuilder.contains('key_concepts', [q]);
+    } else {
+        queryBuilder = queryBuilder.or(`plain_text.ilike.%${q}%,source_db_id.ilike.%${q}%,unit.ilike.%${q}%`);
     }
+}
+if (school && school.trim() !== '') {
+    queryBuilder = queryBuilder.ilike('source_db_id', `%${school}%`);
+}
+if (subject && subject.trim() !== '') {
+    queryBuilder = queryBuilder.eq('subject', subject);
+}
+if (unit && unit.trim() !== '') {
+    queryBuilder = queryBuilder.eq('unit', unit);
+}
 
-    if (q && q.trim() !== '') {
-        if (q.startsWith('#')) {
-            query = query.contains('key_concepts', [q]);
-        } else {
-            query = query.or(`plain_text.ilike.%${q}%,source_db_id.ilike.%${q}%,unit.ilike.%${q}%`);
-        }
+// New Filters
+const gradeFilter = searchParams.get('grade');
+const yearFilter = searchParams.get('year');
+const semesterFilter = searchParams.get('semester');
+
+if (gradeFilter && gradeFilter.trim() !== '') queryBuilder = queryBuilder.eq('grade', gradeFilter);
+if (yearFilter && yearFilter.trim() !== '') queryBuilder = queryBuilder.eq('year', yearFilter);
+if (semesterFilter && semesterFilter.trim() !== '') queryBuilder = queryBuilder.eq('semester', semesterFilter);
+
+// Multi-level sorting
+queryBuilder = queryBuilder
+    .order('year', { ascending: false })
+    .order('semester', { ascending: true })
+    .order('school', { ascending: true })
+    .order('question_number', { ascending: true });
+
+queryBuilder = queryBuilder.range(start, start + limit - 1);
+
+const queryStartTime = Date.now();
+const { data, error } = await queryBuilder;
+const queryTime = Date.now() - queryStartTime;
+
+if (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+}
+
+return NextResponse.json({
+    success: true,
+    data,
+    count: data?.length || 0, // Mock count for now
+    page,
+    limit,
+    debug: {
+        authTime,
+        queryTime,
+        totalTime: Date.now() - startTime
     }
-    if (school && school.trim() !== '') {
-        query = query.ilike('source_db_id', `%${school}%`);
-    }
-    if (subject && subject.trim() !== '') {
-        query = query.eq('subject', subject);
-    }
-    if (unit && unit.trim() !== '') {
-        query = query.eq('unit', unit);
-    }
-
-    // New Filters
-    const grade = searchParams.get('grade');
-    const year = searchParams.get('year');
-    const semester = searchParams.get('semester');
-
-    if (grade && grade.trim() !== '') query = query.eq('grade', grade);
-    if (year && year.trim() !== '') query = query.eq('year', year);
-    if (semester && semester.trim() !== '') query = query.eq('semester', semester);
-
-    // Multi-level sorting: Optimized to use composite index (year, semester, school, question_number)
-    query = query
-        .order('year', { ascending: false })
-        .order('semester', { ascending: true })
-        .order('school', { ascending: true })
-        .order('question_number', { ascending: true });
-
-    query = query.range(start, start + limit - 1);
-
-    const { data, error, count } = await query;
-
-    if (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-        success: true,
-        data,
-        count,
-        page,
-        limit
-    });
+});
 }
 
 export async function DELETE(req: NextRequest) {
