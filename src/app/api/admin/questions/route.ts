@@ -18,18 +18,26 @@ export async function GET(req: NextRequest) {
     const unit = searchParams.get('unit') || ''; // Add specific unit filter
     const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = 30;
+    const limit = 20;
     const start = (page - 1) * limit;
 
     let query = supabase
         .from('questions')
-        .select('*, question_images(*)', { count: 'exact' });
+        .select(`
+            *,
+            question_images (
+                id,
+                original_bin_id,
+                format,
+                size_bytes
+            )
+        `, { count: 'exact' });
 
     // Status Filter
-    if (status && status !== 'all') {
+    if (status && status !== 'all' && status !== '') {
         if (status === 'sorted') {
             query = query.eq('work_status', 'sorted');
-        } else {
+        } else if (status === 'unsorted') {
             query = query.or('work_status.neq.sorted,work_status.is.null');
         }
     }
@@ -41,13 +49,13 @@ export async function GET(req: NextRequest) {
             query = query.or(`plain_text.ilike.%${q}%,source_db_id.ilike.%${q}%,unit.ilike.%${q}%`);
         }
     }
-    if (school && school !== '') {
+    if (school && school.trim() !== '') {
         query = query.ilike('source_db_id', `%${school}%`);
     }
-    if (subject && subject !== '') {
+    if (subject && subject.trim() !== '') {
         query = query.eq('subject', subject);
     }
-    if (unit && unit !== '') {
+    if (unit && unit.trim() !== '') {
         query = query.eq('unit', unit);
     }
 
@@ -56,11 +64,11 @@ export async function GET(req: NextRequest) {
     const year = searchParams.get('year');
     const semester = searchParams.get('semester');
 
-    if (grade && grade !== '') query = query.eq('grade', grade);
-    if (year && year !== '') query = query.eq('year', year);
-    if (semester && semester !== '') query = query.eq('semester', semester);
+    if (grade && grade.trim() !== '') query = query.eq('grade', grade);
+    if (year && year.trim() !== '') query = query.eq('year', year);
+    if (semester && semester.trim() !== '') query = query.eq('semester', semester);
 
-    // Multi-level sorting
+    // Multi-level sorting: Year (Newest first), Semester, School, and Number
     query = query
         .order('year', { ascending: false })
         .order('semester', { ascending: true })
