@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
                 size_bytes,
                 data
             )
-        `);
+        `, { count: 'exact' });
 
     // Status Filter (Simplified)
     if (status === 'sorted') {
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     queryBuilder = queryBuilder.range(start, start + limit - 1);
 
     const queryStartTime = Date.now();
-    const { data, error } = await queryBuilder;
+    const { data, error, count } = await queryBuilder;
     const queryTime = Date.now() - queryStartTime;
 
     if (error) {
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
         success: true,
         data,
-        count: data?.length || 0,
+        count: count || 0,
         page,
         limit,
         debug: {
