@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const unit = searchParams.get('unit') || ''; // Add specific unit filter
     const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = 20;
+    const limit = 10;
     const start = (page - 1) * limit;
 
     let query = supabase
@@ -47,13 +47,12 @@ export async function GET(req: NextRequest) {
             )
         `, { count: 'estimated' });
 
-    // Status Filter
-    if (status && status !== 'all' && status !== '') {
-        if (status === 'sorted') {
-            query = query.eq('work_status', 'sorted');
-        } else if (status === 'unsorted') {
-            query = query.or('work_status.neq.sorted,work_status.is.null');
-        }
+    // Status Filter (Simplified)
+    if (status === 'sorted') {
+        query = query.eq('work_status', 'sorted');
+    } else if (status === 'unsorted') {
+        // Just exclude sorted to make it faster
+        query = query.neq('work_status', 'sorted');
     }
 
     if (q && q.trim() !== '') {
