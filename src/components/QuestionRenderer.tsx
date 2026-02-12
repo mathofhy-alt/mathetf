@@ -72,23 +72,29 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             xml = xml.replace(stowawayMatch[0], '');
         }
 
-        // Merge with externalImages from Props (Support both Base64 and Storage Path)
+        // Merge with externalImages from Props (Support both Base64 and Lazy Loading via API)
         if (externalImages && externalImages.length > 0) {
             externalImages.forEach(img => {
                 const binId = img.original_bin_id;
                 let format = img.format || 'jpg';
                 if (format === 'svg') format = 'svg+xml';
 
-                if (binId && img.data && img.data !== '') {
-                    if (img.data.startsWith('http')) {
-                        // Support Direct URLs (Manual Captures)
-                        imgMap.set(binId, img.data);
-                    } else {
-                        // PRIORITIZE EMBEDDED DATA (Base64) - IT IS BULLETPROOF
-                        imgMap.set(binId, `data:image/${format};base64,${img.data}`);
+                if (binId) {
+                    if (img.data && img.data !== '') {
+                        if (img.data.startsWith('http')) {
+                            // Support Direct URLs (Manual Captures)
+                            imgMap.set(binId, img.data);
+                        } else {
+                            // Base64 data if available
+                            imgMap.set(binId, `data:image/${format};base64,${img.data}`);
+                        }
+                    } else if (img.id) {
+                        // LAZY LOADING: Indicate that data is available via API ID
+                        // This special prefix will be handled in the render phase
+                        imgMap.set(binId, `LAZY_ID:${img.id}:${format}`);
+                    } else if (img.storage_path) {
+                        imgMap.set(binId, img.storage_path);
                     }
-                } else if (img.storage_path) {
-                    imgMap.set(binId, img.storage_path);
                 }
             });
         }
@@ -328,14 +334,26 @@ function TextRun({ node, extractedImages }: { node: ChildNode, extractedImages: 
                     imageNode.textContent;
 
                 if (binId && extractedImages.has(binId)) {
-                    elements.push(
-                        <img
-                            key={i}
-                            src={extractedImages.get(binId)}
-                            alt="Visual Content"
-                            className="inline-block w-full my-2 rounded shadow-sm align-middle"
-                        />
-                    );
+                    const src = extractedImages.get(binId)!;
+                    if (src.startsWith('LAZY_ID:')) {
+                        elements.push(
+                            <LazyImage
+                                key={i}
+                                lazyInfo={src}
+                                alt="Visual Content"
+                                className="inline-block w-full my-2 rounded shadow-sm align-middle"
+                            />
+                        );
+                    } else {
+                        elements.push(
+                            <img
+                                key={i}
+                                src={src}
+                                alt="Visual Content"
+                                className="inline-block w-full my-2 rounded shadow-sm align-middle"
+                            />
+                        );
+                    }
                 }
             }
         }
@@ -438,6 +456,16 @@ function EquationRenderer({ node, extractedImages }: { node: Element, extractedI
     // 1. Try pre-rendered SVG (PRIORITIZE data-uri over storage_path)
     if (mathId && extractedImages.has(mathId) && !renderError) {
         const src = extractedImages.get(mathId)!;
+        if (src.startsWith('LAZY_ID:')) {
+            return (
+                <LazyImage
+                    lazyInfo={src}
+                    alt="Equation"
+                    className="inline-block mx-0.5 align-middle max-h-[2.5em] w-auto h-auto scale-[1.25] origin-center"
+                    style={{ verticalAlign: '-0.25em' }}
+                />
+            );
+        }
         return (
             <img
                 src={src}
@@ -468,6 +496,38 @@ function EquationRenderer({ node, extractedImages }: { node: Element, extractedI
         console.error("Equation Render Fatal Error:", latex, e);
         return <code className="bg-red-50 text-red-500 border border-red-200 px-1 rounded">{latex}</code>;
     }
+}
+
+function LazyImage({ lazyInfo, alt, className, style }: { lazyInfo: string, alt?: string, className?: string, style?: React.CSSProperties }) {
+    const [dataUri, setDataUri] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        const fetchImage = async () => {
+            const [, id, format] = lazyInfo.split(':');
+            try {
+                const res = await fetch(`/api/admin/questions/images/${id}`);
+                const json = await res.json();
+                if (json.success && json.data) {
+                    setDataUri(`data:image/${format === 'svg' ? 'svg+xml' : format};base64,${json.data}`);
+                } else {
+                    setError(true);
+                }
+            } catch (e) {
+                setError(true);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchImage();
+    }, [lazyInfo]);
+
+    if (loading) return <div className="inline-block w-20 h-20 bg-gray-100 animate-pulse rounded align-middle" />;
+    if (error || !dataUri) return <span className="text-xs text-red-400">Image load error</span>;
+
+    return <img src={dataUri} alt={alt} className={className} style={style} />;
 }
 
 function TextRunInner({ node, extractedImages }: { node: ChildNode, extractedImages: Map<string, string> }) {
