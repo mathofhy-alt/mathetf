@@ -671,6 +671,7 @@ export default function AdminQuestionsPage() {
         setGenerationProgress(0);
         let totalSuccess = 0;
         let totalScanned = 0;
+        let lastApiData: any = null;
 
         try {
             if (hasSelection) {
@@ -686,6 +687,7 @@ export default function AdminQuestionsPage() {
                         body: JSON.stringify({ forceIds: chunk })
                     });
                     const data = await res.json();
+                    lastApiData = data;
 
                     if (!data.success) throw new Error(data.error);
 
@@ -704,6 +706,7 @@ export default function AdminQuestionsPage() {
                         body: JSON.stringify({})
                     });
                     const data = await res.json();
+                    lastApiData = data;
 
                     if (!data.success) throw new Error(data.error);
 
@@ -719,8 +722,8 @@ export default function AdminQuestionsPage() {
                 }
             }
 
-            if (data.debug_error) {
-                alert(`완료되었으나 모든 항목이 실패했습니다.\n- 총 스캔: ${totalScanned}건\n- 성공: ${totalSuccess}건\n- 사유: ${data.debug_error}\n\n[도움말] OpenAI API 키가 Vercel 설정에 등록되어 있는지 확인해 주세요.`);
+            if (lastApiData?.debug_error) {
+                alert(`완료되었으나 모든 항목이 실패했습니다.\n- 총 스캔: ${totalScanned}건\n- 성공: ${totalSuccess}건\n- 사유: ${lastApiData.debug_error}\n\n[도움말] OpenAI API 키가 Vercel 설정에 등록되어 있는지 확인해 주세요.`);
             } else {
                 alert(`완료되었습니다!\n- 총 스캔: ${totalScanned}건\n- 신규 생성: ${totalSuccess}건`);
             }
