@@ -18,46 +18,36 @@ export async function GET(req: NextRequest) {
     const unit = searchParams.get('unit') || ''; // Add specific unit filter
     const status = searchParams.get('status') || 'all'; // 'unsorted' | 'sorted' | 'all'
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = 20;
+    const limit = 30;
     const start = (page - 1) * limit;
 
     let query = supabase
         .from('questions')
-        .select(`
-            *,
-            question_images (
-                id,
-                original_bin_id,
-                format
-            )
-        `, { count: 'exact' });
+        .select('*, question_images(*)', { count: 'exact' });
 
     // Status Filter
-    if (status !== 'all') {
+    if (status && status !== 'all') {
         if (status === 'sorted') {
             query = query.eq('work_status', 'sorted');
         } else {
-            // Default is everything NOT sorted (includes null, unsorted, empty string, etc)
             query = query.or('work_status.neq.sorted,work_status.is.null');
         }
     }
 
-    if (q) {
-        // Tag search if starts with #
+    if (q && q.trim() !== '') {
         if (q.startsWith('#')) {
             query = query.contains('key_concepts', [q]);
         } else {
-            // Search plain_text (content), source_db_id (school/exam info), and unit
             query = query.or(`plain_text.ilike.%${q}%,source_db_id.ilike.%${q}%,unit.ilike.%${q}%`);
         }
     }
-    if (school) {
+    if (school && school !== '') {
         query = query.ilike('source_db_id', `%${school}%`);
     }
-    if (subject) {
+    if (subject && subject !== '') {
         query = query.eq('subject', subject);
     }
-    if (unit) {
+    if (unit && unit !== '') {
         query = query.eq('unit', unit);
     }
 
@@ -66,17 +56,17 @@ export async function GET(req: NextRequest) {
     const year = searchParams.get('year');
     const semester = searchParams.get('semester');
 
-    if (grade) query = query.eq('grade', grade);
-    if (year) query = query.eq('year', year);
-    if (semester) query = query.eq('semester', semester);
+    if (grade && grade !== '') query = query.eq('grade', grade);
+    if (year && year !== '') query = query.eq('year', year);
+    if (semester && semester !== '') query = query.eq('semester', semester);
 
-    // Multi-level sorting: Year (Newest first), Semester, School, and Number
+    // Multi-level sorting
     query = query
         .order('year', { ascending: false })
         .order('semester', { ascending: true })
         .order('school', { ascending: true })
         .order('question_number', { ascending: true })
-        .order('created_at', { ascending: false }); // Final fallback
+        .order('created_at', { ascending: false });
     query = query.range(start, start + limit - 1);
 
     const { data, error, count } = await query;
