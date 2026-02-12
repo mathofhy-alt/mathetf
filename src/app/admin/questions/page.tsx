@@ -120,76 +120,66 @@ export default function AdminQuestionsPage() {
         fetchConceptSuggestions();
     }, []);
 
-    // Fetch School Data (Copied from page.tsx)
+    // Optimized School Data Fetching: Removed heavy all-at-once fetch
     useEffect(() => {
-        const fetchSchoolData = async () => {
+        const fetchInitialRegions = async () => {
             const supabase = createClient();
-            let allSchoolData: any[] = [];
-            let from = 0;
-            const step = 1000;
-            let loopError: any = null;
+            const { data, error } = await supabase
+                .from('schools')
+                .select('region')
+                .limit(1000); // Just get regions initially
 
-            while (true) {
-                const { data, error } = await supabase
-                    .from('schools')
-                    .select('region, district, name')
-                    .range(from, from + step - 1);
-
-                if (error) {
-                    console.error('Error fetching schools:', error);
-                    loopError = error;
-                    break;
-                }
-
-                if (!data || data.length === 0) break;
-
-                allSchoolData = [...allSchoolData, ...data];
-
-                if (data.length < step) break; // Reached end
-                from += step;
-            }
-
-            if (allSchoolData.length > 0) {
-                const data = allSchoolData;
-                const newRegions = new Set<string>();
-                const newDistricts: Record<string, Set<string>> = {};
-                const newSchools: Record<string, Record<string, string[]>> = {};
-
-                data.forEach(item => {
-                    newRegions.add(item.region);
-
-                    if (!newDistricts[item.region]) newDistricts[item.region] = new Set();
-                    newDistricts[item.region].add(item.district);
-
-                    if (!newSchools[item.region]) newSchools[item.region] = {};
-                    if (!newSchools[item.region][item.district]) newSchools[item.region][item.district] = [];
-                    newSchools[item.region][item.district].push(item.name);
-                });
-
-                setRegions(Array.from(newRegions).sort());
-
-                const finalDistricts: Record<string, string[]> = {};
-                Object.keys(newDistricts).forEach(r => {
-                    finalDistricts[r] = Array.from(newDistricts[r]).sort();
-                });
-                setDistrictsMap(finalDistricts);
-
-                // Sort schools
-                Object.keys(newSchools).forEach(r => {
-                    Object.keys(newSchools[r]).forEach(d => {
-                        newSchools[r][d].sort();
-                    });
-                });
-                setSchoolsMap(newSchools);
-
-                // Flat list for autocomplete
-                const flatSchools = data.map((i: any) => i.name as string);
-                setAllSchoolNames(Array.from(new Set(flatSchools)).sort());
+            if (data) {
+                const uniqueRegions = Array.from(new Set(data.map(i => i.region))).sort();
+                setRegions(uniqueRegions);
             }
             setIsLoadingSchools(false);
         };
-        fetchSchoolData();
+        fetchInitialRegions();
     }, []);
+
+    // Fetch districts when region changes
+    useEffect(() => {
+        if (!selectedRegion) return;
+        const fetchDistricts = async () => {
+            const supabase = createClient();
+            const { data } = await supabase
+                .from('schools')
+                .select('district')
+                .eq('region', selectedRegion);
+
+            if (data) {
+                const uniqueDistricts = Array.from(new Set(data.map(i => i.district))).sort();
+                setDistrictsMap(prev => ({ ...prev, [selectedRegion]: uniqueDistricts }));
+            }
+        };
+        fetchDistricts();
+    }, [selectedRegion]);
+
+    // Fetch schools when district changes
+    useEffect(() => {
+        if (!selectedRegion || !selectedDistrict) return;
+        const fetchSchools = async () => {
+            const supabase = createClient();
+            const { data } = await supabase
+                .from('schools')
+                .select('name')
+                .eq('region', selectedRegion)
+                .eq('district', selectedDistrict);
+
+            if (data) {
+                const schoolNames = data.map(i => i.name).sort();
+                setSchoolsMap(prev => ({
+                    ...prev,
+                    [selectedRegion]: {
+                        ...(prev[selectedRegion] || {}),
+                        [selectedDistrict]: schoolNames
+                    }
+                }));
+            }
+        };
+        fetchSchools();
+    }, [selectedRegion, selectedDistrict]);
 
     // School Autocomplete Logic
     useEffect(() => {
