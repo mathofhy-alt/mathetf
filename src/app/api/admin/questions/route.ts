@@ -45,8 +45,7 @@ export async function GET(req: NextRequest) {
                 id,
                 original_bin_id,
                 format,
-                size_bytes,
-                data
+                size_bytes
             )
         `, { count: 'exact' });
 

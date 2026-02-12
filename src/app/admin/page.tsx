@@ -39,8 +39,7 @@ export default async function AdminPage() {
                     id,
                     original_bin_id,
                     format,
-                    size_bytes,
-                    data
+                    size_bytes
                 )
             `, { count: 'exact' })
             .neq('work_status', 'sorted')

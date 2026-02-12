@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import InputModal from '@/components/common/InputModal';
@@ -206,8 +206,13 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
         }
     };
 
-    // [FIX] Trigger fetch on page or tab change
+    // [FIX] Trigger fetch on page or tab change, but SKIP first mount to avoid double-fetching
+    const isFirstMount = useRef(true);
     useEffect(() => {
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            return;
+        }
         fetchQuestions();
     }, [page, currentTab, selectedUnit]); // Add selectedUnit to trigger fetch
 
