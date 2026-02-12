@@ -24,7 +24,22 @@ export async function GET(req: NextRequest) {
     let query = supabase
         .from('questions')
         .select(`
-            *,
+            id,
+            question_number,
+            question_index,
+            content_xml,
+            subject,
+            grade,
+            year,
+            semester,
+            school,
+            work_status,
+            unit,
+            key_concepts,
+            difficulty,
+            source_db_id,
+            created_at,
+            embedding,
             question_images (
                 id,
                 original_bin_id,
