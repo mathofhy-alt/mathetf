@@ -123,32 +123,43 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         if (manualCaps.length > 0) {
             return (
                 <div className="flex flex-col items-center gap-6 py-2 bg-white">
-                    {manualCaps.map((img, i) => (
-                        <div key={i} className="w-full flex flex-col items-center relative group/img">
-                            <img
-                                src={img.data}
-                                alt={`${displayMode} capture`}
-                                className={`w-full rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
-                                style={{ maxHeight: '1000px' }}
-                            />
-                            {onDeleteCapture && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (confirm(`이 ${displayMode === 'solution' ? '해설' : '문제'} 이미지를 삭제하시겠습니까?`)) {
-                                            onDeleteCapture(img.id, img.data);
-                                        }
-                                    }}
-                                    className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity shadow-lg hover:bg-red-600 z-10"
-                                    title="이미지 삭제"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                    {manualCaps.map((img, i) => {
+                        const hasData = img.data && img.data !== '';
+                        return (
+                            <div key={i} className="w-full flex flex-col items-center relative group/img">
+                                {hasData ? (
+                                    <img
+                                        src={img.data}
+                                        alt={`${displayMode} capture`}
+                                        className={`w-full rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
+                                        style={{ maxHeight: '1000px' }}
+                                    />
+                                ) : (
+                                    <LazyImage
+                                        lazyInfo={`LAZY_ID:${img.id}:${img.format || 'png'}`}
+                                        alt={`${displayMode} capture`}
+                                        className={`w-full rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
+                                        style={{ maxHeight: '1000px' }}
+                                    />
+                                )}
+                                {onDeleteCapture && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm(`이 ${displayMode === 'solution' ? '해설' : '문제'} 이미지를 삭제하시겠습니까?`)) {
+                                                onDeleteCapture(img.id, img.data);
+                                            }
+                                        }}
+                                        className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity shadow-lg hover:bg-red-600 z-10"
+                                        title="이미지 삭제"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
                     <div className={`mt-4 w-full h-[1px] ${displayMode === 'solution' ? 'bg-green-50' : 'bg-blue-50'}`} />
                 </div>
             );
@@ -169,10 +180,23 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
 
         // V28: Prioritize Whole-Question High-Fidelity Capture (Legacy/Auto)
         if (extractedImages.has('WHOLE_QUESTION_V28')) {
+            const src = extractedImages.get('WHOLE_QUESTION_V28')!;
+            if (src.startsWith('LAZY_ID:')) {
+                return (
+                    <div className="flex flex-col items-center py-2 bg-white">
+                        <LazyImage
+                            lazyInfo={src}
+                            alt="High Fidelity Question Capture"
+                            className="w-full rounded shadow-md border"
+                        />
+                        <div className="mt-4 w-full h-[1px] bg-gray-100" />
+                    </div>
+                );
+            }
             return (
                 <div className="flex flex-col items-center py-2 bg-white">
                     <img
-                        src={extractedImages.get('WHOLE_QUESTION_V28')}
+                        src={src}
                         alt="High Fidelity Question Capture"
                         className="w-full rounded shadow-md border"
                     />
@@ -510,7 +534,13 @@ function LazyImage({ lazyInfo, alt, className, style }: { lazyInfo: string, alt?
                 const res = await fetch(`/api/admin/questions/images/${id}`);
                 const json = await res.json();
                 if (json.success && json.data) {
-                    setDataUri(`data:image/${format === 'svg' ? 'svg+xml' : format};base64,${json.data}`);
+                    if (json.data.startsWith('http')) {
+                        // It's a URL (Manual Capture)
+                        setDataUri(json.data);
+                    } else {
+                        // It's Base64 data
+                        setDataUri(`data:image/${format === 'svg' ? 'svg+xml' : format};base64,${json.data}`);
+                    }
                 } else {
                     setError(true);
                 }
