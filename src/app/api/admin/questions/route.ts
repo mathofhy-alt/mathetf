@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
                 id,
                 original_bin_id,
                 format,
-                size_bytes
+                size_bytes,
+                data
             )
         `);
 
