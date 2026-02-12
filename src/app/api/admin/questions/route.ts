@@ -91,7 +91,7 @@ export async function DELETE(req: NextRequest) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
 
-    const supabase = createAdminClient();
+    const supabase = createClient();
 
     try {
         const body = await req.json();
@@ -124,7 +124,7 @@ export async function PATCH(req: NextRequest) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
 
-    const supabase = createAdminClient();
+    const supabase = createClient();
 
     try {
         const body = await req.json();
