@@ -719,7 +719,11 @@ export default function AdminQuestionsPage() {
                 }
             }
 
-            alert(`완료되었습니다!\n- 총 스캔: ${totalScanned}건\n- 신규 생성: ${totalSuccess}건`);
+            if (data.debug_error) {
+                alert(`완료되었으나 모든 항목이 실패했습니다.\n- 총 스캔: ${totalScanned}건\n- 성공: ${totalSuccess}건\n- 사유: ${data.debug_error}\n\n[도움말] OpenAI API 키가 Vercel 설정에 등록되어 있는지 확인해 주세요.`);
+            } else {
+                alert(`완료되었습니다!\n- 총 스캔: ${totalScanned}건\n- 신규 생성: ${totalSuccess}건`);
+            }
             fetchQuestions(); // Refresh to show AI badges
         } catch (e: any) {
             console.error(e);

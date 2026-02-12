@@ -100,14 +100,22 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        return NextResponse.json({
+        const responsePayload: any = {
             success: true,
-            processed: successCount, // Keeping this for backward compatibility
             successCount,
             scannedCount: questionsToProcess.length,
-            total: questionsToProcess.length,
-            results
-        });
+            total: questionsToProcess.length
+        };
+
+        // If something was scanned but nothing succeeded, include the first error to help debug
+        if (questionsToProcess.length > 0 && successCount === 0) {
+            const firstError = results.find(r => r.status === 'error');
+            if (firstError) {
+                responsePayload.debug_error = firstError.error;
+            }
+        }
+
+        return NextResponse.json(responsePayload);
 
     } catch (e: any) {
         console.error("Embedding Generation Error:", e);
