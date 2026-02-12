@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
                 format,
                 size_bytes
             )
-        `, { count: 'exact' });
+        `, { count: 'estimated' });
 
     // Status Filter
     if (status && status !== 'all' && status !== '') {
@@ -83,13 +83,13 @@ export async function GET(req: NextRequest) {
     if (year && year.trim() !== '') query = query.eq('year', year);
     if (semester && semester.trim() !== '') query = query.eq('semester', semester);
 
-    // Multi-level sorting: Year (Newest first), Semester, School, and Number
+    // Multi-level sorting: Optimized to use composite index (year, semester, school, question_number)
     query = query
         .order('year', { ascending: false })
         .order('semester', { ascending: true })
         .order('school', { ascending: true })
-        .order('question_number', { ascending: true })
-        .order('created_at', { ascending: false });
+        .order('question_number', { ascending: true });
+
     query = query.range(start, start + limit - 1);
 
     const { data, error, count } = await query;
