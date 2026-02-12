@@ -23,7 +23,14 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
         .from('questions')
-        .select('*, question_images(id, original_bin_id, format, size_bytes, storage_path)', { count: 'exact' });
+        .select(`
+            *,
+            question_images (
+                id,
+                original_bin_id,
+                format
+            )
+        `, { count: 'exact' });
 
     // Status Filter
     if (status !== 'all') {
