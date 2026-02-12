@@ -102,7 +102,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            processed: successCount,
+            processed: successCount, // Keeping this for backward compatibility
+            successCount,
+            scannedCount: questionsToProcess.length,
             total: questionsToProcess.length,
             results
         });

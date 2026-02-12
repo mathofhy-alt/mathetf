@@ -660,41 +660,72 @@ export default function AdminQuestionsPage() {
     };
 
     const handleGenerateEmbeddings = async () => {
-        if (!confirm("모든 문제에 대해 AI 데이터(벡터 임베딩)를 생성하시겠습니까?\n문제가 많을 경우 시간이 소요될 수 있습니다.")) return;
+        const hasSelection = selectedIds.size > 0;
+        const confirmMsg = hasSelection
+            ? `선택한 ${selectedIds.size}개 문항에 대해 AI 데이터를 생성하시겠습니까?`
+            : "모든 미완료 문항에 대해 AI 데이터(벡터 임베딩)를 생성하시겠습니까?\n문제가 많을 경우 시간이 소요될 수 있습니다.";
+
+        if (!confirm(confirmMsg)) return;
 
         setIsGeneratingEmbeddings(true);
         setGenerationProgress(0);
-        let totalProcessed = 0;
+        let totalSuccess = 0;
 
         try {
-            while (true) {
-                const res = await fetch('/api/admin/embeddings/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}) // Default: process pending items
-                });
-                const data = await res.json();
+            if (hasSelection) {
+                // Process selected IDs in chunks of 10
+                const idsArray = Array.from(selectedIds);
+                const chunkSize = 10;
 
-                if (!data.success) {
-                    throw new Error(data.error);
+                for (let i = 0; i < idsArray.length; i += chunkSize) {
+                    const chunk = idsArray.slice(i, i + chunkSize);
+                    const res = await fetch('/api/admin/embeddings/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ forceIds: chunk })
+                    });
+                    const data = await res.json();
+
+                    if (!data.success) throw new Error(data.error);
+
+                    totalSuccess += (data.successCount || data.processed || 0);
+                    setGenerationProgress(Math.min(i + chunkSize, idsArray.length));
+
+                    // Small delay to avoid rate limits
+                    await new Promise(r => setTimeout(r, 200));
                 }
+            } else {
+                // Process all pending items in a loop
+                while (true) {
+                    const res = await fetch('/api/admin/embeddings/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    const data = await res.json();
 
-                if (data.processed === 0) {
-                    break; // Done
+                    if (!data.success) throw new Error(data.error);
+
+                    // ScannedCount tells us if the API actually tried to look at anything
+                    if (!data.scannedCount || data.scannedCount === 0) {
+                        break;
+                    }
+
+                    totalSuccess += (data.successCount || data.processed || 0);
+                    setGenerationProgress(prev => prev + (data.scannedCount || 0));
+
+                    await new Promise(r => setTimeout(r, 500));
                 }
-
-                totalProcessed += data.processed;
-                setGenerationProgress(totalProcessed);
-
-                await new Promise(r => setTimeout(r, 500));
             }
 
-            alert(`완료되었습니다! 총 ${totalProcessed}개 문항의 AI 데이터를 생성했습니다.`);
+            alert(`완료되었습니다! 총 ${totalSuccess}개 문항의 AI 데이터를 생성했습니다.`);
+            fetchQuestions(); // Refresh to show AI badges
         } catch (e: any) {
             console.error(e);
             alert(`오류 발생: ${e.message}`);
         } finally {
             setIsGeneratingEmbeddings(false);
+            setGenerationProgress(0);
         }
     };
 
