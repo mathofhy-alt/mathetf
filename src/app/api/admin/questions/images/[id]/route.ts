@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/utils/supabase/server-admin';
+import { createClient } from '@/utils/supabase/server';
 import { requireAdmin } from '@/utils/admin-auth';
 
 /**
@@ -20,7 +20,7 @@ export async function GET(
         return NextResponse.json({ success: false, error: 'Missing image ID' }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    const supabase = createClient();
 
     try {
         const { data, error } = await supabase
