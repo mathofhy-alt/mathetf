@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/utils/supabase/server-admin';
+import { createClient } from '@/utils/supabase/server';
 
 // GET: Filter by work_status
 import { requireAdmin } from '@/utils/admin-auth';
@@ -9,7 +8,7 @@ export async function GET(req: NextRequest) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
 
-    const supabase = createAdminClient();
+    const supabase = createClient();
     const { searchParams } = new URL(req.url);
 
     const q = searchParams.get('q') || '';
