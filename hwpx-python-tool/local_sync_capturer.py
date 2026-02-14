@@ -86,13 +86,17 @@ class LocalSyncCapturer(tk.Tk):
         
         ttk.Label(list_frame, text="📦 미캡처 문제 목록 (unsorted)", font=("Malgun Gothic", 12, "bold")).pack(anchor="w", pady=(0, 10))
         
-        columns = ("ID", "Num", "Status")
+        columns = ("ID", "Num", "Q", "S", "Status")
         self.tree = ttk.Treeview(list_frame, columns=columns, show="headings")
         self.tree.heading("ID", text="DB ID")
         self.tree.heading("Num", text="번호")
+        self.tree.heading("Q", text="문제")
+        self.tree.heading("S", text="해설")
         self.tree.heading("Status", text="상태")
         self.tree.column("ID", width=120)
-        self.tree.column("Num", width=60)
+        self.tree.column("Num", width=50)
+        self.tree.column("Q", width=40, anchor="center")
+        self.tree.column("S", width=40, anchor="center")
         self.tree.column("Status", width=80)
         
         scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.tree.yview)
@@ -139,7 +143,8 @@ class LocalSyncCapturer(tk.Tk):
         self.status.set("서버에서 목록 불러오는 중...")
         def task():
             try:
-                res = self.supabase.table("questions").select("id, question_number, work_status").eq("work_status", "unsorted").order("question_number").execute()
+                # Fetch questions with their image info to check Q/S status
+                res = self.supabase.table("questions").select("id, question_number, work_status, question_images(original_bin_id)").eq("work_status", "unsorted").order("question_number").execute()
                 self.questions = res.data
                 self.after(0, self.update_tree)
             except Exception as e:
@@ -149,7 +154,12 @@ class LocalSyncCapturer(tk.Tk):
     def update_tree(self):
         for i in self.tree.get_children(): self.tree.delete(i)
         for q in self.questions:
-            self.tree.insert("", "end", values=(q['id'], q['question_number'], q['work_status']))
+            imgs = q.get('question_images', [])
+            has_q = any(img.get('original_bin_id', '').startswith('MANUAL_Q_') for img in imgs)
+            has_s = any(img.get('original_bin_id', '').startswith('MANUAL_S_') for img in imgs)
+            q_mark = "✅" if has_q else "-"
+            s_mark = "✅" if has_s else "-"
+            self.tree.insert("", "end", values=(q['id'], q['question_number'], q_mark, s_mark, q['work_status']))
         self.status.set(f"총 {len(self.questions)}개의 작업 대기 중")
 
     def on_select(self, event):
@@ -228,6 +238,8 @@ class LocalSyncCapturer(tk.Tk):
                 
                 self.after(0, lambda: self.status.set(f"✅ {mode} 업로드 완료"))
                 self.after(0, self.reset_buttons)
+                # Auto-refresh to show status
+                self.after(500, self.refresh_list)
             except Exception as e:
                 self.after(0, lambda: messagebox.showerror("Upload Error", f"업로드 실패: {e}"))
                 self.after(0, self.reset_buttons)
