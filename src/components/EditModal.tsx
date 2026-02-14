@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import { X, Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Upload, FileText, CheckCircle2, AlertCircle, FileDown, Database } from 'lucide-react';
 import { PdfFileIcon, HwpFileIcon } from './FileIcons';
+import { updateExamMaterial } from '@/app/mypage/actions';
 
 interface EditModalProps {
     isOpen: boolean;
@@ -36,7 +37,7 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
     const [title, setTitle] = useState('');
 
     const [fileType, setFileType] = useState<'PDF' | 'HWP'>('PDF');
-    const [contentType, setContentType] = useState<'문제' | '해설'>('문제'); // '해설' implies '문제+해설' in some contexts, keeping consistent with UploadModal logic where '해설' -> PRICE_..._SOL
+    const [contentType, setContentType] = useState<'문제' | '해설'>('해설');
 
     // New File State (if replacing)
     const [newFile, setNewFile] = useState<File | null>(null);
@@ -46,10 +47,8 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
 
     const subjects = ['공통수학1', '공통수학2', '대수', '미적분1', '기하', '확통', '미적분2'];
 
-    // Prices (Constants from UploadModal)
-    const PRICE_PDF_PROB = 500;
+    // Updated Prices (Constants from UploadModal)
     const PRICE_PDF_SOL = 1000;
-    const PRICE_HWP_PROB = 1500;
     const PRICE_HWP_SOL = 2000;
 
     useEffect(() => {
@@ -62,21 +61,17 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
             setSemester(fileData.semester || 1);
             setExamType(fileData.exam_type || '중간고사');
             setSubject(fileData.subject || '');
-            setTitle(fileData.title || '');
+            setTitle(fileData.title?.replace(' [문제]', '')?.replace(' [문제+해설]', '') || '');
             setFileType(fileData.file_type || 'PDF');
-            setContentType(fileData.content_type || '문제');
-            setNewFile(null); // Reset new file
+            setContentType(fileData.content_type || '해설'); // Default to '해설' (integrated)
+            setNewFile(null);
             setErrorMsg('');
         }
     }, [isOpen, fileData]);
 
     if (!isOpen) return null;
 
-    // Calculate current price based on selection
-    const currentPrice =
-        fileType === 'PDF'
-            ? (contentType === '문제' ? PRICE_PDF_PROB : PRICE_PDF_SOL)
-            : (contentType === '문제' ? PRICE_HWP_PROB : PRICE_HWP_SOL);
+    const currentPrice = fileType === 'PDF' ? PRICE_PDF_SOL : PRICE_HWP_SOL;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -86,7 +81,13 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
             // Auto-detect type
             const ext = f.name.split('.').pop()?.toLowerCase();
             if (ext === 'pdf') setFileType('PDF');
-            else if (ext === 'hwp' || ext === 'hwpx') setFileType('HWP');
+            else if (['hwp', 'hwpx', 'hml'].includes(ext || '')) setFileType('HWP');
+        }
+    };
+
+    const generateTitle = () => {
+        if (selectedSchool) {
+            setTitle(`${selectedSchool} ${year}년 ${grade}학년 ${semester}학기 ${examType} ${subject}`);
         }
     };
 
@@ -102,25 +103,22 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
 
             let filePath = fileData.file_path;
 
-            // 1. If new file is selected, upload it
             if (newFile) {
                 const fileExt = newFile.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                 const newPath = `${user.id}/${fileName}`;
 
-                // Upload
                 const { error: uploadError } = await supabase.storage
                     .from('exam-materials')
                     .upload(newPath, newFile);
 
                 if (uploadError) throw uploadError;
-
                 filePath = newPath;
-                // Note: We are not deleting the old file to avoid breaking purchased links if any, 
-                // though strictly we might want to cleanup. For now, keep it safe.
             }
 
-            // 2. Update DB
+            // Sync title suffix: Modern label is [문제+해설]
+            const titleSuffix = ' [문제+해설]';
+
             const updates = {
                 school: selectedSchool,
                 region: selectedRegion,
@@ -130,25 +128,25 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                 semester: Number(semester),
                 exam_type: examType,
                 subject: subject,
-                title: title,
+                title: title + titleSuffix,
                 file_type: fileType,
-                content_type: contentType,
+                content_type: '해설',
                 file_path: filePath,
                 price: currentPrice
-                // uploader_id, created_at, sales_count remain unchanged
             };
 
-            const { error: dbError } = await supabase
-                .from('exam_materials')
-                .update(updates)
-                .eq('id', fileData.id);
+            // [V103] Use Server Action instead of direct client-side update to ensure cache invalidation (Home & MyPage)
+            const result = await updateExamMaterial(fileData.id, updates);
 
-            if (dbError) throw dbError;
+            if (!result.success) {
+                throw new Error(result.message);
+            }
 
             alert('자료가 성공적으로 수정되었습니다!');
             onClose();
-            router.refresh(); // Refresh Next.js data
-            window.location.reload(); // Hard reload to ensure list updates
+            // window.location.reload() is less necessary now because of revalidatePath, 
+            // but keeps the current page fresh without full router navigation logic complexity
+            window.location.reload();
 
         } catch (error: any) {
             console.error('Update failed:', error);
@@ -159,179 +157,221 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                    <h2 className="text-lg font-bold text-slate-800">자료 수정</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600">
+                            <Database size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800">자료 정보 수정</h2>
+                            <p className="text-xs text-slate-500 font-medium">업로드된 자료의 메타데이터와 파일을 교체합니다.</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
                         <X size={24} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {/* School Info */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-8">
+                    {/* 1. School & Exam Info */}
                     <div className="space-y-4">
-                        <h3 className="font-bold text-slate-800 text-sm">학교 및 시험 정보</h3>
+                        <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-[11px] font-bold">1</span>
+                            학교 및 시험 정보
+                        </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <select className="form-select w-full rounded border-slate-200 text-sm"
-                                required
-                                value={selectedRegion}
-                                onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
-                                <option value="">시/도 선택</option>
-                                {regions.map(r => <option key={r} value={r}>{r}</option>)}
-                            </select>
-                            <select className="form-select w-full rounded border-slate-200 text-sm"
-                                required
-                                value={selectedDistrict}
-                                onChange={e => setSelectedDistrict(e.target.value)}
-                                disabled={!selectedRegion}>
-                                <option value="">구/군 선택</option>
-                                {districtsMap[selectedRegion]?.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
-                            <select className="form-select w-full rounded border-slate-200 text-sm"
-                                required
-                                value={selectedSchool}
-                                onChange={e => setSelectedSchool(e.target.value)}
-                                disabled={!selectedDistrict}>
-                                <option value="">학교 선택</option>
-                                {schoolsMap[selectedRegion]?.[selectedDistrict]?.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">시/도</label>
+                                <select className="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500 transition-all"
+                                    required
+                                    value={selectedRegion}
+                                    onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
+                                    <option value="">시/도 선택</option>
+                                    {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">구/군</label>
+                                <select className="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500 transition-all"
+                                    required
+                                    value={selectedDistrict}
+                                    onChange={e => setSelectedDistrict(e.target.value)}
+                                    disabled={!selectedRegion}>
+                                    <option value="">구/군 선택</option>
+                                    {districtsMap[selectedRegion]?.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">학교</label>
+                                <select className="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500 transition-all font-bold text-brand-700"
+                                    required
+                                    value={selectedSchool}
+                                    onChange={e => setSelectedSchool(e.target.value)}
+                                    disabled={!selectedDistrict}>
+                                    <option value="">학교 선택</option>
+                                    {schoolsMap[selectedRegion]?.[selectedDistrict]?.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <select value={year} onChange={e => setYear(Number(e.target.value))} className="w-full rounded border-slate-200 text-sm">
-                                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                                    <option key={y} value={y}>{y}년</option>
-                                ))}
-                            </select>
-                            <select value={grade} onChange={e => setGrade(Number(e.target.value))} className="w-full rounded border-slate-200 text-sm">
-                                <option value={1}>1학년</option>
-                                <option value={2}>2학년</option>
-                                <option value={3}>3학년</option>
-                            </select>
-                            <select value={semester} onChange={e => setSemester(Number(e.target.value))} className="w-full rounded border-slate-200 text-sm">
-                                <option value={1}>1학기</option>
-                                <option value={2}>2학기</option>
-                            </select>
-                            <select value={examType} onChange={e => setExamType(e.target.value)} className="w-full rounded border-slate-200 text-sm">
-                                <option value="중간고사">중간고사</option>
-                                <option value="기말고사">기말고사</option>
-                            </select>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">연도</label>
+                                <select value={year} onChange={e => setYear(Number(e.target.value))} className="w-full rounded-lg border-slate-200 text-sm">
+                                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                        <option key={y} value={y}>{y}년</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">학년</label>
+                                <select value={grade} onChange={e => setGrade(Number(e.target.value))} className="w-full rounded-lg border-slate-200 text-sm">
+                                    <option value={1}>1학년</option>
+                                    <option value={2}>2학년</option>
+                                    <option value={3}>3학년</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">학기</label>
+                                <select value={semester} onChange={e => setSemester(Number(e.target.value))} className="w-full rounded-lg border-slate-200 text-sm">
+                                    <option value={1}>1학기</option>
+                                    <option value={2}>2학기</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">시험</label>
+                                <select value={examType} onChange={e => setExamType(e.target.value)} className="w-full rounded-lg border-slate-200 text-sm">
+                                    <option value="중간고사">중간고사</option>
+                                    <option value="기말고사">기말고사</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div>
-                            <select value={subject} onChange={e => setSubject(e.target.value)} className="w-full rounded border-slate-200 text-sm" required>
-                                <option value="">과목 선택</option>
-                                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="md:col-span-1 space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">과목</label>
+                                <select value={subject} onChange={e => setSubject(e.target.value)} className="w-full rounded-lg border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500" required>
+                                    <option value="">과목 선택</option>
+                                    {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                            <div className="md:col-span-2 space-y-1">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1 flex justify-between items-center">
+                                    자료 제목
+                                    <button type="button" onClick={generateTitle} className="text-[10px] text-brand-600 hover:underline">자동 완성</button>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    placeholder="상세 제목을 입력하세요"
+                                    className="w-full rounded-lg border-slate-200 text-sm bg-slate-50 focus:bg-white focus:ring-brand-500 transition-all font-medium"
+                                />
+                            </div>
                         </div>
-
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            placeholder="제목"
-                            className="w-full rounded border-slate-200 text-sm bg-slate-50 focus:bg-white"
-                        />
                     </div>
 
                     <hr className="border-slate-100" />
 
-                    {/* File Info */}
+                    {/* 2. File Settings */}
                     <div className="space-y-4">
-                        <h3 className="font-bold text-slate-800 text-sm">파일 설정</h3>
+                        <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-[11px] font-bold">2</span>
+                            파일 및 가격 설정
+                        </h3>
 
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="flex-1 space-y-2">
-                                <label className="text-xs font-bold text-slate-500">파일 타입</label>
-                                <div className="flex gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">자료 형식</label>
+                                <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
                                     <button
                                         type="button"
                                         onClick={() => setFileType('PDF')}
-                                        className={`flex-1 py-2 text-sm font-bold rounded border ${fileType === 'PDF' ? 'bg-red-50 border-red-200 text-red-600' : 'border-slate-200 text-slate-500'}`}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'PDF' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
-                                        PDF
+                                        <PdfFileIcon size={16} /> PDF
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setFileType('HWP')}
-                                        className={`flex-1 py-2 text-sm font-bold rounded border ${fileType === 'HWP' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-slate-200 text-slate-500'}`}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'HWP' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
-                                        HWP
+                                        <HwpFileIcon size={16} /> HWP / HML
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex-1 space-y-2">
-                                <label className="text-xs font-bold text-slate-500">내용 포함</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setContentType('문제')}
-                                        className={`flex-1 py-2 text-sm font-bold rounded border ${contentType === '문제' ? 'bg-slate-800 text-white' : 'border-slate-200 text-slate-500'}`}
-                                    >
-                                        문제만
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setContentType('해설')}
-                                        className={`flex-1 py-2 text-sm font-bold rounded border ${contentType === '해설' ? 'bg-slate-800 text-white' : 'border-slate-200 text-slate-500'}`}
-                                    >
-                                        문제+해설
-                                    </button>
+
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-slate-500 ml-1">현재 설정 가격</label>
+                                <div className="bg-brand-50 border border-brand-100 rounded-xl py-2 px-4 flex items-center justify-between h-[46px]">
+                                    <span className="text-[10px] font-bold text-brand-600">수정 후 자동 할인 적용</span>
+                                    <span className="text-lg font-black text-brand-600">{currentPrice.toLocaleString()}P</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex items-center justify-between">
-                            <span className="text-sm font-bold text-slate-600">설정 가격</span>
-                            <span className="text-lg font-bold text-brand-600">{currentPrice}P</span>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-800">파일 변경 (선택)</label>
-                        <div className={`border rounded-lg p-3 flex items-center justify-between ${newFile ? 'border-brand-300 bg-brand-50' : 'border-slate-200'}`}>
-                            {newFile ? (
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 size={18} className="text-green-500" />
-                                    <span className="text-sm text-slate-700">{newFile.name}</span>
-                                </div>
-                            ) : (
-                                <div className="text-sm text-slate-400">변경할 파일을 선택하세요 (기존 파일 유지)</div>
-                            )}
-                            <button
-                                type="button"
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-bold text-slate-500 ml-1 flex justify-between">
+                                파일 교체 (선택)
+                                {fileData.file_path && <span className="text-[10px] text-slate-400 font-medium">기본 파일: {fileData.file_path.split('/').pop()}</span>}
+                            </label>
+                            <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="text-xs font-bold bg-white border border-slate-300 px-3 py-1.5 rounded hover:bg-slate-50"
+                                className={`border-2 border-dashed rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all ${newFile ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-400 hover:bg-slate-50'}`}
                             >
-                                파일 선택
-                            </button>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept={fileType === 'PDF' ? ".pdf" : ".hwp,.hwpx"}
-                                className="hidden"
-                                onChange={handleFileChange}
-                            />
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${newFile ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                        <Upload size={20} />
+                                    </div>
+                                    <div className="overflow-hidden max-w-[300px]">
+                                        {newFile ? (
+                                            <>
+                                                <div className="text-sm font-bold text-brand-700 truncate">{newFile.name}</div>
+                                                <div className="text-[10px] text-brand-500 font-medium">새 파일로 교체됩니다.</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="text-sm font-bold text-slate-600">파일 변경하려면 클릭하세요</div>
+                                                <div className="text-[10px] text-slate-400 font-medium">PDF, HWP, HWPX, HML 지원</div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${newFile ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
+                                >
+                                    {newFile ? '변경' : '선택'}
+                                </button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept={fileType === 'PDF' ? ".pdf" : ".hwp,.hwpx,.hml"}
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                            </div>
                         </div>
                     </div>
 
                     {errorMsg && (
-                        <div className="bg-red-50 text-red-600 text-sm p-3 rounded flex items-center gap-2">
-                            <AlertCircle size={16} />
-                            {errorMsg}
+                        <div className="bg-red-50 border border-red-100 text-red-600 text-xs p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
+                            <AlertCircle size={18} className="flex-shrink-0" />
+                            <p className="font-medium">{errorMsg}</p>
                         </div>
                     )}
 
                     {/* Footer Actions */}
-                    <div className="pt-2 flex justify-end gap-3 border-t border-slate-100">
+                    <div className="pt-2 flex justify-end gap-3 border-t border-slate-100 pt-6">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded"
+                            className="px-6 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
                             disabled={isUploading}
                         >
                             취소
@@ -339,9 +379,19 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                         <button
                             type="submit"
                             disabled={isUploading}
-                            className="px-8 py-2.5 text-sm font-bold text-white bg-brand-600 rounded shadow-sm hover:bg-brand-700 flex items-center gap-2"
+                            className="px-10 py-3 text-sm font-bold text-white bg-brand-600 rounded-xl shadow-lg shadow-brand-200 hover:bg-brand-700 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2"
                         >
-                            {isUploading ? '저장 중...' : '수정 완료'}
+                            {isUploading ? (
+                                <>
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                    저장 중...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 size={16} />
+                                    수정 완료
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>

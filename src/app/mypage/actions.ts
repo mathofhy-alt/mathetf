@@ -145,3 +145,53 @@ export async function deletePurchase(purchaseId: string) {
     revalidatePath('/mypage');
     return { success: true };
 }
+
+export async function updateExamMaterial(fileId: string, updates: any) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { success: false, message: '로그인이 필요합니다.' };
+    }
+
+    const adminSupabase = createAdminClient();
+
+    // 1. Verify ownership
+    const { data: file, error: fetchError } = await adminSupabase
+        .from('exam_materials')
+        .select('uploader_id')
+        .eq('id', fileId)
+        .single();
+
+    if (fetchError || !file) {
+        return { success: false, message: '자료를 찾을 수 없습니다.' };
+    }
+
+    if (file.uploader_id !== user.id) {
+        return { success: false, message: '수정 권한이 없습니다.' };
+    }
+
+    // 2. Update DB
+    const { error: updateError } = await adminSupabase
+        .from('exam_materials')
+        .update(updates)
+        .eq('id', fileId);
+
+    if (updateError) {
+        console.error('Update Error:', updateError);
+        // Special check for exam_year column missing
+        if (updateError.message.includes('exam_year')) {
+            return {
+                success: false,
+                message: '데이터베이스에 "연도(exam_year)" 컬럼이 없습니다. SQL을 실행하여 컬럼을 먼저 추가해주세요.'
+            };
+        }
+        return { success: false, message: `수정 중 오류 발생: ${updateError.message}` };
+    }
+
+    // 3. Invalidate Caches (CRITICAL: Includes homepage)
+    revalidatePath('/');
+    revalidatePath('/mypage');
+
+    return { success: true };
+}

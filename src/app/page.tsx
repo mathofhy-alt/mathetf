@@ -332,11 +332,12 @@ export default function ExamPlatform() {
             }
 
             // 2. Download Logic
-            // Requested format: 학교이름_년도_학년_학기_중간/기말_문제(or 문제+해설)
-            const extension = file.type === 'PDF' ? 'pdf' : (file.type === 'HWP' ? 'hwp' : 'file');
+            // [V102] Extract original extension from filePath to prevent format distortion
+            const originalExt = file.filePath.split('.').pop() || (file.type === 'PDF' ? 'pdf' : 'hwp');
             const safeContentType = file.contentType || '자료';
+            // Requested format: 학교이름_년도_학년_학기_중간/기말_문제(or 문제+해설)
             // e.g. 경기고_2024_1_1_중간고사_문제.pdf
-            const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_${safeContentType}.${extension}`;
+            const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_${safeContentType}.${originalExt}`;
 
             console.log('Generating signed URL for:', file.filePath);
             console.log('Download filename:', filename);

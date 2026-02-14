@@ -168,25 +168,32 @@ export default function MyPage() {
                 .update({ download_count: (purchase.download_count || 0) + 1 })
                 .eq('id', purchase.id);
 
-            // Requested format: 학교이름_년도_학년_학기_중간/기말_문제(or 문제+해설)
-            const extension = file.file_type === 'PDF' ? 'pdf' : (file.file_type === 'HWP' ? 'hwp' : 'file');
+            // [V102] Extract original extension from filePath to prevent format distortion
+            const originalExt = file.file_path.split('.').pop() || (file.file_type === 'PDF' ? 'pdf' : 'hwp');
             const safeContentType = file.content_type || '자료';
-            const filename = `${file.school}_${file.exam_year}_${file.grade}_${file.semester}_${file.exam_type}_${safeContentType}.${extension}`;
+            // Requested format: 학교이름_년도_학년_학기_중간/기말_문제(or 문제+해설)
+            const filename = `${file.school}_${file.exam_year}_${file.grade}_${file.semester}_${file.exam_type}_${safeContentType}.${originalExt}`;
 
-            const { data, error } = await supabase.storage
+            const { data, error: urlError } = await supabase.storage
                 .from('exam-materials')
-                .createSignedUrl(file.file_path, 60, { download: filename });
+                .createSignedUrl(file.file_path, 3600);
 
-            if (data?.signedUrl) {
-                const link = document.createElement('a');
-                link.href = data.signedUrl;
-                link.setAttribute('download', filename);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            } else {
-                alert('다운로드 링크 생성 실패');
-            }
+            if (urlError) throw urlError;
+            if (!data?.signedUrl) throw new Error('다운로드 링크 생성 실패');
+
+            // Using Blob download for better reliability and correct filename
+            const response = await fetch(data.signedUrl);
+            if (!response.ok) throw new Error(`파일 다운로드 실패 (${response.status})`);
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(downloadUrl);
         } catch (e: any) {
             console.error(e);
             alert('다운로드 오류');
