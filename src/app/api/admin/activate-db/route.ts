@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
                 school,
                 region: '서울', // Default
                 district: '강남구', // Default
-                grade: Number(grade.replace(/[^0-9]/g, '')),
-                semester: Number(semester.replace(/[^0-9]/g, '')) || 1, // Fallback if string
+                grade: Number(String(grade).replace(/[^0-9]/g, '')),
+                semester: Number(String(semester).replace(/[^0-9]/g, '')) || 1, // Fallback if string
                 exam_type: exam_type,
                 subject,
                 title,
