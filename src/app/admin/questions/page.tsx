@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server';
 import { requireAdmin } from '@/utils/admin-auth';
 import AdminQuestionsClient from './AdminQuestionsClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminQuestionsPage() {
     // 1. Server-side Authentication (ONE TIME)
     const { authorized, response } = await requireAdmin();

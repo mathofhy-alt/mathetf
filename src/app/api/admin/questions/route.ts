@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-
-// GET: Filter by work_status
+import { createClient as createServiceRoleClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/utils/admin-auth';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Helper to get service role client
+const getAdminClient = () => {
+    return createServiceRoleClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+};
 
 // GET: Filter by work_status
 export async function GET(req: NextRequest) {
@@ -39,6 +49,7 @@ export async function GET(req: NextRequest) {
             unit,
             key_concepts,
             difficulty,
+            embedding,
             source_db_id,
             created_at,
             question_images (
@@ -118,13 +129,13 @@ export async function DELETE(req: NextRequest) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
 
-    const supabase = createClient();
+    const adminClient = getAdminClient();
 
     try {
         const body = await req.json();
         const { ids, deleteAll, deleteUnsortedOnly } = body;
 
-        let query = supabase.from('questions').delete();
+        let query = adminClient.from('questions').delete();
 
         if (deleteAll) {
             // DANGER: Deletes absolutely everything
@@ -151,7 +162,7 @@ export async function PATCH(req: NextRequest) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
 
-    const supabase = createClient();
+    const adminClient = getAdminClient();
 
     try {
         const body = await req.json();
@@ -191,10 +202,11 @@ export async function PATCH(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'No valid update fields' }, { status: 400 });
         }
 
-        const { error } = await supabase
+        const { data: updateResult, error } = await adminClient
             .from('questions')
             .update(cleanUpdates)
-            .in('id', ids);
+            .in('id', ids)
+            .select();
 
         if (error) throw error;
 

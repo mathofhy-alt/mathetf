@@ -16,6 +16,7 @@
     examType?: string;
     filePath: string;
     contentType: string; // Added: '문제' or '문제+해설' or '개인DB'
+    subject?: string;
 };
 
 export const sampleFiles: FileItem[] = [];

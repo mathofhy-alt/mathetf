@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileItem } from '../lib/data';
-import { Search, Upload, FileText, Download, X, User as UserIcon, ChevronRight, PlayCircle, Lock, Coins } from 'lucide-react';
+import { Search, Upload, FileText, Download, X, User as UserIcon, ChevronRight, PlayCircle, Lock, Coins, Info, List } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -61,6 +61,9 @@ export default function ExamPlatform() {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
     const supabase = createClient();
+    const [selectedDbForDetail, setSelectedDbForDetail] = useState<FileItem | null>(null);
+    const [dbDetails, setDbDetails] = useState<any[]>([]);
+    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
     // Derived Data
     const districts = selectedRegion ? districtsMap[selectedRegion] || [] : [];
@@ -250,7 +253,8 @@ export default function ExamPlatform() {
                         semester: item.semester,
                         examType: item.exam_type,
                         filePath: item.file_path, // Added
-                        contentType: item.content_type // Added
+                        contentType: item.content_type, // Added
+                        subject: item.subject || '' // Add subject here
                     };
 
                     groups[key].sales += (item.sales_count || 0);
@@ -273,6 +277,35 @@ export default function ExamPlatform() {
         fetchSchoolData();
         fetchFiles();
     }, []);
+
+    const fetchDbDetails = async (file: FileItem) => {
+        setIsLoadingDetails(true);
+        setSelectedDbForDetail(file);
+        try {
+            const params = new URLSearchParams({
+                school: file.school,
+                year: String(file.year || ''),
+                grade: String(file.grade || ''),
+                semester: String(file.semester || ''),
+                examType: file.examType || '',
+                subject: file.subject || ''
+            });
+            const res = await fetch(`/api/db/details?${params.toString()}`);
+            const data = await res.json();
+            if (data.success) {
+                setDbDetails(data.data);
+            } else {
+                alert('정보를 불러오지 못했습니다: ' + data.error);
+                setSelectedDbForDetail(null);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('오류가 발생했습니다.');
+            setSelectedDbForDetail(null);
+        } finally {
+            setIsLoadingDetails(false);
+        }
+    };
 
     const handleUploadClick = () => {
         if (!user) {
@@ -488,28 +521,36 @@ export default function ExamPlatform() {
                         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
 
 
-                            <div className="bg-slate-50 text-slate-500 text-xs font-bold py-2 px-4 grid grid-cols-12 text-center border-b border-slate-200 gap-2 items-center">
-                                <div className="col-span-5 text-left pl-4">시험명</div>
-                                <div className="col-span-2">학년/학기</div>
+                            <div className="grid grid-cols-12 py-3 px-4 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                                <div className="col-span-6 text-left pl-4">시험명</div>
                                 <div className="col-span-1">등록일</div>
                                 <div className="col-span-1">작성자</div>
-                                <div className="col-span-3">다운로드 (PDF / HWP / DB)</div>
+                                <div className="col-span-4">다운로드 (PDF / HWP / DB)</div>
                             </div>
 
                             <div className="divide-y divide-slate-100">
                                 {currentItems.length > 0 ? currentItems.map(group => (
                                     <div key={group.key} className="grid grid-cols-12 items-center py-4 px-4 hover:bg-slate-50 gap-2 text-sm text-center">
-                                        <div className="col-span-5 text-left pl-4">
-                                            <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base break-keep">
-                                                {group.title}
+                                        <div className="col-span-6 text-left pl-4">
+                                            <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base break-keep leading-tight">
+                                                {group.title.includes(']') ? (
+                                                    <>
+                                                        <span className="text-indigo-600">
+                                                            {group.title.split(']')[0]}]
+                                                        </span>
+                                                        <br />
+                                                        <span className="text-slate-500 text-sm font-medium">
+                                                            {group.title.split(']')[1].trim()}
+                                                        </span>
+                                                    </>
+                                                ) : group.title}
                                             </div>
                                             {/* Subtitle removed as it overlaps with title info */}
                                         </div>
-                                        <div className="col-span-2 text-slate-600 whitespace-nowrap">{group.grade}학년 {group.semester}학기</div>
-                                        <div className="col-span-1 text-slate-400 text-xs whitespace-nowrap">{group.date}</div>
-                                        <div className="col-span-1 text-slate-600 truncate text-xs">{group.uploader}</div>
+                                        <div className="col-span-1 text-slate-400 text-[11px] whitespace-nowrap">{group.date}</div>
+                                        <div className="col-span-1 text-slate-600 truncate text-[11px]">{group.uploader}</div>
 
-                                        <div className="col-span-3 flex items-start justify-center gap-3">
+                                        <div className="col-span-4 flex items-start justify-center gap-3">
                                             {/* PDF Problem (REMOVED) */}
 
                                             {/* PDF Solution */}
@@ -569,29 +610,51 @@ export default function ExamPlatform() {
                                             <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
 
                                             {/* Personal DB */}
-                                            {group.files.db ? (
-                                                <button
-                                                    onClick={() => handleDownload(group.files.db!)}
-                                                    title={purchasedIds.has(group.files.db.id) ? "이미 구매한 DB입니다" : `개인 DB 접근 (${group.files.db.price}원)`}
-                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.db.id) ? 'bg-indigo-50/50' : 'hover:bg-indigo-50'}`}
-                                                >
-                                                    <DbFileIcon
-                                                        size={28}
-                                                        purchased={purchasedIds.has(group.files.db.id)}
-                                                        className="drop-shadow-sm group-hover:scale-110 transition-transform"
-                                                    />
-                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-600' : 'text-indigo-600'}`}>개인DB</span>
-                                                    <span className={`text-[11px] whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-indigo-400 font-medium'}`}>
-                                                        {purchasedIds.has(group.files.db.id) ? '구매완료' : `${group.files.db.price}P`}
-                                                    </span>
-                                                </button>
-                                            ) : (
-                                                <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
-                                                    <DbFileIcon size={28} grayscale={true} />
-                                                    <span className="text-xs font-bold text-slate-400 mt-1 whitespace-nowrap">개인DB</span>
-                                                    <span className="text-[11px] text-slate-300 font-medium">대기중</span>
-                                                </div>
-                                            )}
+                                            <div className="relative group/db p-1 rounded-xl transition-all duration-300 border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30">
+                                                {group.files.db ? (
+                                                    <div className="flex flex-col items-center min-w-[64px]">
+                                                        <DbFileIcon
+                                                            size={28}
+                                                            purchased={purchasedIds.has(group.files.db.id)}
+                                                            className="drop-shadow-sm group-hover/db:scale-110 transition-transform duration-300"
+                                                        />
+                                                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-600' : 'text-slate-400'}`}>개인DB</span>
+                                                        <span className={`text-[10px] whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                            {purchasedIds.has(group.files.db.id) ? '구매완료' : `${group.files.db.price}P`}
+                                                        </span>
+
+                                                        {/* Hover Overlay */}
+                                                        <div className="absolute inset-x-[-4px] inset-y-[-4px] bg-white/95 rounded-xl border border-indigo-200 shadow-xl opacity-0 group-hover/db:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-1 z-10 p-1.5 pointer-events-none group-hover/db:pointer-events-auto">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    fetchDbDetails(group.files.db!);
+                                                                }}
+                                                                className="w-full py-1 text-[9px] font-extrabold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors flex items-center justify-center gap-1"
+                                                            >
+                                                                <Info size={10} /> 구성 확인
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDownload(group.files.db!);
+                                                                }}
+                                                                className={`w-full py-1 text-[9px] font-extrabold text-white rounded-md transition-all active:scale-95 flex items-center justify-center gap-1 ${purchasedIds.has(group.files.db.id) ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-indigo-600 hover:bg-indigo-700 shadow-sm'
+                                                                    }`}
+                                                            >
+                                                                {purchasedIds.has(group.files.db.id) ? <Download size={10} /> : <Coins size={10} />}
+                                                                {purchasedIds.has(group.files.db.id) ? '다운로드' : '구매하기'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
+                                                        <DbFileIcon size={28} grayscale={true} />
+                                                        <span className="text-[10px] font-bold text-slate-400 mt-1 whitespace-nowrap">개인DB</span>
+                                                        <span className="text-[10px] text-slate-300 font-medium">대기중</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )) : (
@@ -645,6 +708,67 @@ export default function ExamPlatform() {
                 districtsMap={districtsMap}
                 schoolsMap={schoolsMap}
             />
+
+            {/* DB Detail Modal */}
+            {selectedDbForDetail && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <div className="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                            <div>
+                                <h3 className="font-bold flex items-center gap-2">
+                                    <List size={18} />
+                                    문항 구성 정보
+                                </h3>
+                                <p className="text-[11px] text-indigo-100 mt-0.5">{selectedDbForDetail.title}</p>
+                            </div>
+                            <button onClick={() => setSelectedDbForDetail(null)} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-5 max-h-[75vh] overflow-y-auto">
+                            {isLoadingDetails ? (
+                                <div className="py-20 flex flex-col items-center gap-3">
+                                    <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                    <p className="text-slate-500 font-medium">데이터를 분석 중입니다...</p>
+                                </div>
+                            ) : dbDetails.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                                    {dbDetails.map((q, idx) => (
+                                        <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all shadow-sm group">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[13px] font-black text-slate-700 w-8 group-hover:text-indigo-600 transition-colors shrink-0">{q.question_number}번</span>
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${q.difficulty >= 7 ? 'bg-red-100 text-red-600' :
+                                                        q.difficulty >= 4 ? 'bg-orange-100 text-orange-600' :
+                                                            'bg-emerald-100 text-emerald-600'
+                                                    }`}>
+                                                    Lv.{q.difficulty}
+                                                </span>
+                                            </div>
+                                            <div className="text-[10px] text-slate-500 font-bold truncate max-w-[100px]" title={q.unit}>
+                                                {q.unit || '-'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-20 text-center text-slate-400">
+                                    <p>등록된 문항 정보가 없습니다.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t flex justify-end">
+                            <button
+                                onClick={() => setSelectedDbForDetail(null)}
+                                className="px-5 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-100 transition-colors shadow-sm"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

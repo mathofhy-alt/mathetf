@@ -417,6 +417,10 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
     };
 
     const handleSaveQuestion = async (q: any) => {
+        // Optimistic Update: Update the list locally first
+        const originalQuestions = [...questions];
+        setQuestions(prev => prev.map(item => item.id === q.id ? { ...q } : item));
+
         try {
             const res = await fetch('/api/admin/questions', {
                 method: 'PATCH',
@@ -441,17 +445,24 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
             });
 
             if (res.ok) {
-                alert('저장되었습니다.');
-                fetchQuestions();
-                fetchConceptSuggestions();
+                // Success: No alert needed (or use subtle notification), but we'll keep alert for now per existing pattern
+                // fetchQuestions(); // We already did optimistic update, but let's refresh to be absolutely sure
                 setSelectedQuestion(null);
+                // fetchConceptSuggestions();
+                // Instead of full fetch, just refresh suggestions
+                setTimeout(() => {
+                    fetchQuestions();
+                    fetchConceptSuggestions();
+                }, 100);
             } else {
                 const err = await res.json();
                 alert('저장 실패: ' + err.error);
+                setQuestions(originalQuestions); // Rollback
             }
         } catch (e) {
             console.error(e);
             alert('오류가 발생했습니다.');
+            setQuestions(originalQuestions); // Rollback
         }
     };
 
@@ -787,8 +798,11 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                 page: page.toString(),
                 status: currentTab === 'sorted' ? 'sorted' : 'unsorted'
             });
+            params.append('_t', Date.now().toString());
 
-            const res = await fetch(`/api/admin/questions?${params.toString()}`);
+            const res = await fetch(`/api/admin/questions?${params.toString()}`, {
+                cache: 'no-store'
+            });
             const data = await res.json();
 
             if (data.success) {
@@ -1694,8 +1708,8 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 if (filteredRecs.length === 0) return null;
 
                                                 return (
-                                                    <div className="flex flex-wrap gap-0.5 mt-0.5">
-                                                        <span className="text-[8px] text-gray-400 font-bold mr-0.5">추천:</span>
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        <span className="text-[10px] text-gray-400 font-bold mr-0.5">추천:</span>
                                                         {filteredRecs.map(tag => (
                                                             <button
                                                                 key={tag}
@@ -1708,7 +1722,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                         body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newVal } })
                                                                     }).then(res => { if (res.ok) fetchConceptSuggestions(); });
                                                                 }}
-                                                                className="text-[8px] px-1 py-0 rounded border bg-white text-blue-600 border-blue-100 hover:bg-blue-50 transition-colors"
+                                                                className="text-[10px] px-1.5 py-0.5 rounded border bg-white text-blue-600 border-blue-100 hover:bg-blue-50 transition-colors font-medium"
                                                             >
                                                                 + {tag}
                                                             </button>
@@ -1974,8 +1988,8 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 if (filteredRecs.length === 0) return null;
 
                                                 return (
-                                                    <div className="w-full flex flex-wrap gap-1.5 mb-2 p-2 bg-gray-50 rounded border border-dashed">
-                                                        <span className="w-full text-[10px] text-gray-400 font-bold mb-1">이 단원의 기존 태그 (클릭하여 추가)</span>
+                                                    <div className="w-full flex flex-wrap gap-2 mb-2 p-2 bg-gray-50 rounded border border-dashed">
+                                                        <span className="w-full text-xs text-gray-400 font-bold mb-1">이 단원의 기존 태그 (클릭하여 추가)</span>
                                                         {filteredRecs.sort().map(tag => (
                                                             <button
                                                                 key={`unit-tag-${tag}`}
@@ -1983,7 +1997,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                 onClick={() => {
                                                                     setSelectedQuestion({ ...selectedQuestion, key_concepts: [...currentTags, tag] });
                                                                 }}
-                                                                className="bg-gray-200 hover:bg-blue-100 hover:text-blue-700 text-gray-600 px-2 py-0.5 rounded text-[11px] transition-colors"
+                                                                className="bg-gray-200 hover:bg-blue-100 hover:text-blue-700 text-gray-600 px-2 py-1 rounded text-xs transition-colors font-medium"
                                                             >
                                                                 + {tag}
                                                             </button>
@@ -2194,7 +2208,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                             const manualCapture = simQ.question_images?.find((img: any) => img.original_bin_id?.startsWith("MANUAL_Q_"));
                                                             if (manualCapture) {
                                                                 return (
-                                                                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                                                    <div className="w-full flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden mb-3" style={{ height: '220px' }}>
                                                                         <img
                                                                             src={manualCapture.data || manualCapture.public_url}
                                                                             alt="Manual Capture"
@@ -2204,16 +2218,33 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                 );
                                                             } else {
                                                                 // Fallback to plain text if no image
-                                                                return simQ.plain_text ? (
-                                                                    <p className="whitespace-pre-wrap text-sm">{simQ.plain_text.slice(0, 200)}...</p>
-                                                                ) : (
-                                                                    <p className="text-gray-400 italic">내용 미리보기 없음</p>
+                                                                return (
+                                                                    <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-dashed text-gray-500 overflow-hidden" style={{ height: '220px' }}>
+                                                                        {simQ.plain_text ? (
+                                                                            <p className="whitespace-pre-wrap text-xs leading-relaxed">{simQ.plain_text.slice(0, 300)}...</p>
+                                                                        ) : (
+                                                                            <p className="text-gray-400 italic text-xs">내용 미리보기 없음</p>
+                                                                        )}
+                                                                    </div>
                                                                 );
                                                             }
                                                         })()}
-                                                        <div className="mt-4 text-center">
+
+                                                        {/* Tags Section */}
+                                                        <div className="flex flex-wrap gap-1 mb-3">
+                                                            {(Array.isArray(simQ.key_concepts) ? simQ.key_concepts : (simQ.key_concepts || '').split(',').map((t: string) => t.trim()).filter(Boolean)).map((tag: string, tidx: number) => (
+                                                                <span key={`${simQ.id}-tag-${tidx}`} className="bg-blue-50 text-blue-600 text-[10px] px-1.5 py-0.5 rounded border border-blue-100 font-bold">
+                                                                    #{tag}
+                                                                </span>
+                                                            ))}
+                                                            {(!simQ.key_concepts || simQ.key_concepts.length === 0) && (
+                                                                <span className="text-[10px] text-gray-300 italic">태그 정보 없음</span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="text-center">
                                                             <button
-                                                                className="text-purple-600 hover:text-purple-800 text-sm font-bold underline"
+                                                                className="text-purple-600 hover:text-purple-800 text-xs font-bold underline"
                                                                 onClick={async () => {
                                                                     alert(`상세 보기 기능은 준비 중입니다. (ID: ${simQ.id})`);
                                                                 }}

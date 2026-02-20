@@ -66,20 +66,29 @@ export async function GET(req: NextRequest) {
             .filter((q: any) => q.id !== id && (!source.unit || q.unit === source.unit))
             .slice(0, limit);
 
-        // 3. Fetch images for these questions (since RPC might not return them or if it does, check structure)
-        // RPC normally returns columns specified in function or * if generic return query.
-        // Assuming match_questions returns a subset or we want to be sure. 
-        // Let's fetch images for these IDs manually to be safe and accurate.
+        // 3. Fetch images AND key_concepts for these questions
         if (results.length > 0) {
             const resultIds = results.map((r: any) => r.id);
+
+            // Fetch images
             const { data: images } = await supabase
                 .from('question_images')
                 .select('*')
                 .in('question_id', resultIds);
 
-            // Attach images to results
+            // Fetch key_concepts (to be safe if RPC doesn't return them yet)
+            const { data: questionsData } = await supabase
+                .from('questions')
+                .select('id, key_concepts')
+                .in('id', resultIds);
+
+            // Attach data to results
             results.forEach((r: any) => {
                 r.question_images = images?.filter((img: any) => img.question_id === r.id) || [];
+                const qData = questionsData?.find((q: any) => q.id === r.id);
+                if (qData) {
+                    r.key_concepts = qData.key_concepts;
+                }
             });
         }
 

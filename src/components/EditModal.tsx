@@ -36,7 +36,7 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
     const [subject, setSubject] = useState('');
     const [title, setTitle] = useState('');
 
-    const [fileType, setFileType] = useState<'PDF' | 'HWP'>('PDF');
+    const [fileType, setFileType] = useState<'PDF' | 'HWP' | 'DB'>('PDF');
     const [contentType, setContentType] = useState<'문제' | '해설'>('해설');
 
     // New File State (if replacing)
@@ -69,6 +69,20 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
         }
     }, [isOpen, fileData]);
 
+    const generateTitle = () => {
+        if (selectedSchool) {
+            return `${selectedSchool} ${year}년 ${grade}학년 ${semester}학기 ${examType} ${subject}`;
+        }
+        return title;
+    };
+
+    // Auto-update title when metadata changes
+    useEffect(() => {
+        if (selectedSchool && subject) {
+            setTitle(generateTitle());
+        }
+    }, [selectedSchool, year, grade, semester, examType, subject]);
+
     if (!isOpen) return null;
 
     const currentPrice = fileType === 'PDF' ? PRICE_PDF_SOL : PRICE_HWP_SOL;
@@ -82,12 +96,6 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
             const ext = f.name.split('.').pop()?.toLowerCase();
             if (ext === 'pdf') setFileType('PDF');
             else if (['hwp', 'hwpx', 'hml'].includes(ext || '')) setFileType('HWP');
-        }
-    };
-
-    const generateTitle = () => {
-        if (selectedSchool) {
-            setTitle(`${selectedSchool} ${year}년 ${grade}학년 ${semester}학기 ${examType} ${subject}`);
         }
     };
 
@@ -116,8 +124,11 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                 filePath = newPath;
             }
 
-            // Sync title suffix: Modern label is [문제+해설]
-            const titleSuffix = ' [문제+해설]';
+            // Sync title suffix: 
+            // - If it's a DB, keep [개인DB]
+            // - Otherwise, [문제+해설]
+            const isDb = fileData.content_type === '개인DB' || fileData.file_type === 'DB';
+            const titleSuffix = isDb ? ' [개인DB]' : ' [문제+해설]';
 
             const updates = {
                 school: selectedSchool,
@@ -130,7 +141,7 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                 subject: subject,
                 title: title + titleSuffix,
                 file_type: fileType,
-                content_type: '해설',
+                content_type: isDb ? '개인DB' : '해설',
                 file_path: filePath,
                 price: currentPrice
             };
@@ -291,18 +302,25 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                                 <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
                                     <button
                                         type="button"
-                                        onClick={() => setFileType('PDF')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'PDF' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        onClick={() => fileType !== 'DB' && setFileType('PDF')}
+                                        disabled={fileType === 'DB'}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'PDF' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} ${fileType === 'DB' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <PdfFileIcon size={16} /> PDF
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setFileType('HWP')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'HWP' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        onClick={() => fileType !== 'DB' && setFileType('HWP')}
+                                        disabled={fileType === 'DB'}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'HWP' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} ${fileType === 'DB' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <HwpFileIcon size={16} /> HWP / HML
                                     </button>
+                                    {fileType === 'DB' && (
+                                        <div className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow-sm">
+                                            <Database size={16} /> DB 전용
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -315,13 +333,13 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className={`space-y-2 ${fileType === 'DB' ? 'opacity-50 pointer-events-none' : ''}`}>
                             <label className="text-[11px] font-bold text-slate-500 ml-1 flex justify-between">
-                                파일 교체 (선택)
+                                {fileType === 'DB' ? '파일 교체 불가 (DB 전용 자료)' : '파일 교체 (선택)'}
                                 {fileData.file_path && <span className="text-[10px] text-slate-400 font-medium">기본 파일: {fileData.file_path.split('/').pop()}</span>}
                             </label>
                             <div
-                                onClick={() => fileInputRef.current?.click()}
+                                onClick={() => fileType !== 'DB' && fileInputRef.current?.click()}
                                 className={`border-2 border-dashed rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all ${newFile ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-400 hover:bg-slate-50'}`}
                             >
                                 <div className="flex items-center gap-3">
@@ -336,18 +354,20 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                                             </>
                                         ) : (
                                             <>
-                                                <div className="text-sm font-bold text-slate-600">파일 변경하려면 클릭하세요</div>
-                                                <div className="text-[10px] text-slate-400 font-medium">PDF, HWP, HWPX, HML 지원</div>
+                                                <div className="text-sm font-bold text-slate-600">{fileType === 'DB' ? 'DB 자료는 파일을 교체할 수 없습니다.' : '파일 변경하려면 클릭하세요'}</div>
+                                                <div className="text-[10px] text-slate-400 font-medium">{fileType === 'DB' ? '데이터베이스 기반 자료임' : 'PDF, HWP, HWPX, HML 지원'}</div>
                                             </>
                                         )}
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${newFile ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
-                                >
-                                    {newFile ? '변경' : '선택'}
-                                </button>
+                                {fileType !== 'DB' && (
+                                    <button
+                                        type="button"
+                                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${newFile ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
+                                    >
+                                        {newFile ? '변경' : '선택'}
+                                    </button>
+                                )}
                                 <input
                                     ref={fileInputRef}
                                     type="file"

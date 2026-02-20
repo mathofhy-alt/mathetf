@@ -22,29 +22,52 @@ export async function POST(req: NextRequest) {
         const title = `${school} ${year} ${grade}학년 ${semester}학기 ${exam_type} ${subject} [개인DB]`;
         const dummyPath = `db_access/${user?.id || 'admin'}/${Date.now()}`;
 
-        // Insert into exam_materials
+        // 1. Calculate price based on question difficulties
+        // Search criteria for questions belonging to this exam
+        const { data: questions, error: qError } = await supabase
+            .from('questions')
+            .select('difficulty')
+            .ilike('school', `%${school}%`)
+            .eq('year', year)
+            .eq('grade', grade)
+            .eq('semester', semester)
+            .eq('subject', subject);
+
+        if (qError) throw qError;
+
+        let calculatedPrice = 0; // No Base Price
+        if (questions && questions.length > 0) {
+            questions.forEach(q => {
+                const diff = parseInt(String(q.difficulty)) || 1;
+                if (diff <= 2) calculatedPrice += 1000;
+                else if (diff <= 4) calculatedPrice += 2000;
+                else if (diff <= 6) calculatedPrice += 3000;
+                else if (diff <= 8) calculatedPrice += 4000;
+                else calculatedPrice += 5000;
+            });
+        } else {
+            // Fallback if no questions found
+            calculatedPrice = 20000;
+        }
+
+        // 2. Insert into exam_materials
         const { data, error } = await supabase
             .from('exam_materials')
             .insert({
                 uploader_id: user?.id,
                 uploader_name: '관리자',
                 school,
-                region: '서울', // Default or fetch from school? Input doesn't provide it always.
-                district: '강남구', // Default? Or require it?
-                // Ideally we should look up the school's region/district.
-                // But if not provided, maybe minimal data is fine?
-                // The main page filters by region/district. So we NEED them.
-                // We should fetch them from 'schools' table if possible.
-                // year: Number(year), -- Missing in DB
-                grade: Number(grade.replace(/[^0-9]/g, '')), // Extract digits only
-                semester: Number(semester),
+                region: '서울', // Default
+                district: '강남구', // Default
+                grade: Number(grade.replace(/[^0-9]/g, '')),
+                semester: Number(semester.replace(/[^0-9]/g, '')) || 1, // Fallback if string
                 exam_type: exam_type,
                 subject,
                 title,
                 file_type: 'DB',
                 content_type: '개인DB',
                 file_path: dummyPath,
-                price: 10000,
+                price: calculatedPrice,
                 sales_count: 0
             })
             .select()
@@ -52,11 +75,7 @@ export async function POST(req: NextRequest) {
 
         if (error) throw error;
 
-        // We should try to update region/district if missing
-        // This is a "nice to have" fix up.
-        // Or we require region/district in the body.
-
-        return NextResponse.json({ success: true, data });
+        return NextResponse.json({ success: true, data, calculated_price: calculatedPrice });
 
     } catch (e: any) {
         console.error('Activate DB Error:', e);
