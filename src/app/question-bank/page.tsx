@@ -131,7 +131,7 @@ export default function QuestionBankPage() {
             .select(`
                 *,
                 exam_materials!inner (
-                    id, title, school, grade, semester, exam_type, subject, file_type
+                    id, title, school, grade, semester, exam_type, subject, file_type, exam_year
                 )
             `)
             .eq('user_id', userId)
@@ -173,12 +173,9 @@ export default function QuestionBankPage() {
                         gradeVal = `고${String(db.grade).replace('고', '')}`;
                     }
 
-                    // Map Year: Check exam_year -> year -> title regex
-                    let yearVal = db.exam_year || db.year;
-                    if (!yearVal && db.title) {
-                        const match = db.title.match(/20[0-9]{2}/);
-                        if (match) yearVal = match[0];
-                    }
+                    // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
+                    const titleYear = db.title?.match(/20\d{2}/)?.[0];
+                    const yearVal = titleYear ? titleYear : (db.exam_year || db.year);
 
                     let parts = [
                         `school.eq.${db.school}`

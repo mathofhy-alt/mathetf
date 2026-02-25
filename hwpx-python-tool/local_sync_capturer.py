@@ -36,6 +36,12 @@ class LocalSyncCapturer(tk.Tk):
         self.title("수학ETF 로컬 캡처 헬퍼 v1.0")
         self.geometry("900x700")
         
+        # State
+        self.questions = []
+        self.selected_q = None
+        self.auto_next = tk.BooleanVar(value=True)
+        self.continuous_mode = tk.BooleanVar(value=True) # Default ON
+        
         # Load Env
         self.load_env()
         
@@ -49,9 +55,9 @@ class LocalSyncCapturer(tk.Tk):
             messagebox.showerror("Supabase 에러", f"Supabase 연결 실패: {e}")
             sys.exit(1)
         
-        # State
-        self.questions = []
-        self.selected_q = None
+        # Keyboard Shortcuts (Using bind_all for better reliability)
+        self.bind_all("<F2>", lambda e: self.start_capture("question"))
+        self.bind_all("<F3>", lambda e: self.start_capture("solution"))
         
         # Initial Load
         self.refresh_list()
@@ -129,6 +135,10 @@ class LocalSyncCapturer(tk.Tk):
         self.btn_s = tk.Button(ctrl_frame, text="💡 해설 영역 캡처", state="disabled", command=lambda: self.start_capture("solution"),
                                bg="#059669", fg="white", font=("Malgun Gothic", 11, "bold"), pady=12)
         self.btn_s.pack(fill="x", pady=5)
+
+        ttk.Checkbutton(ctrl_frame, text="✅ 성공 시 자동으로 다음 문제 선택", variable=self.auto_next).pack(anchor="w", pady=(10, 0))
+        ttk.Checkbutton(ctrl_frame, text="🔁 연속 캡처 모드 (Hunter 자동 실행)", variable=self.continuous_mode).pack(anchor="w", pady=(5, 10))
+        ttk.Label(ctrl_frame, text="💡 단축키: F2(문제), F3(해설)", font=("Malgun Gothic", 9), foreground="#6b7280").pack(anchor="w")
         
         ttk.Separator(ctrl_frame, orient=tk.HORIZONTAL).pack(fill="x", pady=20)
         
@@ -152,6 +162,12 @@ class LocalSyncCapturer(tk.Tk):
         threading.Thread(target=task, daemon=True).start()
 
     def update_tree(self):
+        # Preserve current selection ID
+        selected_id = self.selected_q['id'] if self.selected_q else None
+        
+        # Save scroll position
+        scroll_pos = self.tree.yview()
+        
         for i in self.tree.get_children(): self.tree.delete(i)
         for q in self.questions:
             imgs = q.get('question_images', [])
@@ -159,7 +175,14 @@ class LocalSyncCapturer(tk.Tk):
             has_s = any(img.get('original_bin_id', '').startswith('MANUAL_S_') for img in imgs)
             q_mark = "✅" if has_q else "-"
             s_mark = "✅" if has_s else "-"
-            self.tree.insert("", "end", values=(q['id'], q['question_number'], q_mark, s_mark, q['work_status']))
+            item_id = self.tree.insert("", "end", values=(q['id'], q['question_number'], q_mark, s_mark, q['work_status']))
+            
+            # Restore selection if this is the one
+            if selected_id == q['id']:
+                self.tree.selection_set(item_id)
+        
+        # Restore scroll position
+        self.tree.yview_moveto(scroll_pos[0])
         self.status.set(f"총 {len(self.questions)}개의 작업 대기 중")
 
     def on_select(self, event):
@@ -174,7 +197,12 @@ class LocalSyncCapturer(tk.Tk):
         self.btn_s.config(state="normal")
 
     def start_capture(self, mode):
-        if not self.selected_q: return
+        print(f"DEBUG: start_capture triggered for mode: {mode}")
+        if not self.selected_q: 
+            print("DEBUG: No question selected, ignoring capture trigger")
+            return
+        if self.btn_q['state'] == 'disabled': return # Prevent double trigger
+        
         self.status.set(f"[{mode}] 캡처 엔진 가동 중...")
         self.btn_q.config(state="disabled")
         self.btn_s.config(state="disabled")
@@ -198,6 +226,31 @@ class LocalSyncCapturer(tk.Tk):
     def reset_buttons(self):
         self.btn_q.config(state="normal")
         self.btn_s.config(state="normal")
+
+    def select_next_item(self):
+        try:
+            cur = self.tree.selection()
+            if not cur: 
+                print("DEBUG: No current selection for auto-next")
+                return
+            
+            all_items = self.tree.get_children()
+            try:
+                idx = all_items.index(cur[0])
+            except ValueError:
+                print(f"DEBUG: Current selection {cur[0]} not found in tree (might have been refreshed)")
+                return
+            
+            if idx + 1 < len(all_items):
+                next_item = all_items[idx + 1]
+                print(f"DEBUG: Selecting next item: index {idx+1}")
+                self.tree.selection_set(next_item)
+                self.tree.see(next_item)
+                self.on_select(None)
+            else:
+                print("DEBUG: Reached end of list")
+        except Exception as e:
+            print(f"DEBUG: Error in select_next_item: {e}")
 
     def confirm_and_upload(self, path, mode):
         self.status.set(f"[{mode}] 업로드 중...")
@@ -236,11 +289,20 @@ class LocalSyncCapturer(tk.Tk):
                     "size_bytes": len(file_bytes)
                 }).execute()
                 
-                self.after(0, lambda: self.status.set(f"✅ {mode} 업로드 완료"))
                 self.after(0, self.reset_buttons)
-                # Auto-refresh to show status
-                self.after(500, self.refresh_list)
+                
+                if self.auto_next.get():
+                    print(f"DEBUG: Triggering auto-next for {mode}")
+                    self.after(600, self.select_next_item)
+                    
+                    if self.continuous_mode.get():
+                        # Wait a bit longer for selection to settle and tree to be stable
+                        self.after(1200, lambda: self.start_capture(mode))
+                
+                # Auto-refresh to show status - delaying a bit more to avoid conflict with select_next_item
+                self.after(1500, self.refresh_list)
             except Exception as e:
+                print(f"DEBUG: Upload error: {e}")
                 self.after(0, lambda: messagebox.showerror("Upload Error", f"업로드 실패: {e}"))
                 self.after(0, self.reset_buttons)
         threading.Thread(target=upload_task, daemon=True).start()

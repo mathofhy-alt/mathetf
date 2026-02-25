@@ -23,20 +23,54 @@ export async function POST(req: NextRequest) {
         const dummyPath = `db_access/${user?.id || 'admin'}/${Date.now()}`;
 
         // 1. Calculate price based on question difficulties
-        // Search criteria for questions belonging to this exam
-        const { data: questions, error: qError } = await supabase
+        // Normalize Grade: 1 -> "고1"
+        let gradeVal = String(grade);
+        if (['1', '2', '3'].includes(gradeVal.replace(/[^0-9]/g, ''))) {
+            gradeVal = `고${gradeVal.replace(/[^0-9]/g, '')}`;
+        }
+
+        // Normalize Semester: 1 -> "1학기중간" or "1학기기말"
+        const semNum = String(semester).replace(/[^0-9]/g, '');
+        const typeShort = exam_type.includes('중간') ? '중간' : (exam_type.includes('기말') ? '기말' : '');
+        const semesterVal = typeShort ? `${semNum}학기${typeShort}` : `${semNum}학기`;
+
+        console.log(`Searching questions for: ${school} | ${year} | ${gradeVal} | ${semesterVal} | ${subject}`);
+
+        let { data: questions, error: qError } = await supabase
             .from('questions')
             .select('difficulty')
             .ilike('school', `%${school}%`)
-            .eq('year', year)
-            .eq('grade', grade)
-            .eq('semester', semester)
+            .eq('year', String(year))
+            .eq('grade', gradeVal)
+            .eq('semester', semesterVal)
             .eq('subject', subject);
+
+        // Try relaxed school matching if no questions found
+        if (!questions || questions.length === 0) {
+            console.log(`No questions found for "${school}". Trying relaxed sub-string match...`);
+            const subSchool = school.length > 4 ? school.substring(0, 4) : school;
+            const { data: relaxedQuestions, error: rError } = await supabase
+                .from('questions')
+                .select('difficulty')
+                .ilike('school', `%${subSchool}%`)
+                .eq('year', String(year))
+                .eq('grade', gradeVal)
+                .eq('semester', semesterVal)
+                .eq('subject', subject);
+
+            if (relaxedQuestions && relaxedQuestions.length > 0) {
+                console.log(`Found ${relaxedQuestions.length} questions using relaxed match: %${subSchool}%`);
+                questions = relaxedQuestions;
+            } else {
+                qError = qError || rError;
+            }
+        }
 
         if (qError) throw qError;
 
         let calculatedPrice = 0; // No Base Price
         if (questions && questions.length > 0) {
+            console.log(`Found ${questions.length} questions. Calculating price...`);
             questions.forEach(q => {
                 const diff = parseInt(String(q.difficulty)) || 1;
                 if (diff <= 2) calculatedPrice += 1000;
@@ -47,6 +81,7 @@ export async function POST(req: NextRequest) {
             });
         } else {
             // Fallback if no questions found
+            console.warn(`WARNING: Still no questions found for ${school}. Falling back to 20,000P.`);
             calculatedPrice = 20000;
         }
 
@@ -55,7 +90,7 @@ export async function POST(req: NextRequest) {
             .from('exam_materials')
             .insert({
                 uploader_id: user?.id,
-                uploader_name: '관리자',
+                uploader_name: user?.email?.split('@')[0] || '관리자',
                 school,
                 region: '서울', // Default
                 district: '강남구', // Default
@@ -64,6 +99,7 @@ export async function POST(req: NextRequest) {
                 exam_type: exam_type,
                 subject,
                 title,
+                exam_year: Number(year),
                 file_type: 'DB',
                 content_type: '개인DB',
                 file_path: dummyPath,

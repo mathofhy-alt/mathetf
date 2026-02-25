@@ -125,7 +125,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             school: selectedSchool,
             region: selectedRegion,
             district: selectedDistrict,
-            // year column missing in DB, relying on title regex fallback
+            exam_year: Number(year),
             grade: Number(grade),
             semester: Number(semester),
             exam_type: examType,

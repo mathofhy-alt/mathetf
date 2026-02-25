@@ -82,11 +82,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             gradeVal = `고${db.grade}`;
                         }
 
-                        let yearVal = db.exam_year || db.year;
-                        if (!yearVal && db.title) {
-                            const match = db.title.match(/20[0-9]{2}/);
-                            if (match) yearVal = match[0];
-                        }
+                        // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
+                        const titleYear = db.title?.match(/20\d{2}/)?.[0];
+                        let yearVal = titleYear ? titleYear : (db.exam_year || db.year);
 
                         let parts = [`school.eq.${db.school}`];
                         if (gradeVal) parts.push(`grade.eq.${gradeVal}`);

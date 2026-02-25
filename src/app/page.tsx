@@ -215,8 +215,9 @@ export default function ExamPlatform() {
                 data.forEach((item: any) => {
                     // Include subject in the key to differentiate exams
                     const subjectKey = item.subject || 'Unknown';
-                    // Derive year from title since exam_year column is missing
-                    const yearDerived = item.exam_year || parseInt(item.title?.match(/\d{4}/)?.[0] || '2024');
+                    // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
+                    const titleYear = item.title?.match(/20\d{2}/)?.[0];
+                    const yearDerived = titleYear ? parseInt(titleYear) : (item.exam_year || 2024);
 
                     const key = `${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
 
@@ -249,7 +250,7 @@ export default function ExamPlatform() {
                         sales: item.sales_count,
                         region: item.region,
                         district: item.district,
-                        year: item.exam_year || parseInt(item.title.match(/\d{4}/)?.[0] || '2024'),
+                        year: titleYear ? parseInt(titleYear) : (item.exam_year || 2024),
                         semester: item.semester,
                         examType: item.exam_type,
                         filePath: item.file_path, // Added
@@ -739,8 +740,8 @@ export default function ExamPlatform() {
                                             <div className="flex items-center gap-3">
                                                 <span className="text-[13px] font-black text-slate-700 w-8 group-hover:text-indigo-600 transition-colors shrink-0">{q.question_number}번</span>
                                                 <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${q.difficulty >= 7 ? 'bg-red-100 text-red-600' :
-                                                        q.difficulty >= 4 ? 'bg-orange-100 text-orange-600' :
-                                                            'bg-emerald-100 text-emerald-600'
+                                                    q.difficulty >= 4 ? 'bg-orange-100 text-orange-600' :
+                                                        'bg-emerald-100 text-emerald-600'
                                                     }`}>
                                                     Lv.{q.difficulty}
                                                 </span>
