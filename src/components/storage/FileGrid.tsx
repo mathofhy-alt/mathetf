@@ -138,7 +138,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                             )}
                         </div>
 
-                        <span className="text-xs text-center font-medium text-slate-700 line-clamp-2 w-full px-1 break-keep min-h-[2.5em] flex items-center justify-center">
+                        <span className="text-xs text-center font-medium text-slate-700 line-clamp-2 w-full px-2 break-all min-h-[2.5em] flex items-center justify-center leading-snug">
                             {item.name || '이름 없음'}
                         </span>
                         {/* Stats Display */}

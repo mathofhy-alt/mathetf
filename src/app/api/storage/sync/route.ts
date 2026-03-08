@@ -12,14 +12,19 @@ export async function POST(req: NextRequest) {
         .select(`
             *,
             exam_materials!inner (
-                id, title
+                id, title, file_type, content_type
             )
         `)
-        .eq('user_id', user.id)
-        .eq('exam_materials.file_type', 'DB');
+        .eq('user_id', user.id);
 
     if (purchaseError) return NextResponse.json({ error: purchaseError.message }, { status: 500 });
-    if (!purchases || purchases.length === 0) return NextResponse.json({ count: 0 });
+
+    const dbPurchases = purchases?.filter(p =>
+        p.exam_materials.file_type === 'DB' ||
+        p.exam_materials.content_type === '개인DB'
+    ) || [];
+
+    if (dbPurchases.length === 0) return NextResponse.json({ count: 0 });
 
     // 2. Find or Create "Purchased DBs" folder
     const FOLDER_NAME = '구매한 학교 기출';
@@ -73,7 +78,7 @@ export async function POST(req: NextRequest) {
     const existingRefIds = new Set(existingItems?.map(i => i.reference_id) || []);
 
     // 4. Filter missing items
-    const newItems = purchases
+    const newItems = dbPurchases
         .filter(p => !existingRefIds.has(p.exam_materials.id))
         .map(p => ({
             user_id: user.id,

@@ -5,7 +5,7 @@ from hml_generator import HMLGenerator
 
 def run_headless_test():
     pdf_path = r"c:\Users\matho\OneDrive\바탕 화면\안티그래비티 - 복사본\math-pdf-to-hml\dist\this.pdf"
-    api_key = "AIzaSyAGTur0rIYSwjURKcWnV6P05BUbWTSwE0I"
+    api_key = "AIzaSyDvlzRyfxFJ76h6pVddExvp3TKSe1hp57M"
 
     print(f"🚀 [Headless Automation] Testing PDF: {pdf_path}")
     

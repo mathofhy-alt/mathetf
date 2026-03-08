@@ -1,83 +1,72 @@
 [
   {
-    "question": "두 다항식 [[EQUATION:A = 2x^2 + xy - y^2]], [[EQUATION:B = x^2 - xy + 2y^2]]에 대하여 [[EQUATION:X - A = B]]를 만족시키는 다항식 [[EQUATION:X]]는?",
+    "question": "1) 두 다항식 [[EQUATION:A = 2x^{2} + xy - y^{2}]], [[EQUATION:B = x^{2} - xy + 2y^{2}]]에 대하여 [[EQUATION:X - A = B]]를 만족시키는 다항식 [[EQUATION:X]]는?",
     "answer_options": [
-      "① [[EQUATION:x^2 + y^2]]",
-      "② [[EQUATION:3x^2 - 3y^2]]",
-      "③ [[EQUATION:3x^2 + y^2]]",
-      "④ [[EQUATION:x^2 + 2xy - 3y^2]]",
-      "⑤ [[EQUATION:3x^2 + 2xy + y^2]]"
+      "[[EQUATION:x^{2} + y^{2}]]",
+      "[[EQUATION:3x^{2} - 3y^{2}]]",
+      "[[EQUATION:3x^{2} + y^{2}]]",
+      "[[EQUATION:x^{2} + 2xy - 3y^{2}]]",
+      "[[EQUATION:3x^{2} + 2xy + y^{2}]]"
     ],
-    "explanation": "[[EQUATION:X - A = B]]에서 [[EQUATION:X = A + B]]입니다. 주어진 식을 대입하면 [[EQUATION:X = (2x^2 + xy - y^2) + (x^2 - xy + 2y^2) = 3x^2 + y^2]]가 됩니다."
+    "explanation": "[Step 1] 주어진 조건 분석 및 식 정리\n문제에서 주어진 식은 [[EQUATION:X - A = B]]입니다. 우리가 구하고자 하는 것은 다항식 [[EQUATION:X]]이므로, 이 식을 [[EQUATION:X]]에 대하여 정리하면 [[EQUATION:X = A + B]]가 됩니다. 즉, 두 다항식 [[EQUATION:A]]와 [[EQUATION:B]]를 더하면 원하는 결과를 얻을 수 있습니다.\n\n[Step 2] 구체적인 식 세우기 및 계산 과정\n주어진 다항식 [[EQUATION:A]]와 [[EQUATION:B]]를 대입하여 합을 구합니다.\n[[EQUATION:X = (2x^{2} + xy - y^{2}) + (x^{2} - xy + 2y^{2})]]\n\n이제 동류항끼리 묶어서 계산합니다.\n1) [[EQUATION:x^{2}]]항: [[EQUATION:2x^{2} + x^{2} = 3x^{2}]]\n2) [[EQUATION:xy]]항: [[EQUATION:xy - xy = 0]]\n3) [[EQUATION:y^{2}]]항: [[EQUATION:-y^{2} + 2y^{2} = y^{2}]]\n\n[Step 3] 최종 정답 도출\n위의 계산 결과를 모두 합치면 [[EQUATION:X = 3x^{2} + y^{2}]]임을 알 수 있습니다.\n따라서 정답은 ③번입니다."
   },
   {
-    "question": "이차방정식 [[EQUATION:2x^2 + 6x + 3 = 0]]에 대한 설명으로 옳은 것은?",
+    "question": "2) 이차방정식 [[EQUATION:2x^{2} + 6x + 3 = 0]]에 대한 설명으로 옳은 것은?",
     "answer_options": [
-      "① 중근을 갖는다.",
-      "② 근이 존재하지 않는다.",
-      "③ 서로 다른 두 실근을 갖는다.",
-      "④ 서로 다른 두 허근을 갖는다.",
-      "⑤ 하나의 허근과 하나의 실근을 갖는다."
+      "중근을 갖는다.",
+      "근이 존재하지 않는다.",
+      "서로 다른 두 실근을 갖는다.",
+      "서로 다른 두 허근을 갖는다.",
+      "하나의 허근과 하나의 실근을 갖는다."
     ],
-    "explanation": "이차방정식의 판별식을 [[EQUATION:D]]라 할 때, [[EQUATION:D/4 = 3^2 - 2 \\times 3 = 9 - 6 = 3 > 0]]입니다. 판별식이 양수이므로 서로 다른 두 실근을 갖습니다."
+    "explanation": "[Step 1] 판별식의 개념 설명\n이차방정식 [[EQUATION:ax^{2} + bx + c = 0]]의 근의 종류를 판별하기 위해서는 판별식 [[EQUATION:D = b^{2} - 4ac]]를 사용합니다.\n- [[EQUATION:D > 0]]이면 서로 다른 두 실근을 갖습니다.\n- [[EQUATION:D = 0]]이면 중근(서로 같은 두 실근)을 갖습니다.\n- [[EQUATION:D < 0]]이면 서로 다른 두 허근을 갖습니다.\n\n[Step 2] 판별식 계산 과정\n주어진 방정식 [[EQUATION:2x^{2} + 6x + 3 = 0]]에서 계수는 [[EQUATION:a = 2, b = 6, c = 3]]입니다.\n[[EQUATION:b]]가 짝수이므로 짝수 판별식 [[EQUATION:D/4 = (b/2)^{2} - ac]]를 사용하면 계산이 더 간편합니다.\n[[EQUATION:D/4 = (6/2)^{2} - (2)(3)]]\n[[EQUATION:D/4 = 3^{2} - 6 = 9 - 6 = 3]]\n\n[Step 3] 결과 분석 및 정답 도출\n계산된 판별식의 값 [[EQUATION:3]]은 [[EQUATION:0]]보다 큽니다 ([[EQUATION:D/4 > 0]]).\n따라서 이 이차방정식은 서로 다른 두 실근을 갖습니다.\n정답은 ③번입니다."
   },
   {
-    "question": "직선 [[EQUATION:y = x + k]]가 이차함수 [[EQUATION:y = x^2 - 2x + 2]]의 그래프와 만나지 않을 때, 실수 [[EQUATION:k]]값의 범위는?",
+    "question": "3) 직선 [[EQUATION:y = x + k]]가 이차함수 [[EQUATION:y = x^{2} - 2x + 2]]의 그래프와 만나지 않을 때, 실수 [[EQUATION:k]]값의 범위는?",
     "answer_options": [
-      "① [[EQUATION:k > -\\frac{1}{2}]]",
-      "② [[EQUATION:k < -\\frac{1}{2}]]",
-      "③ [[EQUATION:k \\le -\\frac{1}{4}]]",
-      "④ [[EQUATION:k < -\\frac{1}{4}]]",
-      "⑤ [[EQUATION:k > -\\frac{1}{4}]]"
+      "[[EQUATION:k > -\\frac{1}{2}]]",
+      "[[EQUATION:k < -\\frac{1}{2}]]",
+      "[[EQUATION:k \\le -\\frac{1}{4}]]",
+      "[[EQUATION:k < -\\frac{1}{4}]]",
+      "[[EQUATION:k > -\\frac{1}{4}]]"
     ],
-    "explanation": "[[EQUATION:x^2 - 2x + 2 = x + k]]에서 [[EQUATION:x^2 - 3x + 2 - k = 0]]입니다. 만나지 않으려면 판별식 [[EQUATION:D = (-3)^2 - 4(2 - k) < 0]]이어야 하므로 [[EQUATION:1 + 4k < 0]], 즉 [[EQUATION:k < -\\frac{1}{4}]]입니다."
+    "explanation": "[Step 1] 교점의 방정식 세우기\n직선과 이차함수의 그래프가 만나지 않는다는 것은 두 식을 연립하여 만든 이차방정식의 실근이 존재하지 않는다는 것과 같습니다.\n[[EQUATION:x^{2} - 2x + 2 = x + k]]\n\n[Step 2] 이차방정식 정리\n모든 항을 좌변으로 이항하여 정리합니다.\n[[EQUATION:x^{2} - 3x + (2 - k) = 0]]\n\n[Step 3] 판별식 조건 적용\n이 방정식이 실근을 갖지 않아야 하므로, 판별식 [[EQUATION:D]]가 [[EQUATION:0]]보다 작아야 합니다.\n[[EQUATION:D = (-3)^{2} - 4(1)(2 - k) < 0]]\n[[EQUATION:9 - 8 + 4k < 0]]\n[[EQUATION:1 + 4k < 0]]\n\n[Step 4] 부등식 풀이 및 최종 범위 도출\n[[EQUATION:4k < -1]]\n[[EQUATION:k < -\\frac{1}{4}]]\n따라서 실수 [[EQUATION:k]]의 범위는 [[EQUATION:k < -\\frac{1}{4}]]입니다.\n정답은 ④번입니다."
   },
   {
-    "question": "[[EQUATION:x + y = \\sqrt{3}]], [[EQUATION:xy = -3]]일 때, [[EQUATION:\\frac{x^2}{y} - \\frac{y^2}{x}]]의 값은? (단, [[EQUATION:x > y]])",
+    "question": "4) [[EQUATION:x + y = \\sqrt{3}]], [[EQUATION:xy = -3]]일 때, [[EQUATION:\\frac{x^{2}}{y} - \\frac{y^{2}}{x}]]의 값은? (단, [[EQUATION:x > y]])",
     "answer_options": [
-      "① [[EQUATION:-8\\sqrt{15}]]",
-      "② [[EQUATION:-2\\sqrt{15}]]",
-      "③ [[EQUATION:2\\sqrt{15}]]",
-      "④ [[EQUATION:8\\sqrt{15}]]",
-      "⑤ [[EQUATION:14\\sqrt{15}]]"
+      "[[EQUATION:-8\\sqrt{15}]]",
+      "[[EQUATION:-2\\sqrt{15}]]",
+      "[[EQUATION:2\\sqrt{15}]]",
+      "[[EQUATION:8\\sqrt{15}]]",
+      "[[EQUATION:14\\sqrt{15}]]"
     ],
-    "explanation": "구하는 식은 [[EQUATION:\\frac{x^3 - y^3}{xy} = \\frac{(x-y)(x^2+xy+y^2)}{xy}]]입니다. [[EQUATION:(x-y)^2 = (x+y)^2 - 4xy = 15]]에서 [[EQUATION:x-y = \\sqrt{15}]]이고, [[EQUATION:x^2+y^2 = (x+y)^2 - 2xy = 9]]이므로 대입하면 [[EQUATION:\\frac{\\sqrt{15}(9-3)}{-3} = -2\\sqrt{15}]]입니다."
+    "explanation": "[Step 1] 구하고자 하는 식 변형\n주어진 식 [[EQUATION:\\frac{x^{2}}{y} - \\frac{y^{2}}{x}]]를 통분하여 정리하면 다음과 같습니다.\n[[EQUATION:\\frac{x^{2}}{y} - \\frac{y^{2}}{x} = \\frac{x^{3} - y^{3}}{xy}]]\n\n[Step 2] 곱셈 공식의 변형을 이용한 [[EQUATION:x - y]] 구하기\n[[EQUATION:x^{3} - y^{3}]]을 구하기 위해 먼저 [[EQUATION:x - y]]의 값을 알아야 합니다.\n[[EQUATION:(x - y)^{2} = (x + y)^{2} - 4xy]] 공식을 이용합니다.\n[[EQUATION:(x - y)^{2} = (\\sqrt{3})^{2} - 4(-3) = 3 + 12 = 15]]\n문제에서 [[EQUATION:x > y]]라고 했으므로 [[EQUATION:x - y > 0]]입니다. 따라서 [[EQUATION:x - y = \\sqrt{15}]]입니다.\n\n[Step 3] [[EQUATION:x^{3} - y^{3}]] 계산\n[[EQUATION:x^{3} - y^{3} = (x - y)(x^{2} + xy + y^{2}) = (x - y)\\{(x + y)^{2} - xy\\}]]\n또는 [[EQUATION:x^{3} - y^{3} = (x - y)^{3} + 3xy(x - y)]] 공식을 사용할 수 있습니다.\n후자의 공식을 사용하면:\n[[EQUATION:x^{3} - y^{3} = (\\sqrt{15})^{3} + 3(-3)(\\sqrt{15})]]\n[[EQUATION:x^{3} - y^{3} = 15\\sqrt{15} - 9\\sqrt{15} = 6\\sqrt{15}]]\n\n[Step 4] 최종 값 계산\n이제 구한 값들을 [Step 1]의 식에 대입합니다.\n[[EQUATION:\\frac{x^{3} - y^{3}}{xy} = \\frac{6\\sqrt{15}}{-3} = -2\\sqrt{15}]]\n따라서 정답은 ②번입니다."
   },
   {
-    "question": "이차함수 [[EQUATION:y = f(x)]]의 그래프가 [[EQUATION:x]]축과 서로 다른 두 점 [[EQUATION:(\\alpha, 0)]], [[EQUATION:(\\beta, 0)]]에서 만나고 [[EQUATION:\\alpha + \\beta = 10]]일 때, 방정식 [[EQUATION:f(2x - 5) = 0]]의 모든 실근의 합은?",
+    "question": "5) 이차함수 [[EQUATION:y = f(x)]]의 그래프가 [[EQUATION:x]]축과 서로 다른 두 점 [[EQUATION:(\\alpha, 0)]], [[EQUATION:(\\beta, 0)]]에서 만나고 [[EQUATION:\\alpha + \\beta = 10]]일 때, 방정식 [[EQUATION:f(2x - 5) = 0]]의 모든 실근의 합은?",
     "answer_options": [
-      "① 10",
-      "② 15",
-      "③ 20",
-      "④ 25",
-      "⑤ 30"
+      "[[EQUATION:10]]",
+      "[[EQUATION:15]]",
+      "[[EQUATION:20]]",
+      "[[EQUATION:25]]",
+      "[[EQUATION:30]]"
     ],
-    "explanation": "[[EQUATION:f(\\alpha) = 0]], [[EQUATION:f(\\beta) = 0]]이므로 [[EQUATION:2x - 5 = \\alpha]] 또는 [[EQUATION:2x - 5 = \\beta]]입니다. 두 근은 [[EQUATION:x_1 = \\frac{\\alpha+5}{2}]], [[EQUATION:x_2 = \\frac{\\beta+5}{2}]]이며, 합은 [[EQUATION:\\frac{\\alpha+\\beta+10}{2} = \\frac{10+10}{2} = 10]]입니다."
+    "explanation": "[Step 1] 이차함수의 근과 방정식의 관계 이해\n이차함수 [[EQUATION:y = f(x)]]가 [[EQUATION:x]]축과 [[EQUATION:(\\alpha, 0), (\\beta, 0)]]에서 만난다는 것은 방정식 [[EQUATION:f(x) = 0]]의 두 근이 [[EQUATION:\\alpha, \\beta]]라는 뜻입니다. 즉, [[EQUATION:f(\\alpha) = 0]]이고 [[EQUATION:f(\\beta) = 0]]입니다.\n\n[Step 2] 새로운 방정식의 근 구하기\n방정식 [[EQUATION:f(2x - 5) = 0]]이 성립하려면 괄호 안의 값인 [[EQUATION:2x - 5]]가 [[EQUATION:f(x) = 0]]의 근인 [[EQUATION:\\alpha]] 또는 [[EQUATION:\\beta]]가 되어야 합니다.\n1) [[EQUATION:2x - 5 = \\alpha \\Rightarrow 2x = \\alpha + 5 \\Rightarrow x = \\frac{\\alpha + 5}{2}]]\n2) [[EQUATION:2x - 5 = \\beta \\Rightarrow 2x = \\beta + 5 \\Rightarrow x = \\frac{\\beta + 5}{2}]]\n따라서 방정식 [[EQUATION:f(2x - 5) = 0]]의 두 실근은 [[EQUATION:\\frac{\\alpha + 5}{2}]]와 [[EQUATION:\\frac{\\beta + 5}{2}]]입니다.\n\n[Step 3] 실근의 합 계산\n두 실근의 합을 구하면 다음과 같습니다.\n[[EQUATION:\\text{합} = \\frac{\\alpha + 5}{2} + \\frac{\\beta + 5}{2} = \\frac{\\alpha + \\beta + 10}{2}]]\n문제에서 [[EQUATION:\\alpha + \\beta = 10]]이라고 주어졌으므로 이를 대입합니다.\n[[EQUATION:\\text{합} = \\frac{10 + 10}{2} = \\frac{20}{2} = 10]]\n따라서 정답은 ①번입니다."
   },
   {
-    "question": "최고차항의 계수가 1인 삼차다항식 [[EQUATION:f(x)]]와 최고차항의 계수가 2인 이차다항식 [[EQUATION:g(x)]]가 다음 조건을 만족시킨다.\n(가) 모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:f(-x) + f(x) = 0]]이다.\n(나) 모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:g(-x) = g(x)]]이다.\n(다) 다항식 [[EQUATION:f(x) + g(x)]]는 [[EQUATION:x - 1]]로 나누어떨어진다.\n[[EQUATION:f(2) + 2g(2)]]의 값은?",
+    "question": "1) 두 다항식 [[EQUATION:A = 2x^{2} + xy - y^{2}]], [[EQUATION:B = x^{2} - xy + 2y^{2}]]에 대하여 [[EQUATION:X - A = B]]를 만족시키는 다항식 [[EQUATION:X]]는?",
     "answer_options": [
-      "① 15",
-      "② 16",
-      "③ 17",
-      "④ 18",
-      "⑤ 19"
+      "[[EQUATION:x^{2} + y^{2}]]",
+      "[[EQUATION:3x^{2} - 3y^{2}]]",
+      "[[EQUATION:3x^{2} + y^{2}]]",
+      "[[EQUATION:x^{2} + 2xy - 3y^{2}]]",
+      "[[EQUATION:3x^{2} + 2xy + y^{2}]]"
     ],
-    "explanation": "조건 (가)에서 [[EQUATION:f(x) = x^3 + ax]], (나)에서 [[EQUATION:g(x) = 2x^2 + b]]입니다. (다)에서 [[EQUATION:f(1) + g(1) = 1+a+2+b = 0]]이므로 [[EQUATION:a+b = -3]]입니다. [[EQUATION:f(2) + 2g(2) = (8+2a) + 2(8+b) = 24 + 2(a+b) = 24 - 6 = 18]]입니다."
+    "explanation": "[Step 1] 주어진 조건 분석 및 식 정리\n문제에서 주어진 식은 [[EQUATION:X - A = B]]입니다. 우리가 구하고자 하는 것은 다항식 [[EQUATION:X]]이므로, 이 식을 [[EQUATION:X]]에 대하여 정리하면 [[EQUATION:X = A + B]]가 됩니다. 즉, 두 다항식 [[EQUATION:A]]와 [[EQUATION:B]]를 더하면 원하는 결과를 얻을 수 있습니다. 다항식의 덧셈은 동류항끼리 계산한다는 기본 원리를"
   },
   {
-    "question": "임의의 [[EQUATION:x]]에 대하여 등식 [[EQUATION:6x^3 - x^2 + d = a(x - 1)^3 + b(x - 1)^2 + c(x - 1) + 9]]가 항상 성립할 때, 상수 [[EQUATION:a, b, c, d]]에 대하여 [[EQUATION:a + b + c + d]]의 값은?",
-    "answer_options": [
-      "① 41",
-      "② 43",
-      "③ 45",
-      "④ 47",
-      "⑤ 49"
-    ],
-    "explanation": "양변의 최고차항 계수를 비교하면 [[EQUATION:a = 6]]입니다. [[EQUATION:x = 1]]을 대입하면 [[EQUATION:6 - 1 + d = 9]]에서 [[EQUATION:d = 4]]이고, [[EQUATION:x = 2]]를 대입하면 [[EQUATION:6(8) - 4 + 4 = a + b + c + 9]]이므로 [[EQUATION:a + b + c = 39]]입니다. 따라서 [[EQUATION:a + b + c + d = 39 + 4 = 43]]입니다."
-  },
-  {
-    "question": "사차다항식 [[EQUATION:f(x)]]를 [[EQUATION:x-3]]으로 나누었을 때의 몫을 [[EQUATION:Q(x)]], 나머지를 [[EQUATION:R]]이라 하고, 다항식 [[EQUATION:f(x)]]를 [[EQUATION:2Q(x)+4]]로 나누었을 때의 몫과 나머지의 합을 [[EQUATION:g(x)]]라 할 때, 다항식 [[EQUATION:g(x)-R]]를 [[EQUATION:x-9]]로 나누었을 때의 나머지는?",
+    "question": "8) 사차다항식 [[EQUATION:f(x)]]를 [[EQUATION:x-3]]으로 나누었을 때의 몫을 [[EQUATION:Q(x)]], 나머지를 [[EQUATION:R]]이라 하고, 다항식 [[EQUATION:f(x)]]를 [[EQUATION:2Q(x)+4]]로 나누었을 때의 몫과 나머지의 합을 [[EQUATION:g(x)]]라 할 때, 다항식 [[EQUATION:g(x)-R]]를 [[EQUATION:x-9]]로 나누었을 때의 나머지는?",
     "answer_options": [
       "① -9",
       "② -7",
@@ -85,10 +74,10 @@
       "④ -3",
       "⑤ -1"
     ],
-    "explanation": "[[EQUATION:f(x) = (x-3)Q(x) + R = \\frac{1}{2}(x-3)\\{2Q(x)+4\\} - 2x + 6 + R]]이므로 몫은 [[EQUATION:\\frac{1}{2}(x-3)]], 나머지는 [[EQUATION:-2x+6+R]]입니다. 따라서 [[EQUATION:g(x) = \\frac{1}{2}(x-3) - 2x + 6 + R = -\\frac{3}{2}x + \\frac{9}{2} + R]]이고, [[EQUATION:g(x)-R = -\\frac{3}{2}x + \\frac{9}{2}]]입니다. [[EQUATION:x=9]]를 대입하면 나머지는 [[EQUATION:-\\frac{3}{2}(9) + \\frac{9}{2} = -9]]입니다."
+    "explanation": "[Step 1] 주어진 조건 분석 및 다항식의 나눗셈 식 세우기\n다항식 [[EQUATION:f(x)]]를 [[EQUATION:x-3]]으로 나누었을 때의 몫이 [[EQUATION:Q(x)]], 나머지가 [[EQUATION:R]]이므로 다음과 같은 항등식을 세울 수 있습니다.\n[[EQUATION:f(x) = (x-3)Q(x) + R]]\n\n[Step 2] [[EQUATION:f(x)]]를 [[EQUATION:2Q(x)+4]]의 형태로 변형하기\n문제에서 [[EQUATION:f(x)]]를 [[EQUATION:2Q(x)+4]]로 나누었을 때의 상황을 묻고 있으므로, 위 식의 [[EQUATION:Q(x)]] 부분을 [[EQUATION:2Q(x)+4]]가 포함되도록 변형합니다.\n[[EQUATION:Q(x) = \\frac{1}{2}(2Q(x)+4) - 2]]\n이를 [[EQUATION:f(x)]] 식에 대입하면,\n[[EQUATION:f(x) = (x-3) \\left\\{ \\frac{1}{2}(2Q(x)+4) - 2 \\right\\} + R]]\n[[EQUATION:f(x) = \\frac{x-3}{2}(2Q(x)+4) - 2(x-3) + R]]\n[[EQUATION:f(x) = \\frac{x-3}{2}(2Q(x)+4) + (-2x + 6 + R)]]\n\n[Step 3] [[EQUATION:g(x)]] 구하기\n[[EQUATION:f(x)]]를 [[EQUATION:2Q(x)+4]]로 나누었을 때의 몫은 [[EQUATION:\\frac{x-3}{2}]]이고, 나머지는 [[EQUATION:-2x + 6 + R]]입니다.\n문제에서 [[EQUATION:g(x)]]는 이 몫과 나머지의 합이라고 하였으므로,\n[[EQUATION:g(x) = \\frac{x-3}{2} + (-2x + 6 + R)]]\n[[EQUATION:g(x) = \\frac{x-3-4x+12}{2} + R = \\frac{-3x+9}{2} + R]]\n\n[Step 4] 최종 정답 도출\n다항식 [[EQUATION:g(x)-R]]를 [[EQUATION:x-9]]로 나누었을 때의 나머지는 나머지 정리에 의해 [[EQUATION:g(9)-R]]의 값과 같습니다.\n[[EQUATION:g(9) = \\frac{-3(9)+9}{2} + R = \\frac{-27+9}{2} + R = \\frac{-18}{2} + R = -9 + R]]\n따라서 구하고자 하는 나머지는\n[[EQUATION:g(9) - R = (-9 + R) - R = -9]]\n정답은 ①입니다."
   },
   {
-    "question": "두 다항식 [[EQUATION:f(x), g(x)]]에 대하여 [[EQUATION:f(x)+g(x)]]를 [[EQUATION:x^2+x+1]]로 나누었을 때의 나머지가 3이고, [[EQUATION:f(x)-g(x)]]를 [[EQUATION:x^2+x+1]]로 나누었을 때의 나머지가 2이다. 이때, [[EQUATION:f(x)+kg(x)]]가 [[EQUATION:x^2+x+1]]을 인수로 갖도록 하는 상수 [[EQUATION:k]]의 값은?",
+    "question": "9) 두 다항식 [[EQUATION:f(x), g(x)]]에 대하여 [[EQUATION:f(x)+g(x)]]를 [[EQUATION:x^2+x+1]]로 나누었을 때의 나머지가 3이고, [[EQUATION:f(x)-g(x)]]를 [[EQUATION:x^2+x+1]]로 나누었을 때의 나머지가 2이다. 이때, [[EQUATION:f(x)+kg(x)]]가 [[EQUATION:x^2+x+1]]을 인수로 갖도록 하는 상수 [[EQUATION:k]]의 값은?",
     "answer_options": [
       "① -9",
       "② -7",
@@ -96,10 +85,10 @@
       "④ -3",
       "⑤ -1"
     ],
-    "explanation": "[[EQUATION:f(x)+g(x) \\equiv 3 \\pmod{x^2+x+1}]]이고 [[EQUATION:f(x)-g(x) \\equiv 2 \\pmod{x^2+x+1}]]이므로, 두 식을 연립하면 [[EQUATION:f(x) \\equiv \\frac{5}{2}]], [[EQUATION:g(x) \\equiv \\frac{1}{2}]]입니다. [[EQUATION:f(x)+kg(x) \\equiv \\frac{5}{2} + \\frac{1}{2}k \\equiv 0]]이 되어야 하므로 [[EQUATION:k = -5]]입니다."
+    "explanation": "[Step 1] 나머지 정리를 이용한 식 세우기\n[[EQUATION:P(x) = x^2+x+1]]이라 하면, 문제의 조건에 의해 다음이 성립합니다.\n[[EQUATION:f(x)+g(x) = P(x)Q_1(x) + 3]] ⋯ (ㄱ)\n[[EQUATION:f(x)-g(x) = P(x)Q_2(x) + 2]] ⋯ (ㄴ)\n\n[Step 2] [[EQUATION:f(x)]]와 [[EQUATION:g(x)]]를 [[EQUATION:P(x)]]로 나눈 나머지 구하기\n(ㄱ) + (ㄴ)을 하면:\n[[EQUATION:2f(x) = P(x)(Q_1(x)+Q_2(x)) + 5]]\n따라서 [[EQUATION:f(x)]]를 [[EQUATION:P(x)]]로 나눈 나머지는 [[EQUATION:\\frac{5}{2}]]입니다.\n(ㄱ) - (ㄴ)을 하면:\n[[EQUATION:2g(x) = P(x)(Q_1(x)-Q_2(x)) + 1]]\n따라서 [[EQUATION:g(x)]]를 [[EQUATION:P(x)]]로 나눈 나머지는 [[EQUATION:\\frac{1}{2}]]입니다.\n\n[Step 3] 인수를 가질 조건 적용 및 [[EQUATION:k]] 구하기\n[[EQUATION:f(x)+kg(x)]]가 [[EQUATION:x^2+x+1]]을 인수로 갖는다는 것은 [[EQUATION:f(x)+kg(x)]]를 [[EQUATION:x^2+x+1]]로 나누었을 때의 나머지가 0이라는 뜻입니다.\n나머지 연산의 성질에 의해,\n[[EQUATION:(\\text{f(x)의 나머지}) + k \\times (\\text{g(x)의 나머지}) = 0]]\n[[EQUATION:\\frac{5}{2} + k \\times \\frac{1}{2} = 0]]\n양변에 2를 곱하면,\n[[EQUATION:5 + k = 0]]\n[[EQUATION:k = -5]]\n따라서 상수 [[EQUATION:k]]의 값은 -5입니다.\n정답은 ③입니다."
   },
   {
-    "question": "다음은 모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:f(x) = f(3n-x)]]를 만족시키는 이차함수 [[EQUATION:f(x) = -x^2+ax+b]]에 대한 설명이다.\n이차함수 [[EQUATION:y=f(x)]]의 그래프의 축은 직선 [[EQUATION:x=]] (가) 이다. 또한 [[EQUATION:b \\ge]] (나) 일 때, 이차함수 그래프가 [[EQUATION:x]]축과 만난다. [[EQUATION:-n \\le x \\le 2n]]에서 함수 [[EQUATION:f(x)]]의 최댓값과 최솟값의 차는 (다) 이다.\n(가), (나), (다) 에 들어갈 양수 [[EQUATION:n]]에 대한 다항식을 각각 [[EQUATION:g(n), h(n), k(n)]]이라 할 때, [[EQUATION:g(2)+h(2)+k(2)]]의 값은?",
+    "question": "10) 다음은 모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:f(x) = f(3n-x)]]를 만족시키는 이차함수 [[EQUATION:f(x) = -x^2+ax+b]]에 대한 설명이다.\n\n이차함수 [[EQUATION:y = f(x)]]의 그래프의 축은 직선 [[EQUATION:x = (가)]] 이다. 또한 [[EQUATION:b \\ge (나)]] 일 때, 이차함수 그래프가 [[EQUATION:x]]축과 만난다. [[EQUATION:-n \\le x \\le 2n]]에서 함수 [[EQUATION:f(x)]]의 최댓값과 최솟값의 차는 [[EQUATION:(다)]] 이다.\n\n(가), (나), (다) 에 들어갈 양수 [[EQUATION:n]]에 대한 다항식을 각각 [[EQUATION:g(n), h(n), k(n)]]이라 할 때, [[EQUATION:g(2)+h(2)+k(2)]]의 값은?",
     "answer_options": [
       "① 19",
       "② 21",
@@ -107,10 +96,10 @@
       "④ 27",
       "⑤ 31"
     ],
-    "explanation": "축은 [[EQUATION:x = \\frac{3n}{2}]]이므로 [[EQUATION:g(n) = \\frac{3}{2}n]]입니다. [[EQUATION:f(x) = -(x-\\frac{3}{2}n)^2 + \\frac{9}{4}n^2 + b]]에서 [[EQUATION:x]]축과 만나려면 꼭짓점의 [[EQUATION:y]]좌표가 0 이상이어야 하므로 [[EQUATION:b \\ge -\\frac{9}{4}n^2]], 즉 [[EQUATION:h(n) = -\\frac{9}{4}n^2]]입니다. 주어진 범위에서 최댓값은 [[EQUATION:f(\\frac{3}{2}n)]], 최솟값은 축에서 가장 먼 [[EQUATION:f(-n)]]이므로 그 차 [[EQUATION:k(n) = \\frac{25}{4}n^2]]입니다. [[EQUATION:g(2)+h(2)+k(2) = 3 - 9 + 25 = 19]]입니다."
+    "explanation": "[Step 1] 이차함수의 축과 계수 [[EQUATION:a]] 구하기\n모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:f(x) = f(3n-x)]]를 만족하므로, 이차함수 [[EQUATION:y=f(x)]]의 그래프의 축은 두 [[EQUATION:x]]값의 평균인 [[EQUATION:x = \\frac{x + (3n-x)}{2} = \\frac{3n}{2}]]입니다. \n따라서 [[EQUATION:g(n) = \\frac{3n}{2}]]입니다.\n이차함수 [[EQUATION:f(x) = -x^2 + ax + b]]에서 축의 방정식은 [[EQUATION:x = -\\frac{a}{2(-1)} = \\frac{a}{2}]]이므로, [[EQUATION:\\frac{a}{2} = \\frac{3n}{2}]]에서 [[EQUATION:a = 3n]]임을 알 수 있습니다.\n\n[Step 2] [[EQUATION:x]]축과 만날 조건과 [[EQUATION:h(n) 구하기\n이차함수 [[EQUATION:f(x) = -x^2 + 3nx + b]]가 [[EQUATION:x]]축과 만나려면 판별식 [[EQUATION:D]]가 [[EQUATION:D \\ge 0]]이어야 합니다.\n[[EQUATION:D = (3n)^2 - 4(-1)b = 9n^2 + 4b \\ge 0]]\n[[EQUATION:4b \\ge -9n^2]]\n[[EQUATION:b \\ge -\\frac{9n^2}{4}]]\n따라서 [[EQUATION:h(n) = -\\frac{9n^2}{4}]]입니다.\n\n[Step 3] 최댓값과 최솟값의 차 [[EQUATION:k(n)]] 구하기\n주어진 범위 [[EQUATION:-n \\le x \\le 2n]]에서 축 [[EQUATION:x = \\frac{3n}{2} = 1.5n]]이 포함됩니다.\n이차함수의 계수가 음수이므로 축에서 최댓값을 갖습니다.\n최댓값 [[EQUATION:M = f(1.5n) = -(1.5n)^2 + 3n(1.5n) + b = -2.25n^2 + 4.5n^2 + b = 2.25n^2 + b = \\frac{9}{4}n^2 + b]]\n축 [[EQUATION:x = 1.5n]]에서 더 멀리 떨어진 [[EQUATION:x = -n]]에서 최솟값을 갖습니다.\n([[EQUATION:|-n - 1.5n| = 2.5n]], [[EQUATION:|2n - 1.5n| = 0.5n]])\n최솟값 [[EQUATION:m = f(-n) = -(-n)^2 + 3n(-n) + b = -n^2 - 3n^2 + b = -4n^2 + b]]\n최댓값과 최솟값의 차 [[EQUATION:k(n)]]은\n[[EQUATION:k(n) = M - m = (\\frac{9}{4}n^2 + b) - (-4n^2 + b) = \\frac{9}{4}n^2 + 4n^2 = \\frac{25}{4}n^2]]\n\n[Step 4] 최종 값 계산\n[[EQUATION:g(2) = \\frac{3(2)}{2} = 3]]\n[[EQUATION:h(2) = -\\frac{9(2^2)}{4} = -9]]\n[[EQUATION:k(2) = \\frac{25(2^2)}{4} = 25]]\n따라서 [[EQUATION:g(2) + h(2) + k(2) = 3 + (-9) + 25 = 19]]\n정답은 ①입니다."
   },
   {
-    "question": "자연수 [[EQUATION:n]]에 대하여 [[EQUATION:f(n) = n \\times (i+i^2+i^3+\\dots+i^n) \\times (\\frac{1}{i}+\\frac{1}{i^2}+\\frac{1}{i^3}+\\dots+\\frac{1}{i^n})]]이라 하자. [[EQUATION:f(k)+f(k+3)=105]]가 성립하도록 하는 모든 자연수 [[EQUATION:k]]의 값의 합은?",
+    "question": "11) 자연수 [[EQUATION:n]]에 대하여\n[[EQUATION:f(n) = n \\times (i + i^2 + i^3 + \\dots + i^n) \\times \\left( \\frac{1}{i} + \\frac{1}{i^2} + \\frac{1}{i^3} + \\dots + \\frac{1}{i^n} \\right)]]\n이라 하자. [[EQUATION:f(k) + f(k+3) = 105]]가 성립하도록 하는 모든 자연수 [[EQUATION:k]]의 값의 합은?",
     "answer_options": [
       "① 105",
       "② 139",
@@ -118,18 +107,7 @@
       "④ 169",
       "⑤ 185"
     ],
-    "explanation": "[[EQUATION:S_n = i+i^2+\\dots+i^n]]이라 하면 [[EQUATION:f(n) = n S_n \\overline{S_n} = n |S_n|^2]]입니다. [[EQUATION:|S_n|^2]]은 [[EQUATION:n]]을 4로 나눈 나머지에 따라 1, 2, 1, 0이 반복됩니다. [[EQUATION:k \\equiv 1 \\pmod 4]]일 때 [[EQUATION:k+0=105 \\Rightarrow k=105]], [[EQUATION:k \\equiv 2 \\pmod 4]]일 때 [[EQUATION:2k+(k+3)=105 \\Rightarrow k=34]]가 성립하며, 모든 [[EQUATION:k]]의 합은 [[EQUATION:105+34=139]]입니다."
-  },
-  {
-    "question": "[그림1]과 같이 모든 모서리의 길이가 1보다 큰 직육면체 모양의 나무토막 ABCD-EFGH가 있다. 이 나무토막의 한 모퉁이에서 한 모서리의 길이가 1인 정육면체 모양의 나무토막을 잘라내어 버리고 [그림2]와 같은 입체도형을 만들었다. [그림2]의 입체도형의 겉넓이는 236이고, 모든 모서리의 길이의 합은 82일 때, 잘라낸 부분 중 나무토막 안쪽에 생긴 꼭짓점 I에 대하여 [[EQUATION:\\overline{HI}^2]]의 값은?",
-    "answer_options": [
-      "① 86",
-      "② 87",
-      "③ 88",
-      "④ 89",
-      "⑤ 90"
-    ],
-    "explanation": "직육면체의 세 모서리 길이를 [[EQUATION:a, b, c]]라 하면 겉넓이는 변하지 않으므로 [[EQUATION:2(ab+bc+ca)=236 \\Rightarrow ab+bc+ca=118]]입니다. 모서리 길이의 합은 [[EQUATION:4(a+b+c)+6=82 \\Rightarrow a+b+c=19]]입니다. [[EQUATION:H]]를 원점으로 할 때 [[EQUATION:I(a-1, b-1, c-1)]]이므로 [[EQUATION:\\overline{HI}^2 = (a-1)^2+(b-1)^2+(c-1)^2 = (a^2+b^2+c^2)-2(a+b+c)+3 = 125-38+3=90]]입니다."
+    "explanation": "[Step 1] [[EQUATION:f(n)]] 식 단순화하기\n[[EQUATION:S_n = i + i^2 + i^3 + \\dots + i^n]]이라 하면,\n[[EQUATION:\\frac{1}{i} + \\frac{1}{i^2} + \\dots + \\frac{1}{i^n} = \\frac{1}{i} + \\frac{1}{-1} + \\frac{1}{-i} + \\frac{1}{1} + \\dots = -i - 1 + i + 1 + \\dots]]\n이는 [[EQUATION:S_n]]의 각 항의 켤레복소수와 같습니다. 즉, [[EQUATION:\\overline{S_n}]]입니다.\n따라서 [[EQUATION:f(n) = n \\times S_n \\times \\overline{S_n} = n |S_n|^2]]입니다.\n\n[Step 2] [[EQUATION:n]]의 값에 따른 [[EQUATION:|S_n|^2]]의 규칙 찾기\n[[EQUATION:i]]의 거듭제곱은 4를 주기로 반복되므로 [[EQUATION:S_n]]도 4를 주기로 반복됩니다.\n1) [[EQUATION:n = 4m+1]]일 때: [[EQUATION:S_n = i]], [[EQUATION:|S_n|^2 = 1]] [[EQUATION:\\implies f(n) = n]]\n2) [[EQUATION:n = 4m+2]]일 때: [[EQUATION:S_n = i-1]], [[EQUATION:|S_n|^2 = 1^2 + (-1)^2 = 2]] [[EQUATION:\\implies f(n) = 2n]]\n3) [[EQUATION:n = 4m+3]]일 때: [[EQUATION:S_n = i-1-i = -1]], [[EQUATION:|S_n|^2 = 1]] [[EQUATION:\\implies f(n) = n]]\n4) [[EQUATION:n = 4m]]일 때: [[EQUATION:S_n = 0]], [[EQUATION:|S_n|^2 = 0]] [[EQUATION:\\implies f(n) = 0]]\n\n[Step 3] [[EQUATION:f(k) + f(k+3) = 105]]를 만족하는 [[EQUATION:k]] 찾기\n[[EQUATION:k]]를 4로 나눈 나머지에 따라 케이스를 분류합니다.\n1) [[EQUATION:k = 4m+1]]일 때: [[EQUATION:k+3 = 4m+4]]\n[[EQUATION:f(k) + f(k+3) = k + 0 = 105 \\implies k = 105]]\n[[EQUATION:105 = 4 \\times 26 + 1]]이므로 조건 만족.\n2) [[EQUATION:k = 4m+2]]일 때: [[EQUATION:k+3 = 4m+5]]\n[[EQUATION:f(k) + f(k+3) = 2k + (k+3) = 3k + 3 = 105 \\implies 3k = 102 \\implies k = 34]]\n[[EQUATION:34 = 4 \\times 8 + 2]]이므로 조건 만족.\n3) [[EQUATION:k = 4m+3]]일 때: [[EQUATION:k+3 = 4m+6]]\n[[EQUATION:f(k) + f(k+3) = k + 2(k+3) = 3k + 6 = 105 \\implies 3k = 99 \\implies k = 33]]\n[[EQUATION:33 = 4 \\times 8 + 1]]이므로 [[EQUATION:k \\equiv 3 \\pmod 4]] 조건에 어긋남.\n4) [[EQUATION:k = 4m]]일 때: [[EQUATION:k+3 = 4m+3]]\n[[EQUATION:f(k)"
   },
   {
     "question": "[[EQUATION:x]] 에 대한 이차방정식 [[EQUATION:x^{2} + mx - m + 4 = 0]] 의 두 근을 [[EQUATION:\\alpha, \\beta]] 라 하자. [[EQUATION:\\alpha^{3}]] 이 실수가 되도록 하는 모든 실수 [[EQUATION:m]] 의 값의 합을 [[EQUATION:p]], 곱을 [[EQUATION:q]] 라 할 때, [[EQUATION:pq]] 의 값은? ([[EQUATION:\\alpha]] 는 허수)",
@@ -140,69 +118,31 @@
       "④ 1",
       "⑤ 4"
     ],
-    "explanation": "[[EQUATION:\\alpha]] 가 허수이고 [[EQUATION:\\alpha^{3}]] 이 실수이므로 [[EQUATION:\\alpha^{2} + \\alpha\\bar{\\alpha} + \\bar{\\alpha}^{2} = 0]] 이 성립합니다. 근과 계수의 관계에 의해 [[EQUATION:(\\alpha+\\bar{\\alpha})^{2} - \\alpha\\bar{\\alpha} = (-m)^{2} - (-m+4) = m^{2} + m - 4 = 0]] 입니다. 따라서 [[EQUATION:p = -1, q = -4]] 이므로 [[EQUATION:pq = 4]] 입니다."
+    "explanation": "[Step 1] 주어진 조건 분석 및 관련 개념 설명\n이차방정식 [[EQUATION:x^{2} + mx - m + 4 = 0]] 의 계수가 모두 실수이므로, 한 근 [[EQUATION:\\alpha]] 가 허수이면 다른 한 근 [[EQUATION:\\beta]] 는 [[EQUATION:\\alpha]] 의 켤레복소수인 [[EQUATION:\\bar{\\alpha}]] 입니다. 근과 계수의 관계에 의해 다음이 성립합니다.\n- 두 근의 합: [[EQUATION:\\alpha + \\bar{\\alpha} = -m]]\n- 두 근의 곱: [[EQUATION:\\alpha\\bar{\\alpha} = -m + 4]]\n    또한, [[EQUATION:\\alpha]] 가 허수이므로 판별식 [[EQUATION:D]] 는 0보다 작아야 합니다.\n    [[EQUATION:D = m^{2} - 4(-m + 4) = m^{2} + 4m - 16 < 0]] --- (1)\n\n    [Step 2]\n    [[EQUATION:\\alpha]] 는 방정식의 근이므로 [[EQUATION:\\alpha^{2} + m\\alpha - m + 4 = 0]] 이 성립합니다.\n    [[EQUATION:\\alpha^{2} = -m\\alpha + m - 4]]\n    양변에 [[EQUATION:\\alpha]] 를 곱하면\n    [[EQUATION:\\alpha^{3} = -m\\alpha^{2} + (m - 4)\\alpha]]\n    [[EQUATION:\\alpha^{3} = -m(-m\\alpha + m - 4) + (m - 4)\\alpha]]\n    [[EQUATION:\\alpha^{3} = (m^{2} + m - 4)\\alpha - m^{2} + 4m]]\n    [[EQUATION:\\alpha^{3}]] 이 실수가 되려면 허수 부분인 [[EQUATION:\\alpha]] 의 계수가 0이어야 합니다. ([[EQUATION:\\alpha]] 는 허수이므로)\n    따라서 [[EQUATION:m^{2} + m - 4 =m^{2} + m - 4 = 0]]\n    [[EQUATION:m]] 에 대한 이차방정식 [[EQUATION:m^{2} + m - 4 = 0]] 의 두 근을 [[EQUATION:m_{1}, m_{2}]] 라 하면, 근과 계수의 관계에 의해\n    [[EQUATION:p = m_{1} + m_{2} = -1]]\n    [[EQUATION:q = m_{1}m_{2} = -4]]\n    이때, 판별식 조건 [[EQUATION:D = m^{2} + 4m - 16 < 0]] 을 확인해야 합니다.\n    [[EQUATION:m^{2} = 4 - m]] 을 대입하면 [[EQUATION:4 - m + 4m - 16 = 3m - 12 < 0]] 이므로 [[EQUATION:m < 4]] 여야 합니다.\n    [[EQUATION:m^{2} + m - 4 = 0]] 의 근은 [[EQUATION:m = \\frac{-1 \\pm \\sqrt{17}}{2}]] 이며, [[EQUATION:\\sqrt{17} \\approx 4.12]] 이므로 두 근 모두 4보다 작아 조건을 만족합니다.\n\n    [Step 3] 최종 정답 도출 및 검산\n    [[EQUATION:p = -1, q = -4]] 이므로\n    [[EQUATION:"
   },
   {
-    "question": "이차함수 [[EQUATION:f(x)]] 가 [[EQUATION:f(0)=f(6)]], [[EQUATION:|f(-1)|+f(4)=0]] 을 만족시킨다. [[EQUATION:-2 \\le x \\le 5]] 일 때, 함수 [[EQUATION:f(x)]] 의 최댓값이 66이다. 이때 [[EQUATION:f(0)]] 의 값은?",
-    "answer_options": [
-      "① -2",
-      "② -1",
-      "③ 0",
-      "④ 1",
-      "⑤ 2"
-    ],
-    "explanation": "[[EQUATION:f(0)=f(6)]] 에서 대칭축은 [[EQUATION:x=3]] 이므로 [[EQUATION:f(x)=a(x-3)^{2}+b]] 라 할 수 있습니다. [[EQUATION:|16a+b|+a+b=0]] 과 최댓값 [[EQUATION:f(-2)=25a+b=66]] 을 연립하면 [[EQUATION:a=4, b=-34]] 를 얻습니다. 따라서 [[EQUATION:f(0)=9(4)-34=2]] 입니다."
-  },
-  {
-    "question": "자연수 [[EQUATION:n]] 에 대하여 가로의 길이와 세로의 길이가 각각 [[EQUATION:n^{2} + 4n + 6]], [[EQUATION:n^{2} + 6n + 10]] 인 직사각형 모양의 종이가 있다. 이 직사각형의 종이 안에 반지름의 길이가 [[EQUATION:n+2]] 인 원을 그릴 때, 그릴 수 있는 원의 최대 개수를 [[EQUATION:f(n)]] 이라 하자. [[EQUATION:f(m)=42]] 이 되는 모든 자연수 [[EQUATION:m]] 의 값의 합은?",
-    "answer_options": [
-      "① 15",
-      "② 17",
-      "③ 19",
-      "④ 21",
-      "⑤ 23"
-    ],
-    "explanation": "원의 지름은 [[EQUATION:2n+4]] 이므로 가로, 세로에 들어가는 원의 개수는 각각 [[EQUATION:N_{h} = \\lfloor \\frac{n+2}{2} + \\frac{1}{n+2} \\rfloor]], [[EQUATION:N_{v} = \\lfloor \\frac{n+4}{2} + \\frac{1}{n+2} \\rfloor]] 입니다. [[EQUATION:m]] 이 짝수일 때 [[EQUATION:(\\frac{m}{2}+1)(\\frac{m}{2}+2)=42]] 에서 [[EQUATION:m=10]], 홀수일 때 [[EQUATION:(\\frac{m+1}{2})(\\frac{m+3}{2})=42]] 에서 [[EQUATION:m=11]] 이므로 합은 21입니다."
-  },
-  {
-    "question": "0이 아닌 복소수 [[EQUATION:z]] 에 대하여 [[EQUATION:z]] 의 실수부분이 [[EQUATION:a]], 허수부분이 [[EQUATION:b]] 일 때, [[EQUATION:|z| = \\sqrt{a^{2}+b^{2}}}]] 라 하고, [[EQUATION:\\frac{|z|}{z} - \\bar{z} = (1 + \\bar{z} + \\frac{\\bar{z}}{z})i]] 를 만족시키는 복소수 [[EQUATION:z]] 를 [[EQUATION:\\alpha]] 라 하자. 임의의 복소수 [[EQUATION:z]] 에 대하여 [[EQUATION:\\alpha z^{3} + \\beta (\\bar{z})^{3}]] 이 실수가 되도록 하는 복소수 [[EQUATION:\\beta]] 를 [[EQUATION:\\beta = p + qi]] 라 할 때, [[EQUATION:p^{2} + q^{2}]] 의 값은? (단, [[EQUATION:a, b, p, q]] 는 실수)",
-    "answer_options": [
-      "① 1",
-      "② 2",
-      "③ 3",
-      "④ 4",
-      "⑤ 5"
-    ],
-    "explanation": "주어진 식에 [[EQUATION:z=re^{i\\theta}]] 를 대입하여 정리하면 [[EQUATION:1-r = (2\\cos\\theta+r)i]] 가 되어 [[EQUATION:r=1, \\cos\\theta=-1/2]] 임을 알 수 있습니다. [[EQUATION:\\alpha z^{3} + \\beta (\\bar{z})^{3}]] 이 항상 실수가 되려면 [[EQUATION:\\beta = \\bar{\\alpha}]] 여야 하므로 [[EQUATION:p^{2}+q^{2} = |\\beta|^{2} = |\\alpha|^{2} = 1]] 입니다."
-  },
-  {
-    "question": "17. 이차방정식 [[EQUATION:x^{2}-3x+5=0]]의 서로 다른 두 근을 [[EQUATION:\\alpha, \\beta]]라 할 때, [[EQUATION:\\frac{1}{\\alpha^{2}-2\\alpha+5} + \\frac{1}{\\beta^{2}-2\\beta+5}]]의 값을 구하시오. [서]",
+    "question": "17. [[EQUATION:이차방정식 x^{2}-3x+5=0]]의 서로 다른 두 근을 [[EQUATION:\\alpha, \\beta]]라 할 때,\n[[EQUATION:\\frac{1}{\\alpha^{2}-2\\alpha+5} + \\frac{1}{\\beta^{2}-2\\beta+5}]]의 값을 구하시오. [서]",
     "answer_options": [],
-    "explanation": "[[EQUATION:\\alpha]]가 근이므로 [[EQUATION:\\alpha^{2}-3\\alpha+5=0]]에서 [[EQUATION:\\alpha^{2}+5=3\\alpha]]입니다. 이를 분모에 대입하면 [[EQUATION:\\alpha^{2}-2\\alpha+5 = (\\alpha^{2}-3\\alpha+5)+\\alpha = \\alpha]]가 되어 주어진 식은 [[EQUATION:\\frac{1}{\\alpha}+\\frac{1}{\\beta} = \\frac{\\alpha+\\beta}{\\alpha\\beta}]]가 됩니다. 근과 계수의 관계에 의해 [[EQUATION:\\alpha+\\beta=3, \\alpha\\beta=5]]이므로 답은 [[EQUATION:\\frac{3}{5}]]입니다."
+    "explanation": "[Step 1] 주어진 이차방정식의 성질 이용\n이차방정식 [[EQUATION:x^{2}-3x+5=0]]의 두 근이 [[EQUATION:\\alpha, \\beta]]이므로, 근의 정의에 의해 다음 식이 성립합니다.\n[[EQUATION:\\alpha^{2}-3\\alpha+5=0]]\n[[EQUATION:\\beta^{2}-3\\beta+5=0]]\n\n[Step 2] 분모의 식 단순화하기\n구하고자 하는 식의 분모를 살펴보면 [[EQUATION:\\alpha^{2}-2\\alpha+5]]와 [[EQUATION:\\beta^{2}-2\\beta+5]]입니다.\nStep 1에서 얻은 식 [[EQUATION:\\alpha^{2}-3\\alpha+5=0]]을 변형하면 [[EQUATION:\\alpha^{2}+5=3\\alpha]]임을 알 수 있습니다.\n이를 분모에 대입하면 다음과 같이 단순화됩니다.\n[[EQUATION:\\alpha^{2}-2\\alpha+5 = (\\alpha^{2}+5)-2\\alpha = 3\\alpha-2\\alpha = \\alpha]]\n마찬가지 방법으로 [[EQUATION:\\beta]]에 대해서도 다음이 성립합니다.\n[[EQUATION:\\beta^{2}-2\\beta+5 = (\\beta^{2}+5)-2\\beta = 3\\beta-2\\beta = \\beta]]\n\n[Step 3] 식의 값 계산하기\n따라서 구하는 식은 다음과 같이 변형됩니다.\n[[EQUATION:\\frac{1}{\\alpha^{2}-2\\alpha+5} + \\frac{1}{\\beta^{2}-2\\beta+5} = \\frac{1}{\\alpha} + \\frac{1}{\\beta}]]\n이를 통분하면 [[EQUATION:\\frac{\\alpha+\\beta}{\\alpha\\beta}]]가 됩니다.\n이차방정식의 근과 계수의 관계에 의해,\n[[EQUATION:\\alpha+\\beta = 3]], [[EQUATION:\\alpha\\beta = 5]]\n이 값을 대입하면 최종적인 값은 [[EQUATION:\\frac{3}{5}]]입니다.\n\n정답: [[EQUATION:\\frac{3}{5}]]"
   },
   {
-    "question": "18. 삼각형 ABC의 세 변의 길이 [[EQUATION:a, b, c]]가 등식 [[EQUATION:a^{3}+b^{3}+c^{3}=3abc=81]]을 만족시킬 때, 인수분해를 이용하여 삼각형 ABC의 넓이를 구하시오. [서]",
+    "question": "18. 삼각형 ABC의 세 변의 길이 [[EQUATION:a, b, c]]가 등식\n[[EQUATION:a^{3}+b^{3}+c^{3}=3abc=81]]을 만족시킬 때, 인수분해를 이용하여 삼각형 ABC의 넓이를 구하시오. [서]",
     "answer_options": [],
-    "explanation": "[[EQUATION:a^{3}+b^{3}+c^{3}-3abc=0]]을 인수분해하면 [[EQUATION:(a+b+c)(a^{2}+b^{2}+c^{2}-ab-bc-ca)=0]]입니다. [[EQUATION:a, b, c]]는 양수이므로 [[EQUATION:a^{2}+b^{2}+c^{2}-ab-bc-ca=0]]에서 [[EQUATION:a=b=c]]인 정삼각형임을 알 수 있습니다. [[EQUATION:3a^{3}=81]]에서 [[EQUATION:a=3]]이므로 넓이는 [[EQUATION:\\frac{\\sqrt{3}}{4} \\times 3^{2} = \\frac{9\\sqrt{3}}{4}]]입니다."
+    "explanation": "[Step 1] 주어진 등식의 분석 및 인수분해\n주어진 조건에서 [[EQUATION:a^{3}+b^{3}+c^{3}=3abc]]이므로, 이를 이항하면 [[EQUATION:a^{3}+b^{3}+c^{3}-3abc=0]]입니다.\n이 식은 고등 수학(상)의 다항식의 인수분해 공식에 의해 다음과 같이 인수분해됩니다.\n[[EQUATION:(a+b+c)(a^{2}+b^{2}+c^{2}-ab-bc-ca)=0]]\n\n[Step 2] 삼각형의 조건 적용\n[[EQUATION:a, b, c]]는 삼각형의 세 변의 길이이므로 모두 양수입니다. 따라서 [[EQUATION:a+b+c > 0]]입니다.\n곱이 0이 되기 위해서는 반드시 [[EQUATION:a^{2}+b^{2}+c^{2}-ab-bc-ca=0]]이어야 합니다.\n이 식을 변형하면 다음과 같습니다.\n[[EQUATION:\\frac{1}{2}\\{(a-b)^{2}+(b-c)^{2}+(c-a)^{2}\\}=0]]\n실수의 제곱의 합이 0이 되려면 각 항이 모두 0이어야 하므로,\n[[EQUATION:a-b=0, b-c=0, c-a=0]] 즉, [[EQUATION:a=b=c]]입니다.\n따라서 삼각형 ABC는 정삼각형입니다.\n\n[Step 3] 변의 길이와 넓이 구하기\n조건에서 [[EQUATION:3abc=81]]이므로 [[EQUATION:abc=27]]입니다.\n[[EQUATION:a=b=c]]이므로 [[EQUATION:a^{3}=27]]에서 [[EQUATION:a=3]]임을 알 수 있습니다.\n한 변의 길이가 [[EQUATION:3]]인 정삼각형의 넓이 [[EQUATION:S]]는 다음과 같습니다.\n[[EQUATION:S = \\frac{\\sqrt{3}}{4} \\times a^{2} = \\frac{\\sqrt{3}}{4} \\times 3^{2} = \\frac{9\\sqrt{3}}{4}]]\n\n정답: [[EQUATION:\\frac{9\\sqrt{3}}{4}]]"
   },
   {
     "question": "19. [[EQUATION:x]]에 대한 다항식 [[EQUATION:x^{n}(x^{2}+ax+b)]]를 [[EQUATION:(x-2)^{2}]]으로 나누었을 때의 나머지가 [[EQUATION:2^{n}(x-2)]]일 때, 두 상수 [[EQUATION:a, b]]에 대하여 [[EQUATION:a+b]]의 값을 구하시오. (단, [[EQUATION:n]]은 자연수이다.) [서]",
     "answer_options": [],
-    "explanation": "나눗셈 관계식 [[EQUATION:x^{n}(x^{2}+ax+b) = (x-2)^{2}Q(x) + 2^{n}(x-2)]]에 [[EQUATION:x=2]]를 대입하면 [[EQUATION:b=-2a-4]]입니다. 이를 대입해 인수분해 후 [[EQUATION:x-2]]로 나누면 [[EQUATION:x^{n}(x+a+2) = (x-2)Q(x) + 2^{n}]]이 됩니다. 다시 [[EQUATION:x=2]]를 대입하면 [[EQUATION:2^{n}(a+4)=2^{n}]]에서 [[EQUATION:a=-3, b=2]]이므로 [[EQUATION:a+b=-1]]입니다."
+    "explanation": "[Step 1] 나머지 정리와 검산식 세우기\n다항식의 나눗셈 원리에 의해 다음과 같은 항등식을 세울 수 있습니다.\n[[EQUATION:x^{n}(x^{2}+ax+b) = (x-2)^{2}Q(x) + 2^{n}(x-2)]]\n\n[Step 2] [[EQUATION:x=2]] 대입 및 [[EQUATION:b]]를 [[EQUATION:a]]로 표현\n양변에 [[EQUATION:x=2]]를 대입하면,\n[[EQUATION:2^{n}(4+2a+b) = 0]]\n[[EQUATION:n]]이 자연수이므로 [[EQUATION:2^{n} \\neq 0]]입니다. 따라서 [[EQUATION:4+2a+b=0]]이며, 이를 [[EQUATION:b]]에 대해 정리하면 [[EQUATION:b = -2a-4]]입니다.\n\n[Step 3] 식의 인수분해 및 약분\n[[EQUATION:b]]의 값을 원래의 이차식에 대입하면,\n[[EQUATION:x^{2}+ax-2a-4 = (x^{2}-4) + a(x-2) = (x-2)(x+2) + a(x-2) = (x-2)(x+a+2)]]\n이를 원래의 검산식에 대입하면,\n[[EQUATION:x^{n}(x-2)(x+a+2) = (x-2)^{2}Q(x) + 2^{n}(x-2)]]\n양변을 [[EQUATION:x-2]]로 나누면 (항등식이므로 가능),\n[[EQUATION:x^{n}(x+a+2) = (x-2)Q(x) + 2^{n}]]\n\n[Step 4] [[EQUATION:a, b]]의 값 결정\n다시 양변에 [[EQUATION:x=2]]를 대입하면,\n[[EQUATION:2^{n}(2+a+2) = 2^{n}]]\n[[EQUATION:2^{n}(a+4) = 2^{n}]]\n양변을 [[EQUATION:2^{n}]]으로 나누면 [[EQUATION:a+4=1]]이므로 [[EQUATION:a=-3]]입니다.\n이를 [[EQUATION:b = -2a-4]]에 대입하면 [[EQUATION:b = -2(-3)-4 = 6-4 = 2]]입니다.\n\n[Step 5] 최종 결과 도출\n따라서 [[EQUATION:a+b = -3+2 = -1]]입니다.\n\n정답: [[EQUATION:-1]]"
   },
   {
-    "question": "20. 그림의 직사각형 ABCD에서 두 점 A, B는 [[EQUATION:x]]축 위에 있고, 두 점 C, D는 이차함수 [[EQUATION:y=-x^{2}+8x]]의 그래프 위에 있다. 각 물음에 답하시오. [서]\n(1) 이차함수의 대칭축을 이용하여 점 A, B, C, D의 좌표를 구하시오.\n(2) 직사각형 ABCD의 둘레의 길이의 최댓값을 구하시오.",
+    "question": "20. 그림의 직사각형 ABCD에서 두 점 [[EQUATION:A, B]]는 [[EQUATION:x]]축 위에 있고, 두 점 [[EQUATION:C, D]]는 이차함수 [[EQUATION:y=-x^{2}+8x]]의 그래프 위에 있다. 각 물음에 답하시오. [서]\n\n⑴ 이차함수의 대칭축을 이용하여 점 [[EQUATION:A, B, C, D]]의 좌표를 구하시오.\n⑵ 직사각형 ABCD의 둘레의 길이의 최댓값을 구하시오.",
     "answer_options": [],
-    "explanation": "이차함수 [[EQUATION:y=-(x-4)^{2}+16]]의 대칭축은 [[EQUATION:x=4]]입니다. 점 B의 좌표를 [[EQUATION:(4+k, 0)]]이라 하면 가로 [[EQUATION:2k]], 세로 [[EQUATION:-k^{2}+16]]이므로 둘레는 [[EQUATION:L = 2(2k-k^{2}+16) = -2(k-1)^{2}+34]]입니다. 따라서 [[EQUATION:k=1]]일 때 둘레의 최댓값은 34이며, 이때 좌표는 A(3,0), B(5,0), C(3,15), D(5,15)입니다."
+    "explanation": "[Step 1] 이차함수의 대칭축 파악\n이차함수 [[EQUATION:y = -x^{2}+8x]]를 표준형으로 변형하면,\n[[EQUATION:y = -(x^{2}-8x+16)+16 = -(x-4)^{2}+16]]\n따라서 이 그래프의 대칭축은 [[EQUATION:x=4]]입니다.\n\n[Step 2] 점의 좌표 설정 (1번 문항 해설)\n대칭축 [[EQUATION:x=4]]로부터 점 [[EQUATION:B]]까지의 거리를 [[EQUATION:k]]라고 하면 ([[EQUATION:0 < k < 4]]),\n점 [[EQUATION:B]]의 [[EQUATION:x]]좌표는 [[EQUATION:4+k]], 점 [[EQUATION:A]]의 [[EQUATION:x]]좌표는 [[EQUATION:4-k]]입니다.\n두 점 [[EQUATION:A, B]]는 [[EQUATION:x]]축 위에 있으므로 [[EQUATION:A(4-k, 0), B(4+k, 0)]]입니다.\n점 [[EQUATION:D]]는 그래프 위의 점이므로 [[EQUATION:x=4+k]]를 함수식에 대입하면,\n[[EQUATION:y = -(4+k)^{2}+8(4+k) = -(16+8k+k^{2})+32+8k = 16-k^{2}]]\n따라서 [[EQUATION:D(4+k, 16-k^{2})]]이고, 대칭성에 의해 [[EQUATION:C(4-k, 16-k^{2})]]입니다.\n\n[Step 3] 둘레의 길이 식 세우기 (2번 문항 해설)\n직사각형 ABCD의 가로의 길이는 [[EQUATION:AB = (4+k)-(4-k) = 2k]]입니다.\n세로의 길이는 [[EQUATION:BC = 16-k^{2}]]입니다.\n둘레의 길이 [[EQUATION:L]]은 다음과 같습니다.\n[[EQUATION:L = 2 \\times (\text{가로} + \text{세로}) = 2(2k + 16-k^{2}) = -2k^{2}+4k+32]]\n\n[Step 4] 최댓값 구하기\n[[EQUATION:L]]을 [[EQUATION:k]]에 대한 이차함수로 보고 표준형으로 변형하면,\n[[EQUATION:L = -2(k^{2}-2k+1-1)+32 = -2(k-1)^{2}+34]]\n[[EQUATION:0 < k < 4]] 범위에서 [[EQUATION:k=1]]일 때 최댓값 [[EQUATION:34]]를 가집니다.\n\n정답: ⑴ [[EQUATION:A(4-k, 0), B(4+k, 0), C(4-k, 16-k^{2}), D(4+k, 16-k^{2})]] (단, [[EQUATION:0 < k < 4]]) ⑵ [[EQUATION:34]]"
   },
   {
-    "question": "21. 다항식 [[EQUATION:f(x)]]가 다음 조건을 만족시킨다.\n(가) 다항식 [[EQUATION:f(x)]]를 다항식 [[EQUATION:g(x)]]로 나눈 몫과 나머지는 모두 [[EQUATION:g(x)-x^{4}]]이다.\n(나) [[EQUATION:g(x)]]를 [[EQUATION:x]]로 나눈 나머지는 [[EQUATION:1]]이다.\n(다) [[EQUATION:g(x)]]를 [[EQUATION:x^{2}-x+1]]로 나눈 나머지는 [[EQUATION:x-3]]이다.\n(라) [[EQUATION:g(x)]]를 [[EQUATION:x^{3}+1]]로 나눈 몫은 [[EQUATION:x-2]]이다.\n[[EQUATION:f(-1)]]의 값을 구하시오.",
+    "question": "21. 다항식 [[EQUATION:f(x)]]가 다음 조건을 만족시킨다.\n(가) 다항식 [[EQUATION:f(x)]]를 다항식 [[EQUATION:g(x)]]로 나눈 몫과 나머지는 모두 [[EQUATION:g(x)-x^{4}]]이다.\n(나) [[EQUATION:g(x)]]를 [[EQUATION:x]]로 나눈 나머지는 [[EQUATION:1]]이다.\n(다) [[EQUATION:g(x)]]를 [[EQUATION:x^{2}-x+1]]로 나눈 나머지는 [[EQUATION:x-3]]이다.\n(라) [[EQUATION:g(x)]]를 [[EQUATION:x^{3}+1]]로 나눈 몫은 [[EQUATION:x-2]]이다.\n[[EQUATION:f(-1)]]의 값을 구하시오. [단]",
     "answer_options": [],
-    "explanation": "조건 (가)에서 [[EQUATION:\\deg(g(x)-x^{4}) < \\deg(g(x))]]이므로 [[EQUATION:g(x)]]는 사차항의 계수가 [[EQUATION:1]]인 사차다항식이다. 조건 (나), (다), (라)를 종합하여 [[EQUATION:g(x)=(x^{3}+1)(x-2)+6x^{2}-5x+3]]을 얻는다. [[EQUATION:f(x)=\\{g(x)+1\\}\\{g(x)-x^{4}\\}]]이므로 [[EQUATION:g(-1)=14]]를 대입하면 [[EQUATION:f(-1)=15 \\times 13 = 195]]이다."
-  },
-  {
-    "question": "22. 두 이차함수 [[EQUATION:f(x)=(x-a)^{2}-a^{2}]], [[EQUATION:g(x)=-(x-3a)^{2}+9a^{2}+b]]가 다음 조건을 만족시킨다.\n(가) 방정식 [[EQUATION:f(x)=g(x)]]는 서로 다른 두 실근 [[EQUATION:\\alpha, \\beta]]를 갖는다.\n(나) [[EQUATION:\\beta-\\alpha=4]]\n(다) [[EQUATION:g(\\beta)=f(\\alpha)+10a^{2}+b]]\n실수 전체에서 함숫값 [[EQUATION:f(x), g(x)]] 중 큰 것을 [[EQUATION:h(x)]]라 하자. [[EQUATION:h(x)=3x+k]]의 서로 다른 실근의 개수가 [[EQUATION:4]]가 되도록 하는 모든 실수 [[EQUATION:k]]의 범위는 [[EQUATION:p < k < q]]이다. 이때, [[EQUATION:2pq]]의 값을 구하시오.",
-    "answer_options": [],
-    "explanation": "조건 (가)~(다)를 연립하면 [[EQUATION:a=2, b=-24]]이므로 [[EQUATION:f(x)=x^{2}-4x, g(x)=-x^{2}+12x-24]]이다. [[EQUATION:h(x)]]는 두 함수의 교점 [[EQUATION:x=2, 6]]을 기준으로 정의되며, 직선 [[EQUATION:y=3x+k]]가 [[EQUATION:h(x)]]와 [[EQUATION:4]]개의 실근을 가질 조건은 직선이 점 [[EQUATION:(6, 12)]]를 지날 때와 [[EQUATION:g(x)]]에 접할 때 사이인 [[EQUATION:-6 < k < -\\frac{15}{4}]]이다. 따라서 [[EQUATION:p=-6, q=-\\frac{15}{4}]]이므로 [[EQUATION:2pq=45]]이다."
+    "explanation": "[Step 1] 주어진 조건 분석 및 다항식 [[EQUATION:g(x)]]의 차수 결정\n조건 (가)에서 다항식 [[EQUATION:f(x)]]를 [[EQUATION:g(x)]]로 나눈 몫과 나머지가 모두 [[EQUATION:g(x)-x^{4}]]이므로 다음과 같이 식을 세울 수 있습니다.\n[[EQUATION:f(x`x) = g(x) \\cdot \\{g(x) - x^{4}\\} + \\{g(x) - x^{4}\\} = \\{g(x) + 1\\}\\{g(x) - x^{4}\\}]].\n나눗셈의 관계에서 나머지의 차수는 나누는 식의 차수보다 낮아야 하므로 [[EQUATION:\\deg(g(x) - x^{4}) < \\deg(g(x))]]입니다.\n만약 [[EQUATION:g(x)]]의 차수가 [[EQUATION:4]]보다 크다면 [[EQUATION:g(x) - x^{4}]]의 차수는 [[EQUATION:g(x)]]의 차수와 같아지므로 모순입니다.\n만약 [[EQUATION:g(x)]]의 차수가 [[EQUATION:4]]보다 작다면 [[EQUATION:g(x) - x^{4}]]의 차수는 [[EQUATION:4]]가 되어 나누는 식보다 차수가 높으므로 모순입니다.\n따라서 [[EQUATION:g(x)]]는 최고차항의 계수가 [[EQUATION:1]]인 [[EQUATION:4]]차 다항식이어야 하며, [[EQUATION:g(x) - x^{4}]]은 [[EQUATION:3]]차 이하의 다항식입니다.\n\n[Step 2] 조건 (나), (다), (라)를 이용한 [[EQUATION:g(x)]] 구하기\\조건 (라)에서 [[EQUATION:g(x)]]를 [[EQUATION:x^{3}+1]]로 나눈 몫이 [[EQUATION:x-2]]이므로, 나머지를 [[EQUATION:R(x) = ax^{2}+bx+c]]라 하면\n[[EQUATION:g(x) = (x^{3}+1)(x-2) + ax^{2}+bx+c]]\n[[EQUATION:g(x) = (x+1)(x^{2}-x+1)(x-2) + ax^{2}+bx+c]]\n로 나타낼 수 있습니다.\n\n조건 (나)에서 [[EQUATION:g(0)=1]]이므로\n[[EQUATION:g(0) = (1)(-2) + c = 1 \\Rightarrow c = 3]]입니다.\n따라서 [[EQUATION:g(x) = (x^{3}+1)(x-2) + ax^{2}+bx+3]]입니다.\n\n조건 (다)에서 [[EQUATION:g(x)]]를 [[EQUATION:x^{2}-x+1]]로 나눈 나머지가 [[EQUATION:x-3]]입니다.\n[[EQUATION:g(x) = (x+1)(x^{2}-x+1)(x-2) + ax^{2}+bx+3]]에서 앞의 항은 [[EQUATION:x^{2}-x+1]]로 나누어떨어지므로[[EQUATION:ax^{2}+bx+3]]을 [[EQUATION:x^{2}-x+1]]로 나눈 나머지가 [[EQUATION:x-3]]이어야 합니다.\n[[EQUATION:ax^{2}+bx+3 = a(x^{2}-x+1) + (a+b)x + (3-a)]]\n따라서 [[EQUATION:a+b=1]], [[EQUATION:3-a=-3]]에서 [[EQUATION:a=6, b=-5]]입니다.\n즉, [[EQUATION:g(x) = (x^{3}+1)(x-2) + 6x^{2}-5x+3]]입니다.\n\n[Step 3] 최종 정답 도출\n[[EQUATION:f(x) = \\{g(x)+1\\}\\{g(x)-x^{4}\\}]]이므로 [[EQUATION:f(-1)]]의 값을 구하면\n[[EQUATION:g(-1) = ((-1)^{3}+1)(-1-2) + 6(-1)^{2}-5(-1)+3 = 0 + 6+5+3 = 14]]\n[[EQUATION:f(-1) = \\{g(-1)+1\\}\\{g(-1)-(-1)^{4}\\} = (14+1)(14-1) = 15 \\times 13 = 195]]입니다.\n따라서 구하는 값은 [["
   }
 ]

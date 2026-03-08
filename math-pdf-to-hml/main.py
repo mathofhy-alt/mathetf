@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import os
 import threading
+import asyncio
 from gemini_client import GeminiMathParser
 from hml_generator import HMLGenerator
 import tempfile
@@ -11,9 +12,9 @@ class MathPDFToHMLApp:
     def __init__(self, root):
         self.root = root
         self.root.title("수학 PDF to HML 변환기 v1.0")
-        self.root.geometry("500x350")
+        self.root.geometry("500x400")
         
-        self.api_key = "AIzaSyAGTur0rIYSwjURKcWnV6P05BUbWTSwE0I"
+        self.api_key = tk.StringVar(value="AIzaSyDvlzRyfxFJ76h6pVddExvp3TKSe1hp57M")
         self.pdf_path = tk.StringVar()
         self.status_msg = tk.StringVar(value="준비됨")
         
@@ -66,9 +67,11 @@ class MathPDFToHMLApp:
             self._log("🚀 변환 프로세스 시작...")
             
             # 1. Gemini 분석
-            self._log("1/3 Gemini API 분석 중 (몇 분 정도 걸릴 수 있습니다)...")
-            parser = GeminiMathParser(self.api_key)
-            problems = parser.extract_math_problems(self.pdf_path.get())
+            self._log("1/3 Gemini API 병렬 분석 중 (이미지 업로드 및 캐싱)...")
+            parser = GeminiMathParser(self.api_key.get().strip())
+            
+            # 비동기 함수 호출을 위해 asyncio.run 사용
+            problems = asyncio.run(parser.extract_math_problems(self.pdf_path.get(), log_callback=self._log))
             
             if not problems:
                 self._log("❌ 문제를 추출하지 못했습니다. PDF 내용이나 API 설정을 확인하세요.")
@@ -82,19 +85,15 @@ class MathPDFToHMLApp:
             for i, prob in enumerate(problems, 1):
                 generator.add_problem(prob, i)
             
-            # 3. 저장
-            output_path = filedialog.asksaveasfilename(
-                defaultextension=".hml",
-                filetypes=[("HML files", "*.hml")],
-                initialfile="변환결과.hml"
-            )
+            # 3. 자동 저장 (PDF와 동일한 위치, 동일한 이름)
+            pdf_filepath = self.pdf_path.get()
+            base_dir = os.path.dirname(pdf_filepath)
+            base_name = os.path.splitext(os.path.basename(pdf_filepath))[0]
+            output_path = os.path.join(base_dir, f"{base_name}.hml")
             
-            if output_path:
-                generator.save(output_path)
-                self._log(f"🎉 성공! 파일이 저장되었습니다: {os.path.basename(output_path)}")
-                messagebox.showinfo("완료", "HML 변환이 성공적으로 완료되었습니다.")
-            else:
-                self._log("⚠️ 저장이 취소되었습니다.")
+            generator.save(output_path)
+            self._log(f"🎉 성공! 파일이 자동 저장되었습니다: {output_path}")
+            messagebox.showinfo("완료", f"HML 변환이 성공적으로 완료되었습니다.\n저장 위치: {output_path}")
                 
         except Exception as e:
             self._log(f"❌ 오류 발생: {str(e)}")

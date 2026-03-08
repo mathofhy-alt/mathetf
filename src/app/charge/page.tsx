@@ -91,6 +91,13 @@ export default function ChargePage() {
                 currency: 'CURRENCY_KRW',
                 channelKey: channelKey,
                 payMethod: 'CARD',
+                isEscrow: true,
+                products: selectedItems.map(item => ({
+                    id: `point_${item.points}`,
+                    name: `${item.label} 충전`,
+                    amount: item.points * 1.1,
+                    quantity: cart[item.points]
+                })),
                 customer: {
                     fullName: user.email?.split('@')[0] || 'User',
                     email: user.email,
@@ -238,8 +245,8 @@ export default function ChargePage() {
                         onClick={handlePayment}
                         disabled={loading || totalAmount === 0}
                         className={`w-full py-5 rounded-xl font-bold text-xl text-white shadow-xl shadow-brand-600/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${loading || totalAmount === 0
-                                ? 'bg-slate-300 cursor-not-allowed shadow-none'
-                                : 'bg-brand-600 hover:bg-brand-700'
+                            ? 'bg-slate-300 cursor-not-allowed shadow-none'
+                            : 'bg-brand-600 hover:bg-brand-700'
                             }`}
                     >
                         {loading ? (

@@ -1,8 +1,13 @@
 import json
+import sys
 from gemini_client import GeminiMathParser
 
+if len(sys.argv) < 2:
+    print("Usage: python test_extract.py <API_KEY>")
+    sys.exit(1)
+
 pdf_path = r"c:\Users\matho\OneDrive\바탕 화면\안티그래비티 - 복사본\math-pdf-to-hml\dist\this.pdf"
-api_key = "AIzaSyAGTur0rIYSwjURKcWnV6P05BUbWTSwE0I"
+api_key = sys.argv[1]
 
 parser = GeminiMathParser(api_key)
 problems = parser.extract_math_problems(pdf_path)

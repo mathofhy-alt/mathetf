@@ -1,152 +1,265 @@
 import os
+import asyncio
 import google.generativeai as genai
-from typing import List, Dict
+from google.generativeai import caching
+import datetime
+from typing import List, Dict, Optional, Callable
 import json
 import re
-from pypdf import PdfReader, PdfWriter
+import fitz
 import tempfile
+import time
+from PIL import Image
 
 class GeminiMathParser:
     def __init__(self, api_key: str):
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-3-flash-preview')
+        self.model_name = 'gemini-3-flash-preview'
+        self.model = genai.GenerativeModel(self.model_name)
         
-    def extract_math_problems(self, pdf_path: str) -> List[Dict]:
+    async def extract_math_problems(self, pdf_path: str, log_callback: Optional[Callable[[str], None]] = None) -> List[Dict]:
         """
-        PDF 파일에서 수학 문제를 추출하여 구조화된 JSON 데이터로 반환합니다.
-        문제가 여러 페이지에 걸쳐 있는 경우를 완벽하게 처리하기 위해,
-        물리적으로 PDF를 1장씩 분할하여 각각 독립적으로 API에 전송하고 취합합니다.
+        [고속 분석 엔진 V2]
+        PDF를 이미지로 변환 후, 업로드된 이미지를 모든 문항이 공유하여 
+        비동기 병렬(Async Parallel)로 정밀 타겟 추출을 수행합니다.
         """
-        
         all_problems = []
-        reader = PdfReader(pdf_path)
-        total_pages = len(reader.pages)
-        print(f"총 {total_pages}장의 PDF 페이지가 감지되었습니다. 1장씩 분할 추출을 시작합니다.")
+        
+        def _log(msg):
+            print(msg)
+            if log_callback:
+                log_callback(msg)
 
-        # API 응답 텍스트 정제 함수 (수식 보호 및 단일 백슬래시 교정)
-        def sanitize_json(text):
-            kw_regex = r'(?<!\\)\\(times|tan|rightarrow|Rightarrow|rho|frac|beta|bar|nabla|neq|ni|theta|tau|varphi|phi|pi|psi|nu|mu|lambda|kappa|iota|eta|zeta|epsilon|delta|gamma|alpha|omega|chi|upsilon|sigma|xi|Theta|Phi|Pi|Psi|Lambda|Delta|Gamma|Omega|Sigma|Xi|Upsilon|cdot|sqrt|left|right|sum|prod|int|oint|lim|infty|approx|equiv|propto|sim|simeq|asymp|doteq|implies)'
-            text = re.sub(kw_regex, r'\\\\\1', text)
-            text = re.sub(r'(?<!\\)\\([^"\\/bfnrtu])', r'\\\\\1', text)
-            text = text.replace('\r', '')
-            return text
+        doc = fitz.open(pdf_path)
+        total_pages = len(doc)
+        _log(f"🚀 [고속 엔진] 총 {total_pages}장의 PDF 고해상도 병렬 분석을 시작합니다.")
 
-        # 페이지별 순회 시작
-        for page_num in range(total_pages):
-            print(f"[{page_num + 1}/{total_pages}] 페이지 분석 중...")
+        # 병렬성 제어 (동시 호출 수 제한) - 유료 티어 한도에 맞춰 조절 가능
+        semaphore = asyncio.Semaphore(10)
+
+        async def process_page(page_num):
+            page = doc[page_num]
+            _log(f"  -> [{page_num + 1}페이지] 이미지 렌더링 및 패딩 작업 중...")
             
-            # 1. 단일 페이지 추출 및 임시 PDF 파일 생성
-            writer = PdfWriter()
-            writer.add_page(reader.pages[page_num])
+            mat = fitz.Matrix(2, 2)
+            pix = page.get_pixmap(matrix=mat)
+            mode = "RGBA" if pix.alpha else "RGB"
+            img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+            if mode == "RGBA":
+                bg = Image.new("RGB", img.size, (255, 255, 255))
+                bg.paste(img, mask=img.split()[3])
+                img = bg
+
+            padding_height = 2000
+            padded_img = Image.new("RGB", (img.width, img.height + padding_height), (255, 255, 255))
+            padded_img.paste(img, (0, 0))
             
-            temp_pdf_fd, temp_pdf_path = tempfile.mkstemp(suffix='.pdf')
-            os.close(temp_pdf_fd) # 파일 디스크립터 닫기
-            
+            padded_img_path = tempfile.mktemp(suffix=".png")
+            padded_img.save(padded_img_path)
+
             try:
-                with open(temp_pdf_path, 'wb') as f:
-                    writer.write(f)
-                    
-                # 2. 임시 1장짜리 PDF 업로드
-                sample_file = genai.upload_file(path=temp_pdf_path)
+                # 1. 파일 업로드 (비동기 스레드)
+                sample_file = await asyncio.to_thread(genai.upload_file, path=padded_img_path)
                 
-                prompt = """
-                당신은 시중 출판되는 수학 교재(자이스토리, 쎈 등) 수준의 정교한 해설 타이핑 전문가입니다.
-                업로드된 1장짜리 PDF 페이지에 있는 '모든 수학 문제'를 빠짐없이 번호 순서대로 추출하여 오직 JSON 리스트 형식으로만 응답하세요. (만약 이 페이지에 문제가 전혀 단 1개도 없다면 빈 배열 `[]`을 응답하세요)
+                # 2. Discovery (문제 번호 찾기) - 매우 강력한 탐색 모드
+                discovery_prompt = """시험지 이미지 전체를 샅샅이 스캔하여 존재하는 모든 독립된 '메인 문제 번호'를 하나도 빠짐없이 찾아 파이썬 리스트 형식으로만 응답하세요.
+(예: ["1", "2", "3", "서술형 1"]) 
+[중요 규칙]
+1. (1), (2), ①, ② 같은 소문항이나 객관식 보기 번호는 절대 포함하지 마세요.
+2. 1., 2., 3. 처럼 점이 찍힌 번호라도 "1", "2", "3"으로 깔끔하게 리스트에 넣으세요."""
                 
-                🚨 [매우 중요 경고] 🚨
-                가끔 수식(분수, 도형, 극한 등)이 너무 복잡하다는 이유로 AI가 해당 문항을 임의로 건너뛰는(누락하는) 치명적인 오류가 발생하고 있습니다!
-                화면에 보이는 '문항 번호'를 1개도 빠짐없이 순차적으로 확인하고, 아무리 수식이 복잡하거나 길더라도 절대 1문제도 건너뛰지 마세요. 완벽하게 모든 문항을 JSON에 담아내는 것이 당신의 최우선 임무입니다.
+                resp = await self.model.generate_content_async([sample_file, discovery_prompt])
+                problem_numbers = self._parse_list(resp.text)
                 
-                각 문제 객체는 다음 필דים만 포함해야 합니다:
-                1. "question": 문제 본문. 수식은 HWP 포맷으로 [[EQUATION:수식]] 처리.
-                2. "answer_options": (객관식일 경우) 선택지 배열 (없으면 []).
-                3. "explanation": 시중 교재 해설지 수준의 매우 상세하고 친절한 풀이 과정. 수식 포함.
+                if not problem_numbers:
+                    _log(f"  -> [{page_num + 1}페이지] 유효 문항 없음.")
+                    return []
+
+                _log(f"  -> [{page_num + 1}페이지] {len(problem_numbers)}개 문항 발견: {problem_numbers}")
+
+                # 3. 개별 문항 병렬 추출 (이미지 공유)
+                tasks = []
+                for q_num in problem_numbers:
+                    tasks.append(self._extract_single_problem(q_num, sample_file, semaphore, _log))
                 
-                [🚨 해설지(Explanation) 작성 핵심 규칙 🚨]
-                - **API 토큰 초과로 인한 응답 끊김을 막기 위해, 해설은 반드시 3~4문장 이내로 아주 핵심만 폭풍 요약하여 매우 짧게 적어주세요.**
-                - 대한민국 고등학교 1학년 수학(수학 상, 수학 하) 교육과정 수준에 완벽히 맞게 적으세요. 고1 범위를 벗어나는 공식(예: 로피탈, 미적분학의 기본정리)은 절대 쓰지 마세요.
-                - 해설이 너무 길어지면 시스템이 멈춥니다. 가장 중요한 핵심 수식 전개 과정 1~2개만 압축해서 간결하게 보여주세요.
+                page_results = await asyncio.gather(*tasks)
                 
-                [🚨 최고 우선순위 JSON 문법 및 수식 표기 규칙 🚨]
-                - 이 페이지에 보이는 모든 번호의 문제는 무조건 1개도 누락 없이 100% 추출해야 합니다. **절대로 마지막 몇 개 문제를 임의로 누락하거나 생략하지 마세요! 페이지 끝까지 모두 작성해야 합니다.**
-                - **다항식 지수(거듭제곱) 표기 시 절대 주의**: `x^{2}+x+1` 또는 `x^2+x+1` 처럼 지수 부분만 정확히 적용해야 하며, 절대로 뒤의 수식까지 몽땅 묶어서 `x^{2+x+1}`처럼 지수 위로 올려버리는 끔찍한 오류를 범하지 마세요!
-                - 수식 백슬래시(\\)는 무조건 두 개(\\\\)로 이스케이프해야 파이썬이 읽을 수 있습니다. (예: [[EQUATION:\\\\alpha + \\\\beta]])
-                """
+                # 업로드된 파일 삭제 (필수)
+                await asyncio.to_thread(sample_file.delete)
                 
-                response = self.model.generate_content(
-                    [sample_file, prompt],
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=0.1,
-                        max_output_tokens=32768,
-                    )
-                )
-                
+                return [r for r in page_results if r]
+
             except Exception as e:
-                print(f"[{page_num + 1}페이지] API 통신 또는 파일 에러 (스킵됨): {e}")
-                # 에러 나더라도 임시 파일 및 업로드 파일 삭제 시도
-                try: sample_file.delete()
-                except: pass
-                try: os.remove(temp_pdf_path)
-                except: pass
-                continue
-            
-            # 3. 데이터 파싱
-            response_text = response.text.strip()
-            
-            # 💡 [분석결과] 텍스트가 있으면 그걸 기준으로 뒤쪽 절반만 취함
-            if '분석결과' in response_text:
-                parts = response_text.split('분석결과', 1)
-                response_text = parts[-1]
-                
-            # 가장 처음 나오는 '[' 와 가장 마지막에 나오는 ']'를 찾아 사이만 안전 파싱
-            first_bracket = response_text.find('[')
-            last_bracket = response_text.rfind(']')
-            if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
-                response_text = response_text[first_bracket:last_bracket+1]
-                
-            response_text = sanitize_json(response_text)
-            
-            try:
-                problems = json.loads(response_text, strict=False)
-                if problems:
-                    all_problems.extend(problems)
-                    print(f" => [{page_num + 1}페이지]에서 {len(problems)}문제 성공적 추출 완료.")
-                else:
-                    print(f" => [{page_num + 1}페이지]에 추출할 문제가 발견되지 않았습니다.")
-            except Exception as e:
-                # 뒷부분 잘림(Truncation) 복구 로직 - 1장씩 하므로 거의 발생 안하지만 안전장치로 유지
-                fixed_text = response_text
-                recovered = False
-                while fixed_text:
-                    last_brace = fixed_text.rfind('}')
-                    if last_brace == -1:
-                        break
-                    attempt_text = fixed_text[:last_brace+1] + '\n]'
-                    try:
-                        problems = json.loads(attempt_text, strict=False)
-                        print(f"⚠️ [{page_num + 1}페이지] JSON 잘림 복원 진행. ({len(problems)}개 추출)")
-                        if problems:
-                            all_problems.extend(problems)
-                        recovered = True
-                        break
-                    except Exception:
-                        fixed_text = fixed_text[:last_brace]
-                
-                if not recovered:
-                    print(f"[{page_num + 1}페이지] 파싱 에러 (복구 실패): {e}")
-            
-            # 4. 루프 마무리 (파일 정리)
-            try:
-                sample_file.delete()
-            except:
-                pass
-            try:
-                os.remove(temp_pdf_path)
-            except:
-                pass
+                _log(f"  !! [{page_num + 1}페이지] 치명적 오류: {e}")
+                return []
+            finally:
+                if os.path.exists(padded_img_path):
+                    os.remove(padded_img_path)
 
-        print(f"\n최종적으로 총 {len(all_problems)}개의 문제가 추출되었습니다!")
+        # 모든 페이지 동시 시작
+        all_page_tasks = [process_page(i) for i in range(total_pages)]
+        pages_results = await asyncio.gather(*all_page_tasks)
+        
+        for p_res in pages_results:
+            all_problems.extend(p_res)
+
+        # 최종 정렬
+        all_problems.sort(key=self._natural_sort_key)
+        _log(f"\n✅ 분석 완료! 총 {len(all_problems)}개 문항 추출 및 정렬됨.")
         return all_problems
 
-if __name__ == "__main__":
-    pass
+    async def _extract_single_problem(self, q_num, sample_file, semaphore, log_fn):
+        async with semaphore:
+            retries = 0
+            while retries < 3:
+                try:
+                    log_fn(f"    [문항 {q_num}] 병렬 추출 시작... (시도 {retries + 1}/3)")
+                    # 유저 피드백 반영: 완전 생략 대신, 핵심 중간 계산 과정은 포함하여 논리가 끊기지 않도록 약간의 디테일 추가
+                    # 유저 추가 피드백 (포맷팅): [해설] 단어 금지, '1단계 제목 내용' 포맷 사용, 굵은 글씨(**) 금지
+                    # 유저 추가 피드백 (난이도): 고3 수준 제한, 극좌표, mod 등 대학수학/교과외 스킬 구체적 밴
+                    instr = "전체 내용을 3~4단계(단계별 요약)로 구성할 것. 풀이의 핵심 개념과 필수적인 중간 계산 과정(논리적 비약 방지)은 반드시 포함하되, 수식 위주로 간결하게 서술할 것. 모든 해설의 난이도와 풀이 방식은 '고등학교 3학년(고3) 수준'을 절대 넘지 말 것. (경고: '극좌표계(Polar coordinates)', '로피탈의 정리', '테일러 급수', '편미분', '외적', '합동식(mod)', '모듈로 연산' 등 대학 수학이나 고교 교과 외 과정은 논리 전개에 절대 사용하지 마시오)."
+                    if retries > 0:
+                        instr = "!!초긴급 압축 모드!! 설명은 생략하고 핵심 수식 1줄만 [[EQUATION:...]] 형태로 작성."
+
+                    prompt = f"""당신은 수학 해설 타이핑 전문가입니다.
+첨부된 이미지에서 **오직 '{q_num}' 문제 딱 하나만** 찾아서, 아래 JSON 구조로 완벽하게 해설을 작성해 주세요.
+
+[필수 출력 형식]
+오직 1개의 JSON 객체만 배열로 감싸서 응답하세요. 다른 말은 절대 쓰지 마세요.
+[
+  {{
+    "question_num": "{q_num}",
+    "question": "문제 본문 전체 텍스트 (조건, 구하는 값 등)",
+    "answer_options": ["① 1", "② 2"],
+    "explanation": "{instr}"
+  }}
+]
+
+[핵심 규칙]
+- `{q_num}` 문항의 모든 내용(딸린 소문항 포함)을 작성하세요.
+- 보기(answer_options) 배열 안에 포함되는 모든 숫자, 변수, 기호, 수식 등은 반드시 `[[EQUATION:...]]` 태그로 감싸야 합니다!
+- 문자열 안의 따옴표(")는 이스케이프(`\\"`) 처리하십시오.
+- 역슬래시 에스케이핑 문제가 생기지 않도록 `\\\\alpha` 와 같이 백슬래시를 이스케이프 하십시오.
+- 해설(explanation) 작성 시 반드시 다음 [해설 서식 규칙]을 100% 준수하세요:
+  1. 절대로 본문 맨 앞에 '[해설]'이라는 단어를 쓰지 마세요.
+  2. "1단계 다항식의 인수분해" 같은 단계별 소제목이나 번호는 절대 달지 마세요.
+  3. 줄글이나 산문으로 빽빽하게 설명하지 말고, 수식 전개 단계를 기준으로 "문단 바꿈(엔터)"을 하여 시원시원하게 읽히도록 작성하세요. 
+  4. 수식을 중심으로 간결한 코멘트 형식의 문장을 다세요.
+     [올바른 작성 예시]
+     [[EQUATION:(x+y)^2]] 를 전개하면
+     [[EQUATION:x^2+2xy+y^2=3]] 으로 정리됨을 알 수 있다.
+     [[EQUATION:x=1]] 을 대입하면
+     [[EQUATION:1^2+2y+y^2=3]]
+  5. 절대로 굵은 글씨를 뜻하는 마크다운 기호 `**`를 사용하지 마세요. (예: `**상수 값 구하기**` -> `상수 값 구하기`)
+  6. 조건제시법(집합) 표현 시 반드시 `\\left\\{{ x \\mid f(x) \\right\\}}` 형태로 작성하세요. 단순 `|` 기호나 괄호 누락은 절대 금지합니다.
+  7. n제곱근 작성 시 반드시 `\\sqrt[n]{{x}}` 형태를 사용하세요.
+  8. 해설의 맨 마지막 문장은 반드시 "따라서 정답은 [최종답안]입니다." 형태로 새 줄에 끝맺어야 합니다. 객관식 기호나 수식을 [최종답안] 괄호 없이 안에 넣어주세요. (단답형 예: "따라서 정답은 [[EQUATION:5\\sqrt{2}]]입니다.")"""
+                    
+                    # 이미지와 프롬프트를 함께 전송 (무결성 확보)
+                    resp = await self.model.generate_content_async(
+                        [sample_file, prompt], 
+                        generation_config=genai.types.GenerationConfig(temperature=0.1)
+                    )
+                    
+                    text = self._sanitize_json(resp.text)
+                    extracted = self._extract_json_objects(text)
+                    if extracted:
+                        obj = extracted[0]
+                        # --- 방어적 키 매핑 및 기본값 채우기 ---
+                        # 1. 문제 본문 (question)
+                        if 'question' not in obj:
+                            obj['question'] = obj.pop('text', obj.pop('problem', obj.pop('content', '')))
+                        
+                        # 2. 문제 번호 (question_num)
+                        if 'question_num' not in obj:
+                            obj['question_num'] = obj.pop('number', obj.pop('id', q_num))
+                        
+                        # 3. 선택지 (answer_options)
+                        if 'answer_options' not in obj:
+                            obj['answer_options'] = obj.pop('options', obj.pop('choices', []))
+                        
+                        # 4. 해설 (explanation)
+                        if 'explanation' not in obj:
+                            obj['explanation'] = obj.pop('expl', obj.pop('desc', ''))
+
+                        # 최종 보정: 핵심 키가 여전히 비어있다면 기본값 할당
+                        if not obj.get('question'): obj['question'] = f"({q_num}번 문항 본문 추출 실패)"
+                        if not isinstance(obj['answer_options'], list): obj['answer_options'] = []
+                        
+                        log_fn(f"    [문항 {q_num}] ✅ 추출 완료!")
+                        return obj
+                    
+                    retries += 1
+                except Exception as e:
+                    retries += 1
+                    if retries == 3:
+                        log_fn(f"    [문항 {q_num}] ❌ 추출 실패 (최종): {str(e)[:50]}...")
+                    await asyncio.sleep(1)
+            return None
+
+    def _parse_list(self, text):
+        try:
+            start = text.find('[')
+            end = text.rfind(']')
+            if start != -1 and end != -1:
+                return json.loads(text[start:end+1])
+        except: pass
+        return []
+
+    def _sanitize_json(self, text):
+        first = text.find('[')
+        last = text.rfind(']')
+        if first != -1 and last != -1:
+            text = text[first:last+1]
+        
+        kw_regex = r'(?<!\\)\\(times|tan|rightarrow|Rightarrow|rho|frac|beta|bar|nabla|neq|ni|theta|tau|varphi|phi|pi|psi|nu|mu|lambda|kappa|iota|eta|zeta|epsilon|delta|gamma|alpha|omega|chi|upsilon|sigma|xi|Theta|Phi|Pi|Psi|Lambda|Delta|Gamma|Omega|Sigma|Xi|Upsilon|cdot|sqrt|left|right|sum|prod|int|oint|lim|infty|approx|equiv|propto|sim|simeq|asymp|doteq|implies)'
+        text = re.sub(kw_regex, r'\\\\\1', text)
+        text = re.sub(r'(?<!\\)\\([^"\\/bfnrtu])', r'\\\\\1', text)
+        text = text.replace('\r', '')
+        return text
+
+    def _extract_json_objects(self, text):
+        objects = []
+        pattern = re.compile(r'\{\s*"(question|number|question_num)"')
+        start_indices = [match.start() for match in pattern.finditer(text)]
+        
+        for start_idx in start_indices:
+            brace_count = 0
+            in_string = False
+            escape = False
+            candidate = None
+            
+            for i in range(start_idx, len(text)):
+                char = text[i]
+                if not in_string:
+                    if char == '{': brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            candidate = text[start_idx:i+1]
+                            try:
+                                cand_clean = re.sub(r'[\x00-\x19]', '', candidate)
+                                objects.append(json.loads(cand_clean, strict=False))
+                                break
+                            except: pass
+                    elif char == '"': in_string = True
+                else:
+                    if escape: escape = False
+                    elif char == '\\': escape = True
+                    elif char == '"': in_string = False
+        return objects
+
+    def _natural_sort_key(self, problem):
+        q_num_str = str(problem.get("question_num", ""))
+        if not q_num_str:
+            return (99, 999999) # 번호가 없으면 맨 뒤로
+            
+        # 서답/서술/단답형 식별
+        is_essay = any(keyword in q_num_str for keyword in ["서답", "서술", "단답", "주관"])
+        group = 2 if is_essay else 1
+            
+        # 문자열 안에서 숫자만 추출
+        digits = re.findall(r'\d+', q_num_str)
+        num_val = int(digits[0]) if digits else 999999
+                
+        return (group, num_val)

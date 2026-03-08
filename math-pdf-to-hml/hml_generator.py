@@ -17,16 +17,21 @@ class HMLGenerator:
         
         # 해설(ENDNOTE) 객체를 맨 앞에 생성
         problem_str += '<ENDNOTE><PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Top"><P ParaShape="1" Style="0"><TEXT CharShape="0"><AUTONUM Number="1" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> </CHAR></TEXT></P><P ParaShape="1" Style="0"><TEXT CharShape="0">'
-        problem_str += self._parse_text_to_hml("[해설] " + problem_data['explanation'])
+        expl_text = problem_data.get('explanation', '')
+        if expl_text:
+            problem_str += self._parse_text_to_hml("[해설] " + expl_text)
+        else:
+            problem_str += self._parse_text_to_hml("[해설] (해설 누락 및 복구불가)")
         problem_str += '</TEXT></P></PARALIST></ENDNOTE>'
         
         # 미주 번호 뒤에 바로 이어서 AI가 생성한(또는 원본 PDF 상의) 문제 텍스트를 출력
         import re
         # 원본 PDF나 AI가 붙인 1., 1), (1) 등 매뉴얼 번호 및 공백 제거
-        # 제미나이가 번호를 [[EQUATION:1)]] 처럼 감쌀 수도 있으므로 이 경우(숫자만 있는 수식)도 제거
-        q_clean = re.sub(r'^(?:\s*\[\[EQUATION:\s*\d+[\.\)]\s*\]\]\s*|\s*\(\d+\)\s*|\s*\[\d+\]\s*|\s*<\d+>\s*|\s*\d+[\.\)]\s*)+', '', problem_data['question'], count=1)
-        # 혹시 '1)' 모양의 텍스트가 앞에 남았다면 한 번 더 확실히 제거
-        q_clean = re.sub(r'^(?:\(\d+\)|\d+[\.\)]|\s)+', '', q_clean)
+        # 제미나이가 번호를 [[EQUATION:1)]] 처럼 감쌀 수도 있으므로 이 경우(숫자만 있는 수식)도 최우선 제거
+        q_clean = re.sub(r'^\s*\[\[EQUATION:\s*\d+[\.\)]\s*\]\]\s*', '', problem_data['question'])
+        
+        # 그 외의 일반적인 문제 번호(단 1개만) 지우기. 수학식 소수점(e.g 1.5)이 지워지지 않도록 (?!\d) 적용
+        q_clean = re.sub(r'^\s*(?:\(\d+\)|\[\d+\]|<\d+>|\d+[\.\)](?!\d))\s*', '', q_clean)
         
         problem_str += self._parse_text_to_hml(" " + q_clean)
         problem_str += "</TEXT></P>\n"
@@ -41,7 +46,8 @@ class HMLGenerator:
                 
                 for j, opt in enumerate(chunk):
                     idx = row_start + j
-                    opt_clean = re.sub(r'^(?:\(\d+\)|\d+[\.)]|①|②|③|④|⑤|\s)+', '', opt)
+                    # 선택지 앞의 ①, (1), 1) 등 번호 제거 (단 1.5처럼 소수점이 있는 형태 조심)
+                    opt_clean = re.sub(r'^(?:\(\d+\)|\d+[\.\)](?!\d)|①|②|③|④|⑤)\s*', '', opt).strip()
                     prefix = circle_nums[idx] if idx < len(circle_nums) else f"({idx+1})"
                     
                     # 사용자가 직접 간격을 조정하기 위해 프로그램 단의 인위적 공백/탭 삽입 제거
@@ -130,6 +136,11 @@ class HMLGenerator:
             return ""
 
         import re
+        
+        # [긴급 수리] 제미나이가 지시를 무시하고 일반 수식 기호인 $x$ 나 $$x$$ 를 쓴 경우 강제로 태그를 씌워줍니다.
+        text = re.sub(r'\$\$(.*?)\$\$', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
+        text = re.sub(r'\$(.*?)\$', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
+        
         parts = re.split(r'\[\[EQUATION:(.*?)\]\]', text, flags=re.DOTALL)
         
         result = ""
@@ -162,20 +173,26 @@ class HMLGenerator:
                         # 3. 부등호 및 논리 기호
                         r'\leq': '<=', r'\le': '<=', r'\geq': '>=', r'\ge': '>=', 
                         r'\neq': '!=', r'\ne': '!=', r'\equiv': 'equiv',
-                        r'\Rightarrow': ',', r'\rightarrow': ',', r'\implies': ',',
+                        r'\Rightarrow': 'Rightarrow', r'\rightarrow': 'rightarrow', r'\implies': 'Rightarrow',
+                        r'\iff': 'Leftrightarrow', r'\leftrightarrow': 'leftrightarrow', r'\Leftrightarrow': 'Leftrightarrow',
                         r'\therefore': 'therefore', r'\because': 'because',
                         
                         # 4. 집합 및 명제
                         r'\cup': 'cup', r'\cap': 'cap', r'\in': 'in', r'\notin': 'notin',
                         r'\subset': 'subset', r'\supset': 'supset', r'\emptyset': 'empty',
+                        r'\mid': '|',
                         
                         # 5. 미적분 및 한계
                         r'\infty': 'inf', r'\int': 'int', r'\lim': 'lim',
                         r'\sum': 'sum', r'\prod': 'prod',
                         
                         # 6. 괄호 및 기타 기호
-                        r'\{': 'LEFT {', r'\}': 'RIGHT }',
+                        r'\left\{': 'LEFT {', r'\right\}': 'RIGHT }',
                         r'\left(': 'LEFT (', r'\right)': 'RIGHT )',
+                        r'\left[': 'LEFT [', r'\right]': 'RIGHT ]',
+                        r'\left|': 'LEFT |', r'\right|': 'RIGHT |',
+                        r'\left.': 'LEFT .', r'\right.': 'RIGHT .',
+                        r'\{': 'LEFT {', r'\}': 'RIGHT }',
                         r'\lfloor': 'lfloor', r'\rfloor': 'rfloor',
                         r'\lceil': 'lceil', r'\rceil': 'rceil',
                         r'\sqrt': 'sqrt',
@@ -205,7 +222,11 @@ class HMLGenerator:
                         if os.path.exists(dict_path):
                             with open(dict_path, 'r', encoding='utf-8') as f:
                                 dynamic_map = json.load(f)
-                                # Override base map with dynamic map (which has 150 entries)
+                                # Override base map with dynamic map, but protect critical bracket mappings
+                                # If dynamic_map maps \{ to just {, it breaks scaling brackets.
+                                for k in ["\\{", "\\}", "\\left(", "\\right)"]:
+                                    if k in dynamic_map:
+                                        del dynamic_map[k]
                                 LATEX_TO_HWP_MAP.update(dynamic_map)
                     except Exception as e:
                         print(f"Warning: Failed to load gemini_hwp_dict.json: {e}")
@@ -213,6 +234,28 @@ class HMLGenerator:
                     
                     # 1. LaTeX 분수 \frac{a}{b} -> {a} over {b} 변환 (재귀적 처리 없이 일단 단층 처리)
                     eq_text = re.sub(r'\\frac\s*\{\s*(.*?)\s*\}\s*\{\s*(.*?)\s*\}', r'{\1} over {\2}', eq_text)
+                    
+                    # 2. 제미나이가 잘못 생성한 n제곱근(sqrt[n]{x}) 포맷을 올바른 HWP 포맷(root {n} of {x})으로 변환
+                    # 추가적인 예외: 제미나이가 \sqrt[2]{x} 형태로 주었을 때 그냥 sqrt{x} 로 쓰도록 강제 치환 (2제곱근 표기 방지)
+                    eq_text = re.sub(r'\\?sqrt\s*\[\s*2\s*\]\s*\{\s*(.*?)\s*\}', r' sqrt {\1} ', eq_text)
+                    eq_text = re.sub(r'\\?sqrt\s*\[\s*(.*?)\s*\]\s*\{\s*(.*?)\s*\}', r' root {\1} of {\2} ', eq_text)
+
+                    # 3. 조건제시법 등에서 쓰이는 분수 높이에 맞춘 세로줄 크기 보정 (LEFT | ... RIGHT .)
+                    def fix_set_builder(match):
+                        left_part = match.group(1).strip()
+                        right_part = match.group(2).strip()
+                        # 끝에 남아있는 \right, right, \, . 등을 지독하게 모두 제거
+                        right_part = re.sub(r'\\?right\b\s*\\?\.?', '', right_part)
+                        right_part = re.sub(r'\\$', '', right_part).strip()
+                        return f" LEFT {{ {left_part} LEFT | {right_part} RIGHT . RIGHT }} "
+                        
+                    # 괄호 매칭을 엄격하게 제한: \{ 로 시작해서 \} 로 끝나는 명확한 블록 안에서만 동작하도록 수정
+                    # 내부 중괄호가 꼬이는 것을 방지하기 위해 가장 바깥쪽의 \left\{ 와 \right\} 가 매칭의 기준이 되도록 작성
+                    eq_text = re.sub(
+                        r'\\?(?:left)?\\?\{\s*([^{}]*(?:\{[^{}]*\}[^{}]*)*)\s*(?:\\mid|\||\bmid\b)\s*([^{}]*(?:\{[^{}]*\}[^{}]*)*)\s*\\?(?:right)?\\?\}',
+                        fix_set_builder,
+                        eq_text
+                    )
                     
                     # 제미나이가 종종 {a over b} 형태로 전체를 묶는 경우가 있는데, 
                     # 한글 수식은 {a} over {b} 를 표준으로 하므로 이를 교정 (가장 바깥쪽 중괄호 분해)
@@ -245,7 +288,12 @@ class HMLGenerator:
                     for latex_cmd, hwp_cmd in LATEX_TO_HWP_MAP.items():
                         # 특수기호 정규식 이스케이프 처리 (\left( 같은 기호의 괄호 보호)
                         safe_cmd = re.escape(latex_cmd)
-                        eq_text = re.sub(f'{safe_cmd}(?![a-zA-Z])', f' {hwp_cmd} ', eq_text)
+                        # 명령어가 알파벳으로 끝나는 경우에만 단어 경계를 확인 (예: \alpha 뒤에 x가 붙으면 치환 안 함)
+                        # 괄호나 기호로 끝나는 명령어(예: \left()는 뒤에 문자가 오더라도 무조건 치환
+                        if latex_cmd[-1].isalpha():
+                            eq_text = re.sub(f'{safe_cmd}(?![a-zA-Z])', f' {hwp_cmd} ', eq_text)
+                        else:
+                            eq_text = re.sub(f'{safe_cmd}', f' {hwp_cmd} ', eq_text)
                     
                     
                     # 수식 내에 한글(예: '또한', '가')이 포함된 경우 컴파일 오류/크래시 방지를 위해 따옴표 처리

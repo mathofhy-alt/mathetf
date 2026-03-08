@@ -49,22 +49,26 @@ export async function GET(req: NextRequest) {
             .from('purchases')
             .select(`
                 exam_materials!inner (
-                    id, title, school, grade, semester, exam_type, subject, file_type
+                    id, title, school, grade, semester, exam_type, subject, file_type, content_type
                 )
             `)
-            .eq('user_id', user.id)
-            .eq('exam_materials.file_type', 'DB');
+            .eq('user_id', user.id);
 
         if (purchaseError) {
             console.error("Purchase Fetch Error:", purchaseError);
             return NextResponse.json({ success: false, error: 'Failed to fetch purchased databases' }, { status: 500 });
         }
 
-        if (!purchases || purchases.length === 0) {
+        const dbPurchases = purchases?.filter((p: any) =>
+            p.exam_materials.file_type === 'DB' ||
+            p.exam_materials.content_type === '개인DB'
+        ) || [];
+
+        if (dbPurchases.length === 0) {
             return NextResponse.json({ success: false, error: 'No purchased databases found. Please select a database first.' }, { status: 403 });
         }
 
-        const purchasedDbs = purchases.map((p: any) => p.exam_materials);
+        const purchasedDbs = dbPurchases.map((p: any) => p.exam_materials);
 
         // 3. Perform Vector Search via RPC
         const { data: similarQuestions, error: searchError } = await supabase
@@ -85,27 +89,27 @@ export async function GET(req: NextRequest) {
                 if (q.school !== db.school) return false;
 
                 // Grade Mapping & Check
-                let dbGrade = db.grade;
-                if (dbGrade && ['1', '2', '3'].includes(String(dbGrade).replace('고', ''))) {
-                    dbGrade = `고${String(dbGrade).replace('고', '')}`;
+                let dbGrade = String(db.grade);
+                if (dbGrade && !dbGrade.startsWith('고') && ['1', '2', '3'].includes(dbGrade)) {
+                    dbGrade = `고${dbGrade}`;
                 }
-                if (q.grade !== dbGrade) return false;
+                if (q.grade && q.grade !== dbGrade) return false;
 
                 // Year Mapping & Check
-                let dbYear = db.exam_year || db.year;
+                let dbYear = String(db.exam_year || db.year || '');
                 if (!dbYear && db.title) {
                     const match = db.title.match(/20[0-9]{2}/);
                     if (match) dbYear = match[0];
                 }
-                if (dbYear && q.year !== dbYear) return false;
+                if (dbYear && q.year && String(q.year) !== dbYear) return false;
 
                 // Semester/ExamType Mapping
                 if (db.semester && db.exam_type) {
-                    const semNum = String(db.semester).replace('학기', '');
+                    const semNum = String(db.semester).replace(/[^0-9]/g, '');
                     const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
-                    if (typeShort) {
+                    if (semNum && typeShort) {
                         const expectedSem = `${semNum}학기${typeShort}`;
-                        if (q.semester !== expectedSem) return false;
+                        if (q.semester && q.semester !== expectedSem) return false;
                     }
                 }
 

@@ -71,6 +71,13 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
                 currency: 'CURRENCY_KRW',
                 channelKey,
                 payMethod: 'CARD',
+                isEscrow: true,
+                products: selectedItems.map(item => ({
+                    id: `point_${item.points}`,
+                    name: `${item.label} 충전`,
+                    amount: item.points * 1.1,
+                    quantity: cart[item.points]
+                })),
                 customer: {
                     fullName: user.email?.split('@')[0] || 'User',
                     email: user.email,

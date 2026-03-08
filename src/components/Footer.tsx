@@ -17,7 +17,8 @@ export default function Footer() {
                         <p className="text-xs leading-6">
                             대표자명: 허연 | 사업자등록번호: 653-71-00575 | 통신판매업 신고번호: 제 2026-인천연수구-0575 호<br />
                             주소: 인천광역시 연수구 컨벤시아대로 165, 755 (송도동, 포스코타워송도)<br />
-                            문의: <a href="mailto:mathetf.team@gmail.com" className="hover:text-blue-600 transition-colors">mathetf.team@gmail.com</a>
+                            고객센터: 070-7954-4146 (평일 10:00 ~ 17:00, 점심시간 12:00 ~ 13:00, 주말/공휴일 휴무)<br />
+                            이메일 문의: <a href="mailto:mathetf.team@gmail.com" className="hover:text-blue-600 transition-colors">mathetf.team@gmail.com</a>
                         </p>
                     </div>
                     <div className="flex gap-6 text-xs font-medium">
