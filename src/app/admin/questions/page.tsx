@@ -19,7 +19,7 @@ export default async function AdminQuestionsPage() {
         regionsRes,
         suggestionsRes
     ] = await Promise.all([
-        // Initial 10 Unsorted Questions (matching default tab)
+        // Initial 30 Unsorted Questions (matching default tab)
         supabase
             .from('questions')
             .select(`
@@ -51,7 +51,7 @@ export default async function AdminQuestionsPage() {
             .order('semester', { ascending: true })
             .order('school', { ascending: true })
             .order('question_number', { ascending: true })
-            .range(0, 9),
+            .range(0, 29),
 
         // Initial Regions
         supabase

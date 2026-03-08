@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     const unit = searchParams.get('unit') || '';
     const status = searchParams.get('status') || 'all';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = 10;
+    const limit = 30;
     const start = (page - 1) * limit;
 
     let queryBuilder = supabase

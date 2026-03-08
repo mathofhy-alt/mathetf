@@ -35,3 +35,4 @@ export async function generateEmbedding(text: string): Promise<number[]> {
         throw error;
     }
 }
+

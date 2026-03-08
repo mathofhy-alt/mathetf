@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
             // Processing specific IDs
             const { data, error } = await supabase
                 .from('questions')
-                .select('id, plain_text, equation_scripts, subject, grade, school')
+                .select('id, plain_text, equation_scripts, subject, grade, school, difficulty')
                 .in('id', forceIds);
 
             if (error) throw error;
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
             // Limit to 10 at a time to avoid timeout/rate limits
             const { data, error } = await supabase
                 .from('questions')
-                .select('id, plain_text, equation_scripts, subject, grade, school')
+                .select('id, plain_text, equation_scripts, subject, grade, school, difficulty')
                 .is('embedding', null)
                 .limit(10);
 
@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
 
         for (const q of questionsToProcess) {
             try {
-                // Construct meaningful text for embedding
+
+                // 1. Construct text for embedding
                 // Combine: Subject + Grade + Plain Text + Equations (LaTeX)
                 // This gives the model context about the math problem
                 const contentParts = [
@@ -77,13 +78,15 @@ export async function POST(req: NextRequest) {
                     continue;
                 }
 
-                // Generate Embedding
+                // 3. Generate Embedding
                 const embedding = await generateEmbedding(textToEmbed);
 
-                // Update DB
+                // 4. Update DB
                 const { error: updateError } = await supabase
                     .from('questions')
-                    .update({ embedding })
+                    .update({
+                        embedding
+                    })
                     .eq('id', q.id);
 
                 if (updateError) throw updateError;
