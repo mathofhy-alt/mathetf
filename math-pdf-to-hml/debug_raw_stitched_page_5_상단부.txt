@@ -1,0 +1,12 @@
+[탐색된 문제 번호: 21, 22]
+```json
+[
+  {
+    "number": "21",
+    "question": "다항식 [[EQUATION:f(x)]]가 다음 조건을 만족시킨다.\n\n(가) 다항식 [[EQUATION:f(x)]]를 다항식 [[EQUATION:g(x)]]로 나눈 몫과 나머지는 모두 [[EQUATION:g(x)-x^{4}]]이다.\n(나) [[EQUATION:g(x)]]를 [[EQUATION:x]]로 나눈 나머지는 [[EQUATION:1]]이다.\n(다) [[EQUATION:g(x)]]를 [[EQUATION:x^{2}-x+1]]로 나눈 나머지는 [[EQUATION:x-3]]이다.\n(라) [[EQUATION:g(x)]]를 [[EQUATION:x^{3}+1]]로 나눈 몫은 [[EQUATION:x-2]]이다.\n\n[[EQUATION:f(-1)]]의 값을 구하시오 [단]"
+  },
+  {
+    "number": "22",
+    "question": "두 이차함수 [[EQUATION:f(x)=(x-a)^{2}-a^{2}]], [[EQUATION:g(x)=-(x-3a)^{2}+9a^{2}+b]] 가 다음 조건을 만족시킨다.\n\n(가) 방정식 [[EQUATION:f(x)=g(x)]]는 서로 다른 두 실근 [[EQUATION:\\alpha, \\beta]]를 갖는다.\n(나) [[EQUATION:\\beta-\\alpha=4]]\n(다) [[EQUATION:g(\\beta)=f(\\alpha)+10a^{2}+b]]\n\n실수 전체에서 함숫값 [[EQUATION:f(x), g(x)]]중 큰 것을 [[EQUATION:h(x)]]라 하자.\n[[EQUATION:h(x)=3x+k]]의 서로 다른 실근의 개수가 [[EQUATION:4]]가 되도록 하는 모든 실수 [[EQUATION:k]]의 범위는 [[EQUATION:p < k < q]]이다. 이때, [[EQUATION:2pq]]의 값을 구하시오 [단]"
+  }
+]

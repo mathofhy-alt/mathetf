@@ -48,3 +48,7 @@ apply_mapping_table.js
 test_hml_v2_output.hml
 extracted_mapping_table.xml
 *.webp
+
+api_key.txt
+model.txt
+math-pdf-to-hml_stable_backup.zip

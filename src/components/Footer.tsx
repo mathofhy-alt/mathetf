@@ -3,10 +3,12 @@
 import { useState } from "react"
 import TermsModal from "./TermsModal"
 import PrivacyModal from "./PrivacyModal"
+import RefundPolicyModal from "./RefundPolicyModal"
 
 export default function Footer() {
     const [isTermsOpen, setIsTermsOpen] = useState(false)
     const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
+    const [isRefundOpen, setIsRefundOpen] = useState(false)
 
     return (
         <footer className="w-full py-10 bg-slate-50 text-slate-500 border-t mt-auto">
@@ -27,6 +29,12 @@ export default function Footer() {
                             className="hover:text-slate-800 transition-colors"
                         >
                             이용약관
+                        </button>
+                        <button
+                            onClick={() => setIsRefundOpen(true)}
+                            className="hover:text-slate-800 transition-colors"
+                        >
+                            취소/환불정책
                         </button>
                         <button
                             onClick={() => setIsPrivacyOpen(true)}
@@ -51,6 +59,10 @@ export default function Footer() {
                 isOpen={isPrivacyOpen}
                 onClose={() => setIsPrivacyOpen(false)}
                 readonly
+            />
+            <RefundPolicyModal
+                isOpen={isRefundOpen}
+                onClose={() => setIsRefundOpen(false)}
             />
         </footer>
     )

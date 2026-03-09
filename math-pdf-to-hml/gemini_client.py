@@ -12,9 +12,9 @@ import time
 from PIL import Image
 
 class GeminiMathParser:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model_name: str = 'gemini-3-flash-preview'):
         genai.configure(api_key=api_key)
-        self.model_name = 'gemini-3-flash-preview'
+        self.model_name = model_name
         self.model = genai.GenerativeModel(self.model_name)
         
     async def extract_math_problems(self, pdf_path: str, log_callback: Optional[Callable[[str], None]] = None) -> List[Dict]:
@@ -53,10 +53,12 @@ class GeminiMathParser:
             padding_height = 2000
             padded_img = Image.new("RGB", (img.width, img.height + padding_height), (255, 255, 255))
             padded_img.paste(img, (0, 0))
-            
-            padded_img_path = tempfile.mktemp(suffix=".png")
+            # Create a closed NamedTemporaryFile so Windows doesn't lock it while Image.save accesses it
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                padded_img_path = tmp.name
+                
             padded_img.save(padded_img_path)
-
+            
             try:
                 # 1. 파일 업로드 (비동기 스레드)
                 sample_file = await asyncio.to_thread(genai.upload_file, path=padded_img_path)
@@ -94,7 +96,10 @@ class GeminiMathParser:
                 return []
             finally:
                 if os.path.exists(padded_img_path):
-                    os.remove(padded_img_path)
+                    try:
+                        os.remove(padded_img_path)
+                    except OSError:
+                        pass
 
         # 모든 페이지 동시 시작
         all_page_tasks = [process_page(i) for i in range(total_pages)]
