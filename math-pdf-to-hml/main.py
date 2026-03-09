@@ -61,7 +61,19 @@ class MathPDFToHMLApp:
         model_frame = tk.Frame(main_frame)
         model_frame.pack(fill="x", pady=(0, 15))
         
-        self.models = ["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-3.1-flash-lite"]
+        self.models = [
+            "gemini-3-flash-preview", 
+            "gemini-3.1-pro-preview", 
+            "gemini-3.1-flash-lite",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-pro-exp-02-05",
+            "gemini-1.5-pro", 
+            "gemini-1.5-flash", 
+            "gemini-1.5-flash-8b"
+        ]
         self.model_combo = ttk.Combobox(model_frame, textvariable=self.selected_model, values=self.models, width=47, state="readonly")
         self.model_combo.pack(side="left")
         

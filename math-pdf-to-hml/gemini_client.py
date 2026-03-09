@@ -35,9 +35,10 @@ class GeminiMathParser:
         _log(f"🚀 [고속 엔진] 총 {total_pages}장의 PDF 고해상도 병렬 분석을 시작합니다.")
 
         # 병렬성 제어 (동시 호출 수 제한) - 유료 티어 한도에 맞춰 조절 가능
-        semaphore = asyncio.Semaphore(10)
+        page_semaphore = asyncio.Semaphore(2)  # 페이지 동시 처리 수
+        extract_semaphore = asyncio.Semaphore(5) # 문항 추출 동시 처리 수
 
-        async def process_page(page_num):
+        async def _process_page_inner(page_num):
             page = doc[page_num]
             _log(f"  -> [{page_num + 1}페이지] 이미지 렌더링 및 패딩 작업 중...")
             
@@ -70,8 +71,27 @@ class GeminiMathParser:
 1. (1), (2), ①, ② 같은 소문항이나 객관식 보기 번호는 절대 포함하지 마세요.
 2. 1., 2., 3. 처럼 점이 찍힌 번호라도 "1", "2", "3"으로 깔끔하게 리스트에 넣으세요."""
                 
-                resp = await self.model.generate_content_async([sample_file, discovery_prompt])
-                problem_numbers = self._parse_list(resp.text)
+                retries = 0
+                problem_numbers = []
+                while retries < 4:
+                    try:
+                        resp = await self.model.generate_content_async([sample_file, discovery_prompt])
+                        problem_numbers = self._parse_list(resp.text)
+                        break
+                    except Exception as e:
+                        retries += 1
+                        err_str = str(e).lower()
+                        if "429" in err_str or "quota" in err_str or "exhausted" in err_str:
+                            wait_time = retries * 15  # 15s, 30s, 45s, 60s
+                            _log(f"  ⏳ [{page_num + 1}페이지] API 할당량 초과(429). {wait_time}초 대기 후 재시도... ({retries}/4)")
+                            await asyncio.sleep(wait_time)
+                        else:
+                            _log(f"  !! [{page_num + 1}페이지] Discovery 오류: {e}")
+                            await asyncio.sleep(3)
+                        
+                        if retries == 4:
+                            _log(f"  !! [{page_num + 1}페이지] 재시도 초과. 건너뜁니다.")
+                            return []
                 
                 if not problem_numbers:
                     _log(f"  -> [{page_num + 1}페이지] 유효 문항 없음.")
@@ -82,7 +102,7 @@ class GeminiMathParser:
                 # 3. 개별 문항 병렬 추출 (이미지 공유)
                 tasks = []
                 for q_num in problem_numbers:
-                    tasks.append(self._extract_single_problem(q_num, sample_file, semaphore, _log))
+                    tasks.append(self._extract_single_problem(q_num, sample_file, extract_semaphore, _log))
                 
                 page_results = await asyncio.gather(*tasks)
                 
@@ -101,6 +121,10 @@ class GeminiMathParser:
                     except OSError:
                         pass
 
+        async def process_page(page_num):
+            async with page_semaphore:
+                return await _process_page_inner(page_num)
+
         # 모든 페이지 동시 시작
         all_page_tasks = [process_page(i) for i in range(total_pages)]
         pages_results = await asyncio.gather(*all_page_tasks)
@@ -113,12 +137,12 @@ class GeminiMathParser:
         _log(f"\n✅ 분석 완료! 총 {len(all_problems)}개 문항 추출 및 정렬됨.")
         return all_problems
 
-    async def _extract_single_problem(self, q_num, sample_file, semaphore, log_fn):
-        async with semaphore:
+    async def _extract_single_problem(self, q_num, sample_file, extract_semaphore, log_fn):
+        async with extract_semaphore:
             retries = 0
-            while retries < 3:
+            while retries < 4:
                 try:
-                    log_fn(f"    [문항 {q_num}] 병렬 추출 시작... (시도 {retries + 1}/3)")
+                    log_fn(f"    [문항 {q_num}] 병렬 추출 시작... (시도 {retries + 1}/4)")
                     # 유저 피드백 반영: 완전 생략 대신, 핵심 중간 계산 과정은 포함하여 논리가 끊기지 않도록 약간의 디테일 추가
                     # 유저 추가 피드백 (포맷팅): [해설] 단어 금지, '1단계 제목 내용' 포맷 사용, 굵은 글씨(**) 금지
                     # 유저 추가 피드백 (난이도): 고3 수준 제한, 극좌표, mod 등 대학수학/교과외 스킬 구체적 밴
@@ -197,9 +221,16 @@ class GeminiMathParser:
                     retries += 1
                 except Exception as e:
                     retries += 1
-                    if retries == 3:
+                    err_str = str(e).lower()
+                    if retries == 4:
                         log_fn(f"    [문항 {q_num}] ❌ 추출 실패 (최종): {str(e)[:50]}...")
-                    await asyncio.sleep(1)
+                    else:
+                        if "429" in err_str or "quota" in err_str or "exhausted" in err_str:
+                            wait_time = retries * 15  # 15, 30, 45, 60s
+                            log_fn(f"    [문항 {q_num}] ⏳ API 할당량 초과(429). {wait_time}초 대기 중... ({retries}/4)")
+                            await asyncio.sleep(wait_time)
+                        else:
+                            await asyncio.sleep(2)
             return None
 
     def _parse_list(self, text):
