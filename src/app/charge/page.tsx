@@ -15,6 +15,7 @@ declare global {
 }
 
 const POINT_PACKAGES = [
+    { points: 1000, label: '[PG 심사용] 결제 테스트 (1,000 P)' },
     { points: 5000, label: '5,000 P' },
     { points: 10000, label: '10,000 P', popular: true },
     { points: 30000, label: '30,000 P' },
