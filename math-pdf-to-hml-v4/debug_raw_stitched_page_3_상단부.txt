@@ -1,0 +1,46 @@
+[
+  {
+    "question": "[[EQUATION:x]]에 대한 이차방정식 [[EQUATION:x^{2} + mx - m + 4 = 0]]의 두 근을 [[EQUATION:\\alpha, \\beta]]라 하자. [[EQUATION:\\alpha^{3}]]이 실수가 되도록 하는 모든 실수 [[EQUATION:m]]의 값의 합을 [[EQUATION:p]], 곱을 [[EQUATION:q]]라 할 때, [[EQUATION:pq]]의 값은? ([[EQUATION:\\alpha]]는 허수)",
+    "options": [
+      "① -4",
+      "② -1",
+      "③ 0",
+      "④ 1",
+      "⑤ 4"
+    ],
+    "answer": "⑤"
+  },
+  {
+    "question": "이차함수 [[EQUATION:f(x)]]가 [[EQUATION:f(0)=f(6)]], [[EQUATION:|f(-1)|+f(4)=0]]을 만족시킨다. [[EQUATION:-2 \\le x \\le 5]] 일 때, 함수 [[EQUATION:f(x)]]의 최댓값이 66이다. 이때 [[EQUATION:f(0)]]의 값은?",
+    "options": [
+      "① -2",
+      "② -1",
+      "③ 0",
+      "④ 1",
+      "⑤ 2"
+    ],
+    "answer": "⑤"
+  },
+  {
+    "question": "자연수 [[EQUATION:n]]에 대하여 가로의 길이와 세로의 길이가 각각 [[EQUATION:n^{2}+4n+6]], [[EQUATION:n^{2}+6n+10]]인 직사각형 모양의 종이가 있다. 이 직사각형의 종이 안에 반지름의 길이가 [[EQUATION:n+2]]인 원을 그릴 때, 그릴 수 있는 원의 최대 개수를 [[EQUATION:f(n)]]이라 하자. [[EQUATION:f(m)=42]]이 되는 모든 자연수 [[EQUATION:m]]의 값의 합은?",
+    "options": [
+      "① 15",
+      "② 17",
+      "③ 19",
+      "④ 21",
+      "⑤ 23"
+    ],
+    "answer": "⑤"
+  },
+  {
+    "question": "[[EQUATION:0]]이 아닌 복소수 [[EQUATION:z]]에 대하여 [[EQUATION:z]]의 실수부분이 [[EQUATION:a]], 허수부분이 [[EQUATION:b]]일 때, [[EQUATION:|z|=\\sqrt{a^{2}+b^{2}}]]라 하고, [[EQUATION:\\frac{|z|}{z}-\\bar{z}=\\left(1+\\bar{z}+\\frac{\\bar{z}}{z}\\right)i]]를 만족시키는 복소수 [[EQUATION:z]]를 [[EQUATION:\\alpha]]라 하자. 임의의 복소수 [[EQUATION:z]]에 대하여 [[EQUATION:\\alpha z^{3} + \\beta(\\bar{z})^{3}]]이 실수가 되도록 하는 복소수 [[EQUATION:\\beta]]를 [[EQUATION:\\beta=p+qi]]라 할 때, [[EQUATION:p^{2}+q^{2}]]의 값은? (단, [[EQUATION:a, b, p, q]]는 실수)",
+    "options": [
+      "① 1",
+      "② 2",
+      "③ 3",
+      "④ 4",
+      "⑤ 5"
+    ],
+    "answer": "①"
+  }
+]

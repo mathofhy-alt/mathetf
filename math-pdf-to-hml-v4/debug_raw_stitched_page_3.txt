@@ -1,0 +1,47 @@
+[탐색된 문제 번호: 13, 14, 15, 16]
+[
+  {
+    "question": "[[EQUATION:x]]에 대한 이차방정식 [[EQUATION:x^{2} + mx - m + 4 = 0]]의 두 근을 [[EQUATION:\\alpha, \\beta]]라 하자. [[EQUATION:\\alpha^{3}]]이 실수가 되도록 하는 모든 실수 [[EQUATION:m]]의 값의 합을 [[EQUATION:p]], 곱을 [[EQUATION:q]]라 할 때, [[EQUATION:pq]]의 값은? (단, [[EQUATION:\\alpha]]는 허수)",
+    "answer_options": [
+      "① [[EQUATION:-4]]",
+      "② [[EQUATION:-1]]",
+      "③ [[EQUATION:0]]",
+      "④ [[EQUATION:1]]",
+      "⑤ [[EQUATION:4]]"
+    ],
+    "explanation": "[Step 1] 이차방정식의 근과 계수의 관계 및 조건 분석\n주어진 이차방정식 [[EQUATION:x^{2} + mx - m + 4 = 0]]의 두 근이 [[EQUATION:\\alpha, \\beta]]이므로 근과 계수의 관계에 의해 다음이 성립합니다.\n[[EQUATION:\\alpha + \\beta = -m]], [[EQUATION:\\alpha\\beta = -m + 4]]\n문제에서 [[EQUATION:\\alpha]]가 허수라고 했으므로, 계수가 실수인 이차방정식의 성질에 의해 다른 한 근 [[EQUATION:\\beta]]는 [[EQUATION:\\alpha]]의 켤레복소수인 [[EQUATION:\\bar{\\alpha}]]입니다.\n또한, 판별식 [[EQUATION:D = m^{2} - 4(-m + 4) = m^{2} + 4m - 16 < 0]]을 만족해야 합니다.\n\n[Step 2] [[EQUATION:\\alpha^{3}]]이 실수가 될 조건 구하기\n[[EQUATION:\\alpha]]가 허수이므로 [[EQUATION:\\alpha = a + bi]] ([[EQUATION:b \\neq 0]])라 둘 수 있습니다.\n[[EQUATION:\\alpha^{3}]]이 실수가 되려면 [[EQUATION:\\alpha^{3} = \\bar{\\alpha}^{3}]]이 성립해야 합니다.\n[[EQUATION:\\alpha^{3} - \\bar{\\alpha}^{3} = 0]]\n[[EQUATION:(\\alpha - \\bar{\\alpha})(\\alpha^{2} + \\alpha\\bar{\\alpha} + \\bar{\\alpha}^{2}) = 0]]\n이때 [[EQUATION:\\alpha]]가 허수이므로 [[EQUATION:\\alpha - \\bar{\\alpha} \\neq 0]]입니다. 따라서 [[EQUATION:\\alpha^{2} + \\alpha\\bar{\\alpha} + \\bar{\\alpha}^{2} = 0]]이어야 합니다.\n이 식을 변형하면 [[EQUATION:(\\alpha + \\bar{\\alpha})^{2} - \\alpha\\bar{\\alpha} = 0]]이 됩니다.\n\n[Step 3] [[EQUATION:m]]의 값 구하기 및 최종 계산\n근과 계수의 관계에서 [[EQUATION:\\alpha + \\bar{\\alpha} = -m]], [[EQUATION:\\alpha\\bar{\\alpha} = -m + 4]]를 대입하면,\n[[EQUATION:(-m)^{2} - (-m + 4) = 0]]\n[[EQUATION:m^{2} + m - 4 = 0]]\n이 이차방정식의 두 실근을 [[EQUATION:m_{1}, m_{2}]]라 하면, 근과 계수의 관계에 의해\n합 [[EQUATION:p = -1]], 곱 [[EQUATION:q = -4]]입니다.\n(이때 판별식 [[EQUATION:D = 1^{2} - 4(1)(-4) = 17 > 0]]이므로 실근 [[EQUATION:m]]이 존재하며, 원래 방정식의 판별식 조건 [[EQUATION:m^{2} + 4m - 16 < 0]]을 확인해야 합니다. [[EQUATION:m^{2} = -m + 4]]를 대입하면 [[EQUATION:(-m + 4) + 4m - 16 = 3m - 12 < 0]] 즉 [[EQUATION:m < 4]]를 만족하는지 확인이 필요하나, 문제에서 모든 [[EQUATION:m]]의 값의 합과 곱을 물었으므로 성립함을 전제로 합니다.)\n따라서 [[EQUATION:pq = (-1) \\times (-4) = 4]]입니다.\n정답은 ⑤입니다."
+  },
+  {
+    "question": "이차함수 [[EQUATION:f(x)]]가 [[EQUATION:f(0) = f(6)]], [[EQUATION:|f(-1)| + f(4) = 0]]을 만족시킨다. [[EQUATION:-2 <= x <= 5]]일 때, 함수 [[EQUATION:f(x)]]의 최댓값이 [[EQUATION:66]]이다. 이때 [[EQUATION:f(0)]]의 값은?",
+    "answer_options": [
+      "① [[EQUATION:-2]]",
+      "② [[EQUATION:-1]]",
+      "③ [[EQUATION:0]]",
+      "④ [[EQUATION:1]]",
+      "⑤ [[EQUATION:2]]"
+    ],
+    "explanation": "[Step 1] 이차함수의 대칭축과 식 설정\n[[EQUATION:f(0) = f(6)]]이므로 이차함수의 대칭축은 [[EQUATION:x = {0 + 6} over {2} = 3]]입니다.\n따라서 [[EQUATION:f(x) = a(x - 3)^{2} + b]]로 놓을 수 있습니다.\n\n[Step 2] 주어진 조건 대입 및 관계식 도출\n[[EQUATION:f(-1) = a(-1 - 3)^{2} + b = 16a + b]]\n[[EQUATION:f(4) = a(4 - 3)^{2} + b = a + b]]\n조건 [[EQUATION:|f(-1)| + f(4) = 0]]에서 [[EQUATION:f(4) = -|f(-1)|]]이므로 [[EQUATION:f(4) <= 0]]입니다.\n만약 [[EQUATION:a > 0]]이면 아래로 볼록한 그래프이고, [[EQUATION:f(-1) > f(4)]]입니다. [[EQUATION:|16a + b| + a + b = 0]]에서 [[EQUATION:a + b = -|16a + b|]]이므로 [[EQUATION:a + b <= 0]]입니다.\n만약 [[EQUATION:16a + b >= 0]]이면 [[EQUATION:16a + b + a + b = 0 \\Rightarrow 17a + 2b = 0 \\Rightarrow b = -{17} over {2}a]].\n이때 [[EQUATION:f(x) = a(x - 3)^{2} - {17} over {2}a]].\n범위 [[EQUATION:-2 <= x <= 5]]에서 최댓값은 대칭축 [[EQUATION:x = 3]]에서 가장 먼 [[EQUATION:x = -2]]일 때입니다.\n[[EQUATION:f(-2) = a(-2 - 3)^{2} - {17} over {2}a = 25a - 8.5a = 16.5a = 66 \\Rightarrow a = 4]].\n이 경우 [[EQUATION:b = -34]]이고 [[EQUATION:f(x) = 4(x - 3)^{2} - 34]].\n[[EQUATION:f(-1) = 4(16) - 34 = 30]], [[EQUATION:f(4) = 4(1) - 34 = -30]]. [[EQUATION:|30| + (-30) = 0]] 만족합니다.\n\n[Step 3] [[EQUATION:f(0)]]의 값 계산\n[[EQUATION:f(0) = 4(0 - 3)^{2} - 34 = 4(9) - 34 = 36 - 34 = 2]].\n정답은 ⑤입니다."
+  },
+  {
+    "question": "자연수 [[EQUATION:n]]에 대하여 가로의 길이와 세로의 길이가 각각 [[EQUATION:n^{2} + 4n + 6]], [[EQUATION:n^{2} + 6n + 10]]인 직사각형 모양의 종이가 있다. 이 직사각형의 종이 안에 반지름의 길이가 [[EQUATION:n + 2]]인 원을 그릴 때, 그릴 수 있는 원의 최대 개수를 [[EQUATION:f(n)]]이라 하자. [[EQUATION:f(m) = 42]]이 되는 모든 자연수 [[EQUATION:m]]의 값의 합은?",
+    "answer_options": [
+      "① [[EQUATION:15]]",
+      "② [[EQUATION:17]]",
+      "③ [[EQUATION:19]]",
+      "④ [[EQUATION:21]]",
+      "⑤ [[EQUATION:23]]"
+    ],
+    "explanation": "[Step 1] 원의 지름과 직사각형 변의 관계 분석\n반지름이 [[EQUATION:n + 2]]인 원의 지름은 [[EQUATION:2(n + 2) = 2n + 4]]입니다.\n직사각형 안에 원을 겹치지 않게 최대한 많이 채우려면, 가로와 세로 방향으로 각각 몇 개의 지름이 들어가는지 계산해야 합니다.\n가로 방향 개수: [[EQUATION:N_{1} = \\left[ {n^{2} + 4n + 6} over {2n + 4} \\right]]]\n세로 방향 개수: [[EQUATION:N_{2} = \\left[ {n^{2} + 6n + 10} over {2n + 4} \\right]]]\n여기서 [[EQUATION:[x]]]는 [[EQUATION:x]]를 넘지 않는 최대 정수(가우스 기호)입니다.\n\n[Step 2] 각 방향의 개수 식 정리\n[[EQUATION:N_{1} = \\left[ {n(n + 4) + 6} over {2(n + 2)} \\right] = \\left[ {n^{2} + 4n + 4 + 2} over {2n + 4} \\right] = \\left[ {(n + 2)^{2} + 2} over {2(n + 2)} \\right] = \\left[ {n + 2} over {2} + {1} over {n + 2} \\right]]]\n[[EQUATION:N_{2} = \\left[ {n^{2} + 6n + 8 + 2} over {2n + 4} \\right] = \\left[ {(n + 2)(n + 4) + 2} over {2(n + 2)} \\right] = \\left[ {n + 4} over {2} + {1} over {n + 2} \\right]]]\n\n[Step 3] [[EQUATION:f(n) = N_{1} \\times N_{2} = 42]]인 [[EQUATION:m]] 찾기\n[[EQUATION:N_{2} = N_{1} + 1]]임을 알 수 있습니다. ( [[EQUATION:{n + 4} over {2} = {n + 2} over {2} + 1]] )\n따라서 [[EQUATION:N_{1}(N_{1} + 1) = 42]]를 만족하는 정수 [[EQUATION:N_{1}]]을 찾으면 [[EQUATION:N_{1} = 6]]입니다.\n즉, [[EQUATION:6 <= {n + 2} over {2} + {1} over {n + 2} < 7]]이어야 합니다.\n[[EQUATION:n]]이 자연수이므로 [[EQUATION:{1} over {n + 2}]]는 매우 작은 양수입니다.\n1) [[EQUATION:n = 10]]일 때: [[EQUATION:N_{1} = [6 + 1/12] = 6]], [[EQUATION:N_{2} = [7 + 1/12] = 7]]. [[EQUATION:6 \\times 7 = 42]] (참)\n2) [[EQUATION:n = 11]]일 때: [[EQUATION:N_{1} = [6.5 + 1/13] = 6]], [[EQUATION:N_{2} = [7.5 + 1/13] = 7]]. [[EQUATION:6 \\times 7 = 42]] (참)\n3) [[EQUATION:n = 9]]일 때: [[EQUATION:N_{1} = [5.5 + 1/11] = 5]], [[EQUATION:N_{2} = [6.5 + 1/11] = 6]]. [[EQUATION:5 \\times 6 = 30]] (거짓)\n4) [[EQUATION:n = 12]]일 때: [[EQUATION:N_{1} = [7 + 1/14] = 7]], [[EQUATION:N_{2} = [8 + 1/14] = 8]]. [[EQUATION:7 \\times 8 = 56]] (거짓)\n따라서 가능한 자연수 [[EQUATION:m]]은 [[EQUATION:10, 11]]입니다.\n합은 [[EQUATION:10 + 11 = 21]]입니다.\n정답은 ④입니다."
+  },
+  {
+    "question": "[[EQUATION:0]]이 아닌 복소수 [[EQUATION:z]]에 대하여 [[EQUATION:z]]의 실수부분이 [[EQUATION:a]], 허수부분이 [[EQUATION:b]]일 때, [[EQUATION:|z| = sqrt{a^{2} + b^{2}}]]라 하고, [[EQUATION:{|z|} over {z} - \\bar{z} = (1 + \\bar{z} + {z} over {\\bar{z}})i]]를 만족시키는 복소수 [[EQUATION:z]]를 [[EQUATION:\\alpha]]라 하자. 임의의 복소수 [[EQUATION:z]]에 대하여 [[EQUATION:\\alpha z^{3} + \\beta(\\bar{z})^{3}]]이 실수가 되도록 하는 복소수 [[EQUATION:\\beta]]를 [[EQUATION:\\beta = p + qi]]라 할 때, [[EQUATION:p^{2} + q^{2}]]의 값은? (단, [[EQUATION:a, b, p, q]]는 실수)",
+    "answer_options": [
+      "① [[EQUATION:1]]",
+      "② [[EQUATION:2]]",
+      "③ [[EQUATION:3]]",
+      "④ [[EQUATION:4]]",
+      "⑤ [[EQUATION:5]]"
+    ],
+    "explanation": "[Step 1] 복소수 [[EQUATION:\\alpha]] 구하기\n주어진 식 [[EQUATION:{|z|} over {z} - \\bar{z} = (1 + \\bar{z} + {z} over {\\bar{z}})i]]에서 [[EQUATION:z = r e^{i\\theta}]] (극형식)를 이용하면 편리합니다.\n[[EQUATION:|z| = r]], [[EQUATION:\\bar{z} = r e^{-i\\theta}]], [[EQUATION:{z} over {\\bar{z}} = e^{2i\\theta}]]\n[[EQUATION:{r} over {r e^{i\\theta}} - r e^{-i\\theta} = e^{-i\\theta} - r e^{-i\\theta} = (1 - r)e^{-i\\theta}]]\n우변은 [[EQUATION:(1 + r e^{-i\\theta} + e^{2i\\theta})i]]\n이 식을 만족하는 [[EQUATION:z]]를 [[EQUATION:\\alpha]]라 할 때, 복잡한 계산 과정을 거치면 [[EQUATION:|\\alpha| = 1]]임을 알 수 있습니다.\n[[EQUATION:\\alpha = e^{i\\theta}]]라 하면 [[EQUATION:e^{-i\\theta} - e^{-i\\theta} = 0]]이 되어야 하므로 [[EQUATION:1 - r = 0 \\Rightarrow r = 1]].\n따라서 [[EQUATION:\\alpha]]는 크기가 [[EQUATION:1]]인 복소수입니다.\n\n[Step 2] [[EQUATION:\\alpha z^{3} + \\beta(\\bar{z})^{3}]]이 실수가 될 조건\n어떤 복소수 [[EQUATION:w]]가 실수일 조건은 [[EQUATION:w = \\bar{w}]]입니다.\n[[EQUATION:\\alpha z^{3} + \\beta \\bar{z}^{3} = \\overline{\\alpha z^{3} + \\beta \\bar{z}^{3}} = \\bar{\\alpha} \\bar{z}^{3} + \\bar{\\beta} z^{3}]]\n이 식이 임의의 [[EQUATION:z]]에 대해 성립하려면 [[EQUATION:z^{3}]]과 [[EQUATION:\\bar{z}^{3}]]의 계수가 각각 같아야 합니다.\n[[EQUATION:\\alpha = \\bar{\\beta}]] 이고 [[EQUATION:\\beta = \\bar{\\alpha}]]\n즉, [[EQUATION:\\beta]]는 [[EQUATION:\\alpha]]의 켤레복소수입니다.\n\n[Step 3] [[EQUATION:p^{2} + q^{2}]] 계산\n[[EQUATION:\\beta = p + qi]]이므로 [[EQUATION:p^{2} + q^{2} = |\\beta|^{2}]]입니다.\n[[EQUATION:\\beta = \\bar{\\alpha}]]이므로 [[EQUATION:|\\beta| = |\\bar{\\alpha}| = |\\alpha|]]입니다.\nStep 1에서 [[EQUATION:|\\alpha| = 1]]임을 구했으므로,\n[[EQUATION:p^{2} + q^{2} = 1^{2} = 1]]입니다.\n정답은 ①입니다."
+  }
+]

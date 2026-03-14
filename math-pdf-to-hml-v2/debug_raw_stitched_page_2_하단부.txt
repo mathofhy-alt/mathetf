@@ -1,0 +1,22 @@
+[
+  {
+    "number": "10",
+    "question": "다음은 모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:f(x) = f(3n - x)]]를 만족시키는 이차함수 [[EQUATION:f(x) = -x^{2} + ax + b]]에 대한 설명이다.\n이차함수 [[EQUATION:y = f(x)]]의 그래프의 축은 직선\n[[EQUATION:x =]] (가) 이다. 또한 [[EQUATION:b \\ge]] (나) 일 때,\n이차함수 그래프가 [[EQUATION:x]]축과 만난다. [[EQUATION:-n \\le x \\le 2n]]에서\n함수 [[EQUATION:f(x)]]의 최댓값과 최솟값의 차는 (다) 이다.\n(가), (나), (다) 에 들어갈 양수 [[EQUATION:n]]에 대한 다항식을 각각 [[EQUATION:g(n), h(n), k(n)]]이라 할 때, [[EQUATION:g(2) + h(2) + k(2)]]의 값은?",
+    "options": [
+      "① 19",
+      "② 21",
+      "③ 25",
+      "④ 27",
+      "⑤ 31"
+    {
+    "number": null,
+    "question": "〔그림 1〕\n〔그림 2〕\n(문제 텍스트가 유실됨)",
+    "options": [
+      "① 86",
+      "② 87",
+      "③ 88",
+      "④ 89",
+      "⑤ 90"
+    ]
+  }
+]

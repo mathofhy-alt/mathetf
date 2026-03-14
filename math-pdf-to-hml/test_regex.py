@@ -1,13 +1,17 @@
 import re
 
-def sanitize_json(text):
-    # 1. LaTeX 기호 보호 (V3 원본 버전)
-    latex_keywords_regex = r'\\(times|tan|rightarrow|Rightarrow|rho|frac|beta|bar|nabla|neq|ni|theta|tau|varphi|phi|pi|psi|nu|mu|lambda|kappa|iota|eta|zeta|epsilon|delta|gamma|alpha|omega|chi|upsilon|sigma|xi|Theta|Phi|Pi|Psi|Lambda|Delta|Gamma|Omega|Sigma|Xi|Upsilon|cdot|sqrt|left|right|sum|prod|int|oint|lim|infty|approx|equiv|propto|sim|simeq|asymp|doteq|implies)'
-    text = re.sub(latex_keywords_regex, r'\\\\\1', text)
-    
-    # 2. 기타 알 수 없는 단일 백슬래시도 안전하게 이중화
-    text = re.sub(r'(?<!\\)\\([^"\\/bfnrtu])', r'\\\\\1', text)
-    return text
+text1 = r"\((a+1)(b+1)(c+1) = 70\)"
+text2 = r"[[EQUATION{g(x) = \frac{x^2 - 4x + 6}{x - 2} \ (x \neq 2)}]]"
 
-print("ORIGINAL:", repr(r"\\alpha"))
-print("SANITIZED:", repr(sanitize_json(r"\\alpha")))
+# Test 1: Why did \( fail?
+res1 = re.sub(r'\\\((.*?)\\\)', r'[[EQUATION:\1]]', text1, flags=re.DOTALL)
+print("Test 1 Match:", res1)
+
+# Test 2: AI hallucinates [[EQUATION{...}]] instead of [[EQUATION:...]]
+text2_fixed = re.sub(r'\[\[EQUATION\{(.*?)\}\]\]', r'[[EQUATION:\1]]', text2, flags=re.DOTALL)
+print("Test 2 Fixed:", text2_fixed)
+
+# Test 3: What if the AI just doesn't wrap \alpha? 
+text3 = r"x좌표를 각각 \alpha, \beta (\alpha < \beta)라 하자."
+# We can't automatically wrap \alpha easily because we don't know where the math ends, 
+# BUT we can wrap loose \alpha, \beta, \gamma if they appear in text.

@@ -141,6 +141,15 @@ class HMLGenerator:
         text = re.sub(r'\$\$(.*?)\$\$', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
         text = re.sub(r'\$(.*?)\$', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
         
+        # [긴급 수리] OpenAI 모델이 지시를 무시하고 \(x\) 나 \[x\] 마크다운을 쓴 경우도 강제로 씌워줍니다.
+        text = re.sub(r'\\\((.*?)\\\)', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
+        text = re.sub(r'\\\[(.*?)\\\]', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
+        
+        # [긴급 수리] AI가 가끔 파라미터 태그를 마음대로 변형하는 현상 교정
+        # [[EQUATION=...]], [[EQUATION{...}]] 등
+        text = re.sub(r'\[\[EQUATION[=\{]\s*(.*?)\s*(?:\}\]\]|\]\])', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
+        text = re.sub(r'\[\[EQUATION\s+(.*?)\s*\]\]', r'[[EQUATION:\1]]', text, flags=re.DOTALL)
+        
         parts = re.split(r'\[\[EQUATION:(.*?)\]\]', text, flags=re.DOTALL)
         
         result = ""
@@ -232,8 +241,54 @@ class HMLGenerator:
                         print(f"Warning: Failed to load gemini_hwp_dict.json: {e}")
 
                     
-                    # 1. LaTeX 분수 \frac{a}{b} -> {a} over {b} 변환 (재귀적 처리 없이 일단 단층 처리)
-                    eq_text = re.sub(r'\\frac\s*\{\s*(.*?)\s*\}\s*\{\s*(.*?)\s*\}', r'{\1} over {\2}', eq_text)
+                    # 1. LaTeX 분수 \frac{a}{b} -> {a} over {b} 변환 (재귀적 괄호 추적 알고리즘 적용)
+                    # HWP 수식 파서는 괄호 쌍이 조금이라도 안 맞으면 전체 수식을 블랭크 처리하므로, 
+                    # \frac{\sqrt{3}}{2} 처럼 내부에 괄호가 중첩된 경우를 견고하게 파싱해야 합니다.
+                    while True:
+                        match = re.search(r'\\frac\b\s*', eq_text)
+                        if not match:
+                            break
+                            
+                        start_idx = match.start()
+                        after_frac_idx = match.end()
+                        
+                        def get_next_arg(text, start):
+                            idx = start
+                            while idx < len(text) and text[idx].isspace():
+                                idx += 1
+                            if idx >= len(text):
+                                return None, None
+                            
+                            if text[idx] == '{':
+                                brace_count = 0
+                                arg_start = idx
+                                for i in range(idx, len(text)):
+                                    if text[i] == '{': brace_count += 1
+                                    elif text[i] == '}':
+                                        brace_count -= 1
+                                        if brace_count == 0:
+                                            return text[arg_start+1:i], i + 1
+                            else:
+                                # 단일 글자
+                                return text[idx], idx + 1
+                            return None, None
+                            
+                        arg1, next_start = get_next_arg(eq_text, after_frac_idx)
+                        if arg1 is None:
+                            eq_text = eq_text[:start_idx] + eq_text[after_frac_idx:]
+                            continue
+                            
+                        arg2, end_idx = get_next_arg(eq_text, next_start)
+                        if arg2 is None:
+                            eq_text = eq_text[:start_idx] + eq_text[after_frac_idx:]
+                            continue
+                            
+                        # 단층 치환
+                        replacement = f" {{{arg1}}} over {{{arg2}}} "
+                        eq_text = eq_text[:start_idx] + replacement + eq_text[end_idx:]
+                    
+                    # OpenAI 특유의 기괴한 LEFT { ... RIGHT . 생성물이나 파싱 꼬임 현상 강제 교정
+                    eq_text = re.sub(r'LEFT\s*\{\s*(.*?)\s*RIGHT\s*\.', r'{\1}', eq_text)
                     
                     # 2. 제미나이가 잘못 생성한 n제곱근(sqrt[n]{x}) 포맷을 올바른 HWP 포맷(root {n} of {x})으로 변환
                     # 추가적인 예외: 제미나이가 \sqrt[2]{x} 형태로 주었을 때 그냥 sqrt{x} 로 쓰도록 강제 치환 (2제곱근 표기 방지)

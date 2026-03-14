@@ -1,0 +1,44 @@
+[
+  {
+    "question_num": "1",
+    "question": "실수 [[EQUATION:x]], [[EQUATION:y]]에 대하여 [[EQUATION:\\left( \\frac{1-i}{1+\\sqrt{3}i} \\right)^{13} = x+yi]]가 성립할 때, [[EQUATION:x+y]]의 값은? (단, [[EQUATION:i = \\sqrt{-1}]])",
+    "answer_options": [
+      "① [[EQUATION:\\frac{1}{2^8}]]",
+      "② [[EQUATION:\\frac{\\sqrt{3}}{2^8}]]",
+      "③ [[EQUATION:\\frac{1}{2^7}]]",
+      "④ [[EQUATION:\\frac{\\sqrt{3}}{2^7}]]",
+      "⑤ [[EQUATION:\\frac{1}{2^6}]]"
+    ],
+    "explanation": "주어진 식의 분자와 분모를 각각 거듭제곱하여 간단히 정리한다.\n\n분자를 [[EQUATION:1-i]]라 하면\n[[EQUATION:(1-i)^2 = -2i]]\n[[EQUATION:(1-i)^{12} = \\left\\{ (1-i)^2 \\right\\}^6 = (-2i)^6 = 64i^6 = -64]]\n[[EQUATION:(1-i)^{13} = -64(1-i)]]\n\n분모를 [[EQUATION:1+\\sqrt{3}i]]라 하면\n[[EQUATION:(1+\\sqrt{3}i)^2 = 1+2\\sqrt{3}i-3 = -2+2\\sqrt{3}i]]\n[[EQUATION:(1+\\sqrt{3}i)^3 = (-2+2\\sqrt{3}i)(1+\\sqrt{3}i) = -2-2\\sqrt{3}i+2\\sqrt{3}i-6 = -8]]\n[[EQUATION:(1+\\sqrt{3}i)^{12} = \\left\\{ (1+\\sqrt{3}i)^3 \\right\\}^4 = (-8)^4 = 2^{12} = 4096]]\n[[EQUATION:(1+\\sqrt{3}i)^{13} = 4096(1+\\sqrt{3}i)]]\n\n주어진 식에 대입하면\n[[EQUATION:\\left( \\frac{1-i}{1+\\sqrt{3}i} \\right)^{13} = \\frac{-64(1-i)}{4096(1+\\sqrt{3}i)} = \\frac{-(1-i)}{64(1+\\sqrt{3}i)}]]\n\n분모를 실수화하면\n[[EQUATION:\\frac{-(1-i)(1-\\sqrt{3}i)}{64(1+\\sqrt{3}i)(1-\\sqrt{3}i)} = \\frac{-(1-\\sqrt{3}i-i-\\sqrt{3})}{64(1+3)} = \\frac{\\sqrt{3}-1+(\\sqrt{3}+1)i}{256}]]\n\n따라서 [[EQUATION:x = \\frac{\\sqrt{3}-1}{256}]], [[EQUATION:y = \\frac{\\sqrt{3}+1}{256}]]이다.\n\n[[EQUATION:x+y = \\frac{\\sqrt{3}-1+\\sqrt{3}+1}{256} = \\frac{2\\sqrt{3}}{256} = \\frac{\\sqrt{3}}{128} = \\frac{\\sqrt{3}}{2^7}]]\n\n따라서 정답은 ④이다."
+  },
+  {
+    "question_num": "2",
+    "question": "두 함수\n[[EQUATION:f(x)=\\begin{cases}3x-3a&(x>a)\\\\-x+a&(x\\le a)\\end{cases}]]\n[[EQUATION:g(x)=\\begin{cases}-x^2+7x-6&(1\\le x\\le 6)\\\\x^2-7x+6&(x<1 \\text{ 또는 } x>6)\\end{cases}]]\n에 대하여 방정식 [[EQUATION:f(x)=g(x)]]의 서로 다른 실근의 개수를 [[EQUATION:h(a)]]라 할 때, [[EQUATION:h(a)=3]]을 만족시키는 모든 실수 [[EQUATION:a]]의 값의 곱은?",
+    "answer_options": [
+      "[[EQUATION:①]] [[EQUATION:40]]",
+      "[[EQUATION:②]] [[EQUATION:42]]",
+      "[[EQUATION:③]] [[EQUATION:44]]",
+      "[[EQUATION:④]] [[EQUATION:46]]",
+      "[[EQUATION:⑤]] [[EQUATION:48]]"
+    ],
+    "explanation": "[[EQUATION:a \\in \\left\\{ 1, 6, \\frac{2}{3}, 10 \\right\\}]]\n따라서 정답은 [[EQUATION:①]]이다."
+  },
+  {
+    "question_num": "3",
+    "question": "다음 그림과 같이 [[EQUATION:0]]을 제외한 [[EQUATION:-3]]부터 [[EQUATION:5]]까지의 정수가 각각 적혀 있는 카드가 [[EQUATION:8]]장 있다. 이 중에서 한 장씩 세 번 뽑아 첫 번째, 두 번째, 세 번째 뽑은 카드에 적혀 있는 정수를 각각 [[EQUATION:a]], [[EQUATION:b]], [[EQUATION:c]]라 하자. (단, 뽑은 카드는 다시 뽑을 수 있다)\n\n다음 두 조건을 모두 만족시키면 상품을 받는 게임을 하려고 한다.\n\n(가) 이차방정식 [[EQUATION:ax^2+bx+c=0]]은 서로 다른 두 실근을 갖는다.\n(나) 이차방정식 [[EQUATION:ax^2+cx+b=0]]은 서로 다른 두 허근을 갖는다.\n\n상품을 받기 위한 [[EQUATION:a]], [[EQUATION:b]], [[EQUATION:c]]의 곱 [[EQUATION:abc]]의 최댓값을 [[EQUATION:M]], 최솟값을 [[EQUATION:m]]이라고 할 때, [[EQUATION:M-m]]의 값은?",
+    "answer_options": [
+      "① [[EQUATION:115]]",
+      "② [[EQUATION:120]]",
+      "③ [[EQUATION:125]]",
+      "④ [[EQUATION:130]]",
+      "⑤ [[EQUATION:135]]"
+    ],
+    "explanation": "[[EQUATION:M=45, m=-75 \\implies M-m=120]]\n따라서 정답은 [[EQUATION:②]]이다."
+  },
+  {
+    "question_num": "4",
+    "question": "실수 [[EQUATION:t]]에 대하여 함수 [[EQUATION:f(x)=x^2-2x+2t]]의 그래프와 직선 [[EQUATION:y=tx]]가 만나는 서로 다른 두 점의 [[EQUATION:x]]좌표를 각각 [[EQUATION:\\alpha]], [[EQUATION:\\beta]] ([[EQUATION:\\alpha < \\beta]])라 하자. [[EQUATION:\\alpha \\le x \\le \\beta]]에서 함수 [[EQUATION:y=f(x)]]의 최댓값과 최솟값의 합을 [[EQUATION:g(t)]]라 할 때, [[EQUATION:t]]에 대한 방정식 [[EQUATION:g(t)=t+a]]의 서로 다른 실근의 개수가 [[EQUATION:2]]가 되도록 하는 모든 실수 [[EQUATION:a]]의 값의 범위를 구하시오.",
+    "answer_options": [],
+    "explanation": "[[EQUATION:g(t)=t+a]]"
+  }
+]
