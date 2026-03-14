@@ -76,7 +76,9 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
             return;
         }
 
-        const paymentId = `payment-${crypto.randomUUID()}`;
+        // INICIS V2 요구사항: oid (paymentId) 길이는 최대 40자 제한
+        // 'payment-' (8자) + UUID의 첫 31자 = 39자
+        const paymentId = `payment-${crypto.randomUUID().replace(/-/g, '').substring(0, 31)}`;
         const orderName = selectedItems.map(item => `${item.points.toLocaleString()}P x${cart[item.points]}`).join(', ');
 
         try {

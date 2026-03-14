@@ -89,7 +89,9 @@ export default function ChargePage() {
             return;
         }
 
-        const paymentId = `payment-${crypto.randomUUID()}`;
+        // INICIS V2 요구사항: oid (paymentId) 길이는 최대 40자 제한
+        // 'payment-' (8자) + UUID의 첫 32자 = 40자 이하
+        const paymentId = `payment-${crypto.randomUUID().replace(/-/g, '').substring(0, 31)}`;
         const orderNameStr = selectedItems.map(item => `${item.points.toLocaleString()}P x${cart[item.points]}`).join(', ');
 
         try {
