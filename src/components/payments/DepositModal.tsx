@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { X, Coins, CreditCard, ChevronRight } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import type { User } from '@supabase/supabase-js';
+import PhoneVerificationModal from '@/components/payments/PhoneVerificationModal';
 
 interface DepositModalProps {
     isOpen: boolean;
@@ -21,7 +23,14 @@ const POINT_PACKAGES = [
 export default function DepositModal({ isOpen, onClose, user, onSuccess }: DepositModalProps) {
     const [cart, setCart] = useState<{ [points: number]: number }>({});
     const [loading, setLoading] = useState(false);
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [localUser, setLocalUser] = useState<User | null>(user);
     const supabase = createClient();
+
+    // 부모 컴포넌트에서 prop이 변하면 동기화
+    React.useEffect(() => {
+        setLocalUser(user);
+    }, [user]);
 
     if (!isOpen) return null;
 
@@ -47,7 +56,15 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
     };
 
     const handlePayment = async () => {
-        if (!user || totalAmount === 0) return;
+        if (!localUser || totalAmount === 0) return;
+        
+        // 레거시 유저(전화번호 없음) 방어 -> 모달 띄우기
+        const userPhone = localUser.user_metadata?.phone || localUser.phone;
+        if (!userPhone) {
+            setShowPhoneModal(true);
+            return;
+        }
+
         setLoading(true);
 
         const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
@@ -79,10 +96,10 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
                     quantity: cart[item.points]
                 })),
                 customer: {
-                    fullName: user.email?.split('@')[0] || 'User',
-                    email: user.email,
-                    id: user.id,
-                    phoneNumber: user.user_metadata?.phone || user.phone || '070-7954-4146', // KG 이니시스 V2 필수 유효성 검사 통과 목적
+                    fullName: localUser.email?.split('@')[0] || 'User',
+                    email: localUser.email,
+                    id: localUser.id,
+                    phoneNumber: localUser.user_metadata?.phone || localUser.phone || '070-7954-4146', // KG 이니시스 V2 필수 유효성 검사 통과 목적
                 }
             });
 
@@ -99,7 +116,7 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
                     paymentId: response.paymentId,
                     amount: totalAmount,
                     points: totalPoints,
-                    userId: user.id
+                    userId: localUser.id
                 })
             });
 
@@ -214,6 +231,7 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
                     </div>
 
                     <button
+                        id="modal_deposit_btn"
                         onClick={handlePayment}
                         disabled={loading || totalAmount === 0}
                         className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-slate-200 disabled:text-slate-400 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-brand-600/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
@@ -234,6 +252,19 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
                     </p>
                 </div>
             </div>
+
+            <PhoneVerificationModal 
+                isOpen={showPhoneModal}
+                onClose={() => setShowPhoneModal(false)}
+                onSuccess={(verifiedPhone) => {
+                    setShowPhoneModal(false);
+                    setLocalUser(prev => prev ? { ...prev, user_metadata: { ...prev.user_metadata, phone: verifiedPhone } } : null);
+                    setTimeout(() => {
+                        const btn = document.getElementById('modal_deposit_btn');
+                        if (btn) btn.click();
+                    }, 500);
+                }}
+            />
         </div>
     );
 }

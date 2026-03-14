@@ -5,7 +5,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Coins, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-import { User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
+import PhoneVerificationModal from '@/components/payments/PhoneVerificationModal';
 
 // PortOne SDK Type Declaration
 declare global {
@@ -19,14 +20,15 @@ const POINT_PACKAGES = [
     { points: 5000, label: '5,000 P' },
     { points: 10000, label: '10,000 P', popular: true },
     { points: 30000, label: '30,000 P' },
-    { points: 50000, label: '50,000 P' },
+    { points : 50000, label: '50,000 P' },
 ];
 
 export default function ChargePage() {
     const [user, setUser] = useState<User | null>(null);
     const [currentPoints, setCurrentPoints] = useState(0);
-    const [cart, setCart] = useState<{ [points: number]: number }>({});
+    const [cart, setCart] = useState<Record<number, number>>({});
     const [loading, setLoading] = useState(false);
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
 
     const router = useRouter();
     const supabase = createClient();
@@ -68,6 +70,14 @@ export default function ChargePage() {
 
     const handlePayment = async () => {
         if (!user || totalAmount === 0) return;
+        
+        // 레거시 유저(전화번호 없음) 방어 -> 모달 띄우기
+        const userPhone = user.user_metadata?.phone || user.phone;
+        if (!userPhone) {
+            setShowPhoneModal(true);
+            return;
+        }
+
         setLoading(true);
 
         const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
@@ -243,6 +253,7 @@ export default function ChargePage() {
                     </div>
 
                     <button
+                        id="btn_checkout"
                         onClick={handlePayment}
                         disabled={loading || totalAmount === 0}
                         className={`w-full py-5 rounded-xl font-bold text-xl text-white shadow-xl shadow-brand-600/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${loading || totalAmount === 0
@@ -266,6 +277,21 @@ export default function ChargePage() {
                     </p>
                 </div>
             </main>
+
+            <PhoneVerificationModal 
+                isOpen={showPhoneModal}
+                onClose={() => setShowPhoneModal(false)}
+                onSuccess={(verifiedPhone) => {
+                    // 휴대폰 인증 성공 시 User 세션을 최신화하고 바로 결제 로직으로 넘어감
+                    setShowPhoneModal(false);
+                    setUser(prev => prev ? { ...prev, user_metadata: { ...prev.user_metadata, phone: verifiedPhone } } : null);
+                    // 약간의 딜레이 후 결제창 띄우기 (리렌더링 대기)
+                    setTimeout(() => {
+                        const btn = document.getElementById('btn_checkout');
+                        if (btn) btn.click();
+                    }, 500);
+                }}
+            />
         </div>
     );
 }
