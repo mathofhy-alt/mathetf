@@ -25,6 +25,7 @@
     "openai": "^4.28.0",
     "react": "^18",
     "react-dom": "^18",
+    "solapi": "^5.5.4",
     "tailwind-merge": "^2.3.0",
     "xlsx": "^0.18.5",
     "xml2js": "^0.6.2",

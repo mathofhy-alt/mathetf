@@ -1,7 +1,7 @@
 'use client';
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -30,6 +30,14 @@ export default function SignupPage() {
     const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [checkedEmail, setCheckedEmail] = useState('');
 
+    const [phone, setPhone] = useState('');
+    const [otpCode, setOtpCode] = useState('');
+    const [isOtpSent, setIsOtpSent] = useState(false);
+    const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+    const [otpTimer, setOtpTimer] = useState(0);
+    const [otpSending, setOtpSending] = useState(false);
+    const [otpVerifying, setOtpVerifying] = useState(false);
+
     const router = useRouter();
     const supabase = createClient();
 
@@ -39,6 +47,78 @@ export default function SignupPage() {
             return;
         }
         setStep(2);
+    };
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (otpTimer > 0 && isOtpSent && !isPhoneVerified) {
+            interval = setInterval(() => {
+                setOtpTimer((prev) => prev - 1);
+            }, 1000);
+        } else if (otpTimer === 0) {
+            setIsOtpSent(false);
+        }
+        return () => clearInterval(interval);
+    }, [otpTimer, isOtpSent, isPhoneVerified]);
+
+    const formatTime = (time: number) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    const handleSendOtp = async () => {
+        if (!phone || phone.length < 10) {
+            alert('유효한 휴대폰 번호를 입력해주세요.');
+            return;
+        }
+        setOtpSending(true);
+        try {
+            const res = await fetch('/api/auth/send-sms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('인증번호가 발송되었습니다.');
+                setIsOtpSent(true);
+                setOtpTimer(180); // 3 minutes
+            } else {
+                alert(data.message || '인증번호 발송 실패');
+            }
+        } catch (error) {
+            alert('인증번호 발송 중 오류가 발생했습니다.');
+        } finally {
+            setOtpSending(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otpCode || otpCode.length !== 6) {
+            alert('6자리 인증번호를 입력해주세요.');
+            return;
+        }
+        setOtpVerifying(true);
+        try {
+            const res = await fetch('/api/auth/verify-sms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, code: otpCode }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('휴대폰 인증이 완료되었습니다.');
+                setIsPhoneVerified(true);
+                setOtpTimer(0);
+            } else {
+                alert(data.message || '인증 실패');
+            }
+        } catch (error) {
+            alert('인증 확인 중 오류가 발생했습니다.');
+        } finally {
+            setOtpVerifying(false);
+        }
     };
 
     const handleCheckEmail = async () => {
@@ -87,6 +167,10 @@ export default function SignupPage() {
             setErrorMsg('비밀번호가 일치하지 않습니다.');
             return;
         }
+        if (!isPhoneVerified) {
+            setErrorMsg('휴대폰 본인 인증을 완료해주세요.');
+            return;
+        }
 
         setLoading(true);
 
@@ -98,6 +182,7 @@ export default function SignupPage() {
                     data: {
                         full_name: nickname,
                         marketing_agreed: marketingAgreed,
+                        phone: phone,
                     },
                     emailRedirectTo: `${location.origin}/auth/callback`,
                 },
@@ -389,6 +474,63 @@ export default function SignupPage() {
                                             <p className="text-xs text-red-500 mt-1">비밀번호가 일치하지 않습니다.</p>
                                         )}
                                     </div>
+                                    <div className="pt-2 border-t border-slate-100">
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">휴대폰 번호 인증</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="tel"
+                                                value={phone}
+                                                onChange={(e) => {
+                                                    setPhone(e.target.value.replace(/[^0-9]/g, ''));
+                                                    setIsPhoneVerified(false);
+                                                    setIsOtpSent(false);
+                                                }}
+                                                disabled={isPhoneVerified}
+                                                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
+                                                placeholder="숫자만 입력 (예: 01012345678)"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleSendOtp}
+                                                disabled={isPhoneVerified || otpSending || !phone || phone.length < 10}
+                                                className={`px-3 py-2 text-sm font-bold rounded-lg border transition-colors whitespace-nowrap
+                                                    ${isPhoneVerified 
+                                                        ? 'bg-green-50 text-green-600 border-green-200' 
+                                                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 disabled:opacity-50'}`}
+                                            >
+                                                {isPhoneVerified ? '인증완료' : otpSending ? '발송 중...' : isOtpSent ? '재발송' : '인증번호 발송'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {isOtpSent && !isPhoneVerified && (
+                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <div className="flex gap-2">
+                                                <div className="relative flex-1">
+                                                    <input
+                                                        type="text"
+                                                        value={otpCode}
+                                                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
+                                                        placeholder="인증번호 6자리 입력"
+                                                        maxLength={6}
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-rose-500 font-medium tracking-wider">
+                                                        {formatTime(otpTimer)}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleVerifyOtp}
+                                                    disabled={otpVerifying || otpCode.length !== 6}
+                                                    className="px-6 py-2 text-sm font-bold bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50 transition-colors whitespace-nowrap"
+                                                >
+                                                    {otpVerifying ? '확인 중...' : '확인'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {errorMsg && (

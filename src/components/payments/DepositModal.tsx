@@ -82,7 +82,7 @@ export default function DepositModal({ isOpen, onClose, user, onSuccess }: Depos
                     fullName: user.email?.split('@')[0] || 'User',
                     email: user.email,
                     id: user.id,
-                    phoneNumber: user.phone || '070-7954-4146', // KG 이니시스 V2 필수 유효성 검사 통과 목적
+                    phoneNumber: user.user_metadata?.phone || user.phone || '070-7954-4146', // KG 이니시스 V2 필수 유효성 검사 통과 목적
                 }
             });
 

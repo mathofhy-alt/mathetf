@@ -103,7 +103,7 @@ export default function ChargePage() {
                     fullName: user.email?.split('@')[0] || 'User',
                     email: user.email,
                     id: user.id,
-                    phoneNumber: user.phone || '070-7954-4146', // 이니시스 V2 요구사항: 유효한 전화번호 필수 (사용자 번호가 없으면 공식 고객센터 번호 Fallback)
+                    phoneNumber: user.user_metadata?.phone || user.phone || '070-7954-4146', // 이니시스 V2 요구사항: 유효한 전화번호 필수 (사용자 번호가 없으면 공식 고객센터 번호 Fallback)
                 }
             });
 
