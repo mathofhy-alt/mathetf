@@ -115,14 +115,22 @@ export async function deletePurchase(purchaseId: string) {
 
     const adminSupabase = createAdminClient();
 
-    // 1. Verify ownership
-    const { data: purchase, error: fetchError } = await adminSupabase
+    // 1. Verify ownership across both tables
+    const { data: purchaseOld } = await adminSupabase
         .from('purchases')
         .select('user_id')
         .eq('id', purchaseId)
-        .single();
+        .maybeSingle();
 
-    if (fetchError || !purchase) {
+    const { data: purchaseNew } = await adminSupabase
+        .from('purchased_items')
+        .select('user_id')
+        .eq('id', purchaseId)
+        .maybeSingle();
+
+    const purchase = purchaseOld || purchaseNew;
+
+    if (!purchase) {
         return { success: false, message: '구매 내역을 찾을 수 없습니다.' };
     }
 
@@ -131,16 +139,9 @@ export async function deletePurchase(purchaseId: string) {
         return { success: false, message: '삭제 권한이 없습니다.' };
     }
 
-    // 2. Delete from DB
-    const { error: deleteError } = await adminSupabase
-        .from('purchases')
-        .delete()
-        .eq('id', purchaseId);
-
-    if (deleteError) {
-        console.error('Purchase Delete Error:', deleteError);
-        return { success: false, message: '구매 내역 삭제 중 오류가 발생했습니다.' };
-    }
+    // 2. Delete from DB (try both gracefully)
+    await adminSupabase.from('purchases').delete().eq('id', purchaseId);
+    await adminSupabase.from('purchased_items').delete().eq('id', purchaseId);
 
     revalidatePath('/mypage');
     return { success: true };

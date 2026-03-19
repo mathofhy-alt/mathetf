@@ -125,8 +125,9 @@ export default function QuestionBankPage() {
     }, []);
 
     const fetchPurchasedDbs = async (userId: string) => {
-        // Join purchases with exam_materials to get DB details
-        const { data, error } = await supabase
+        // [V105.1] Modification for Free Mock Exams
+        // 1. Get user's purchased DBs
+        const { data: purchasedData, error: purchaseError } = await supabase
             .from('purchases')
             .select(`
                 *,
@@ -137,9 +138,25 @@ export default function QuestionBankPage() {
             .eq('user_id', userId)
             .eq('exam_materials.file_type', 'DB');
 
-        if (data) {
-            setPurchasedDbs(data.map((p: any) => p.exam_materials));
+        // 2. Get all Mock Exams (Free for everyone)
+        const { data: mockData, error: mockError } = await supabase
+            .from('exam_materials')
+            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+            .eq('exam_type', '모의고사')
+            .eq('file_type', 'DB');
+
+        let dbs: any[] = [];
+        
+        if (purchasedData) {
+            dbs = [...dbs, ...purchasedData.map((p: any) => p.exam_materials)];
         }
+        if (mockData) {
+            dbs = [...dbs, ...mockData];
+        }
+
+        // Remove duplicates just in case (e.g., if someone actually bought a mock exam)
+        const uniqueDbs = Array.from(new Map(dbs.map(item => [item.id, item])).values());
+        setPurchasedDbs(uniqueDbs);
     };
 
     const fetchQuestions = async (dbFilter?: any, advancedFilters?: any) => {
@@ -185,7 +202,10 @@ export default function QuestionBankPage() {
                     if (yearVal) parts.push(`year.eq.${yearVal}`);
 
                     // Map Semester & Exam Type (e.g. "1" + "중간고사" -> "1학기중간")
-                    if (db.semester && db.exam_type) {
+                    if (db.exam_type === '모의고사') {
+                        // [V105.1] For Mock Exams, just map directly to 모의고사 if required, or skip semester filter.
+                        parts.push(`semester.ilike.%모의고사%`); // Assuming the metadata in questions reflects this. If not, we might just filter by title/school
+                    } else if (db.semester && db.exam_type) {
                         const semNum = String(db.semester).replace('학기', '');
                         const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
                         if (typeShort) {

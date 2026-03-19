@@ -58,3 +58,11 @@ openai_api_key.txt
 **/*openai_api_key.txt
 *.exe
 **/*.exe
+
+# PDF to HWPX Converter Tools (Contains API Keys)
+math-pdf-to-hml/
+math-pdf-to-hml-v*/
+hwpx-python-tool/
+*_extracted/
+backup_extract/
+*.zip

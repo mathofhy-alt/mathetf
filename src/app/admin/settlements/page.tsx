@@ -110,7 +110,7 @@ export default function AdminSettlementsPage() {
             alert('반려 사유를 입력해주세요.');
             return;
         }
-        if (!confirm('정말 반려하시겠습니까? (포인트가 환불됩니다)')) return;
+        if (!confirm('정말 반려하시겠습니까? (신청한 수익 포인트가 반환됩니다)')) return;
 
         setIsProccessing(true);
         try {
@@ -272,7 +272,7 @@ export default function AdminSettlementsPage() {
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
                         <h3 className="text-lg font-bold text-slate-800 mb-4">반려 사유 입력</h3>
                         <p className="text-sm text-slate-500 mb-4">
-                            반려 시 해당 포인트({selectedRequest?.amount.toLocaleString()} P)는 사용자에게 자동 환불됩니다.
+                            반려 시 해당 수익 포인트({selectedRequest?.amount.toLocaleString()} P)는 사용자에게 자동 반환됩니다.
                         </p>
                         <textarea
                             className="w-full border border-slate-300 rounded p-3 h-32 focus:border-red-500 focus:outline-none resize-none mb-4"

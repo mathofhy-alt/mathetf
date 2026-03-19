@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileItem } from '../lib/data';
-import { Search, Upload, FileText, Download, X, User as UserIcon, ChevronRight, PlayCircle, Lock, Coins, Info, List } from 'lucide-react';
+import { Search, Upload, FileText, Download, X, User as UserIcon, ChevronRight, PlayCircle, Lock, Coins, Info, List, ShoppingCart } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -12,6 +12,7 @@ import RightSidebar from '@/components/RightSidebar';
 import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
+import { useCart } from '@/components/providers/CartProvider';
 
 export default function ExamPlatform() {
     interface GroupedExam {
@@ -61,6 +62,9 @@ export default function ExamPlatform() {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
     const supabase = createClient();
+    const { addToCart, items: cartItems } = useCart();
+    const cartItemIds = new Set(cartItems.map((item) => item.item_id));
+
     const [selectedDbForDetail, setSelectedDbForDetail] = useState<FileItem | null>(null);
     const [dbDetails, setDbDetails] = useState<any[]>([]);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -122,12 +126,12 @@ export default function ExamPlatform() {
 
         // Fetch purchased exams to distinguish in UI
         const { data: purchaseData } = await supabase
-            .from('purchases')
-            .select('exam_id')
+            .from('purchased_items')
+            .select('item_id')
             .eq('user_id', userId);
 
         if (purchaseData) {
-            setPurchasedIds(new Set(purchaseData.map(p => p.exam_id)));
+            setPurchasedIds(new Set(purchaseData.map(p => p.item_id)));
         }
     };
 
@@ -316,6 +320,28 @@ export default function ExamPlatform() {
         setIsUploadModalOpen(true);
     };
 
+    const handleAddToCart = async (file: FileItem) => {
+        if (!user) {
+            if (confirm('로그인이 필요합니다. 로그인하시겠습니까?')) router.push('/login');
+            return;
+        }
+        try {
+            await addToCart({
+                item_type: file.type === 'DB' ? 'PERSONAL_DB' : (file.type === 'HWP' ? 'HWP_DOC' : 'MOCK_EXAM'),
+                item_id: file.id,
+                title: `[${file.school}] ${file.year}년 ${file.grade}학년 ${file.semester}학기 ${file.examType} ${file.subject || ''} - ${file.contentType}`,
+                price: file.price
+            });
+            alert('장바구니에 담겼습니다. 상단 장바구니 아이콘을 확인해주세요.');
+        } catch (e: any) {
+            if (e.message.includes('ALREADY_IN_CART')) {
+                alert('이미 장바구니에 담긴 상품입니다.');
+            } else {
+                alert(e.message);
+            }
+        }
+    };
+
     const handleDownload = async (file: FileItem) => {
         if (!user) {
             if (confirm('로그인이 필요합니다. 로그인하시겠습니까?')) router.push('/login');
@@ -323,46 +349,15 @@ export default function ExamPlatform() {
         }
 
         try {
-            // 1. Check if already purchased
-            const { data: existingPurchase } = await supabase
-                .from('purchases')
-                .select('*') // Select all to get created_at and download_count
-                .eq('user_id', user.id)
-                .eq('exam_id', file.id)
-                .maybeSingle();
+            // Check if purchased
+            if (!purchasedIds.has(file.id)) {
+                alert('구매가 완료되지 않은 자료입니다. 장바구니를 통해 결제해주세요.');
+                return;
+            }
 
-            if (!existingPurchase) {
-                if (!confirm(`${file.price}P를 사용하여 ${file.type === 'DB' ? 'DB 접근 권한을 구매' : '다운로드'}하시겠습니까?`)) return;
-
-                const { data: result, error } = await supabase.rpc('purchase_exam_material', {
-                    buyer_id: user.id,
-                    seller_id: file.uploaderId,
-                    price: file.price,
-                    exam_id: file.id
-                });
-
-                if (error) throw error;
-                // @ts-ignore
-                if (!result.success) {
-                    // @ts-ignore
-                    alert(result.message);
-                    return;
-                }
-
-                fetchMyPoints(user.id);
-                // For DB, we just stop here after purchase
-                if (file.type === 'DB') {
-                    setPurchasedIds(prev => new Set([...Array.from(prev), file.id]));
-                    alert('개인 DB 구매가 완료되었습니다. 이제 시험지 만들기 탭에서 이 DB를 소스로 사용할 수 있습니다.');
-                    return;
-                }
-
-            } else {
-                // [V66] Removed 7-day expiry and 3-download count limit (User Request: Lifetime access)
-                if (file.type === 'DB') {
-                    alert('이미 구매한 DB입니다. 시험지 만들기 탭에서 확인하세요.');
-                    return;
-                }
+            if (file.type === 'DB') {
+                alert('DB 상품은 시험지 만들기 탭에서 확인 하세요.');
+                return;
             }
 
             // 2. Download Logic
@@ -557,9 +552,8 @@ export default function ExamPlatform() {
                                             {/* PDF Solution */}
                                             {group.files.pdfSol ? (
                                                 <button
-                                                    onClick={() => handleDownload(group.files.pdfSol!)}
-                                                    title={purchasedIds.has(group.files.pdfSol.id) ? "이미 구매한 자료입니다" : `PDF 해설 (${group.files.pdfSol.price}원)`}
-                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.pdfSol.id) ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}
+                                                    onClick={() => purchasedIds.has(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)}
+                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.pdfSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.pdfSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
                                                 >
                                                     <PdfFileIcon
                                                         size={28}
@@ -567,8 +561,8 @@ export default function ExamPlatform() {
                                                         className="drop-shadow-sm group-hover:scale-110 transition-transform"
                                                     />
                                                     <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.pdfSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
-                                                    <span className={`text-[11px] whitespace-nowrap ${purchasedIds.has(group.files.pdfSol.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                        {purchasedIds.has(group.files.pdfSol.id) ? '구매완료' : `${group.files.pdfSol.price}P`}
+                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${purchasedIds.has(group.files.pdfSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.pdfSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                        {purchasedIds.has(group.files.pdfSol.id) ? '다운로드' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.pdfSol.price}원</>}
                                                     </span>
                                                 </button>
                                             ) : (
@@ -586,9 +580,8 @@ export default function ExamPlatform() {
                                             {/* HWP Solution */}
                                             {group.files.hwpSol ? (
                                                 <button
-                                                    onClick={() => handleDownload(group.files.hwpSol!)}
-                                                    title={purchasedIds.has(group.files.hwpSol.id) ? "이미 구매한 자료입니다" : `HWP 해설 (${group.files.hwpSol.price}원)`}
-                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.hwpSol.id) ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}
+                                                    onClick={() => purchasedIds.has(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)}
+                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.hwpSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.hwpSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
                                                 >
                                                     <HwpFileIcon
                                                         size={28}
@@ -596,8 +589,8 @@ export default function ExamPlatform() {
                                                         className="drop-shadow-sm group-hover:scale-110 transition-transform"
                                                     />
                                                     <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.hwpSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
-                                                    <span className={`text-[11px] whitespace-nowrap ${purchasedIds.has(group.files.hwpSol.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                        {purchasedIds.has(group.files.hwpSol.id) ? '구매완료' : `${group.files.hwpSol.price}P`}
+                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${purchasedIds.has(group.files.hwpSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.hwpSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                        {purchasedIds.has(group.files.hwpSol.id) ? '다운로드' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.hwpSol.price}원</>}
                                                     </span>
                                                 </button>
                                             ) : (
@@ -638,13 +631,16 @@ export default function ExamPlatform() {
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleDownload(group.files.db!);
+                                                                    if(purchasedIds.has(group.files.db!.id)) {
+                                                                        handleDownload(group.files.db!);
+                                                                    } else {
+                                                                        handleAddToCart(group.files.db!);
+                                                                    }
                                                                 }}
-                                                                className={`w-full py-1 text-[9px] font-extrabold text-white rounded-md transition-all active:scale-95 flex items-center justify-center gap-1 ${purchasedIds.has(group.files.db.id) ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-indigo-600 hover:bg-indigo-700 shadow-sm'
+                                                                className={`w-full py-1 text-[9px] font-extrabold text-white rounded-md transition-all active:scale-95 flex items-center justify-center gap-1 ${purchasedIds.has(group.files.db.id) ? 'bg-indigo-500 hover:bg-indigo-600' : cartItemIds.has(group.files.db.id) ? 'bg-brand-500 hover:bg-brand-600' : 'bg-brand-600 hover:bg-brand-700 shadow-sm'
                                                                     }`}
                                                             >
-                                                                {purchasedIds.has(group.files.db.id) ? <Download size={10} /> : <Coins size={10} />}
-                                                                {purchasedIds.has(group.files.db.id) ? '다운로드' : '구매하기'}
+                                                                {purchasedIds.has(group.files.db.id) ? <><Download size={10} /> 열기</> : cartItemIds.has(group.files.db.id) ? '장바구니 담김' : <><ShoppingCart size={10} /> 장바구니</>}
                                                             </button>
                                                         </div>
                                                     </div>

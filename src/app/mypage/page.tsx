@@ -52,8 +52,8 @@ export default function MyPage() {
                 setEarnedPoints(profile.earned_points || 0);
             }
 
-            // Fetch Purchases
-            const { data: purchaseData } = await supabase
+            // Fetch Purchases (Old Point System)
+            const { data: purchaseDataOld } = await supabase
                 .from('purchases')
                 .select(`
                     *,
@@ -62,7 +62,54 @@ export default function MyPage() {
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
-            if (purchaseData) setPurchases(purchaseData);
+            // Fetch New Cart Purchases
+            const { data: purchaseDataNew } = await supabase
+                .from('purchased_items')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            let finalPurchases = purchaseDataOld || [];
+            
+            if (purchaseDataNew && purchaseDataNew.length > 0) {
+                const itemIds = purchaseDataNew.map((p: any) => p.item_id);
+                // uuid 변환 불가 에러를 피하기 위해 itemIds 중 uuid 형식만 필터링
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                const validUuids = itemIds.filter((id: string) => uuidRegex.test(id));
+                
+                let exams: any[] = [];
+                if (validUuids.length > 0) {
+                    const { data } = await supabase.from('exam_materials').select('*').in('id', validUuids);
+                    if (data) exams = data;
+                }
+                
+                const examMap: Record<string, any> = {};
+                exams.forEach((e: any) => examMap[e.id] = e);
+
+                const newMappedPurchases = purchaseDataNew.map((p: any) => ({
+                    id: p.id,
+                    user_id: p.user_id,
+                    created_at: p.created_at,
+                    price: p.price_paid,
+                    exam_id: p.item_id,
+                    exam: examMap[p.item_id] || {
+                        id: p.item_id,
+                        title: p.title,
+                        file_type: p.item_type.includes('MOCK_EXAM') ? 'PDF' : p.item_type.includes('HWP') ? 'HWP' : 'DB',
+                        content_type: p.item_type.includes('MOCK_EXAM') ? '문제' : p.item_type.includes('HWP') ? '자료' : '개인DB',
+                        school: '자료',
+                        exam_year: new Date().getFullYear(),
+                        grade: '-',
+                        semester: '-',
+                        exam_type: '-',
+                        file_path: ''
+                    }
+                }));
+
+                finalPurchases = [...finalPurchases, ...newMappedPurchases].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            }
+
+            setPurchases(finalPurchases);
 
             // Fetch Uploads (Sales)
             const { data: uploadData } = await supabase
@@ -272,22 +319,10 @@ export default function MyPage() {
                         <div className="flex items-center gap-2">
                             <div className="flex items-center text-sm font-medium text-slate-600 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                                 <span className="flex items-center gap-2 px-3 py-1.5 border-r border-slate-200">
-                                    <span className="text-xs text-slate-500">구매</span>
-                                    <span className="font-bold text-slate-800">{purchasedPoints.toLocaleString()}</span>
+                                    <span className="text-xs text-slate-500">누적 수익</span>
+                                    <span className="font-bold text-brand-600">{earnedPoints.toLocaleString()} P</span>
                                 </span>
-                                <span className="flex items-center gap-2 px-3 py-1.5">
-                                    <span className="text-xs text-slate-500">수익</span>
-                                    <span className="font-bold text-brand-600">{earnedPoints.toLocaleString()}</span>
-                                </span>
-                                <button
-                                    onClick={() => setIsSettlementModalOpen(true)}
-                                    className="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 text-xs font-bold transition-colors"
-                                >
-                                    정산
-                                </button>
-                                <Link href="/charge" className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 text-xs font-bold transition-colors">
-                                    충전
-                                </Link>
+
                             </div>
                         </div>
                     )}
@@ -422,9 +457,7 @@ export default function MyPage() {
                                     </div>
                                     <div className="text-xs text-slate-400 mt-1">총 누적 수익: {(uploads.reduce((acc, curr) => acc + (Math.floor(curr.sales_count * curr.price * 0.7) || 0), 0)).toLocaleString()} P</div>
                                 </div>
-                                <div className="absolute right-4 bottom-4 z-10">
-                                    <button onClick={() => setIsSettlementModalOpen(true)} className="px-3 py-1.5 bg-brand-50 text-brand-600 rounded text-xs font-bold hover:bg-brand-100">정산신청</button>
-                                </div>
+
                             </div>
                         </div>
 

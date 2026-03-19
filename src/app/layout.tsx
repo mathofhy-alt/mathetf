@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 
+import { CartProvider } from "@/components/providers/CartProvider";
 import Footer from "@/components/Footer";
+import FloatingCart from "@/components/FloatingCart";
 
 export const metadata: Metadata = {
     title: "수학ETF - 기출문제 공유 플랫폼",
@@ -20,10 +22,13 @@ export default function RootLayout({
                 <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
             </head>
             <body className={`font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
-                <main className="flex-1 w-full flex flex-col">
-                    {children}
-                </main>
-                <Footer />
+                <CartProvider>
+                    <main className="flex-1 w-full flex flex-col">
+                        {children}
+                    </main>
+                    <Footer />
+                    <FloatingCart />
+                </CartProvider>
                 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
             </body>
         </html>

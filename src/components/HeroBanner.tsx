@@ -110,23 +110,12 @@ export default function HeroBanner({ user, purchasedPoints, earnedPoints }: { us
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Purchased Points */}
-                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-1 transition-all hover:border-slate-300">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 mb-1">
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                                충전 포인트
-                            </div>
-                            <div className="text-lg font-black text-slate-800 tracking-tight text-right">
-                                {user ? (purchasedPoints?.toLocaleString() ?? 0) : '0'} <span className="text-xs font-medium text-slate-400">P</span>
-                            </div>
-                        </div>
-
-                        {/* Earned Points */}
+                    <div className="flex flex-col gap-4">
+                        {/* Earned Points Only */}
                         <div className="bg-brand-50/50 rounded-xl p-3 border border-brand-100 flex flex-col gap-1 transition-all hover:border-brand-300">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-brand-600 mb-1">
                                 <div className="w-1.5 h-1.5 rounded-full bg-brand-500"></div>
-                                수익 포인트
+                                총 누적 수익 포인트
                             </div>
                             <div className="text-lg font-black text-brand-700 tracking-tight text-right">
                                 {user ? (earnedPoints?.toLocaleString() ?? 0) : '0'} <span className="text-xs font-medium text-brand-400">P</span>

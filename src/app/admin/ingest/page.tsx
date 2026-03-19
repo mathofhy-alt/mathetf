@@ -6,11 +6,13 @@ import SchoolAutocomplete from '@/components/SchoolAutocomplete';
 import { KOREA_REGIONS } from '@/data/korean-admin-divisions';
 
 export default function AdminIngestPage() {
+    const [activeTab, setActiveTab] = useState<'regular' | 'mock'>('regular');
+
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [log, setLog] = useState<string[]>([]);
 
-    // Metadata state
+    // Metadata state for Regular Exams
     const [school, setSchool] = useState('');
     const [region, setRegion] = useState('');
     const [district, setDistrict] = useState('');
@@ -18,6 +20,12 @@ export default function AdminIngestPage() {
     const [semester, setSemester] = useState('1학기중간');
     const [subject, setSubject] = useState('공통수학1');
     const [grade, setGrade] = useState('고1');
+
+    // Metadata state for Mock Exams
+    const [mockYear, setMockYear] = useState('2025');
+    const [mockMonth, setMockMonth] = useState('3월');
+    const [mockGrade, setMockGrade] = useState('고1');
+    const [mockSubject, setMockSubject] = useState('공통(수1,수2)');
 
     const supabase = createClient();
 
@@ -33,13 +41,24 @@ export default function AdminIngestPage() {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('school', school);
-            formData.append('region', region);
-            formData.append('district', district);
-            formData.append('year', year);
-            formData.append('semester', semester);
-            formData.append('subject', subject);
-            formData.append('grade', grade);
+            
+            if (activeTab === 'mock') {
+                formData.append('school', '전국연합');
+                formData.append('region', '전국');
+                formData.append('district', '전국');
+                formData.append('year', mockYear);
+                formData.append('semester', `${mockMonth} 모의고사`);
+                formData.append('subject', mockSubject);
+                formData.append('grade', mockGrade);
+            } else {
+                formData.append('school', school);
+                formData.append('region', region);
+                formData.append('district', district);
+                formData.append('year', year);
+                formData.append('semester', semester);
+                formData.append('subject', subject);
+                formData.append('grade', grade);
+            }
 
             // Determine API endpoint based on file extension
             const isHml = file.name.toLowerCase().endsWith('.hml');
@@ -74,102 +93,172 @@ export default function AdminIngestPage() {
         <div className="p-8 max-w-2xl mx-auto">
             <h1 className="text-2xl font-bold mb-6">관리자: HWPX/HML 문제 DB 업로드</h1>
 
+            {/* Tabs */}
+            <div className="flex mb-6 border-b">
+                <button
+                    className={`flex-1 py-3 text-center font-bold transition-colors ${activeTab === 'regular' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => setActiveTab('regular')}
+                >
+                    내신 (학교) 기출
+                </button>
+                <button
+                    className={`flex-1 py-3 text-center font-bold transition-colors ${activeTab === 'mock' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => setActiveTab('mock')}
+                >
+                    전국연합 모의고사
+                </button>
+            </div>
+
             <div className="space-y-4 border p-6 rounded bg-gray-50">
-                <div>
-                    <label className="block text-sm font-medium mb-1">학교명</label>
-                    <SchoolAutocomplete
-                        value={school}
-                        onChange={setSchool}
-                        onSchoolSelect={(s) => {
-                            if (s.region) setRegion(s.region);
-                            if (s.district) setDistrict(s.district);
-                        }}
-                    />
-                </div>
+                {activeTab === 'regular' && (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">학교명</label>
+                            <SchoolAutocomplete
+                                value={school}
+                                onChange={setSchool}
+                                onSchoolSelect={(s) => {
+                                    if (s.region) setRegion(s.region);
+                                    if (s.district) setDistrict(s.district);
+                                }}
+                            />
+                        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">시/도</label>
-                        <select
-                            className="w-full border p-2 rounded"
-                            value={region}
-                            onChange={e => {
-                                setRegion(e.target.value);
-                                setDistrict(''); // Reset district on region change
-                            }}
-                        >
-                            <option value="">선택하세요</option>
-                            {Object.keys(KOREA_REGIONS).map(r => (
-                                <option key={r} value={r}>{r}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">구/군</label>
-                        <select
-                            className="w-full border p-2 rounded"
-                            value={district}
-                            onChange={e => setDistrict(e.target.value)}
-                            disabled={!region}
-                        >
-                            <option value="">{region ? '선택하세요' : '시/도를 먼저 선택하세요'}</option>
-                            {region && KOREA_REGIONS[region]?.map(d => (
-                                <option key={d} value={d}>{d}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">시/도</label>
+                                <select
+                                    className="w-full border p-2 rounded"
+                                    value={region}
+                                    onChange={e => {
+                                        setRegion(e.target.value);
+                                        setDistrict(''); // Reset district on region change
+                                    }}
+                                >
+                                    <option value="">선택하세요</option>
+                                    {Object.keys(KOREA_REGIONS).map(r => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">구/군</label>
+                                <select
+                                    className="w-full border p-2 rounded"
+                                    value={district}
+                                    onChange={e => setDistrict(e.target.value)}
+                                    disabled={!region}
+                                >
+                                    <option value="">{region ? '선택하세요' : '시/도를 먼저 선택하세요'}</option>
+                                    {region && KOREA_REGIONS[region]?.map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">연도</label>
-                        <select className="w-full border p-2 rounded" value={year} onChange={e => setYear(e.target.value)}>
-                            {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">학기</label>
-                        <select className="w-full border p-2 rounded" value={semester} onChange={e => setSemester(e.target.value)}>
-                            <option value="1학기중간">1학기중간</option>
-                            <option value="1학기기말">1학기기말</option>
-                            <option value="2학기중간">2학기중간</option>
-                            <option value="2학기기말">2학기기말</option>
-                        </select>
-                    </div>
-                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">연도</label>
+                                <select className="w-full border p-2 rounded" value={year} onChange={e => setYear(e.target.value)}>
+                                    {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">학기</label>
+                                <select className="w-full border p-2 rounded" value={semester} onChange={e => setSemester(e.target.value)}>
+                                    <option value="1학기중간">1학기중간</option>
+                                    <option value="1학기기말">1학기기말</option>
+                                    <option value="2학기중간">2학기중간</option>
+                                    <option value="2학기기말">2학기기말</option>
+                                </select>
+                            </div>
+                        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">학년</label>
-                        <select className="w-full border p-2 rounded" value={grade} onChange={e => setGrade(e.target.value)}>
-                            <option value="고1">고1</option>
-                            <option value="고2">고2</option>
-                            <option value="고3">고3</option>
-                            <option value="중1">중1</option>
-                            <option value="중2">중2</option>
-                            <option value="중3">중3</option>
-                        </select>
-                    </div>
-                    {/* Difficulty input removed (Managed Post-Parsing) */}
-                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">학년</label>
+                                <select className="w-full border p-2 rounded" value={grade} onChange={e => setGrade(e.target.value)}>
+                                    <option value="고1">고1</option>
+                                    <option value="고2">고2</option>
+                                    <option value="고3">고3</option>
+                                    <option value="중1">중1</option>
+                                    <option value="중2">중2</option>
+                                    <option value="중3">중3</option>
+                                </select>
+                            </div>
+                        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">과목</label>
-                        <select className="w-full border p-2 rounded" value={subject} onChange={e => setSubject(e.target.value)}>
-                            <option value="공통수학1">공통수학1</option>
-                            <option value="공통수학2">공통수학2</option>
-                            <option value="대수">대수</option>
-                            <option value="미적분1">미적분1</option>
-                            <option value="미적분2">미적분2</option>
-                            <option value="기하">기하</option>
-                            <option value="확통">확통</option>
-                        </select>
-                    </div>
-                    {/* Unit input removed (Managed Post-Parsing) */}
-                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">과목</label>
+                                <select className="w-full border p-2 rounded" value={subject} onChange={e => setSubject(e.target.value)}>
+                                    <option value="공통수학1">공통수학1</option>
+                                    <option value="공통수학2">공통수학2</option>
+                                    <option value="대수">대수</option>
+                                    <option value="미적분1">미적분1</option>
+                                    <option value="미적분2">미적분2</option>
+                                    <option value="기하">기하</option>
+                                    <option value="확통">확통</option>
+                                </select>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {activeTab === 'mock' && (
+                    <>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">실시 연도</label>
+                                <select className="w-full border p-2 rounded" value={mockYear} onChange={e => setMockYear(e.target.value)}>
+                                    {['2026', '2025', '2024', '2023', '2022', '2021', '2020'].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">실시 월</label>
+                                <select className="w-full border p-2 rounded" value={mockMonth} onChange={e => setMockMonth(e.target.value)}>
+                                    {['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'].map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">대상 학년</label>
+                                <select className="w-full border p-2 rounded" value={mockGrade} onChange={e => setMockGrade(e.target.value)}>
+                                    <option value="고1">고1</option>
+                                    <option value="고2">고2</option>
+                                    <option value="고3">고3</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">시험 유형 (과목)</label>
+                                <select className="w-full border p-2 rounded" value={mockSubject} onChange={e => setMockSubject(e.target.value)}>
+                                    <optgroup label="현행 (2022학년도~)">
+                                        <option value="공통(수1,수2)">공통(수1,수2)</option>
+                                        <option value="미적분">미적분</option>
+                                        <option value="기하">기하</option>
+                                        <option value="확률과 통계">확률과 통계</option>
+                                        <option value="전과목">전과목 (고1, 고2 등)</option>
+                                    </optgroup>
+                                    <optgroup label="과거 기출 (~2021학년도)">
+                                        <option value="가형">가형</option>
+                                        <option value="나형">나형</option>
+                                        <option value="A형">A형</option>
+                                        <option value="B형">B형</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 <div className="pt-4 border-t">
                     <label className="block text-sm font-medium mb-1">HWPX 또는 HML 파일 선택</label>

@@ -4,8 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useCart } from '@/components/providers/CartProvider';
 import DepositModal from './payments/DepositModal';
 
 interface HeaderProps {
@@ -24,6 +25,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const router = useRouter();
     const pathname = usePathname();
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+    const { cartCount } = useCart();
 
     // If props are provided, sync them
     useEffect(() => {
@@ -99,21 +101,27 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         </button>
                     )}
 
+                    {/* Shopping Cart Icon */}
+                    {user && (
+                        <Link href="/cart" className="relative p-2 text-slate-600 hover:text-brand-600 transition-colors mr-2">
+                            <ShoppingCart size={20} />
+                            {cartCount > 0 && (
+                                <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </Link>
+                    )}
+
                     {user ? (
                         <div className="flex items-center text-sm font-medium text-slate-600 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors cursor-pointer overflow-hidden">
                             <Link href="/mypage" className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-200 transition-colors">
                                 <Coins size={14} className="text-yellow-500" />
-                                <span>{(purchasedPoints + earnedPoints).toLocaleString()} P</span>
+                                <span>{earnedPoints.toLocaleString()} P (수익)</span>
                                 <span className="w-px h-3 bg-slate-300 mx-1"></span>
                                 <UserIcon size={14} />
                                 <span>마이페이지</span>
                             </Link>
-                            <button
-                                onClick={() => setIsDepositModalOpen(true)}
-                                className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 px-3 py-1.5 text-xs font-bold transition-colors"
-                            >
-                                충전
-                            </button>
                         </div>
                     ) : (
                         !['/login', '/signup', '/'].includes(pathname) && (
