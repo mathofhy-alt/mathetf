@@ -723,6 +723,14 @@ export default function ExamPlatform() {
                             </button>
                         </div>
 
+                        {/* 개인DB 안내 문구 추가 */}
+                        <div className="bg-indigo-50 border-b border-indigo-100 px-5 py-3 flex items-start gap-2">
+                            <Info size={16} className="text-indigo-600 mt-0.5 shrink-0" />
+                            <div className="text-xs text-indigo-900 font-medium leading-relaxed">
+                                <strong className="text-indigo-700">안내:</strong> 개인DB는 결제 후 <strong className="text-indigo-700 font-extrabold">1일(24시간) 이내</strong>에 '시험지 만들기' 탭에서 문항으로 제공됩니다.
+                            </div>
+                        </div>
+
                         <div className="p-5 max-h-[75vh] overflow-y-auto">
                             {isLoadingDetails ? (
                                 <div className="py-20 flex flex-col items-center gap-3">

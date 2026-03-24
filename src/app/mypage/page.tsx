@@ -200,7 +200,18 @@ export default function MyPage() {
         }
 
         try {
-            // Limits removed as per user request (unlimited re-download)
+            // [PG사 심사 요건] 결제일로부터 30일 다운로드 제한
+            if (purchase.created_at) {
+                const purchaseDate = new Date(purchase.created_at);
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                
+                if (diffDays > 30) {
+                    alert('다운로드 가능 기간(결제일로부터 30일)이 만료되었습니다.');
+                    return;
+                }
+            }
 
             // Increment download count (Try-catch wrapped to avoid blocking download if update fails)
             try {
@@ -419,12 +430,35 @@ export default function MyPage() {
                                                             </Link>
                                                         </div>
                                                     ) : (
-                                                        <button
-                                                            onClick={() => handleDownload(p)}
-                                                            className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-all shadow-sm active:scale-95"
-                                                        >
-                                                            <Download size={14} /> 다운로드
-                                                        </button>
+                                                        (() => {
+                                                            const purchaseDate = new Date(p.created_at);
+                                                            const now = new Date();
+                                                            const diffTime = now.getTime() - purchaseDate.getTime();
+                                                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                            const daysLeft = Math.max(0, 30 - diffDays);
+                                                            const isExpired = daysLeft === 0;
+
+                                                            return (
+                                                                <div className="flex flex-col items-end gap-1">
+                                                                    <button
+                                                                        onClick={() => handleDownload(p)}
+                                                                        disabled={isExpired}
+                                                                        className={`px-4 py-2.5 border rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-sm ${
+                                                                            isExpired 
+                                                                                ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed' 
+                                                                                : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50 active:scale-95'
+                                                                        }`}
+                                                                    >
+                                                                        <Download size={14} /> 다운로드
+                                                                    </button>
+                                                                    {isExpired ? (
+                                                                        <span className="text-[10px] text-red-500 font-bold">다운로드 기간 만료</span>
+                                                                    ) : (
+                                                                        <span className="text-[10px] text-slate-500 font-medium">{daysLeft}일 남음</span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()
                                                     )}
                                                     <button
                                                         onClick={() => handleDeletePurchase(p.id)}
