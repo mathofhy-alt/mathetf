@@ -210,6 +210,76 @@ export async function PATCH(req: NextRequest) {
 
         if (error) throw error;
 
+        // --- [NEW] Sync exam_materials DB price if difficulty changed ---
+        if (updates.difficulty !== undefined) {
+            try {
+                // 1. Get the distinct exam groups from the updated questions
+                const { data: updatedQs } = await adminClient
+                    .from('questions')
+                    .select('school, year, grade, semester, subject')
+                    .in('id', ids);
+                
+                if (updatedQs && updatedQs.length > 0) {
+                    const uniqueGroups = Array.from(new Set(updatedQs.map((q: any) => 
+                        `${q.school}|${q.year}|${q.grade}|${q.semester}|${q.subject}`
+                    )));
+
+                    for (const groupKey of uniqueGroups) {
+                        const [s_school, s_year, s_grade, s_sem, s_sub] = groupKey.split('|');
+                        
+                        // 2. Recalculate price for this specific exam group
+                        const { data: allQs } = await adminClient
+                            .from('questions')
+                            .select('difficulty')
+                            .eq('school', s_school)
+                            .eq('year', s_year)
+                            .eq('grade', s_grade)
+                            .eq('semester', s_sem)
+                            .eq('subject', s_sub);
+                        
+                        if (allQs && allQs.length > 0) {
+                            let newPrice = 0;
+                            allQs.forEach((q: any) => {
+                                const diff = parseInt(String(q.difficulty)) || 1;
+                                if (diff <= 2) newPrice += 1000;
+                                else if (diff <= 4) newPrice += 2000;
+                                else if (diff <= 6) newPrice += 3000;
+                                else if (diff <= 8) newPrice += 4000;
+                                else newPrice += 5000;
+                            });
+
+                            // 3. Map to exam_materials fields
+                            const gradeNum = Number(String(s_grade).replace(/[^0-9]/g, '')) || 0;
+                            const semNum = Number(String(s_sem).replace(/[^0-9]/g, '')) || 1;
+                            let examType = '';
+                            if (s_sem.includes('중간')) examType = '중간고사';
+                            else if (s_sem.includes('기말')) examType = '기말고사';
+
+                            // 4. Update exam_materials where content_type = '개인DB'
+                            // Note: we might have multiple DBs for the same exam if admin clicked multiple times, update all matching.
+                            let query = adminClient
+                                .from('exam_materials')
+                                .update({ price: newPrice })
+                                .eq('content_type', '개인DB')
+                                .eq('school', s_school)
+                                .eq('exam_year', Number(s_year))
+                                .eq('grade', gradeNum)
+                                .eq('subject', s_sub);
+                            
+                            if (examType) {
+                                query = query.eq('exam_type', examType);
+                            }
+                            
+                            await query;
+                        }
+                    }
+                }
+            } catch (syncErr) {
+                console.error('Failed to sync DB price after difficulty update:', syncErr);
+            }
+        }
+        // ----------------------------------------------------------------
+
         return NextResponse.json({ success: true, count: ids.length });
 
     } catch (e: any) {
