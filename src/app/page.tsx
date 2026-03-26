@@ -13,6 +13,8 @@ import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 import { useCart } from '@/components/providers/CartProvider';
+import ReportModal from '@/components/ReportModal';
+import { AlertTriangle } from 'lucide-react';
 
 export default function ExamPlatform() {
     interface GroupedExam {
@@ -25,6 +27,7 @@ export default function ExamPlatform() {
         uploader: string;
         date: string;
         sales: number;
+        isVerified?: boolean;
         examType: string; // Added for filtering
         files: {
             pdfProb?: FileItem;
@@ -59,6 +62,8 @@ export default function ExamPlatform() {
     const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
 
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [selectedExamForReport, setSelectedExamForReport] = useState<{key: string, title: string} | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
     const supabase = createClient();
@@ -237,8 +242,13 @@ export default function ExamPlatform() {
                             date: new Date(item.created_at).toISOString().split('T')[0],
                             sales: 0,
                             examType: item.exam_type, // Added to match interface
+                            isVerified: item.is_verified || false,
                             files: {}
                         };
+                    }
+
+                    if (item.is_verified) {
+                        groups[key].isVerified = true;
                     }
 
                     const fileItem: FileItem = {
@@ -318,6 +328,42 @@ export default function ExamPlatform() {
             return;
         }
         setIsUploadModalOpen(true);
+    };
+
+    const handleReportClick = (e: React.MouseEvent, group: any) => {
+        e.stopPropagation();
+        if (!user) {
+            alert('로그인이 필요합니다.');
+            router.push('/login');
+            return;
+        }
+        setSelectedExamForReport({ key: group.key, title: group.title });
+        setIsReportModalOpen(true);
+    };
+
+    const handleVerifyAdmin = async (e: React.MouseEvent, group: any) => {
+        e.stopPropagation();
+        if (user?.email !== 'mathofhy@naver.com') return;
+        
+        const newStatus = !group.isVerified;
+        try {
+            const fileIds: string[] = Object.values(group.files).map((f: any) => f?.id).filter(Boolean) as string[];
+            if (fileIds.length === 0) return;
+
+            const { error } = await supabase
+                .from('exam_materials')
+                .update({ is_verified: newStatus })
+                .in('id', fileIds);
+
+            if (error) throw error;
+            
+            setGroupedFiles((prev: GroupedExam[]) => 
+                prev.map((g: GroupedExam) => g.key === group.key ? { ...g, isVerified: newStatus } : g)
+            );
+        } catch (error) {
+            console.error('Verify update error:', error);
+            alert('상태 변경에 실패했습니다.');
+        }
     };
 
     const handleAddToCart = async (file: FileItem) => {
@@ -529,7 +575,7 @@ export default function ExamPlatform() {
 
                             <div className="divide-y divide-slate-100">
                                 {currentItems.length > 0 ? currentItems.map(group => (
-                                    <div key={group.key} className="grid grid-cols-12 items-center py-4 px-4 hover:bg-slate-50 gap-2 text-sm text-center">
+                                    <div key={group.key} className={`grid grid-cols-12 items-center py-4 px-4 gap-2 text-sm text-center transition-colors duration-200 ${group.isVerified ? 'bg-indigo-50/40 hover:bg-indigo-50/70 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}`}>
                                         <div className="col-span-6 text-left pl-4">
                                             <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base break-keep leading-tight">
                                                 {group.title.includes(']') ? (
@@ -544,7 +590,27 @@ export default function ExamPlatform() {
                                                     </>
                                                 ) : group.title}
                                             </div>
-                                            {/* Subtitle removed as it overlaps with title info */}
+                                            <div className="mt-2 flex items-center gap-2">
+                                                {group.isVerified && (
+                                                    <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold">
+                                                        ✓ 관리자 검수완료
+                                                    </span>
+                                                )}
+                                                <button
+                                                    onClick={(e) => handleReportClick(e, group)}
+                                                    className="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1 bg-white/50 border border-transparent hover:border-red-100 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                                >
+                                                    <AlertTriangle size={11} /> 불편/오류 신고
+                                                </button>
+                                                {user?.email === 'mathofhy@naver.com' && (
+                                                    <button
+                                                        onClick={(e) => handleVerifyAdmin(e, group)}
+                                                        className={`text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded transition-colors ${group.isVerified ? 'text-indigo-600 bg-indigo-100/50 hover:bg-indigo-200' : 'text-slate-500 bg-slate-200 hover:bg-indigo-100 hover:text-indigo-700'}`}
+                                                    >
+                                                        {group.isVerified ? '인증 취소' : '관리자 인증'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="col-span-1 text-slate-400 text-[11px] whitespace-nowrap">{group.date}</div>
                                         <div className="col-span-1 text-slate-600 truncate text-[11px]">{group.uploader}</div>
@@ -707,6 +773,13 @@ export default function ExamPlatform() {
                 regions={regions}
                 districtsMap={districtsMap}
                 schoolsMap={schoolsMap}
+            />
+
+            <ReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                user={user}
+                examGroup={selectedExamForReport}
             />
 
             {/* DB Detail Modal */}
