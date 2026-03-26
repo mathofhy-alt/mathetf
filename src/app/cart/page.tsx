@@ -146,6 +146,9 @@ export default function CartPage() {
                                 <span className="font-bold text-slate-800">최종 결제 금액</span>
                                 <span className="font-black text-brand-600 text-2xl">{totalPrice.toLocaleString()}원</span>
                             </div>
+                            <div className="mt-4 p-3 bg-brand-50 rounded-lg text-xs text-brand-700 flex flex-col gap-1">
+                                <p><strong>유의사항:</strong> 구매하신 문서(PDF/HWP)는 결제일로부터 <strong>30일간</strong>만 다운로드 가능합니다. (개인DB 제외)</p>
+                            </div>
                         </div>
 
                         <button

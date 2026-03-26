@@ -521,7 +521,10 @@ export default function ExamPlatform() {
                                 <div className="col-span-6 text-left pl-4">시험명</div>
                                 <div className="col-span-1">등록일</div>
                                 <div className="col-span-1">작성자</div>
-                                <div className="col-span-4">다운로드 (PDF / HWP / DB)</div>
+                                <div className="col-span-4 flex flex-col items-center justify-center -mt-1">
+                                    <span>다운로드 (PDF / HWP / DB)</span>
+                                    <span className="text-[9px] text-brand-500 normal-case mt-0.5 tracking-normal bg-brand-50 px-2 py-0.5 rounded-full">* PDF/HWP 결제일로부터 30일간 제한</span>
+                                </div>
                             </div>
 
                             <div className="divide-y divide-slate-100">
