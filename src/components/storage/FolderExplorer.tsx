@@ -35,7 +35,9 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
         return {};
     });
 
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'folder' | 'item', id: string } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, type: 'folder' | 'item' | 'background', id: string | null } | null>(null);
+    const [clipboard, setClipboard] = useState<{ type: 'folder' | 'item', id: string, action: 'cut' } | null>(null);
+    
     const [inputModal, setInputModal] = useState<{
         isOpen: boolean;
         title: string;
@@ -104,12 +106,12 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
             });
     }, [refreshTrigger, refreshKey, filterType, initialData]);
 
-    // [V72] Clear cache when external refresh is triggered
+    // [V72] Clear cache when external/internal refresh is triggered
     useEffect(() => {
-        if (refreshKey > 0) {
+        if (refreshKey > 0 || refreshTrigger > 0) {
             setContentCache({});
         }
-    }, [refreshKey]);
+    }, [refreshKey, refreshTrigger]);
 
     // Sub-Navigation Fetch: Only runs when currentFolderId changes to a NON-null value
     useEffect(() => {
@@ -202,8 +204,30 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
     };
 
     const handleDeleteFromContext = () => {
-        if (!contextMenu) return;
+        if (!contextMenu || contextMenu.type === 'background' || !contextMenu.id) return;
         if (confirm('정말 삭제하시겠습니까?')) handleDelete(contextMenu.type, contextMenu.id);
+    };
+
+    const handleCut = () => {
+        if (!contextMenu || contextMenu.type === 'background' || !contextMenu.id) return;
+        setClipboard({ type: contextMenu.type, id: contextMenu.id, action: 'cut' });
+    };
+
+    const handlePaste = async () => {
+        if (!clipboard) return;
+        const targetFolderId = currentFolderId; // Paste into current view
+        
+        if (clipboard.type === 'item') {
+            await handleMoveItem(clipboard.id, targetFolderId);
+        } else if (clipboard.type === 'folder') {
+            await fetch('/api/storage/folders', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: clipboard.id, parentId: targetFolderId === null ? 'root' : targetFolderId })
+            });
+            setRefreshTrigger(p => p + 1);
+        }
+        setClipboard(null); // Clear clipboard
     };
 
     const handleDownload = () => {
@@ -297,6 +321,9 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         onFolderSelect={setCurrentFolderId}
                         onMoveItem={handleMoveItem}
                         onDelete={handleDelete}
+                        onContextMenu={(e, type, id) => {
+                            setContextMenu({ x: e.clientX, y: e.clientY, type, id });
+                        }}
                     />
                 </div>
             </div>
@@ -319,12 +346,26 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         )}
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto bg-slate-50/30 relative" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}>
+                <div className="flex-1 overflow-y-auto bg-slate-50/30 relative" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'background', id: null }); }}>
                     {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"> <Loader2 className="animate-spin text-blue-600" /> </div>}
                     <FileGrid folders={viewFolders} items={viewItems} onFolderClick={(f) => setCurrentFolderId(f.id)} onItemClick={onItemSelect} onRename={() => { }} onDelete={handleDelete} onDownload={handleSingleDownload} onContextMenu={(e, type, id) => { setContextMenu({ x: e.clientX, y: e.clientY, type, id }); }} onMoveItem={handleMoveItem} selectedIds={selectedIds} />
                 </div>
             </div>
-            {contextMenu && <StorageContextMenu x={contextMenu.x} y={contextMenu.y} type={contextMenu.type} onClose={() => setContextMenu(null)} onRename={handleRename} onDelete={handleDeleteFromContext} onDownload={handleDownload} />}
+            {contextMenu && (
+                <StorageContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    type={contextMenu.type}
+                    clipboardHasData={!!clipboard}
+                    onClose={() => setContextMenu(null)}
+                    onRename={handleRename}
+                    onDelete={handleDeleteFromContext}
+                    onDownload={handleDownload}
+                    onCreateFolder={handleCreateFolder}
+                    onCut={handleCut}
+                    onPaste={handlePaste}
+                />
+            )}
             {inputModal.isOpen && <InputModal title={inputModal.title} label={inputModal.label} initialValue={inputModal.initialValue} icon={inputModal.icon} onClose={() => setInputModal(p => ({ ...p, isOpen: false }))} onConfirm={inputModal.onConfirm} />}
         </div>
     );

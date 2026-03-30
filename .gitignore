@@ -66,3 +66,4 @@ hwpx-python-tool/
 *_extracted/
 backup_extract/
 *.zip
+gemini_api_key.txt

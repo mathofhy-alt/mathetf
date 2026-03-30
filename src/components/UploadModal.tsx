@@ -6,6 +6,74 @@ import { useRouter } from 'next/navigation';
 import { X, Upload, FileText, Trash2, CheckCircle2, AlertCircle, FileDown, Database } from 'lucide-react';
 import { PdfFileIcon, HwpFileIcon } from './FileIcons';
 
+interface FileUploadSlotProps {
+    id: string;
+    label: string;
+    subLabel: string;
+    file: File | null;
+    setFile: React.Dispatch<React.SetStateAction<File | null>>;
+    accept: string;
+    price: number;
+    inputRef: React.RefObject<HTMLInputElement>;
+    Icon: React.ElementType;
+    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, setFile: React.Dispatch<React.SetStateAction<File | null>>) => void;
+}
+
+const FileUploadSlot = ({
+    id,
+    label,
+    subLabel,
+    file,
+    setFile,
+    accept,
+    price,
+    inputRef,
+    Icon,
+    onFileChange
+}: FileUploadSlotProps) => (
+    <div className={`border rounded-lg p-3 flex flex-col gap-2 transition-all ${file ? 'border-brand-200 bg-brand-50' : 'border-slate-200 hover:border-brand-300'}`}>
+        <div className="flex justify-between items-start">
+            <div className="flex items-center gap-2">
+                <Icon size={20} />
+                <div>
+                    <div className="text-sm font-bold text-slate-700">{label}</div>
+                    <div className="text-[10px] text-slate-500">{subLabel}</div>
+                </div>
+            </div>
+            <div className="text-xs font-bold text-brand-600 bg-brand-100 px-2 py-0.5 rounded">
+                {price}P
+            </div>
+        </div>
+
+        {file ? (
+            <div className="flex items-center justify-between bg-white rounded border border-brand-200 p-2 mt-1">
+                <div className="flex items-center gap-2 overflow-hidden">
+                    <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
+                    <span className="text-xs text-slate-700 truncate">{file.name}</span>
+                </div>
+                <button type="button" onClick={() => setFile(null)} className="text-slate-400 hover:text-red-500">
+                    <Trash2 size={14} />
+                </button>
+            </div>
+        ) : (
+            <label
+                htmlFor={id}
+                className="mt-1 border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-white rounded h-10 flex items-center justify-center cursor-pointer transition-colors block w-full"
+            >
+                <span className="text-xs text-slate-400">+ 파일 추가</span>
+            </label>
+        )}
+        <input
+            id={id}
+            ref={inputRef}
+            type="file"
+            accept={accept}
+            className="hidden"
+            onChange={(e) => onFileChange(e, setFile)}
+        />
+    </div>
+);
+
 interface UploadModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -38,9 +106,13 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
     // New State for Template Compliance
     const [isTemplateCompliant, setIsTemplateCompliant] = useState(false);
 
+    // Upload Type Toggle
+    const [uploadType, setUploadType] = useState<'MARKET' | 'SHADOW'>('MARKET');
+
     // File States
     const [filePdfSol, setFilePdfSol] = useState<File | null>(null);
     const [fileHwpSol, setFileHwpSol] = useState<File | null>(null);
+    const [fileRawCopy, setFileRawCopy] = useState<File | null>(null);
 
 
     // Validations & Loading
@@ -141,6 +213,39 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         if (dbError) throw dbError;
     };
 
+    const uploadRawSingleFile = async (file: File) => {
+        // Shadow upload uses content_type = '원본제보'
+        const fileExt = file.name.split('.').pop()?.toUpperCase() || 'FILE';
+        const fileTypeForDb = fileExt === 'PDF' ? 'PDF' : (['JPG','PNG','JPEG'].includes(fileExt) ? 'IMAGE' : fileExt);
+        
+        const fileName = `${Date.now()}_raw_${Math.random().toString(36).substring(7)}.${fileExt.toLowerCase()}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage.from('exam-materials').upload(filePath, file);
+        if (uploadError) throw uploadError;
+
+        const { error: dbError } = await supabase.from('exam_materials').insert({
+            uploader_id: user.id,
+            uploader_name: user?.email?.split('@')[0] || user?.user_metadata?.full_name || 'Unknown',
+            school: selectedSchool,
+            region: selectedRegion,
+            district: selectedDistrict,
+            exam_year: Number(year),
+            grade: Number(grade),
+            semester: Number(semester),
+            exam_type: examType,
+            subject: subject,
+            title: title + ' [원본제보]',
+            file_type: fileTypeForDb,
+            content_type: '원본제보',
+            file_path: filePath,
+            price: 0,
+            sales_count: 0
+        });
+
+        if (dbError) throw dbError;
+    };
+
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -153,15 +258,20 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             if (!subject) throw new Error('과목을 선택해주세요.');
             if (!title) throw new Error('제목을 입력해주세요.');
 
-            // Require BOTH files
-            if (!filePdfSol || !fileHwpSol) {
-                throw new Error('PDF와 HWP/HML 파일을 모두 등록해야 합니다.');
-            }
-
             const uploads = [];
 
-            if (filePdfSol) uploads.push(uploadSingleFile(filePdfSol, 'PDF', '해설', PRICE_PDF_SOL));
-            if (fileHwpSol) uploads.push(uploadSingleFile(fileHwpSol, 'HWP', '해설', PRICE_HWP_SOL));
+            if (uploadType === 'MARKET') {
+                if (!filePdfSol || !fileHwpSol) {
+                    throw new Error('PDF와 HWP/HML 파일을 모두 등록해야 합니다.');
+                }
+                if (filePdfSol) uploads.push(uploadSingleFile(filePdfSol, 'PDF', '해설', PRICE_PDF_SOL));
+                if (fileHwpSol) uploads.push(uploadSingleFile(fileHwpSol, 'HWP', '해설', PRICE_HWP_SOL));
+            } else {
+                if (!fileRawCopy) {
+                    throw new Error('원본 시험지 파일(PDF, 사진)을 첨부해주세요.');
+                }
+                uploads.push(uploadRawSingleFile(fileRawCopy));
+            }
 
             await Promise.all(uploads);
 
@@ -178,67 +288,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         }
     };
 
-    const FileUploadSlot = ({
-        label,
-        subLabel,
-        file,
-        setFile,
-        accept,
-        price,
-        inputRef,
-        Icon
-    }: {
-        label: string,
-        subLabel: string,
-        file: File | null,
-        setFile: React.Dispatch<React.SetStateAction<File | null>>,
-        accept: string,
-        price: number,
-        inputRef: React.RefObject<HTMLInputElement>,
-        Icon: React.ElementType
-    }) => (
-        <div className={`border rounded-lg p-3 flex flex-col gap-2 transition-all ${file ? 'border-brand-200 bg-brand-50' : 'border-slate-200 hover:border-brand-300'}`}>
-            <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                    <Icon size={20} />
-                    <div>
-                        <div className="text-sm font-bold text-slate-700">{label}</div>
-                        <div className="text-[10px] text-slate-500">{subLabel}</div>
-                    </div>
-                </div>
-                <div className="text-xs font-bold text-brand-600 bg-brand-100 px-2 py-0.5 rounded">
-                    {price}P
-                </div>
-            </div>
-
-            {file ? (
-                <div className="flex items-center justify-between bg-white rounded border border-brand-200 p-2 mt-1">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
-                        <span className="text-xs text-slate-700 truncate">{file.name}</span>
-                    </div>
-                    <button type="button" onClick={() => setFile(null)} className="text-slate-400 hover:text-red-500">
-                        <Trash2 size={14} />
-                    </button>
-                </div>
-            ) : (
-                <div
-                    onClick={() => inputRef.current?.click()}
-                    className="mt-1 border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-white rounded h-10 flex items-center justify-center cursor-pointer transition-colors"
-                >
-                    <span className="text-xs text-slate-400">+ 파일 추가</span>
-                </div>
-            )}
-            <input
-                ref={inputRef}
-                type="file"
-                accept={accept}
-                className="hidden"
-                onChange={(e) => handleFileChange(e, setFile)}
-            />
-        </div>
-    );
-
+    // Remove inner FileUploadSlot definition
 
 
     return (
@@ -254,29 +304,62 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
 
                 {/* Body */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                    {/* Template Download Section */}
-                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="space-y-1">
-                                <h3 className="font-bold text-blue-900 flex items-center gap-2">
-                                    <FileText size={18} />
-                                    필수 양식 다운로드
-                                </h3>
-                                <p className="text-xs text-blue-700 font-medium">
-                                    반드시 제공된 양식을 준수하여 작성해주세요.<br className="hidden sm:block" />
-                                    양식 미준수 시 자료 판매가 중지될 수 있습니다.
-                                </p>
-                            </div>
-                            <a
-                                href="/files/standard_template.hwp"
-                                download
-                                className="flex items-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-50 transition-colors shadow-sm whitespace-nowrap"
-                            >
-                                <FileDown size={16} />
-                                수학ETF 표준 양식 다운로드(.hwp)
-                            </a>
-                        </div>
+                    
+                    {/* Toggle Upload Type */}
+                    <div className="flex bg-slate-100 rounded-lg p-1 w-full max-w-sm mx-auto shadow-inner">
+                        <button
+                            type="button"
+                            onClick={() => setUploadType('MARKET')}
+                            className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${uploadType === 'MARKET' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            기출문제 일반 등록
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setUploadType('SHADOW')}
+                            className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${uploadType === 'SHADOW' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            원본 시험지 제보
+                        </button>
                     </div>
+
+                    {uploadType === 'SHADOW' && (
+                        <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
+                            <h3 className="font-bold text-purple-900 flex items-center gap-2 mb-1">
+                                <AlertCircle size={18} /> 시험지 원본 제보하기 (비공개)
+                            </h3>
+                            <p className="text-xs text-purple-700 font-medium">
+                                폰으로 촬영한 학교 시험지 사진이나 스캔본을 제보해주세요.<br/>
+                                제보된 자료는 관리자에게만 노출되며, 향후 이 자료를 바탕으로 개인DB가 판매될 경우 <span className="text-rose-600 font-bold bg-white px-1">판매 수익의 30%가 포인트로 지급</span>됩니다.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Template Download Section */}
+                    {uploadType === 'MARKET' && (
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-blue-900 flex items-center gap-2">
+                                        <FileText size={18} />
+                                        필수 양식 다운로드
+                                    </h3>
+                                    <p className="text-xs text-blue-700 font-medium">
+                                        반드시 제공된 양식을 준수하여 작성해주세요.<br className="hidden sm:block" />
+                                        양식 미준수 시 자료 판매가 중지될 수 있습니다.
+                                    </p>
+                                </div>
+                                <a
+                                    href="/files/standard_template.hwp"
+                                    download
+                                    className="flex items-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-50 transition-colors shadow-sm whitespace-nowrap"
+                                >
+                                    <FileDown size={16} />
+                                    수학ETF 표준 양식 다운로드(.hwp)
+                                </a>
+                            </div>
+                        </div>
+                    )}
 
                     {/* 1. School Info */}
                     <div className="space-y-4">
@@ -352,31 +435,56 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                     <div className="space-y-4">
                         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                             <span className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                            파일 및 DB 등록
-                            <span className="text-[10px] font-bold text-rose-500 ml-2">* PDF와 HWP/HML 파일을 모두 등록해야 합니다.</span>
+                            {uploadType === 'MARKET' ? '파일 및 DB 등록' : '원천 스캔/사진 파일 등록'}
+                            {uploadType === 'MARKET' ? (
+                                <span className="text-[10px] font-bold text-rose-500 ml-2">* PDF와 HWP/HML 파일을 모두 등록해야 합니다.</span>
+                            ) : (
+                                <span className="text-[10px] font-bold text-rose-500 ml-2">* PDF 또는 이미지(JPG, PNG) 파일을 등록해주세요.</span>
+                            )}
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <FileUploadSlot
-                                label="PDF 문제+해설"
-                                subLabel="문제와 해설이 포함된 파일"
-                                file={filePdfSol}
-                                setFile={setFilePdfSol}
-                                accept=".pdf"
-                                price={PRICE_PDF_SOL}
-                                inputRef={pdfSolRef}
-                                Icon={PdfFileIcon}
-                            />
-                            <FileUploadSlot
-                                label="HWP/HML 문제+해설"
-                                subLabel="문제와 해설이 포함된 파일"
-                                file={fileHwpSol}
-                                setFile={setFileHwpSol}
-                                accept=".hwp,.hwpx,.hml"
-                                price={PRICE_HWP_SOL}
-                                inputRef={hwpSolRef}
-                                Icon={HwpFileIcon}
-                            />
+                            {uploadType === 'MARKET' ? (
+                                <>
+                                    <FileUploadSlot
+                                        id="upload_pdf_sol"
+                                        label="PDF 문제+해설"
+                                        subLabel="문제와 해설이 포함된 파일"
+                                        file={filePdfSol}
+                                        setFile={setFilePdfSol}
+                                        accept=".pdf"
+                                        price={PRICE_PDF_SOL}
+                                        inputRef={pdfSolRef}
+                                        Icon={PdfFileIcon}
+                                        onFileChange={handleFileChange}
+                                    />
+                                    <FileUploadSlot
+                                        id="upload_hwp_sol"
+                                        label="HWP/HML 문제+해설"
+                                        subLabel="문제와 해설이 포함된 파일"
+                                        file={fileHwpSol}
+                                        setFile={setFileHwpSol}
+                                        accept=".hwp,.hwpx,.hml"
+                                        price={PRICE_HWP_SOL}
+                                        inputRef={hwpSolRef}
+                                        Icon={HwpFileIcon}
+                                        onFileChange={handleFileChange}
+                                    />
+                                </>
+                            ) : (
+                                <FileUploadSlot
+                                    id="upload_raw_scan"
+                                    label="진짜 원본 스캔본 (사진/PDF)"
+                                    subLabel="수익 30% 공유 대상"
+                                    file={fileRawCopy}
+                                    setFile={setFileRawCopy}
+                                    accept=".pdf,.jpg,.jpeg,.png,.zip"
+                                    price={0}
+                                    inputRef={pdfSolRef}
+                                    Icon={Upload}
+                                    onFileChange={handleFileChange}
+                                />
+                            )}
 
                         </div>
                     </div>
@@ -389,18 +497,20 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                     )}
 
                     {/* Template Compliance Checkbox */}
-                    <div className="flex items-center gap-2 p-3 bg-slate-50 rounded border border-slate-200">
-                        <input
-                            type="checkbox"
-                            id="template-compliance"
-                            checked={isTemplateCompliant}
-                            onChange={(e) => setIsTemplateCompliant(e.target.checked)}
-                            className="w-5 h-5 accent-brand-600 cursor-pointer"
-                        />
-                        <label htmlFor="template-compliance" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
-                            수학ETF 전용 양식을 사용하여 작성하였습니다 <span className="text-rose-500">(필수)</span>
-                        </label>
-                    </div>
+                    {uploadType === 'MARKET' && (
+                        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded border border-slate-200">
+                            <input
+                                type="checkbox"
+                                id="template-compliance"
+                                checked={isTemplateCompliant}
+                                onChange={(e) => setIsTemplateCompliant(e.target.checked)}
+                                className="w-5 h-5 accent-brand-600 cursor-pointer"
+                            />
+                            <label htmlFor="template-compliance" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
+                                수학ETF 전용 양식을 사용하여 작성하였습니다 <span className="text-rose-500">(필수)</span>
+                            </label>
+                        </div>
+                    )}
 
                     {/* Footer Actions */}
                     <div className="pt-2 flex justify-end gap-3 border-t border-slate-100">
@@ -414,8 +524,8 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                         </button>
                         <button
                             type="submit"
-                            disabled={isUploading || !isTemplateCompliant}
-                            className={`px-8 py-2.5 text-sm font-bold text-white bg-brand-600 rounded shadow-md hover:bg-brand-700 hover:shadow-lg transition-all flex items-center gap-2 ${isUploading || !isTemplateCompliant ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            disabled={isUploading || (uploadType === 'MARKET' && !isTemplateCompliant)}
+                            className={`px-8 py-2.5 text-sm font-bold text-white rounded shadow-md transition-all flex items-center gap-2 ${uploadType === 'SHADOW' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-brand-600 hover:bg-brand-700'} ${isUploading || (uploadType === 'MARKET' && !isTemplateCompliant) ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
                             {isUploading ? (
                                 <>

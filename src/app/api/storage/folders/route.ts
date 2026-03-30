@@ -12,6 +12,13 @@ export async function GET(req: NextRequest) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        // 0. Fetch Mock Exam IDs to globally exclude them from personal folders
+        const { data: mockExamsGlobal } = await supabase
+            .from('exam_materials')
+            .select('id')
+            .eq('exam_type', '모의고사');
+        const mockExamIds = new Set(mockExamsGlobal?.map((m: any) => m.id) || []);
+
         // 1. Prepare Base Queries with Selective Select
         let folderQuery = supabase
             .from('folders')
@@ -56,14 +63,48 @@ export async function GET(req: NextRequest) {
 
             const [treeRes, rootItemsRes] = await Promise.all([treeQuery, rootItemQuery]);
 
+            let treeFolders = treeRes.data || [];
+            let allItems = (rootItemsRes.data || []).filter(item => !mockExamIds.has(item.reference_id));
+
+            // Inject Virtual Folder for Mock Exams
+            if (!folderType || folderType === 'all' || folderType === 'db') {
+                treeFolders.push({
+                    id: 'mock-exam-root',
+                    name: '모의고사',
+                    parent_id: null,
+                    folder_type: 'db' // Shows up natively as a DB folder
+                } as any);
+            }
+
             return NextResponse.json({
-                folders: treeRes.data || [], // Tree folders
-                items: rootItemsRes.data || [], // Root items
+                folders: treeFolders, // Tree folders
+                items: allItems, // Root items
                 isUnified: true
             });
         }
 
         // 4. Content Fetch for specific folder (Context Navigation)
+        if (parentId === 'mock-exam-root') {
+             const { data: mockExams } = await supabase.from('exam_materials')
+                 .select('id, title, created_at')
+                 .eq('exam_type', '모의고사')
+                 .eq('file_type', 'DB');
+             
+             if (mockExams) {
+                 const mockItems = mockExams.map(m => ({
+                     id: m.id,
+                     folder_id: 'mock-exam-root',
+                     type: 'personal_db',
+                     name: m.title,
+                     reference_id: m.id,
+                     details: { is_mock: true },
+                     created_at: m.created_at
+                 }));
+                 return NextResponse.json({ folders: [], items: mockItems });
+             }
+             return NextResponse.json({ folders: [], items: [] });
+        }
+
         if (parentId === 'root' || !parentId) {
             folderQuery = folderQuery.is('parent_id', null);
             itemQuery = itemQuery.is('folder_id', null);
@@ -82,7 +123,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             folders: foldersRes.data || [],
-            items: itemsRes.data || []
+            items: (itemsRes.data || []).filter(item => !mockExamIds.has(item.reference_id))
         });
 
     } catch (e: any) {

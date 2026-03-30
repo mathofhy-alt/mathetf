@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import re
 import time
@@ -8,44 +9,53 @@ from google import genai
 from google.genai import types
 
 
-# ─── 프롬프트 ───────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """당신은 수학 시험지 타이핑 전문가입니다.
-아래 규칙을 절대적으로 준수하여 시험지 이미지의 내용을 그대로 타이핑하세요.
+# ─── 프롬프트 ────────────────
+SYSTEM_PROMPT = """당신은 '수학 시험지 100% 원본 복제 타이핑 로봇(OCR)'입니다.
+인간처럼 생각하거나 문제를 풀지 말고, 오직 이미지에 인쇄된 글씨를 있는 그대로 완벽하게 복사해서 타이핑하세요.
 
-[필수 규칙]
-1. 모든 텍스트를 위에서 아래로, 왼쪽에서 오른쪽 순서로 빠짐없이 타이핑합니다.
-2. 수식(수학 기호, 분수, 제곱, 루트, 행렬 등)은 반드시 [[EQUATION:한컴수식]] 형식으로 감쌉니다.
-   - 한컴수식 문법 예시: x^{2}, {a} over {b}, sqrt {x}, alpha, TIMES, le, ge
-   - LaTeX(\\frac, \\sqrt 등) 절대 사용 금지 — 한컴 수식 문법만 사용
-3. 그래프, 표, 이미지는 [그림] 으로 대체합니다.
-4. 원본 줄 구조를 최대한 유지합니다. 줄바꿈은 \\n 으로 표현합니다.
-5. 객관식 보기(①~⑤)도 원문 그대로 타이핑합니다. 보기 사이 구분은 공백으로 합니다.
-6. <보기> 박스가 있으면 내용을 그대로 타이핑합니다.
-7. 페이지 번호나 머리글/바닥글은 포함하지 않습니다.
-8. 마크다운 코드블록(``` 등)이나 특수 마킹을 사용하지 마세요.
-9. 추측하거나 내용을 요약하지 마세요. 원문 그대로 타이핑하세요.
-10. 학생이 쓴 손글씨(풀이, 계산 과정, 낙서, 메모, 체크 표시, 답 기재 등)는 완전히 무시하세요.
-    인쇄된 문제 텍스트만 타이핑합니다. 손글씨(필기체, 펜/연필 자국)와 인쇄체를 명확히 구별하세요.
-11. 숫자와 영문 단독 문자는 모두 반드시 [[EQUATION:...]] 형식으로 감쌉니다.
-    - 숫자 단독: 1 → [[EQUATION:1]], 100 → [[EQUATION:100]]
-    - 영어 소문자 단독: x → [[EQUATION:x]], n → [[EQUATION:n]], a → [[EQUATION:a]]
-    - 영어 대문자 단독: A → [[EQUATION:A]], N → [[EQUATION:N]]
-    - 수식 안에 이미 포함된 경우는 별도 태그 불필요 (예: [[EQUATION:x^{2}+1]])
-    - 한글 단어나 조사와 붙은 경우 해당 부분만 감싸기: "x값" → [[EQUATION:x]]값
-    - 단, 영단어(두 글자 이상, 예: sin, cos, log, AB, BC 등 수학 기호가 아닌 일반 영어 단어)는 수식 처리 안 함.
-      예외: sin, cos, tan, log, lim, max, min 등 수학 함수명은 수식 안에 포함시킴.
-12. 괄호 안에 분수, 루트, 적분 등 높이가 큰 수식이 들어갈 경우 반드시 left ( ... right ) 를 사용합니다.
-    예) ( {a} over {b} ) → left ( {a} over {b} right )
-        ( sqrt {x} + 1 ) → left ( sqrt {x} + [[EQUATION:1]] right )
-    일반 소괄호 (단순 문자/숫자만 포함)는 그냥 ( ) 사용 가능.
+[지상 최고 명령: 한컴수식(HWP) 절대 문법 가이드]
+🚨 경고: 시스템 내부에 LaTeX에서 HWP로 변환해주는 후처리 치환기가 완전히 삭제되었습니다! 🚨
+따라서 당신이 실수로 LaTeX 명령어(\frac, \sqrt 등)를 단 하나라도 출력하면 렌더링 시스템 전체가 치명적인 오류를 일으킵니다.
+무조건 처음부터 끝까지 100% '한컴수식 고유 문법'으로만 직출력해야 합니다!!!
+
+0. 🚫 절대 문제를 풀거나, 내용을 해설하거나, 요약하거나, 계산 과정을 추가하지 마세요. 인쇄된 그대로만 스캔식 전사합니다.
+1. 분수: `{분자} over {분모}` (예: `{a+1} over {b}`)
+2. 근호(루트): `sqrt {x}` 또는 n제곱근은 `root {n} {x}`
+3. ★ 괄호와 집합 기호 (치명적 오류 주의) ★
+   - 수식 내에서 단순 `{` 와 `}`는 화면에 보이지 않는 '논리적 그룹핑' 기호로만 작동합니다.
+   - 따라서 집합이나 조건제시법을 위해 화면에 진짜 `{ }`를 그려야 할 때는 무조건 `left { 1, 2 right }` 처럼 left와 right를 붙여야 합니다!
+   - 분수나 루트처럼 위아래가 긴 수식을 괄호/절댓값으로 감쌀 때도 무조건 `left ( {a} over {b} right )`, `left | x right |` 처럼 크기 맞춤 괄호를 쓰세요.
+4. 🔥 지수(^) 및 밑첨자(_) 작성을 위한 🚨초특급 주의사항🚨 🔥
+   - 지수나 밑첨자 뒤에 **불필요한 중괄호 `{}`를 열어서 옆에 있는 수식까지 다 집어삼키는 치명적 환각(오작동)**을 거두십시오!
+   - ❌ 최악의 오작동: `4x^{2+3x}` (원본 문서엔 4x^2 + 3x 인데 +3x까지 억지로 지수에 올려버린 심각한 오류)
+   - ✅ 올바른 전사: `4x^2 + 3x` (지수가 1글자면 중괄호 생략 필수)
+   - ❌ 끔찍한 오작동: `f(x _{2)-g(x _{2)<0}}` (밑첨자 중괄호를 안 닫고 뒤의 식까지 늪처럼 끌고 들어간 에러)
+   - ✅ 올바른 전사: `f(x_2 ) - g(x_2 ) < 0` (🔥중요🔥: 한컴수식 특성상 밑첨자/지수 바로 뒤에 닫는 괄호 `)`가 올 때는 **반드시 `x_2 )` 처럼 한 칸 띄워주어야** 괄호가 첨자로 빨려들어가지 않습니다!)
+   - ❌ 띄어쓰기 오작동: `4x  ^2` 또는 `x _{2}` 처럼 첨자 앞뒤에 쓸데없는 공백 남발 금지. 무조건 딱 붙여 쓸 것. (`4x^2`, `x_2`)
+5. 연산 및 부등호: 
+   - 곱하기: `TIMES`, 나누기: `DIVIDE`, 플러스마이너스: `+-`
+   - 작거나 같다: `le`, 크거나 같다: `ge`, 같지 않다: `!=`, 가우스기호: `[ x ]`
+5. 도형 및 화살표:
+   - 선분: `overline {AB}`, 각도: `angle ABC`, 삼각형: `triangle ABC`
+   - 우측 화살표: `rightarrow`
+6. 극한, 시그마, 적분:
+   - 극한: `lim_{x rightarrow 0}`
+   - 시그마: `sum_{k=1}^{n}`
+   - 적분: `int_{a}^{b} f(x) dx`
+7. 그리스어 및 특수기호: `alpha`, `beta`, `gamma`, `theta`, `pi`, `cdot`(점곱)
+8. ★ 조건부 함수(Piecewise) 절대 규칙 ★
+   - 경우에 따라 나뉘는 함수는 절대로 `matrix`나 `&` 기호를 쓰지 마세요.
+   - 무조건 `cases { f(x) ~~~~ (x>0) # g(x) ~~~~ (x<=0) }` 의 형태로 작성하세요. (`#`이 줄바꿈 역할)
+9. 원본 줄 배치를 최대한 유지하며, 객관식 보기(①~⑤)도 원문 위치 그대로 타이핑합니다. <보기> 박스 내용도 절대 빼먹지 마세요.
+10. 숫자 단독이나 영문 변수 단독도 반드시 [[EQUATION:...]] 태그로 감쌉니다. (예: [[EQUATION:1]], [[EQUATION:x]])
 
 [출력 형식]
-- 순수 텍스트 (마크다운 없음)
-- 수식만 [[EQUATION:...]] 태그 사용
-- 줄바꿈으로 단락 구분
+- 첫 시작부터 끝까지 순수 텍스트로만 답변할 것 (인사말, 요약, 도입부, 결론 부연설명 절대 금지)
+- 마크다운 블록(```) 절대로 금지. 학생의 손글씨 낙서는 100% 무시.
+- 수정/생성된 사견 없이 원문만 출력하세요.
 """
 
-USER_PROMPT = "위 시험지 페이지의 모든 내용을 규칙에 따라 타이핑해 주세요."
+USER_PROMPT = "🚨 명심하세요: 당신은 복제 타이핑 로봇입니다. 시작이나 끝에 인사말이나 부연설명 없이 오직 이미지에 있는 인쇄된 문자와 수식을 100% 똑같이 빠짐없이 텍스트로 옮겨 적기만 하세요. 문장을 매끄럽게 고치지 마세요. 지금 바로 추출을 시작하세요:"
 
 
 def load_api_key() -> str:
@@ -111,15 +121,11 @@ def ocr_page(client: genai.Client, model_id: str, img: Image.Image, page_num: in
         try:
             gen_config_kwargs = dict(
                 system_instruction=SYSTEM_PROMPT,
-                temperature=0.0 if attempt == 0 else 0.3,
+                temperature=0.0,
+                top_p=0.1,
+                top_k=1,
                 max_output_tokens=32768,
             )
-            # 단순 전사 작업이므로 thinking 완전 비활성화 (비용 절감)
-            try:
-                gen_config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
-            except Exception:
-                pass  # 구버전 SDK는 무시
-
             response = client.models.generate_content(
                 model=model_id,
                 contents=[
@@ -185,7 +191,9 @@ def ocr_page(client: genai.Client, model_id: str, img: Image.Image, page_num: in
                     ],
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_PROMPT,
-                        temperature=0.1,
+                        temperature=0.0,
+                        top_p=0.1,
+                        top_k=1,
                         max_output_tokens=8192,
                     )
                 )
@@ -232,7 +240,90 @@ def ocr_page(client: genai.Client, model_id: str, img: Image.Image, page_num: in
     return f"[페이지 {page_num + 1} - 추출 실패]"
 
 
-def run_ocr(pdf_path: str, log_callback=None, model_id: str = "gemini-3-flash-preview") -> list[str]:
+def ocr_crop(client: genai.Client, model_id: str, img: Image.Image, q_num: str, log_callback=None) -> str:
+    """
+    단일 문항 크롭 이미지를 Gemini로 OCR.
+    반환값: 해당 문항의 텍스트 문자열
+    """
+    def log(msg):
+        if log_callback:
+            log_callback(msg)
+        else:
+            print(msg)
+
+    log(f"  📌 문항 {q_num}번 OCR 요청 중...")
+    img_bytes = image_to_bytes(img)
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            gen_config_kwargs = dict(
+                system_instruction=SYSTEM_PROMPT,
+                temperature=0.0,
+                top_p=0.1,
+                top_k=1,
+                max_output_tokens=8192,
+            )
+            response = client.models.generate_content(
+                model=model_id,
+                contents=[
+                    types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
+                    USER_PROMPT,
+                ],
+                config=types.GenerateContentConfig(**gen_config_kwargs)
+            )
+
+            raw_text = None
+            try:
+                raw_text = response.text
+            except Exception:
+                pass
+
+            if raw_text is None:
+                try:
+                    parts = response.candidates[0].content.parts
+                    raw_text = "\n".join(
+                        p.text for p in parts
+                        if hasattr(p, "text") and p.text and not getattr(p, "thought", False)
+                    )
+                except Exception:
+                    raw_text = ""
+
+            text = (raw_text or "").strip()
+            if not text:
+                log(f"  ⚠ 문항 {q_num}번 응답 비어있음, 재시도...")
+                if attempt < max_retries - 1:
+                    time.sleep(3)
+                    continue
+                return f"[문항 {q_num}번 - 내용 없음]"
+
+            try:
+                usage = response.usage_metadata
+                tok_out = getattr(usage, "candidates_token_count", 0) or 0
+                tok_note = f" (출력 {tok_out:,} 토큰)"
+            except Exception:
+                tok_note = ""
+
+            log(f"  문항 {q_num}번 완료!{tok_note}")
+            return text
+
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "quota" in err_str.lower() or "RESOURCE_EXHAUSTED" in err_str:
+                wait = 30 * (attempt + 1)
+                log(f"  ⚠ 할당량 초과, {wait}초 대기 후 재시도...")
+                time.sleep(wait)
+            else:
+                log(f"  ✗ 문항 {q_num}번 오류: {err_str[:200]}")
+                if attempt < max_retries - 1:
+                    time.sleep(5)
+                else:
+                    return f"[문항 {q_num}번 - 추출 실패: {err_str[:100]}]"
+
+    return f"[문항 {q_num}번 - 추출 실패]"
+
+
+def run_ocr(pdf_path: str, log_callback=None, model_id: str = "gemini-3.1-pro-preview") -> list[str]:
     """
     PDF 전체를 OCR하여 페이지별 텍스트 리스트 반환.
     

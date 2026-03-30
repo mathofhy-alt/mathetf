@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
         const semester = formData.get('semester') as string || '';
         const subject = formData.get('subject') as string || '';
         const grade = formData.get('grade') as string || '';
+        const startNumberParam = formData.get('startNumber') as string || '';
+        const hasStartNumber = startNumberParam.trim() !== '';
 
         if (!file) {
             return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
@@ -99,13 +101,16 @@ export async function POST(req: NextRequest) {
         const imageMap = new Map(images.map(img => [img.binId, img]));
 
         // 3. Insert questions and their images
-        for (const q of questions) {
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            const finalIndex = hasStartNumber ? parseInt(startNumberParam, 10) + i : q.questionNumber;
+
             // Insert question
             const { data: qData, error: qError } = await supabase
                 .from('questions')
                 .insert({
                     file_id: fileId,
-                    question_index: q.questionNumber,
+                    question_index: finalIndex,
                     fragment_xml: q.contentXml,
                     fragment_len: q.contentXml.length,
                     content_xml: q.contentXml,
@@ -117,7 +122,7 @@ export async function POST(req: NextRequest) {
                     year,
                     semester,
                     source_db_id,
-                    question_number: q.questionNumber,
+                    question_number: finalIndex,
                     equation_scripts: q.equationScripts,
                     plain_text: q.plainText
                 })

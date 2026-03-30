@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Folder, ChevronRight, ChevronDown, Database, Trash2 } from 'lucide-react';
+import { Folder, ChevronRight, ChevronDown, Database, Trash2, BookOpen } from 'lucide-react';
 import type { Folder as FolderType } from '@/types/storage';
 
 interface FolderTreeProps {
     folders: FolderType[];
     currentFolderId: string | null; // null represents Root
     onFolderSelect: (folderId: string | null) => void;
-    onMoveItem?: (itemId: string, targetFolderId: string | null) => void; // DnD Optional
+    onMoveItem?: (itemId: string, targetFolderId: string | null) => void;
     onDelete?: (type: 'folder', id: string) => void;
+    onContextMenu?: (e: React.MouseEvent, type: 'folder' | 'background', id: string | null) => void;
 }
 
-const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveItem, onDelete, depth = 0 }: any) => {
+const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveItem, onDelete, onContextMenu, depth = 0 }: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const subFolders = allFolders.filter((f: any) => f.parent_id === folder.id);
     const hasChildren = subFolders.length > 0;
@@ -21,6 +22,7 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        if (folder.id === 'mock-exam-root') return; // Cannot drop into global virtual folder
         try {
             const data = JSON.parse(e.dataTransfer.getData('application/json'));
             if (data.type === 'item' && onMoveItem) {
@@ -39,6 +41,11 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                 onClick={(e) => {
                     e.stopPropagation();
                     onSelect(folder.id);
+                }}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onContextMenu) onContextMenu(e, 'folder', folder.id);
                 }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
@@ -59,6 +66,9 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                 )}
 
                 {(() => {
+                    if (folder.id === 'mock-exam-root') {
+                        return <BookOpen size={16} className={isSelected ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-500'} />;
+                    }
                     if (folder.name === '구매한 학교 기출') {
                         return <Database size={16} className={isSelected ? 'fill-indigo-200 text-indigo-600' : 'text-indigo-400 group-hover:text-indigo-500'} />;
                     }
@@ -66,7 +76,7 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                 })()}
                 <span className="text-sm truncate flex-1">{folder.name}</span>
 
-                {onDelete && folder.name !== '구매한 학교 기출' && (
+                {onDelete && folder.name !== '구매한 학교 기출' && folder.id !== 'mock-exam-root' && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -93,6 +103,7 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                             onSelect={onSelect}
                             onMoveItem={onMoveItem}
                             onDelete={onDelete}
+                            onContextMenu={onContextMenu}
                             depth={depth + 1}
                         />
                     ))}
@@ -102,9 +113,20 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
     );
 };
 
-export default function FolderTree({ folders, currentFolderId, onFolderSelect, onMoveItem, onDelete }: FolderTreeProps) {
+export default function FolderTree({ folders, currentFolderId, onFolderSelect, onMoveItem, onDelete, onContextMenu }: FolderTreeProps) {
     // Root level folders (parent_id is null)
-    const rootFolders = folders.filter(f => f.parent_id === null);
+    let rootFolders = folders.filter(f => f.parent_id === null);
+
+    // Enforce custom sort order: 1. Mock Exams, 2. Purchased DB, 3. Alphabetical
+    rootFolders.sort((a, b) => {
+        if (a.id === 'mock-exam-root') return -1;
+        if (b.id === 'mock-exam-root') return 1;
+        if (a.name === '구매한 학교 기출') return -1;
+        if (b.name === '구매한 학교 기출') return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    const [isRootOpen, setIsRootOpen] = useState(true);
 
     const handleDropOnRoot = (e: React.DragEvent) => {
         e.preventDefault();
@@ -117,28 +139,57 @@ export default function FolderTree({ folders, currentFolderId, onFolderSelect, o
     };
 
     return (
-        <div className="py-2">
+        <div 
+            className="py-2 select-none min-h-full"
+            onContextMenu={(e) => {
+                e.preventDefault();
+                if (onContextMenu) onContextMenu(e, 'background', null);
+            }}
+        >
             <div
-                className={`flex items-center gap-2 py-1 px-2 rounded cursor-pointer mb-1 ${currentFolderId === null ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
-                onClick={() => onFolderSelect(null)}
+                className={`group flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors ${currentFolderId === null ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onFolderSelect(null);
+                }}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Root context menu behaves like background since its id is null
+                    if (onContextMenu) onContextMenu(e, 'background', null);
+                }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDropOnRoot}
             >
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsRootOpen(!isRootOpen);
+                    }}
+                    className="p-0.5 hover:bg-slate-200 text-slate-400 rounded transition-colors"
+                >
+                    {isRootOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
                 <Folder size={16} className={currentFolderId === null ? 'fill-blue-200 text-blue-600' : 'text-slate-400'} />
-                <span className="text-sm">내 보관함 (Root)</span>
+                <span className="text-sm truncate flex-1">내 보관함 (Root)</span>
             </div>
 
-            {rootFolders.map(folder => (
-                <FolderTreeItem
-                    key={folder.id}
-                    folder={folder}
-                    allFolders={folders}
-                    currentFolderId={currentFolderId}
-                    onSelect={onFolderSelect}
-                    onMoveItem={onMoveItem}
-                    onDelete={onDelete}
-                />
-            ))}
+            {isRootOpen && (
+                <div>
+                    {rootFolders.map(folder => (
+                        <FolderTreeItem
+                            key={folder.id}
+                            folder={folder}
+                            allFolders={folders}
+                            currentFolderId={currentFolderId}
+                            onSelect={onFolderSelect}
+                            onMoveItem={onMoveItem}
+                            onDelete={onDelete}
+                            depth={1}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

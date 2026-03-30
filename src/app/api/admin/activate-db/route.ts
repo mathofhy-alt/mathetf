@@ -29,10 +29,16 @@ export async function POST(req: NextRequest) {
             gradeVal = `고${gradeVal.replace(/[^0-9]/g, '')}`;
         }
 
-        // Normalize Semester: 1 -> "1학기중간" or "1학기기말"
         const semNum = String(semester).replace(/[^0-9]/g, '');
-        const typeShort = exam_type.includes('중간') ? '중간' : (exam_type.includes('기말') ? '기말' : '');
-        const semesterVal = typeShort ? `${semNum}학기${typeShort}` : `${semNum}학기`;
+        // Handle Mock Exams/Suneung which use Month-based semester values
+        let semesterVal = '';
+        if (exam_type === '모의고사' || exam_type === '수능') {
+            semesterVal = `${semNum}월`;
+        } else {
+            // Normalize Semester: 1 -> "1학기중간" or "1학기기말"
+            const typeShort = exam_type.includes('중간') ? '중간' : (exam_type.includes('기말') ? '기말' : '');
+            semesterVal = typeShort ? `${semNum}학기${typeShort}` : `${semNum}학기`;
+        }
 
         console.log(`Searching questions for: ${school} | ${year} | ${gradeVal} | ${semesterVal} | ${subject}`);
 
@@ -71,18 +77,22 @@ export async function POST(req: NextRequest) {
         let calculatedPrice = 0; // No Base Price
         if (questions && questions.length > 0) {
             console.log(`Found ${questions.length} questions. Calculating price...`);
-            questions.forEach(q => {
-                const diff = parseInt(String(q.difficulty)) || 1;
-                if (diff <= 2) calculatedPrice += 1000;
-                else if (diff <= 4) calculatedPrice += 2000;
-                else if (diff <= 6) calculatedPrice += 3000;
-                else if (diff <= 8) calculatedPrice += 4000;
-                else calculatedPrice += 5000;
-            });
+            if (exam_type === '모의고사' || exam_type === '수능') {
+                calculatedPrice = 0; // Mock exams are free
+            } else {
+                questions.forEach(q => {
+                    const diff = parseInt(String(q.difficulty)) || 1;
+                    if (diff <= 2) calculatedPrice += 1000;
+                    else if (diff <= 4) calculatedPrice += 2000;
+                    else if (diff <= 6) calculatedPrice += 3000;
+                    else if (diff <= 8) calculatedPrice += 4000;
+                    else calculatedPrice += 5000;
+                });
+            }
         } else {
             // Fallback if no questions found
             console.warn(`WARNING: Still no questions found for ${school}. Falling back to 20,000P.`);
-            calculatedPrice = 20000;
+            calculatedPrice = (exam_type === '모의고사' || exam_type === '수능') ? 0 : 20000;
         }
 
         // 2. Insert into exam_materials

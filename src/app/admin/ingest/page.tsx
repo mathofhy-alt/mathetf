@@ -11,6 +11,7 @@ export default function AdminIngestPage() {
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [log, setLog] = useState<string[]>([]);
+    const [startNumber, setStartNumber] = useState('');
 
     // Metadata state for Regular Exams
     const [school, setSchool] = useState('');
@@ -58,6 +59,10 @@ export default function AdminIngestPage() {
                 formData.append('semester', semester);
                 formData.append('subject', subject);
                 formData.append('grade', grade);
+            }
+
+            if (startNumber.trim()) {
+                formData.append('startNumber', startNumber);
             }
 
             // Determine API endpoint based on file extension
@@ -204,6 +209,16 @@ export default function AdminIngestPage() {
                                     <option value="확통">확통</option>
                                 </select>
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">문항 시작 번호 (선택)</label>
+                                <input 
+                                    type="number" 
+                                    className="w-full border p-2 rounded" 
+                                    placeholder="예: 23 (미입력시 자동)" 
+                                    value={startNumber} 
+                                    onChange={e => setStartNumber(e.target.value)} 
+                                />
+                            </div>
                         </div>
                     </>
                 )}
@@ -248,13 +263,24 @@ export default function AdminIngestPage() {
                                         <option value="확률과 통계">확률과 통계</option>
                                         <option value="전과목">전과목 (고1, 고2 등)</option>
                                     </optgroup>
-                                    <optgroup label="과거 기출 (~2021학년도)">
+                                    <optgroup label="구교과과정 (-2021학년도)">
                                         <option value="가형">가형</option>
                                         <option value="나형">나형</option>
-                                        <option value="A형">A형</option>
-                                        <option value="B형">B형</option>
                                     </optgroup>
                                 </select>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">문항 시작 번호 (선택)</label>
+                                <input 
+                                    type="number" 
+                                    className="w-full border p-2 rounded" 
+                                    placeholder="예: 23 (선택과목용)" 
+                                    value={startNumber} 
+                                    onChange={e => setStartNumber(e.target.value)} 
+                                />
                             </div>
                         </div>
                     </>

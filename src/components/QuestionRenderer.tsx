@@ -131,14 +131,14 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                                     <img
                                         src={img.data}
                                         alt={`${displayMode} capture`}
-                                        className={`w-full rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
+                                        className={`max-w-full h-auto object-contain rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
                                         style={{ maxHeight: '1000px' }}
                                     />
                                 ) : (
                                     <LazyImage
                                         lazyInfo={`LAZY_ID:${img.id}:${img.format || 'png'}`}
                                         alt={`${displayMode} capture`}
-                                        className={`w-full rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
+                                        className={`max-w-full h-auto object-contain rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
                                         style={{ maxHeight: '1000px' }}
                                     />
                                 )}

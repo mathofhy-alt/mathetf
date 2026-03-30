@@ -1,20 +1,23 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Edit2, Trash2, FolderInput } from 'lucide-react';
+import { Edit2, Trash2, FolderInput, FolderPlus, ClipboardPaste, Scissors } from 'lucide-react';
 
 interface ContextMenuProps {
     x: number;
     y: number;
-    type: 'folder' | 'item';
+    type: 'folder' | 'item' | 'background';
+    clipboardHasData?: boolean;
     onClose: () => void;
-    onRename: () => void;
-    onDelete: () => void;
+    onRename?: () => void;
+    onDelete?: () => void;
     onDownload?: () => void;
-    onMove?: () => void; // Optional for future "Move To" dialog
+    onCreateFolder?: () => void;
+    onCut?: () => void;
+    onPaste?: () => void;
 }
 
-export default function StorageContextMenu({ x, y, type, onClose, onRename, onDelete, onMove, onDownload }: ContextMenuProps) {
+export default function StorageContextMenu({ x, y, type, clipboardHasData, onClose, onRename, onDelete, onCreateFolder, onCut, onPaste, onDownload }: ContextMenuProps) {
     const ref = useRef<HTMLDivElement>(null);
 
     // Click outside to close
@@ -31,40 +34,78 @@ export default function StorageContextMenu({ x, y, type, onClose, onRename, onDe
     return (
         <div
             ref={ref}
-            className="fixed z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-48 text-sm"
+            className="fixed z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1.5 w-48 text-sm"
             style={{ top: y, left: x }}
             onClick={(e) => e.stopPropagation()}
         >
-            <button
-                className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700"
-                onClick={() => {
-                    onRename();
-                    onClose();
-                }}
-            >
-                <Edit2 size={14} /> 이름 변경
-            </button>
-            {type === 'item' && (
-                <button
-                    className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700"
-                    onClick={() => {
-                        // Trigger download directly
-                        if (onDownload) onDownload();
-                        onClose();
-                    }}
-                >
-                    <FolderInput size={14} className="rotate-180" /> 다운로드
-                </button>
+            {type === 'background' && (
+                <>
+                    <button
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 font-medium"
+                        onClick={() => {
+                            onCreateFolder?.();
+                            onClose();
+                        }}
+                    >
+                        <FolderPlus size={16} className="text-slate-400" /> 새 폴더 만들기
+                    </button>
+                    <div className="border-t my-1 border-slate-100"></div>
+                    <button
+                        className={`w-full text-left px-4 py-2 flex items-center gap-3 font-medium ${clipboardHasData ? 'hover:bg-slate-50 text-slate-700' : 'text-slate-300 cursor-not-allowed'}`}
+                        disabled={!clipboardHasData}
+                        onClick={() => {
+                            if (clipboardHasData) onPaste?.();
+                            onClose();
+                        }}
+                    >
+                        <ClipboardPaste size={16} className={clipboardHasData ? "text-slate-400" : "text-slate-200"} /> 붙여넣기
+                    </button>
+                </>
             )}
-            <button
-                className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2 text-red-600"
-                onClick={() => {
-                    onDelete();
-                    onClose();
-                }}
-            >
-                <Trash2 size={14} /> 삭제
-            </button>
+
+            {(type === 'folder' || type === 'item') && (
+                <>
+                    {type === 'item' && (
+                        <button
+                            className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 font-medium"
+                            onClick={() => {
+                                onDownload?.();
+                                onClose();
+                            }}
+                        >
+                            <FolderInput size={16} className="rotate-180 text-blue-500" /> 다운로드
+                        </button>
+                    )}
+                    <button
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 font-medium"
+                        onClick={() => {
+                            onCut?.();
+                            onClose();
+                        }}
+                    >
+                        <Scissors size={16} className="text-slate-400" /> 잘라내기
+                    </button>
+                    <button
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 font-medium"
+                        onClick={() => {
+                            onRename?.();
+                            onClose();
+                        }}
+                    >
+                        <Edit2 size={16} className="text-slate-400" /> 이름 변경
+                    </button>
+                    <div className="border-t my-1 border-slate-100"></div>
+                    <button
+                        className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-3 text-red-600 font-medium"
+                        onClick={() => {
+                            onDelete?.();
+                            onClose();
+                        }}
+                    >
+                        <Trash2 size={16} className="text-red-400" /> 삭제
+                    </button>
+                </>
+            )}
         </div>
     );
 }

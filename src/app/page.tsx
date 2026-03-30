@@ -35,6 +35,7 @@ export default function ExamPlatform() {
             hwpProb?: FileItem;
             hwpSol?: FileItem;
             db?: FileItem; // Added Personal DB
+            raw?: FileItem; // Added Original Raw Scan
         };
     }
 
@@ -213,6 +214,9 @@ export default function ExamPlatform() {
         };
 
         const fetchFiles = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const isAdmin = user?.email === 'mathofhy@naver.com';
+
             const { data } = await supabase
                 .from('exam_materials')
                 .select('*')
@@ -221,7 +225,13 @@ export default function ExamPlatform() {
             if (data) {
                 const groups: { [key: string]: GroupedExam } = {};
 
-                data.forEach((item: any) => {
+                const isMockExam = (item: any) => item.exam_type === '모의고사' || item.school === '전국연합' || item.title?.includes('모의고사');
+                
+                const filteredData = isAdmin 
+                    ? data.filter((item: any) => !isMockExam(item)) 
+                    : data.filter((item: any) => item.content_type !== '원본제보' && !isMockExam(item));
+
+                filteredData.forEach((item: any) => {
                     // Include subject in the key to differentiate exams
                     const subjectKey = item.subject || 'Unknown';
                     // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
@@ -274,7 +284,9 @@ export default function ExamPlatform() {
 
                     groups[key].sales += (item.sales_count || 0);
 
-                    if (item.file_type === 'PDF') {
+                    if (item.content_type === '원본제보') {
+                        groups[key].files.raw = fileItem;
+                    } else if (item.file_type === 'PDF') {
                         if (item.content_type === '문제') groups[key].files.pdfProb = fileItem;
                         else groups[key].files.pdfSol = fileItem;
                     } else if (item.file_type === 'HWP') {
@@ -396,12 +408,13 @@ export default function ExamPlatform() {
 
         try {
             // Check if purchased
-            if (!purchasedIds.has(file.id)) {
+            const isAdmin = user?.email === 'mathofhy@naver.com';
+            if (!purchasedIds.has(file.id) && !isAdmin) {
                 alert('구매가 완료되지 않은 자료입니다. 장바구니를 통해 결제해주세요.');
                 return;
             }
 
-            if (file.type === 'DB') {
+            if (file.type === 'DB' && !isAdmin) {
                 alert('DB 상품은 시험지 만들기 탭에서 확인 하세요.');
                 return;
             }
@@ -475,6 +488,8 @@ export default function ExamPlatform() {
     useEffect(() => {
         setCurrentPage(1);
     }, [selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedExamScope, selectedYear, searchKeyword]);
+
+    const checkAccess = (id: string) => purchasedIds.has(id) || user?.email === 'mathofhy@naver.com';
 
     return (
         <div className="min-h-screen bg-[#f3f4f6] text-slate-900 font-sans">
@@ -621,17 +636,17 @@ export default function ExamPlatform() {
                                             {/* PDF Solution */}
                                             {group.files.pdfSol ? (
                                                 <button
-                                                    onClick={() => purchasedIds.has(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)}
-                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.pdfSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.pdfSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
+                                                    onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)}
+                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${checkAccess(group.files.pdfSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.pdfSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
                                                 >
                                                     <PdfFileIcon
                                                         size={28}
-                                                        purchased={purchasedIds.has(group.files.pdfSol.id)}
+                                                        purchased={checkAccess(group.files.pdfSol.id)}
                                                         className="drop-shadow-sm group-hover:scale-110 transition-transform"
                                                     />
-                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.pdfSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
-                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${purchasedIds.has(group.files.pdfSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.pdfSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                        {purchasedIds.has(group.files.pdfSol.id) ? '다운로드' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.pdfSol.price}원</>}
+                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
+                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.pdfSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                        {checkAccess(group.files.pdfSol.id) ? '다운로드' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.pdfSol.price}원</>}
                                                     </span>
                                                 </button>
                                             ) : (
@@ -649,17 +664,17 @@ export default function ExamPlatform() {
                                             {/* HWP Solution */}
                                             {group.files.hwpSol ? (
                                                 <button
-                                                    onClick={() => purchasedIds.has(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)}
-                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${purchasedIds.has(group.files.hwpSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.hwpSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
+                                                    onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)}
+                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${checkAccess(group.files.hwpSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.hwpSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
                                                 >
                                                     <HwpFileIcon
                                                         size={28}
-                                                        purchased={purchasedIds.has(group.files.hwpSol.id)}
+                                                        purchased={checkAccess(group.files.hwpSol.id)}
                                                         className="drop-shadow-sm group-hover:scale-110 transition-transform"
                                                     />
-                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.hwpSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
-                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${purchasedIds.has(group.files.hwpSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.hwpSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                        {purchasedIds.has(group.files.hwpSol.id) ? '다운로드' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.hwpSol.price}원</>}
+                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
+                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.hwpSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                        {checkAccess(group.files.hwpSol.id) ? '다운로드' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.hwpSol.price}원</>}
                                                     </span>
                                                 </button>
                                             ) : (
@@ -678,12 +693,12 @@ export default function ExamPlatform() {
                                                     <div className="flex flex-col items-center min-w-[64px]">
                                                         <DbFileIcon
                                                             size={28}
-                                                            purchased={purchasedIds.has(group.files.db.id)}
+                                                            purchased={checkAccess(group.files.db.id)}
                                                             className="drop-shadow-sm group-hover/db:scale-110 transition-transform duration-300"
                                                         />
-                                                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-600' : 'text-slate-400'}`}>개인DB</span>
-                                                        <span className={`text-[10px] whitespace-nowrap ${purchasedIds.has(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                            {purchasedIds.has(group.files.db.id) ? '구매완료' : `${group.files.db.price}P`}
+                                                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-600' : 'text-slate-400'}`}>개인DB</span>
+                                                        <span className={`text-[10px] whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
+                                                            {checkAccess(group.files.db.id) ? (user?.email === 'mathofhy@naver.com' ? '관리자권한' : '구매완료') : `${group.files.db.price}P`}
                                                         </span>
 
                                                         {/* Hover Overlay */}
@@ -700,16 +715,16 @@ export default function ExamPlatform() {
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    if(purchasedIds.has(group.files.db!.id)) {
+                                                                    if(checkAccess(group.files.db!.id)) {
                                                                         handleDownload(group.files.db!);
                                                                     } else {
                                                                         handleAddToCart(group.files.db!);
                                                                     }
                                                                 }}
-                                                                className={`w-full py-1 text-[9px] font-extrabold text-white rounded-md transition-all active:scale-95 flex items-center justify-center gap-1 ${purchasedIds.has(group.files.db.id) ? 'bg-indigo-500 hover:bg-indigo-600' : cartItemIds.has(group.files.db.id) ? 'bg-brand-500 hover:bg-brand-600' : 'bg-brand-600 hover:bg-brand-700 shadow-sm'
+                                                                className={`w-full py-1 text-[9px] font-extrabold text-white rounded-md transition-all active:scale-95 flex items-center justify-center gap-1 ${checkAccess(group.files.db.id) ? 'bg-indigo-500 hover:bg-indigo-600' : cartItemIds.has(group.files.db.id) ? 'bg-brand-500 hover:bg-brand-600' : 'bg-brand-600 hover:bg-brand-700 shadow-sm'
                                                                     }`}
                                                             >
-                                                                {purchasedIds.has(group.files.db.id) ? <><Download size={10} /> 열기</> : cartItemIds.has(group.files.db.id) ? '장바구니 담김' : <><ShoppingCart size={10} /> 장바구니</>}
+                                                                {checkAccess(group.files.db.id) ? <><Download size={10} /> 열기</> : cartItemIds.has(group.files.db.id) ? '장바구니 담김' : <><ShoppingCart size={10} /> 장바구니</>}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -721,6 +736,23 @@ export default function ExamPlatform() {
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {/* Admin Raw Source Downloads */}
+                                            {user?.email === 'mathofhy@naver.com' && group.files.raw && (
+                                                <>
+                                                    <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
+                                                    <button
+                                                        onClick={() => handleDownload(group.files.raw!)}
+                                                        title="제고자 원천 자료 다운로드"
+                                                        className="flex flex-col items-center justify-center p-1 rounded transition-colors hover:bg-purple-50 group"
+                                                    >
+                                                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                                                            <Download size={16} className="text-purple-600" />
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-purple-600 mt-1 whitespace-nowrap">스캔본 ({group.files.raw.type})</span>
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 )) : (

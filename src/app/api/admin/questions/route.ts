@@ -136,6 +136,16 @@ export async function DELETE(req: NextRequest) {
         const { ids, deleteAll, deleteUnsortedOnly } = body;
 
         let query = adminClient.from('questions').delete();
+        let affectedGroups: any[] = [];
+
+        // Pre-fetch affected groups to sync DB prices after deletion
+        if (ids && Array.isArray(ids) && ids.length > 0) {
+            const { data: updatedQs } = await adminClient.from('questions').select('school, year, grade, semester, subject').in('id', ids);
+            if (updatedQs) affectedGroups = updatedQs;
+        } else if (deleteUnsortedOnly) {
+            const { data: updatedQs } = await adminClient.from('questions').select('school, year, grade, semester, subject').or('work_status.neq.sorted,work_status.is.null');
+            if (updatedQs) affectedGroups = updatedQs;
+        }
 
         if (deleteAll) {
             // DANGER: Deletes absolutely everything
@@ -151,6 +161,59 @@ export async function DELETE(req: NextRequest) {
 
         const { error } = await query;
         if (error) throw error;
+
+        // -- Sync DB prices for affected groups after deletion --
+        if (affectedGroups.length > 0) {
+            try {
+                const uniqueGroups = Array.from(new Set(affectedGroups.map((q: any) => 
+                    `${q.school}|${q.year}|${q.grade}|${q.semester}|${q.subject}`
+                )));
+
+                for (const groupKey of uniqueGroups) {
+                    const [s_school, s_year, s_grade, s_sem, s_sub] = groupKey.split('|');
+                    
+                    const { data: allQs } = await adminClient
+                        .from('questions')
+                        .select('difficulty')
+                        .eq('school', s_school)
+                        .eq('year', s_year)
+                        .eq('grade', s_grade)
+                        .eq('semester', s_sem)
+                        .eq('subject', s_sub);
+                    
+                    if (allQs) { // Even if 0, price becomes 0
+                        let newPrice = 0;
+                        allQs.forEach((q: any) => {
+                            const diff = parseInt(String(q.difficulty)) || 1;
+                            if (diff <= 2) newPrice += 1000;
+                            else if (diff <= 4) newPrice += 2000;
+                            else if (diff <= 6) newPrice += 3000;
+                            else if (diff <= 8) newPrice += 4000;
+                            else newPrice += 5000;
+                        });
+
+                        const gradeNum = Number(String(s_grade).replace(/[^0-9]/g, '')) || 0;
+                        let examType = '';
+                        if (s_sem.includes('중간')) examType = '중간고사';
+                        else if (s_sem.includes('기말')) examType = '기말고사';
+
+                        let syncQuery = adminClient
+                            .from('exam_materials')
+                            .update({ price: newPrice })
+                            .eq('content_type', '개인DB')
+                            .eq('school', s_school)
+                            .eq('exam_year', Number(s_year))
+                            .eq('grade', gradeNum)
+                            .eq('subject', s_sub);
+                        
+                        if (examType) syncQuery = syncQuery.eq('exam_type', examType);
+                        await syncQuery;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to sync DB price after deletion:", err);
+            }
+        }
 
         return NextResponse.json({ success: true });
     } catch (e: any) {

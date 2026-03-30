@@ -8,10 +8,12 @@ import { X, Search, Database, Trash2 } from 'lucide-react';
 
 const UNIT_OPTIONS: Record<string, string[]> = {
     '공통수학1': ['다항식', '항등식', '복소수', '이차방정식', '이차함수', '여러가지방정식', '여러가지부등식', '경우의수', '행렬'],
-    '공통수학2': ['집합', '명제', '절대부등식', '함수', '역함수합성함수', '유리함수', '무리함수'],
-    '대수': ['지수와로그', '지수함수와로그함수', '삼각함수', '수열'],
-    '미적분1': ['수열의극한', '급수', '지수로그함수의미분', '삼각함수의미분', '여러가지미분법', '도함수의활용', '여러가지적분법', '정적분의활용'],
-    '기하': ['이차곡선', '평면벡터', '공간도형과공간좌표']
+    '공통수학2': ['집합', '명제', '절대부등식', '함수', '합성함수역함수', '유리함수', '무리함수'],
+    '대수': ['지수', '로그', '지수로그함수', '지수로그함수활용', '삼각함수정의', '삼각함수그래프', '사인코사인법칙', '등차등비수열', '수열의합', '귀납법'],
+    '미적분1': ['극한', '연속', '미분계수도함수', '미분활용', '부정적분정적분', '적분활용'],
+    '미적분2': [],
+    '기하': ['이차곡선-포물선', '이차곡선-타원', '이차곡선-쌍곡선', '평면벡터-벡터연산', '평면벡터-성분과내적', '공간도형', '공간좌표'],
+    '확률과통계': ['순열과조합-여러가지순열', '순열과조합-중복조합', '순열과조합-이항정리', '확률의뜻과활용-확률의뜻', '확률의뜻과활용-확률의덧셈정리', '확률의뜻과활용-조건부확률', '확률의뜻과활용-독립종속', '확률분포-확률변수와확률분포', '확률분포-이산확률변수', '확률분포-이항분포', '확률분포-정규분포', '확률분포-모집단과표본', '확률분포-모평균추정']
 };
 
 interface AdminQuestionsClientProps {
@@ -819,8 +821,8 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
     };
 
     const handleActivateDB = async () => {
-        if (!selectedSchool || !year || !grade || !examScope || !subject) {
-            alert("DB 활성화를 위해서는 모든 필터(학교, 연도, 학년, 시험범위, 과목)를 선택해야 합니다.");
+        if (!selectedSchool || !year || !grade || !examScope) {
+            alert("DB 활성화를 위해서는 학교, 연도, 학년, 시험범위를 모두 선택해야 합니다.");
             return;
         }
 
@@ -1017,9 +1019,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             className="border-slate-200 rounded-lg px-3 py-2 min-w-[160px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             value={selectedSchool}
                             onChange={e => setSelectedSchool(e.target.value)}
-                            disabled={!selectedDistrict}
                         >
                             <option value="">학교 전체</option>
+                            <option value="전국연합">전국연합 (모의고사)</option>
                             {schools.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
@@ -1050,6 +1052,14 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <option value="1-기말고사">1학기 기말</option>
                             <option value="2-중간고사">2학기 중간</option>
                             <option value="2-기말고사">2학기 기말</option>
+                            <option value="3-모의고사">3월 모의고사</option>
+                            <option value="4-모의고사">4월 모의고사</option>
+                            <option value="6-모의고사">6월 모의고사</option>
+                            <option value="7-모의고사">7월 모의고사</option>
+                            <option value="9-모의고사">9월 모의고사</option>
+                            <option value="10-모의고사">10월 모의고사</option>
+                            <option value="11-모의고사">11월 모의고사</option>
+                            <option value="12-수능">수능</option>
                         </select>
 
                         <select
@@ -1136,10 +1146,10 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <button
                                 type="button"
                                 onClick={handleActivateDB}
-                                disabled={isActivating || !selectedSchool || !year || !grade || !examScope || !subject}
+                                disabled={isActivating || !selectedSchool || !year || !grade || !examScope}
                                 className={`
                                     px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-sm whitespace-nowrap
-                                    ${!selectedSchool || !year || !grade || !examScope || !subject
+                                    ${!selectedSchool || !year || !grade || !examScope
                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-md'}
                                 `}
@@ -1460,8 +1470,33 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                             {/* Quick Actions Form */}
                                             <div className="p-4 space-y-3 flex-1 overflow-y-auto">
                                                 <div>
+                                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">과목 (Subject)</label>
+                                                    <select
+                                                        className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                                                        value={q.subject || ''}
+                                                        onChange={async (e) => {
+                                                            const newSubject = e.target.value;
+                                                            setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, subject: newSubject, unit: '' } : item));
+                                                            await fetch('/api/admin/questions', {
+                                                                method: 'PATCH',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ ids: [q.id], updates: { subject: newSubject, unit: '' } })
+                                                            });
+                                                        }}
+                                                    >
+                                                        <option value="">과목 선택</option>
+                                                        {Object.keys(UNIT_OPTIONS).map(sub => (
+                                                            <option key={sub} value={sub}>{sub}</option>
+                                                        ))}
+                                                        {(!UNIT_OPTIONS[q.subject] && q.subject) && (
+                                                            <option value={q.subject}>{q.subject}</option>
+                                                        )}
+                                                    </select>
+                                                </div>
+
+                                                <div>
                                                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">단원 (Unit)</label>
-                                                    {UNIT_OPTIONS[q.subject] ? (
+                                                    {(UNIT_OPTIONS[q.subject] && UNIT_OPTIONS[q.subject].length > 0) ? (
                                                         <select
                                                             className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
                                                             value={q.unit || ''}

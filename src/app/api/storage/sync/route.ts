@@ -6,23 +6,41 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // 1. Fetch all purchased DBs
-    const { data: purchases, error: purchaseError } = await supabase
-        .from('purchases')
-        .select(`
-            *,
-            exam_materials!inner (
-                id, title, file_type, content_type
-            )
-        `)
-        .eq('user_id', user.id);
+    // 1. Fetch all purchased DBs (or ALL DBs if admin)
+    let dbPurchases: any[] = [];
+    const isAdmin = user.email === 'mathofhy@naver.com';
 
-    if (purchaseError) return NextResponse.json({ error: purchaseError.message }, { status: 500 });
+    if (isAdmin) {
+        // [ADMIN] Fetch ALL DBs regardless of purchase, EXCLUDE Mock Exams
+        const { data: allDBs, error: dbError } = await supabase
+            .from('exam_materials')
+            .select('id, title, file_type, content_type, exam_type')
+            .or('file_type.eq.DB,content_type.eq.개인DB')
+            .neq('exam_type', '모의고사');
 
-    const dbPurchases = purchases?.filter(p =>
-        p.exam_materials.file_type === 'DB' ||
-        p.exam_materials.content_type === '개인DB'
-    ) || [];
+        if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
+
+        dbPurchases = (allDBs || []).map(db => ({
+            exam_materials: db
+        }));
+    } else {
+        const { data: purchases, error: purchaseError } = await supabase
+            .from('purchases')
+            .select(`
+                *,
+                exam_materials!inner (
+                    id, title, file_type, content_type, exam_type
+                )
+            `)
+            .eq('user_id', user.id);
+
+        if (purchaseError) return NextResponse.json({ error: purchaseError.message }, { status: 500 });
+
+        dbPurchases = purchases?.filter(p =>
+            (p.exam_materials.file_type === 'DB' || p.exam_materials.content_type === '개인DB') &&
+            p.exam_materials.exam_type !== '모의고사'
+        ) || [];
+    }
 
     if (dbPurchases.length === 0) return NextResponse.json({ count: 0 });
 

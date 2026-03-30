@@ -10,6 +10,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from gemini_ocr import run_ocr
 from hml_generator import HMLGenerator
+from crop_review_dialog import show_crop_review
 
 
 # ─── 색상 테마 ─────────────────────────────────────────────────────────────
@@ -49,6 +50,7 @@ class QueueItem:
         self.out_path  = os.path.splitext(pdf_path)[0] + ".hml"
         self.status    = ST_PENDING
         self.log_lines: list[str] = []
+        self.confirmed_data = None
 
 
 class App(tk.Tk):
@@ -100,7 +102,7 @@ class App(tk.Tk):
                  width=18, anchor="w").pack(side="left")
         MODELS = [
             ("⚡ Gemini 3 Flash Preview (빠름/저렴)", "gemini-3-flash-preview"),
-            ("🧠 Gemini 2.5 Pro (고정밀/느림)",       "gemini-2.5-pro"),
+            ("🧠 Gemini 3.1 Pro (최신/고정밀)",       "gemini-3.1-pro-preview"),
         ]
         for label, mid in MODELS:
             tk.Radiobutton(
@@ -337,44 +339,56 @@ class App(tk.Tk):
         self.btn_stop.config(state="disabled")
 
     def _batch_worker(self):
-        """순차적으로 대기 항목을 변환"""
-        total = len([i for i in self.queue if i.status in (ST_PENDING, ST_RUNNING)])
-        done_count = 0
+        """순차적으로 대기 항목을 변환 (크롭 1회전 -> 변환 1회전)"""
+        pending_items = [i for i in self.queue if i.status == ST_PENDING]
+        total = len(pending_items)
+        if total == 0:
+            self.after(0, self._on_batch_done)
+            return
 
-        for item in self.queue:
+        # 1. 크롭 전체 진행
+        done_count = 0
+        for item in pending_items:
             if self._stop_flag:
                 break
-            if item.status != ST_PENDING:
-                continue
-
             done_count += 1
-            self.after(0, lambda i=item, d=done_count, t=total: self._start_item(i, d, t))
-            # 블로킹: 이 아이템이 끝날 때까지 기다림 (이벤트로 동기화)
+            self.after(0, lambda i=item, d=done_count, t=total: self._start_crop_item(i, d, t))
             self._item_done_event = threading.Event()
-            self._convert_item(item, done_count, total)
-            # 아이템 완료 후 짧은 인터벌
+            self._do_crop_item(item, done_count, total)
+            self._item_done_event.wait()
+            if not self._stop_flag:
+                import time; time.sleep(0.5)
+
+        # 2. 변환 전체 진행 (크롭 완료된 것만)
+        convert_items = [i for i in pending_items if i.status == ST_RUNNING and getattr(i, 'confirmed_data', None)]
+        convert_total = len(convert_items)
+        done_count = 0
+        for item in convert_items:
+            if self._stop_flag:
+                break
+            done_count += 1
+            self.after(0, lambda i=item, d=done_count, t=convert_total: self._start_convert_item(i, d, t))
+            self._item_done_event = threading.Event()
+            self._do_convert_item(item, done_count, convert_total)
+            self._item_done_event.wait()
             if not self._stop_flag:
                 import time; time.sleep(0.5)
 
         self.after(0, self._on_batch_done)
 
-    def _start_item(self, item: QueueItem, done: int, total: int):
+    def _start_crop_item(self, item: QueueItem, done: int, total: int):
         item.status = ST_RUNNING
         item.log_lines.clear()
         self._refresh_listbox()
-        self._set_status(f"변환 중... ({done}/{total})  {os.path.basename(item.pdf_path)}")
+        self._set_status(f"크롭 지정 중... ({done}/{total})  {os.path.basename(item.pdf_path)}")
         self._set_progress(0)
-        # 현재 선택 항목의 로그 갱신
-        if self.selected_idx is not None and self.queue[self.selected_idx] is item:
+        if self.selected_idx is not None and self.selected_idx < len(self.queue) and self.queue[self.selected_idx] is item:
             self._show_item_log(item)
 
-    def _convert_item(self, item: QueueItem, done_count: int, total: int):
-        """단일 파일 변환 (배치 워커 스레드에서 직접 호출)"""
+    def _do_crop_item(self, item: QueueItem, done_count: int, total: int):
         model_id = self.model_var.get()
-
         def item_log(msg: str, tag: str = ""):
             item.log_lines.append((msg, tag))
-            # 현재 선택 항목이면 실시간 표시
             def _push():
                 if self.selected_idx is not None and \
                    self.selected_idx < len(self.queue) and \
@@ -385,25 +399,101 @@ class App(tk.Tk):
                     self.log_text.config(state="disabled")
             self.after(0, _push)
 
-        total_pages_ref = [1]
+        try:
+            item_log(f"▶ 1단계(크롭) 시작: {os.path.basename(item.pdf_path)}", "ok")
+            item_log(f"  [1/2] PDF 로드 및 이미지 변환 중...", "dim")
+            from gemini_ocr import pdf_to_images
+            import threading
+            
+            images = pdf_to_images(item.pdf_path, dpi=250)
+            
+            page_data_list = []
+            for pg_idx, img in enumerate(images):
+                page_data_list.append({
+                    'page_num': pg_idx + 1,
+                    'padded_img': img,
+                    'problem_list': []
+                })
+
+            item_log(f"  📌 크롭 팝업 창이 열립니다. 문항 영역을 직접 드래그해 주세요...", "warn")
+            
+            modal_result = [None]
+            modal_event = threading.Event()
+            pdf_basename = os.path.splitext(os.path.basename(item.pdf_path))[0]
+            base_dir = os.path.dirname(item.pdf_path)
+            yolo_dir = os.path.join(base_dir, "training_data")
+
+            def open_modal():
+                result = show_crop_review(
+                    self,
+                    page_data_list,
+                    pdf_basename=pdf_basename,
+                    yolo_out_dir=yolo_dir
+                )
+                modal_result[0] = result
+                modal_event.set()
+
+            self.after(0, open_modal)
+            modal_event.wait()
+            
+            confirmed_data = modal_result[0]
+            if confirmed_data is None:
+                item_log(f"⛔ 크롭을 취소했습니다. 변환을 중단합니다.", "err")
+                item.status = ST_FAIL
+                self._item_done_event.set()
+                return
+
+            item.confirmed_data = confirmed_data
+            item_log(f"✓ 크롭 완료. 다음 항목으로 넘어갑니다.", "ok")
+            
+        except Exception as e:
+            import traceback
+            err_detail = traceback.format_exc()
+            item.status = ST_FAIL
+            item_log(f"\n❌ 오류:\n{err_detail}", "err")
+        finally:
+            self.after(0, self._refresh_listbox)
+            self._item_done_event.set()
+
+    def _start_convert_item(self, item: QueueItem, done: int, total: int):
+        self._set_status(f"HML 변환 중... ({done}/{total})  {os.path.basename(item.pdf_path)}")
+        self._set_progress(0)
+        try:
+            idx = self.queue.index(item)
+            self.listbox.selection_clear(0, "end")
+            self.listbox.selection_set(idx)
+            self._on_list_select()
+        except ValueError:
+            pass
+
+    def _do_convert_item(self, item: QueueItem, done_count: int, total: int):
+        model_id = self.model_var.get()
+        def item_log(msg: str, tag: str = ""):
+            item.log_lines.append((msg, tag))
+            def _push():
+                if self.selected_idx is not None and \
+                   self.selected_idx < len(self.queue) and \
+                   self.queue[self.selected_idx] is item:
+                    self.log_text.config(state="normal")
+                    self.log_text.insert("end", msg + "\n", tag)
+                    self.log_text.see("end")
+                    self.log_text.config(state="disabled")
+            self.after(0, _push)
+
+        if not getattr(item, 'confirmed_data', None):
+            item_log(f"⛔ 크롭 데이터가 없어 변환을 진행할 수 없습니다.", "err")
+            item.status = ST_FAIL
+            self._item_done_event.set()
+            return
+
+        total_pages_ref = [len(item.confirmed_data)]
 
         def ocr_log(msg: str):
             if "페이지" in msg and "OK" in msg:
                 try:
                     page_n = int(msg.split("페이지")[1].split("OK")[0].strip())
-                    pct = min(90.0, page_n / total_pages_ref[0] * 90.0)
+                    pct = min(90.0, page_n / max(total_pages_ref[0], 1) * 90.0)
                     self._set_progress(pct)
-                    self._set_status(
-                        f"OCR 중 ({done_count}/{total}) {os.path.basename(item.pdf_path)}"
-                        f" — 페이지 {page_n}/{total_pages_ref[0]}"
-                    )
-                except Exception:
-                    pass
-            if "총" in msg and "페이지" in msg:
-                try:
-                    total_pages_ref[0] = int(
-                        msg.replace("총", "").replace("페이지 감지됨", "").strip()
-                    )
                 except Exception:
                     pass
             tag = "ok"   if ("OK" in msg or "완료" in msg) else \
@@ -413,19 +503,38 @@ class App(tk.Tk):
             item_log(f"  {msg}", tag)
 
         try:
-            item_log(f"▶ 변환 시작: {os.path.basename(item.pdf_path)}", "ok")
-            item_log(f"  모델: {model_id}", "dim")
+            item_log(f"\n▶ 2단계(변환) 시작: {os.path.basename(item.pdf_path)}", "ok")
+            item_log(f"  [2/2] 선택된 문항 개별 추출 시작...", "ok")
+            
+            from google import genai
+            from gemini_ocr import ocr_crop, load_api_key
+            client = genai.Client(api_key=load_api_key())
+            
+            extracted_problems = []
+            for page in item.confirmed_data:
+                for prob in page["problem_list"]:
+                    q_num = prob["q_num"]
+                    c_img = prob["cropped_img"]
+                    text = ocr_crop(client, model_id, c_img, q_num, log_callback=ocr_log)
+                    extracted_problems.append((q_num, text))
+                    import time; time.sleep(1.5)
 
-            page_texts = run_ocr(item.pdf_path, log_callback=ocr_log, model_id=model_id)
-
-            item_log(f"\n✓ OCR 완료 ({len(page_texts)}페이지)", "ok")
+            item_log(f"\n✓ 개별 OCR 추출 완료 (총 {len(extracted_problems)}문항)", "ok")
             self._set_progress(92)
             self._set_status(f"HML 생성 중... ({done_count}/{total})")
 
+            import re
+            def natural_keys(text):
+                return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(text).strip())]
+            
+            extracted_problems.sort(key=lambda x: natural_keys(x[0]))
+
+            from hml_generator import HMLGenerator
             gen = HMLGenerator()
-            for page_num, page_text in enumerate(page_texts):
-                item_log(f"  페이지 {page_num + 1} HML 변환 중...", "dim")
-                for line in page_text.split('\n'):
+            for q_num, q_text in extracted_problems:
+                item_log(f"  {q_num}번 문항 HML 조립 중...", "dim")
+                gen.add_paragraph(f"%% {q_num}. %%")
+                for line in q_text.split('\n'):
                     gen.add_paragraph(line)
                 gen.add_paragraph("")
 
@@ -445,6 +554,7 @@ class App(tk.Tk):
             self._set_progress(100)
             self.after(0, self._refresh_listbox)
             self.after(0, self._update_total_label)
+            self._item_done_event.set()
 
     def _on_batch_done(self):
         self.is_running = False

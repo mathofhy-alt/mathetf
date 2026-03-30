@@ -18,6 +18,20 @@ interface FileGridProps {
     selectedIds?: string[];
 }
 
+const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hours = d.getHours();
+    const ampm = hours >= 12 ? '오후' : '오전';
+    const h = hours % 12 || 12;
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${ampm} ${h}:${min}`;
+};
+
 export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, selectedIds = [] }: FileGridProps) {
 
     const handleDragStart = (e: React.DragEvent, type: 'folder' | 'item', id: string) => {
@@ -32,13 +46,10 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
             if (data.type === 'item') {
                 onMoveItem(data.id, targetFolderId);
             }
-            // Optional: Move folder into folder (nested) - Not implemented in API yet for Items only? API supports folders too.
-            // For safety, let's only allow moving Items for now as requested.
         } catch (err) {
             console.error(err);
         }
     };
-
 
     if (folders.length === 0 && items.length === 0) {
         return (
@@ -50,111 +61,92 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
     }
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4">
-            {/* Render Folders */}
-            {folders.map(folder => (
-                <div
-                    key={folder.id}
-                    className="group relative flex flex-col items-center p-4 bg-white border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 cursor-pointer transition-all shadow-sm hover:shadow-md"
-                    onClick={() => onFolderClick(folder)}
-                    onContextMenu={(e) => {
-                        e.preventDefault();
-                        onContextMenu(e, 'folder', folder.id);
-                    }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleDropOnFolder(e, folder.id)}
-                >
-                    <button
-                        className="absolute top-2 right-2 p-1.5 bg-white text-slate-400 hover:text-red-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-red-50"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`'${folder.name}' 폴더를 삭제하시겠습니까?`)) {
-                                onDelete('folder', folder.id);
-                            }
-                        }}
-                        title="삭제"
-                    >
-                        <Trash2 size={14} />
-                    </button>
-                    <FolderIcon size={48} className="text-yellow-400 fill-yellow-100 mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-xs text-center font-medium text-slate-700 truncate w-full px-2 select-none">
-                        {folder.name}
-                    </span>
-                    {/* Hover Actions deleted (moved to context menu) or keep for quick access? Keep for now but Context is primary */}
-                </div>
-            ))}
+        <div className="flex flex-col w-full bg-white select-none">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-4 py-2 border-b border-slate-200 text-xs font-bold text-slate-500 bg-slate-50 sticky top-0 z-10">
+                <div className="col-span-7 sm:col-span-8">이름</div>
+                <div className="col-span-3 sm:col-span-2 text-center text-slate-400 font-medium">수정한 날짜</div>
+                <div className="col-span-2 text-center text-slate-400 font-medium">유형</div>
+            </div>
 
-            {/* Render Items */}
-            {items.map(item => {
-                const isSelected = selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id));
-                return (
+            <div className="flex flex-col">
+                {/* Render Folders */}
+                {folders.map(folder => (
                     <div
-                        key={item.id}
-                        className={`group relative flex flex-col items-center p-4 bg-white border rounded-xl hover:bg-slate-50 cursor-pointer transition-all shadow-sm hover:shadow-md
-                            ${isSelected ? 'ring-2 ring-indigo-500 bg-indigo-50 border-indigo-500' : 'border-slate-200 hover:border-brand-200'}
-                        `}
-                        onClick={() => onItemClick(item)}
+                        key={folder.id}
+                        className="group relative grid grid-cols-12 gap-4 px-4 py-1.5 items-center border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors"
+                        onClick={() => onFolderClick(folder)}
                         onContextMenu={(e) => {
                             e.preventDefault();
-                            onContextMenu(e, 'item', item.id);
+                            e.stopPropagation();
+                            onContextMenu(e, 'folder', folder.id);
                         }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'item', item.id)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => handleDropOnFolder(e, folder.id)}
                     >
-                        <button
-                            className="absolute top-2 left-2 p-1.5 bg-white text-slate-400 hover:text-red-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-red-50"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`'${item.name || '항목'}'을(를) 삭제하시겠습니까?`)) {
-                                    onDelete('item', item.id);
-                                }
-                            }}
-                            title="삭제"
-                        >
-                            <Trash2 size={14} />
-                        </button>
-                        {onDownload && (
-                            <button
-                                className="absolute top-2 left-10 p-1.5 bg-white text-slate-400 hover:text-blue-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all z-20 hover:bg-blue-50"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDownload('item', item.id);
-                                }}
-                                title="다운로드"
-                            >
-                                <DownloadCloud size={14} />
-                            </button>
-                        )}
-                        {isSelected && (
-                            <div className="absolute top-2 right-2 text-indigo-600 bg-white rounded-full p-0.5 shadow-sm z-10">
-                                <CheckCircle2 size={20} className="fill-indigo-100" />
-                            </div>
-                        )}
-                        <div className="mb-2 group-hover:scale-110 transition-transform">
-                            {item.type === 'personal_db' ? (
-                                <DbFileIcon size={40} className="drop-shadow-sm" />
-                            ) : (
-                                <FileText size={40} className="text-blue-500" />
-                            )}
+                        <div className="col-span-7 sm:col-span-8 flex items-center min-w-0 pr-2">
+                            <FolderIcon size={18} className="text-yellow-400 fill-yellow-100 flex-shrink-0 mr-2" />
+                            <span className="text-sm text-slate-700 truncate min-w-0 flex-1">
+                                {folder.name}
+                            </span>
                         </div>
-
-                        <span className="text-xs text-center font-medium text-slate-700 line-clamp-2 w-full px-2 break-all min-h-[2.5em] flex items-center justify-center leading-snug">
-                            {item.name || '이름 없음'}
-                        </span>
-                        {/* Stats Display */}
-                        {item.type === 'saved_exam' && (
-                            <div className="flex flex-col items-center mt-1 space-y-0.5">
-                                <span className="text-[10px] text-slate-400 font-medium">
-                                    문항수: {(item.details?.question_count || 0)}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium">
-                                    난이도: {(item.details?.average_difficulty ? Number(item.details.average_difficulty).toFixed(2) : '-')}
-                                </span>
-                            </div>
-                        )}
+                        <div className="col-span-3 sm:col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
+                            {formatDate(folder.created_at)}
+                        </div>
+                        <div className="col-span-2 text-xs text-slate-500 text-center truncate">
+                            파일 폴더
+                        </div>
                     </div>
-                );
-            })}
+                ))}
+
+                {/* Render Items */}
+                {items.map(item => {
+                    const isSelected = selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id));
+                    return (
+                        <div
+                            key={item.id}
+                            className={`group relative grid grid-cols-12 gap-4 px-4 py-1.5 items-center border-b border-slate-100 cursor-pointer transition-colors
+                                ${isSelected ? 'bg-indigo-50 hover:bg-indigo-100' : 'bg-white hover:bg-slate-50'}
+                            `}
+                            onClick={() => onItemClick(item)}
+                            onContextMenu={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onContextMenu(e, 'item', item.id);
+                            }}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, 'item', item.id)}
+                        >
+                            {isSelected && (
+                                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-indigo-500"></div>
+                            )}
+                            <div className="col-span-7 sm:col-span-8 flex items-center min-w-0 pr-2">
+                                {item.type === 'personal_db' ? (
+                                    <DbFileIcon size={18} className="drop-shadow-sm flex-shrink-0 mr-2" />
+                                ) : (
+                                    <FileText size={18} className="text-blue-500 flex-shrink-0 mr-2" />
+                                )}
+                                <span className={`text-sm truncate min-w-0 flex-1 ${isSelected ? 'font-semibold text-indigo-900' : 'text-slate-700'}`}>
+                                    {item.name || '이름 없음'}
+                                </span>
+
+                                {isSelected && (
+                                    <div className="ml-2 text-indigo-600">
+                                        <CheckCircle2 size={16} className="fill-indigo-100 border-white rounded-full" />
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="col-span-3 sm:col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
+                                {formatDate(item.created_at)}
+                            </div>
+                            <div className="col-span-2 text-xs text-slate-500 text-center truncate">
+                                {item.type === 'personal_db' ? '개인DB' : '시험지'}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }

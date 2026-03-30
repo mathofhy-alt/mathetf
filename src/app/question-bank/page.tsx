@@ -202,9 +202,9 @@ export default function QuestionBankPage() {
                     if (yearVal) parts.push(`year.eq.${yearVal}`);
 
                     // Map Semester & Exam Type (e.g. "1" + "중간고사" -> "1학기중간")
-                    if (db.exam_type === '모의고사') {
-                        // [V105.1] For Mock Exams, just map directly to 모의고사 if required, or skip semester filter.
-                        parts.push(`semester.ilike.%모의고사%`); // Assuming the metadata in questions reflects this. If not, we might just filter by title/school
+                    if (db.exam_type === '모의고사' || db.exam_type === '수능') {
+                        // Ingest uses `{month} 모의고사` (e.g. '9월 모의고사'), but fallback to just '9월' just in case.
+                        parts.push(`semester.in.("${db.semester}월","${db.semester}월 모의고사")`); 
                     } else if (db.semester && db.exam_type) {
                         const semNum = String(db.semester).replace('학기', '');
                         const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
@@ -218,7 +218,13 @@ export default function QuestionBankPage() {
                     }
 
                     if (db.subject) {
-                        parts.push(`subject.eq.${db.subject}`);
+                        if (db.exam_type === '모의고사' || db.exam_type === '수능') {
+                            // Mock exams typically bundle common subjects (1~22) and elective subjects (23~30)
+                            // Double quotes are REQUIRED for PostgREST .in() syntax when values contain parenthesis (e.g., 수학(상)).
+                            parts.push(`subject.in.("공통수학1","공통수학2","수학(상)","수학(하)","수학I","수학II","대수","미적분I","미적분1","공통","${db.subject}")`);
+                        } else {
+                            parts.push(`subject.eq.${db.subject}`);
+                        }
                     }
 
                     return `and(${parts.join(',')})`;
@@ -837,7 +843,7 @@ export default function QuestionBankPage() {
                                                     {q.unit || '단원 미정'}
                                                 </span>
                                                 <span className="text-[11px] font-bold text-gray-500">
-                                                    원본 {q.question_number}번
+                                                    {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.semester && `${q.semester} `}원본 {q.question_number}번
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">

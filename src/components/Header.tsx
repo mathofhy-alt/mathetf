@@ -91,6 +91,9 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         <Link href="/question-bank" className="hover:text-brand-600 transition-colors">시험지출제</Link>
                         <Link href="/notice" className="hover:text-brand-600 transition-colors">공지사항</Link>
                         <Link href="/suggestion" className="hover:text-brand-600 transition-colors">건의사항</Link>
+                        {user?.email === 'mathofhy@naver.com' && (
+                            <Link href="/admin/inventory" className="text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
+                        )}
                     </nav>
                 </div>
                 <div className="flex items-center gap-4">

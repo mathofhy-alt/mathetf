@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
         const semester = formData.get('semester') as string || '';
         const subject = formData.get('subject') as string || '';
         const grade = formData.get('grade') as string || '';
+        const startNumberParam = formData.get('startNumber') as string || '';
+        const hasStartNumber = startNumberParam.trim() !== '';
+
         // unit and difficulty are typically per-question but here applied to batch?
         // or effectively metadata for the whole file? Older logic applied them to all.
 
@@ -118,11 +121,14 @@ export async function POST(req: NextRequest) {
         const savedIds = [];
 
         // 5. Insert questions
-        for (const b of boundaries) {
+        for (let i = 0; i < boundaries.length; i++) {
+            const b = boundaries[i];
+            const finalIndex = hasStartNumber ? parseInt(startNumberParam, 10) + i : b.questionIndex;
+
             const { data, error } = await supabase.from('questions')
                 .insert({
                     file_id: fileId,
-                    question_index: b.questionIndex,
+                    question_index: finalIndex,
                     start_pos: b.startPos,
                     end_pos: b.endPos,
                     // file_name removed due to schema mismatch
@@ -142,7 +148,7 @@ export async function POST(req: NextRequest) {
                     year,
                     semester,
                     source_db_id,
-                    question_number: b.questionIndex,
+                    question_number: finalIndex,
                     equation_scripts: b.equationScripts
                 })
                 .select('id')
