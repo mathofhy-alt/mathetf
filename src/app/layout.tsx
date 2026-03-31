@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-
 import { CartProvider } from "@/components/providers/CartProvider";
 import Footer from "@/components/Footer";
 import FloatingCart from "@/components/FloatingCart";
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
     title: "수학ETF - 기출문제 공유 플랫폼",
@@ -30,6 +30,7 @@ export default function RootLayout({
                     <FloatingCart />
                 </CartProvider>
                 <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+                <Analytics />
             </body>
         </html>
     );

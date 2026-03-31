@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.0",
     "form-data": "^4.0.5",
     "html2canvas": "^1.4.1",
