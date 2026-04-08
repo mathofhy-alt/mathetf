@@ -73,6 +73,9 @@ export default function Login({
                 >
                     회원가입
                 </Link>
+                <div className="text-center mt-2 text-sm text-slate-500">
+                    계정을 잊으셨나요? <Link href="/find-id" className="text-green-700 font-bold hover:underline">아이디 찾기</Link>
+                </div>
                 {searchParams?.message && (
                     <>
                         <LoginAlert message={searchParams.message} />

@@ -97,7 +97,9 @@ export default function RightSidebar({ user, points }: { user: any, points: numb
                                 회원가입
                             </Link>
                         </div>
-                        <div className="text-center mt-2">
+                        <div className="text-center mt-2 flex justify-center gap-2">
+                            <Link href="/find-id" className="text-xs text-slate-400 hover:text-slate-600">아이디 찾기</Link>
+                            <span className="text-xs text-slate-300">|</span>
                             <Link href="/forgot-password" className="text-xs text-slate-400 hover:text-slate-600">비밀번호 재설정</Link>
                         </div>
                     </form>
