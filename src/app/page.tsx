@@ -241,9 +241,11 @@ export default function ExamPlatform() {
                     const key = `${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
 
                     if (!groups[key]) {
+                        const isMockOpt = item.exam_type === '모의고사' || item.exam_type === '수능';
+                        const semLabel = isMockOpt ? `${item.semester}월` : `${item.semester}학기`;
                         groups[key] = {
                             key,
-                            title: `[${item.school}] ${yearDerived}년 ${item.grade}학년 ${item.semester}학기 ${item.exam_type} ${item.subject || ''}`,
+                            title: `[${item.school}] ${yearDerived}년 ${item.grade}학년 ${semLabel} ${item.exam_type} ${item.subject || ''}`,
                             school: item.school,
                             grade: item.grade,
                             semester: item.semester,
@@ -384,10 +386,12 @@ export default function ExamPlatform() {
             return;
         }
         try {
+            const isMockFile = file.examType === '모의고사' || file.examType === '수능';
+            const semLabelFile = isMockFile ? `${file.semester}월` : `${file.semester}학기`;
             await addToCart({
                 item_type: file.type === 'DB' ? 'PERSONAL_DB' : (file.type === 'HWP' ? 'HWP_DOC' : 'MOCK_EXAM'),
                 item_id: file.id,
-                title: `[${file.school}] ${file.year}년 ${file.grade}학년 ${file.semester}학기 ${file.examType} ${file.subject || ''} - ${file.contentType}`,
+                title: `[${file.school}] ${file.year}년 ${file.grade}학년 ${semLabelFile} ${file.examType} ${file.subject || ''} - ${file.contentType}`,
                 price: file.price
             });
             alert('장바구니에 담겼습니다. 상단 장바구니 아이콘을 확인해주세요.');
@@ -698,7 +702,7 @@ export default function ExamPlatform() {
                                                         />
                                                         <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-600' : 'text-slate-400'}`}>개인DB</span>
                                                         <span className={`text-[10px] whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                            {checkAccess(group.files.db.id) ? (user?.email === 'mathofhy@naver.com' ? '관리자권한' : '구매완료') : `${group.files.db.price}P`}
+                                                            {checkAccess(group.files.db.id) ? (user?.email === 'mathofhy@naver.com' ? `관리자권한(${group.files.db.price.toLocaleString()}P)` : '구매완료') : `${group.files.db.price.toLocaleString()}P`}
                                                         </span>
 
                                                         {/* Hover Overlay */}

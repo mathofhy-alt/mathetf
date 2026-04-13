@@ -14,12 +14,15 @@ export async function POST(req: NextRequest) {
         const { school, year, grade, semester, exam_type, subject } = body;
 
         // Validation
-        if (!school || !year || !grade || !semester || !exam_type || !subject) {
+        if (!school || !year || !grade || !semester || !exam_type) {
             return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
         }
 
         // Construct Title: [School] [Year] [Grade] [Semester] [ExamType] [Subject] [개인DB]
-        const title = `${school} ${year} ${grade}학년 ${semester}학기 ${exam_type} ${subject} [개인DB]`;
+        const titleSubjectPart = subject ? `${subject} ` : '';
+        const isMockMode = exam_type === '모의고사' || exam_type === '수능';
+        const semLabel = isMockMode ? `${semester}월` : `${semester}학기`;
+        const title = `${school} ${year} ${grade}학년 ${semLabel} ${exam_type} ${titleSubjectPart}[개인DB]`;
         const dummyPath = `db_access/${user?.id || 'admin'}/${Date.now()}`;
 
         // 1. Calculate price based on question difficulties
@@ -42,27 +45,38 @@ export async function POST(req: NextRequest) {
 
         console.log(`Searching questions for: ${school} | ${year} | ${gradeVal} | ${semesterVal} | ${subject}`);
 
-        let { data: questions, error: qError } = await supabase
+        let baseQuery = supabase
             .from('questions')
             .select('difficulty')
             .ilike('school', `%${school}%`)
             .eq('year', String(year))
             .eq('grade', gradeVal)
-            .eq('semester', semesterVal)
-            .eq('subject', subject);
+            .eq('semester', semesterVal);
+            
+        if (subject) {
+            baseQuery = baseQuery.eq('subject', subject);
+        }
+
+        let { data: questions, error: qError } = await baseQuery;
 
         // Try relaxed school matching if no questions found
         if (!questions || questions.length === 0) {
             console.log(`No questions found for "${school}". Trying relaxed sub-string match...`);
             const subSchool = school.length > 4 ? school.substring(0, 4) : school;
-            const { data: relaxedQuestions, error: rError } = await supabase
+            
+            let relaxedQuery = supabase
                 .from('questions')
                 .select('difficulty')
                 .ilike('school', `%${subSchool}%`)
                 .eq('year', String(year))
                 .eq('grade', gradeVal)
-                .eq('semester', semesterVal)
-                .eq('subject', subject);
+                .eq('semester', semesterVal);
+                
+            if (subject) {
+                relaxedQuery = relaxedQuery.eq('subject', subject);
+            }
+
+            const { data: relaxedQuestions, error: rError } = await relaxedQuery;
 
             if (relaxedQuestions && relaxedQuestions.length > 0) {
                 console.log(`Found ${relaxedQuestions.length} questions using relaxed match: %${subSchool}%`);
@@ -82,11 +96,7 @@ export async function POST(req: NextRequest) {
             } else {
                 questions.forEach(q => {
                     const diff = parseInt(String(q.difficulty)) || 1;
-                    if (diff <= 2) calculatedPrice += 1000;
-                    else if (diff <= 4) calculatedPrice += 2000;
-                    else if (diff <= 6) calculatedPrice += 3000;
-                    else if (diff <= 8) calculatedPrice += 4000;
-                    else calculatedPrice += 5000;
+                    calculatedPrice += diff * 500;
                 });
             }
         } else {
@@ -107,7 +117,7 @@ export async function POST(req: NextRequest) {
                 grade: Number(String(grade).replace(/[^0-9]/g, '')),
                 semester: Number(String(semester).replace(/[^0-9]/g, '')) || 1, // Fallback if string
                 exam_type: exam_type,
-                subject,
+                subject: subject || '전과정',
                 title,
                 exam_year: Number(year),
                 file_type: 'DB',

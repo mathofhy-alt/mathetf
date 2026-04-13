@@ -21,7 +21,6 @@ export default function AdminInventory() {
     const [selectedDistrict, setSelectedDistrict] = useState('강남구');
     const [selectedYear, setSelectedYear] = useState('2024');
     const [selectedGrade, setSelectedGrade] = useState('1');
-    const [selectedExamType, setSelectedExamType] = useState('1학기 중간고사');
 
     const [matrixData, setMatrixData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -180,12 +179,6 @@ export default function AdminInventory() {
                         <option value="2">2학년</option>
                         <option value="3">3학년</option>
                     </select>
-                    <select className="form-select text-sm h-10 border-slate-300 rounded w-40" value={selectedExamType} onChange={e => setSelectedExamType(e.target.value)}>
-                        <option value="1학기 중간고사">1학기 중간고사</option>
-                        <option value="1학기 기말고사">1학기 기말고사</option>
-                        <option value="2학기 중간고사">2학기 중간고사</option>
-                        <option value="2학기 기말고사">2학기 기말고사</option>
-                    </select>
                 </div>
 
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
@@ -195,35 +188,43 @@ export default function AdminInventory() {
                         <table className="w-full text-sm">
                             <thead className="bg-slate-100 border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3 px-4 text-left font-extrabold text-slate-700 w-1/3 border-r border-slate-200">학교명</th>
-                                    <th className="py-3 px-4 text-center font-bold text-slate-600">[{selectedExamType}] 상세 현황</th>
+                                    <th className="py-3 px-4 text-left font-extrabold text-slate-700 w-1/5 border-r border-slate-200">학교명</th>
+                                    <th className="py-3 px-2 text-center font-bold text-slate-600">1학기 중간</th>
+                                    <th className="py-3 px-2 text-center font-bold text-slate-600">1학기 기말</th>
+                                    <th className="py-3 px-2 text-center font-bold text-slate-600">2학기 중간</th>
+                                    <th className="py-3 px-2 text-center font-bold text-slate-600">2학기 기말</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {matrixData.map(row => {
-                                    const cell = row.exams[selectedExamType];
+                                    const examTypes = ['1학기 중간고사', '1학기 기말고사', '2학기 중간고사', '2학기 기말고사'];
                                     return (
                                         <tr key={row.school} className="hover:bg-slate-50 transition-colors">
                                             <td className="py-3 px-4 font-bold text-slate-800 border-r border-slate-100">{row.school}</td>
-                                            <td className="py-2 px-4 text-center bg-white border-l border-slate-50">
-                                                <div className="flex justify-center group relative">
-                                                    <div className={`w-32 h-8 rounded border ${getStatusColor(cell.status)} shadow-inner flex items-center justify-center transition-all duration-200`}>
-                                                        {cell.status === 'complete' && <span className="text-white font-extrabold text-xs tracking-wide">완료</span>}
-                                                        {cell.status === 'partial' && <span className="text-yellow-900 font-extrabold text-[10px] tracking-wide flex items-center gap-1"><Info size={10}/>결측 발생</span>}
-                                                        {cell.status === 'empty' && <span className="text-slate-300 font-bold">-</span>}
-                                                    </div>
-                                                    
-                                                    {cell.status === 'partial' && (
-                                                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 w-48 bg-slate-800 text-white text-[11px] p-3 rounded-lg shadow-2xl font-medium text-left">
-                                                            <div className="mb-2 text-slate-300 font-bold border-b border-slate-600 pb-1">{row.school} {selectedExamType}</div>
-                                                            <div className="text-red-400 mb-1 leading-snug">❌ 누락:<br/>{cell.missing.join(', ')}</div>
-                                                            <div className="mt-1 text-green-400 leading-snug">✅ 보유:<br/>{['PDF', 'HWP', 'DB'].filter(x => !cell.missing.includes(x)).join(', ')}</div>
+                                            {examTypes.map(extype => {
+                                                const cell = row.exams[extype];
+                                                return (
+                                                    <td key={extype} className="py-2 px-2 text-center bg-white border-l border-slate-50">
+                                                        <div className="flex justify-center group relative">
+                                                            <div className={`w-28 h-8 rounded border ${getStatusColor(cell.status)} shadow-inner flex items-center justify-center transition-all duration-200`}>
+                                                                {cell.status === 'complete' && <span className="text-white font-extrabold text-[11px] tracking-wide">완료</span>}
+                                                                {cell.status === 'partial' && <span className="text-yellow-900 font-extrabold text-[10px] tracking-wide flex items-center gap-1"><Info size={10}/>일부</span>}
+                                                                {cell.status === 'empty' && <span className="text-slate-300 font-bold">-</span>}
+                                                            </div>
                                                             
-                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                                                            {cell.status === 'partial' && (
+                                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 w-48 bg-slate-800 text-white text-[11px] p-3 rounded-lg shadow-2xl font-medium text-left">
+                                                                    <div className="mb-2 text-slate-300 font-bold border-b border-slate-600 pb-1">{row.school} {extype}</div>
+                                                                    <div className="text-red-400 mb-1 leading-snug">❌ 누락:<br/>{cell.missing.join(', ')}</div>
+                                                                    <div className="mt-1 text-green-400 leading-snug">✅ 보유:<br/>{['PDF', 'HWP', 'DB'].filter(x => !cell.missing.includes(x)).join(', ')}</div>
+                                                                    
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </td>
+                                                    </td>
+                                                );
+                                            })}
                                         </tr>
                                     );
                                 })}

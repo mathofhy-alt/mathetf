@@ -38,6 +38,7 @@ export default async function AdminQuestionsPage() {
                 difficulty,
                 source_db_id,
                 created_at,
+                embedding,
                 question_images (
                     id,
                     original_bin_id,

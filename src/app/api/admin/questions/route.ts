@@ -185,11 +185,7 @@ export async function DELETE(req: NextRequest) {
                         let newPrice = 0;
                         allQs.forEach((q: any) => {
                             const diff = parseInt(String(q.difficulty)) || 1;
-                            if (diff <= 2) newPrice += 1000;
-                            else if (diff <= 4) newPrice += 2000;
-                            else if (diff <= 6) newPrice += 3000;
-                            else if (diff <= 8) newPrice += 4000;
-                            else newPrice += 5000;
+                            newPrice += diff * 500;
                         });
 
                         const gradeNum = Number(String(s_grade).replace(/[^0-9]/g, '')) || 0;
@@ -197,11 +193,13 @@ export async function DELETE(req: NextRequest) {
                         if (s_sem.includes('중간')) examType = '중간고사';
                         else if (s_sem.includes('기말')) examType = '기말고사';
 
+                        const shortSchool = s_school.replace(/고등학교|고/g, '');
+
                         let syncQuery = adminClient
                             .from('exam_materials')
                             .update({ price: newPrice })
                             .eq('content_type', '개인DB')
-                            .eq('school', s_school)
+                            .ilike('school', `%${shortSchool}%`)
                             .eq('exam_year', Number(s_year))
                             .eq('grade', gradeNum)
                             .eq('subject', s_sub);
@@ -304,11 +302,7 @@ export async function PATCH(req: NextRequest) {
                             let newPrice = 0;
                             allQs.forEach((q: any) => {
                                 const diff = parseInt(String(q.difficulty)) || 1;
-                                if (diff <= 2) newPrice += 1000;
-                                else if (diff <= 4) newPrice += 2000;
-                                else if (diff <= 6) newPrice += 3000;
-                                else if (diff <= 8) newPrice += 4000;
-                                else newPrice += 5000;
+                                newPrice += diff * 500;
                             });
 
                             // 3. Map to exam_materials fields
@@ -318,13 +312,15 @@ export async function PATCH(req: NextRequest) {
                             if (s_sem.includes('중간')) examType = '중간고사';
                             else if (s_sem.includes('기말')) examType = '기말고사';
 
+                            const shortSchool = s_school.replace(/고등학교|고/g, '');
+                            
                             // 4. Update exam_materials where content_type = '개인DB'
                             // Note: we might have multiple DBs for the same exam if admin clicked multiple times, update all matching.
                             let query = adminClient
                                 .from('exam_materials')
                                 .update({ price: newPrice })
                                 .eq('content_type', '개인DB')
-                                .eq('school', s_school)
+                                .ilike('school', `%${shortSchool}%`)
                                 .eq('exam_year', Number(s_year))
                                 .eq('grade', gradeNum)
                                 .eq('subject', s_sub);

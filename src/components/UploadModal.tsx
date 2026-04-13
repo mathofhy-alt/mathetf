@@ -27,52 +27,62 @@ const FileUploadSlot = ({
     setFile,
     accept,
     price,
-    inputRef,
     Icon,
     onFileChange
-}: FileUploadSlotProps) => (
-    <div className={`border rounded-lg p-3 flex flex-col gap-2 transition-all ${file ? 'border-brand-200 bg-brand-50' : 'border-slate-200 hover:border-brand-300'}`}>
-        <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-                <Icon size={20} />
-                <div>
-                    <div className="text-sm font-bold text-slate-700">{label}</div>
-                    <div className="text-[10px] text-slate-500">{subLabel}</div>
-                </div>
-            </div>
-            <div className="text-xs font-bold text-brand-600 bg-brand-100 px-2 py-0.5 rounded">
-                {price}P
-            </div>
-        </div>
+}: Omit<FileUploadSlotProps, 'inputRef'>) => {
+    
+    // Completely detaches file picking from the React rendering cycle to prevent the "Windows Explorer immediate close" Chromium bug caused by SWR or state tracking re-renders.
+    const handleProgrammaticClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = accept;
+        
+        fileInput.onchange = (event: any) => {
+            onFileChange(event, setFile);
+        };
+        
+        fileInput.click();
+    };
 
-        {file ? (
-            <div className="flex items-center justify-between bg-white rounded border border-brand-200 p-2 mt-1">
-                <div className="flex items-center gap-2 overflow-hidden">
-                    <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
-                    <span className="text-xs text-slate-700 truncate">{file.name}</span>
+    return (
+        <div className={`border rounded-lg p-3 flex flex-col gap-2 transition-all ${file ? 'border-brand-200 bg-brand-50' : 'border-slate-200 hover:border-brand-300'}`}>
+            <div className="flex justify-between items-start gap-1">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <Icon size={20} className="shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-bold text-slate-700 tracking-tight whitespace-nowrap">{label}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5 truncate">{subLabel}</div>
+                    </div>
                 </div>
-                <button type="button" onClick={() => setFile(null)} className="text-slate-400 hover:text-red-500">
-                    <Trash2 size={14} />
-                </button>
+                <div className="text-xs font-bold text-brand-600 bg-brand-100 px-2 py-0.5 rounded shrink-0">
+                    {price}P
+                </div>
             </div>
-        ) : (
-            <label
-                htmlFor={id}
-                className="mt-1 border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-white rounded h-10 flex items-center justify-center cursor-pointer transition-colors block w-full"
-            >
-                <span className="text-xs text-slate-400">+ 파일 추가</span>
-            </label>
-        )}
-        <input
-            id={id}
-            ref={inputRef}
-            type="file"
-            accept={accept}
-            className="hidden"
-            onChange={(e) => onFileChange(e, setFile)}
-        />
-    </div>
-);
+
+            {file ? (
+                <div className="flex items-center justify-between bg-white rounded border border-brand-200 p-2 mt-1">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
+                        <span className="text-xs text-slate-700 truncate">{file.name}</span>
+                    </div>
+                    <button type="button" onClick={() => setFile(null)} className="text-slate-400 hover:text-red-500 z-10 relative">
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            ) : (
+                <button 
+                    type="button"
+                    onClick={handleProgrammaticClick}
+                    className="relative mt-1 border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-white rounded h-10 w-full flex items-center justify-center cursor-pointer transition-colors overflow-hidden group"
+                >
+                    <span className="text-xs text-slate-400 pointer-events-none group-hover:text-brand-500 font-medium transition-colors">+ 파일 추가</span>
+                </button>
+            )}
+        </div>
+    );
+};
 
 interface UploadModalProps {
     isOpen: boolean;
@@ -86,10 +96,6 @@ interface UploadModalProps {
 export default function UploadModal({ isOpen, onClose, user, regions, districtsMap, schoolsMap }: UploadModalProps) {
     const supabase = createClient();
     const router = useRouter();
-
-    // Refs for file inputs
-    const pdfSolRef = useRef<HTMLInputElement>(null);
-    const hwpSolRef = useRef<HTMLInputElement>(null);
 
     // Form State
     const [selectedRegion, setSelectedRegion] = useState('');
@@ -139,7 +145,9 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
 
     const generateTitle = () => {
         if (selectedSchool) {
-            setTitle(`${selectedSchool} ${year}년 ${grade}학년 ${semester}학기 ${examType} ${subject}`);
+            const isMock = examType === '모의고사' || examType === '수능';
+            const semLabel = isMock ? `${semester}월` : `${semester}학기`;
+            setTitle(`${selectedSchool} ${year}년 ${grade}학년 ${semLabel} ${examType} ${subject}`);
         }
     };
 
@@ -258,22 +266,19 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             if (!subject) throw new Error('과목을 선택해주세요.');
             if (!title) throw new Error('제목을 입력해주세요.');
 
-            const uploads = [];
-
             if (uploadType === 'MARKET') {
                 if (!filePdfSol || !fileHwpSol) {
                     throw new Error('PDF와 HWP/HML 파일을 모두 등록해야 합니다.');
                 }
-                if (filePdfSol) uploads.push(uploadSingleFile(filePdfSol, 'PDF', '해설', PRICE_PDF_SOL));
-                if (fileHwpSol) uploads.push(uploadSingleFile(fileHwpSol, 'HWP', '해설', PRICE_HWP_SOL));
+                // Upload sequentially to prevent overloading the server or hitting payload limits
+                await uploadSingleFile(filePdfSol, 'PDF', '해설', PRICE_PDF_SOL);
+                await uploadSingleFile(fileHwpSol, 'HWP', '해설', PRICE_HWP_SOL);
             } else {
                 if (!fileRawCopy) {
                     throw new Error('원본 시험지 파일(PDF, 사진)을 첨부해주세요.');
                 }
-                uploads.push(uploadRawSingleFile(fileRawCopy));
+                await uploadRawSingleFile(fileRawCopy);
             }
-
-            await Promise.all(uploads);
 
             alert('자료가 성공적으로 등록되었습니다!');
             onClose();
@@ -282,7 +287,11 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
 
         } catch (error: any) {
             console.error('Upload failed:', error);
-            setErrorMsg(error.message || '업로드 중 오류가 발생했습니다.');
+            let msg = error.message || '업로드 중 오류가 발생했습니다.';
+            if (msg.includes("Unexpected token '<'") || msg.includes('is not valid JSON')) {
+                msg = '서버 응답 오류 (현재 AI 데이터 자동생성 등 백그라운드 DB 작업 중이거나, 파일 용량 제한 초과로 인해 서버가 연결을 거부했습니다). 잠시 후 다시 시도해주세요.';
+            }
+            setErrorMsg(msg);
         } finally {
             setIsUploading(false);
         }
@@ -454,7 +463,6 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                                         setFile={setFilePdfSol}
                                         accept=".pdf"
                                         price={PRICE_PDF_SOL}
-                                        inputRef={pdfSolRef}
                                         Icon={PdfFileIcon}
                                         onFileChange={handleFileChange}
                                     />
@@ -466,7 +474,6 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                                         setFile={setFileHwpSol}
                                         accept=".hwp,.hwpx,.hml"
                                         price={PRICE_HWP_SOL}
-                                        inputRef={hwpSolRef}
                                         Icon={HwpFileIcon}
                                         onFileChange={handleFileChange}
                                     />
@@ -480,7 +487,6 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                                     setFile={setFileRawCopy}
                                     accept=".pdf,.jpg,.jpeg,.png,.zip"
                                     price={0}
-                                    inputRef={pdfSolRef}
                                     Icon={Upload}
                                     onFileChange={handleFileChange}
                                 />

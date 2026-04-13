@@ -600,11 +600,11 @@ export default function QuestionBankPage() {
                         </div>
                         <div className="flex-1 overflow-hidden p-4 bg-slate-100">
                             <FolderExplorer
+                                key={storageModalMode}
                                 onItemSelect={handleStorageItemSelect}
                                 onSelectAll={handleDbSelectAll}
                                 selectedIds={storageModalMode === 'exam' ? selectedExamIds : selectedDbIds}
                                 filterType={storageModalMode}
-                                initialData={storageInitialData}
                                 refreshKey={storageRefreshKey}
                             />
                         </div>

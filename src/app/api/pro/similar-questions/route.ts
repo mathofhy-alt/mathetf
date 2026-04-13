@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
         return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    const isAdmin = user.email === 'mathofhy@naver.com';
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const limit = parseInt(searchParams.get('limit') || '5');
@@ -64,10 +66,6 @@ export async function GET(req: NextRequest) {
             p.exam_materials.content_type === '개인DB'
         ) || [];
 
-        if (dbPurchases.length === 0) {
-            return NextResponse.json({ success: false, error: 'No purchased databases found. Please select a database first.' }, { status: 403 });
-        }
-
         const purchasedDbs = dbPurchases.map((p: any) => p.exam_materials);
 
         // 3. Perform Vector Search via RPC
@@ -75,7 +73,7 @@ export async function GET(req: NextRequest) {
             .rpc('match_questions', {
                 query_embedding: source.embedding,
                 match_threshold: 1 - threshold,
-                match_count: limit * 20, // Fetch more to allow filtering
+                match_count: 1000, // Fetch way more because most will be filtered out by purchase rights
                 filter_exclude_id: id,
                 target_unit: source.unit
             });
@@ -85,8 +83,10 @@ export async function GET(req: NextRequest) {
         // 4. Filter results based on purchased DB metadata
         const metadataFilter = (q: any) => {
             return purchasedDbs.some((db: any) => {
-                // School Check
-                if (q.school !== db.school) return false;
+                // School Check (Flexible match exactly like the new sync logic)
+                const qName = (q.school || '').replace(/고등학교|고/g, '');
+                const dbName = (db.school || '').replace(/고등학교|고/g, '');
+                if (qName !== dbName) return false;
 
                 // Grade Mapping & Check
                 let dbGrade = String(db.grade);
@@ -122,8 +122,14 @@ export async function GET(req: NextRequest) {
 
         let results = similarQuestions || [];
 
-        // Filter by Purchased DBs
-        results = results.filter(metadataFilter);
+        // Admin sees all. Users only see what they purchased.
+        if (!isAdmin) {
+            if (purchasedDbs.length === 0) {
+                 return NextResponse.json({ success: false, error: '구매한 DB가 없습니다.', data: [] });
+            }
+            // Filter by Purchased DBs
+            results = results.filter(metadataFilter);
+        }
 
         // Filter by Unit (Strict matching as requested previously)
         if (source.unit) {
