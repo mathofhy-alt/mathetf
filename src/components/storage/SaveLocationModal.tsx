@@ -22,7 +22,7 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
 
     useEffect(() => {
         // Fetch all folders for the tree
-        fetch('/api/storage/folders?mode=all')
+        fetch('/api/storage/folders?mode=all&folderType=exam')
             .then(res => res.json())
             .then(data => {
                 if (data.folders) setFolders(data.folders);
@@ -46,13 +46,14 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name,
-                    parentId: currentFolderId === null ? 'root' : currentFolderId
+                    parentId: currentFolderId === null ? 'root' : currentFolderId,
+                    folderType: 'exam'
                 })
             });
 
             if (res.ok) {
                 // Refresh list
-                const data = await fetch('/api/storage/folders?mode=all').then(r => r.json());
+                const data = await fetch('/api/storage/folders?mode=all&folderType=exam').then(r => r.json());
                 if (data.folders) setFolders(data.folders);
             }
         } catch (e) {

@@ -41,14 +41,14 @@ export async function GET(req: NextRequest) {
         if (mode === 'all') {
             // In 'all' mode, we usually need the WHOLE tree for the sidebar
             // AND the ROOT content for the initial grid view to avoid 2 calls.
-            const treeQuery = supabase
+            let treeQuery = supabase
                 .from('folders')
                 .select('id, name, parent_id, folder_type')
                 .eq('user_id', user.id)
                 .order('name');
 
             // Optionally filter tree by type too if requested
-            if (folderType && folderType !== 'all') treeQuery.eq('folder_type', folderType);
+            if (folderType && folderType !== 'all') treeQuery = treeQuery.eq('folder_type', folderType);
 
             // Fetch root items specifically
             const rootItemQuery = supabase

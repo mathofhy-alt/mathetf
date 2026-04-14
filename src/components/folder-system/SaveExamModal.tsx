@@ -23,7 +23,7 @@ export default function SaveExamModal({
     const supabase = createClient();
 
     useEffect(() => {
-        fetch('/api/storage/folders?mode=all')
+        fetch('/api/storage/folders?mode=all&folderType=exam')
             .then(res => res.json())
             .then(data => {
                 if (data.folders) setFolders(data.folders);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileItem } from '../lib/data';
-import { Search, Upload, FileText, Download, X, User as UserIcon, ChevronRight, PlayCircle, Lock, Coins, Info, List, ShoppingCart } from 'lucide-react';
+import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -14,7 +14,6 @@ import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 import { useCart } from '@/components/providers/CartProvider';
 import ReportModal from '@/components/ReportModal';
-import { AlertTriangle } from 'lucide-react';
 
 export default function ExamPlatform() {
     interface GroupedExam {
@@ -504,7 +503,7 @@ export default function ExamPlatform() {
                 onUploadClick={handleUploadClick}
             />
 
-            <HeroBanner user={user} purchasedPoints={purchasedPoints} earnedPoints={earnedPoints} />
+            <HeroBanner user={user} earnedPoints={earnedPoints} />
 
             <main className="max-w-[1200px] mx-auto px-4 pb-20">
                 <div className="grid grid-cols-12 gap-6">
@@ -554,7 +553,7 @@ export default function ExamPlatform() {
                                     <div className="col-span-4">
                                         <select className="w-full form-select h-10 text-sm" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
                                             <option value="">년도 전체</option>
-                                            {Array.from({ length: 3 }, (_, i) => 2024 + i).reverse().map(y => (
+                                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
                                                 <option key={y} value={y}>{y}년</option>
                                             ))}
                                         </select>
@@ -615,12 +614,15 @@ export default function ExamPlatform() {
                                                         ✓ 관리자 검수완료
                                                     </span>
                                                 )}
-                                                <button
-                                                    onClick={(e) => handleReportClick(e, group)}
-                                                    className="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1 bg-white/50 border border-transparent hover:border-red-100 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                                                >
-                                                    <AlertTriangle size={11} /> 불편/오류 신고
-                                                </button>
+                                                {/* 로그인한 사용자에게만 신고 버튼 표시 */}
+                                                {user && (
+                                                    <button
+                                                        onClick={(e) => handleReportClick(e, group)}
+                                                        className="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1 bg-white/50 border border-transparent hover:border-red-100 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                                    >
+                                                        <AlertTriangle size={11} /> 불편/오류 신고
+                                                    </button>
+                                                )}
                                                 {user?.email === 'mathofhy@naver.com' && (
                                                     <button
                                                         onClick={(e) => handleVerifyAdmin(e, group)}
@@ -632,7 +634,10 @@ export default function ExamPlatform() {
                                             </div>
                                         </div>
                                         <div className="col-span-1 text-slate-400 text-[11px] whitespace-nowrap">{group.date}</div>
-                                        <div className="col-span-1 text-slate-600 truncate text-[11px]">{group.uploader}</div>
+                                        <div className="col-span-1 text-slate-600 truncate text-[11px]">
+                                            {/* mathofhy 계정은 수학ETF팀으로 표시 */}
+                                            {group.uploader === 'mathofhy' || group.uploader === 'Anonymous' ? '수학ETF팀' : group.uploader}
+                                        </div>
 
                                         <div className="col-span-4 flex items-start justify-center gap-3">
                                             {/* PDF Problem (REMOVED) */}

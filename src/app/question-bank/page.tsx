@@ -749,7 +749,7 @@ export default function QuestionBankPage() {
                                 onClick={handleSearch}
                                 className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                             >
-                                <span>🔍 조건 검색하기</span>
+                                <span>조건 검색하기</span>
                             </button>
                         </div>
                     </div>
@@ -776,13 +776,13 @@ export default function QuestionBankPage() {
                                     disabled={cart.length === 0 || isGenerating}
                                     className="bg-indigo-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm transition font-bold flex items-center gap-2"
                                 >
-                                    <span>📝 시험지 생성 ({cart.length})</span>
+                                    <span>시험지 생성 ({cart.length})</span>
                                 </button>
                                 <button
                                     onClick={() => setShowAutoModal(true)}
                                     className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 shadow-sm transition font-bold"
                                 >
-                                    ⚡ 자동 생성
+                                    자동 생성
                                 </button>
                             </div>
                         </header>
@@ -916,13 +916,113 @@ export default function QuestionBankPage() {
                                     </div>
                                 );
                             }) : (
-                                <div className="col-span-full text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-4">
-                                    <Database size={48} className="text-slate-200" />
-                                    <p className="text-lg font-medium text-slate-500">
-                                        {viewMode === 'review' ? '출제할 문항이 없습니다.' :
-                                            hasSearched ? '조건에 맞는 검색 결과가 없습니다 (0건).' :
-                                            selectedDbIds.length > 0 ? '조건 설정 후 "검색하기" 버튼을 눌러주세요.' : 'DB를 먼저 선택해주세요.'}
-                                    </p>
+                                <div className="col-span-full">
+                                    {viewMode === 'review' ? (
+                                        /* 검토 모드에서 문항이 없을 때 */
+                                        <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
+                                            <Database size={48} className="text-slate-200" />
+                                            <p className="text-lg font-medium text-slate-500">출제할 문항이 없습니다.</p>
+                                            <p className="text-sm text-slate-400">검색으로 돌아가서 문제를 담아주세요.</p>
+                                        </div>
+                                    ) : hasSearched ? (
+                                        /* 검색했지만 결과 없음 */
+                                        <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
+                                            <Search size={48} className="text-slate-200" />
+                                            <p className="text-lg font-medium text-slate-500">조건에 맞는 문제가 없습니다 (0건)</p>
+                                            <p className="text-sm text-slate-400">필터 조건을 조정하거나 다른 DB를 선택해보세요.</p>
+                                        </div>
+                                    ) : selectedDbIds.length > 0 ? (
+                                        /* DB 선택됨, 아직 검색 안 함 */
+                                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
+                                            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                <Search size={24} className="text-indigo-500" />
+                                            </div>
+                                            <p className="text-base font-semibold text-slate-600">왼쪽 필터 조건 설정 후 <span className="text-indigo-600">「조건 검색하기」</span>를 눌러주세요.</p>
+                                            <p className="text-sm text-slate-400">단원, 난이도, 키워드를 조합해 원하는 문제를 찾을 수 있어요.</p>
+                                        </div>
+                                    ) : (
+                                        /* 초기 상태 — 전체 사용법 안내 */
+                                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                            {/* 헤더 */}
+                                            <div className="px-8 pt-8 pb-6 text-center border-b border-slate-100 bg-gradient-to-b from-indigo-50/60 to-white">
+                                                <div className="inline-flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
+                                                    <span>📋</span> 시험지 출제 사용 가이드
+                                                </div>
+                                                <h2 className="text-xl font-black text-slate-800">4단계로 나만의 시험지를 만들어보세요</h2>
+                                                <p className="text-sm text-slate-500 mt-1">구매한 내신 기출 DB에서 문제를 골라 원하는 구성으로 출제할 수 있어요.</p>
+                                            </div>
+
+                                            {/* 스텝 */}
+                                            <div className="grid grid-cols-4 divide-x divide-slate-100 px-2 py-6">
+                                                {/* STEP 1 */}
+                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
+                                                    <div className="relative">
+                                                        <div className="w-14 h-14 rounded-2xl bg-blue-50 border-2 border-blue-200 flex items-center justify-center shadow-sm">
+                                                            <Database size={26} className="text-blue-500" />
+                                                        </div>
+                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-black flex items-center justify-center">1</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-slate-700">DB 선택</p>
+                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">왼쪽 상단<br/><span className="font-bold text-blue-500">「DB 문제」</span> 버튼을 눌러<br/>사용할 기출 DB를 선택하세요.</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* STEP 2 */}
+                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
+                                                    <div className="relative">
+                                                        <div className="w-14 h-14 rounded-2xl bg-violet-50 border-2 border-violet-200 flex items-center justify-center shadow-sm">
+                                                            <Search size={26} className="text-violet-500" />
+                                                        </div>
+                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-violet-500 text-white text-[10px] font-black flex items-center justify-center">2</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-slate-700">조건 검색</p>
+                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">단원·난이도·키워드 등<br/>필터를 설정하고<br/><span className="font-bold text-violet-500">「조건 검색하기」</span>를 누르세요.</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* STEP 3 */}
+                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
+                                                    <div className="relative">
+                                                        <div className="w-14 h-14 rounded-2xl bg-green-50 border-2 border-green-200 flex items-center justify-center shadow-sm">
+                                                            <span className="text-2xl">✅</span>
+                                                        </div>
+                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-black flex items-center justify-center">3</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-slate-700">문제 담기</p>
+                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">검색된 문제 카드를<br/>클릭해서 담으세요.<br/>담은 수가 상단에 표시돼요.</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* STEP 4 */}
+                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
+                                                    <div className="relative">
+                                                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center shadow-sm">
+                                                            <FileText size={26} className="text-indigo-500" />
+                                                        </div>
+                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] font-black flex items-center justify-center">4</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-slate-700">시험지 생성</p>
+                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">상단 <span className="font-bold text-indigo-500">「시험지 생성」</span>을 눌러<br/>순서·난이도를 검토하고<br/>HML 파일로 저장하세요.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* 하단 팁 */}
+                                            <div className="mx-6 mb-6 px-5 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                                                <div className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center shrink-0 mt-0.5">
+                                                    <span className="text-[10px] font-black">!</span>
+                                                </div>
+                                                <div className="text-xs text-amber-800 leading-relaxed">
+                                                    <span className="font-bold">TIP.</span> 왼쪽 <span className="font-bold text-purple-600">「만든 시험지」</span> 버튼으로 이전에 저장한 시험지를 불러와 편집하거나,
+                                                    상단 <span className="font-bold text-purple-600">「자동 생성」</span>으로 조건만 입력하면 AI가 문제를 자동으로 골라드려요.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
