@@ -103,6 +103,7 @@ class CropReviewDialog:
         self._cur_page_idx = 0        # 현재 보이는 페이지 인덱스
         self._cur_q_idx = None        # 현재 선택된 문항 인덱스
         self._scale = 1.0             # 캔버스 축척
+        self._zoom_factor = 1.0       # 추가 속성 (기본 1.0 배율)
 
         # 드래그 상태
         self._drag_start = None
@@ -175,6 +176,15 @@ class CropReviewDialog:
         canvas_toolbar.pack(fill="x")
         tk.Label(canvas_toolbar, text="📄 전체 페이지 — 박스 클릭하여 선택",
                  bg="#f1f5f9", fg="#475569", font=("Segoe UI", 9)).pack(side="left", padx=8)
+
+        # ── 줌 제어 버튼 ──
+        tk.Button(canvas_toolbar, text="🔍 확대 (+)", command=self._zoom_in,
+                  bg="#e2e8f0", relief="flat", padx=8).pack(side="left", padx=4)
+        tk.Button(canvas_toolbar, text="🔍 축소 (-)", command=self._zoom_out,
+                  bg="#e2e8f0", relief="flat", padx=8).pack(side="left", padx=4)
+        tk.Button(canvas_toolbar, text="[화면 맞춤]", command=self._zoom_fit,
+                  bg="#e2e8f0", relief="flat", padx=8).pack(side="left", padx=12)
+
         self._redraw_btn = tk.Button(canvas_toolbar, text="✏️ 선택 문항 재지정",
                                      command=self._start_redraw,
                                      state="disabled",
@@ -271,16 +281,37 @@ class CropReviewDialog:
         )
 
         # 풀페이지 이미지 → 캔버스
+        self._zoom_factor = 1.0
+        self._render_page()
+        self._build_thumbnails()
+
+    def _zoom_in(self):
+        self._zoom_factor *= 1.25
+        self._render_page()
+
+    def _zoom_out(self):
+        self._zoom_factor *= 0.8
+        self._render_page()
+
+    def _zoom_fit(self):
+        self._zoom_factor = 1.0
+        self._render_page()
+
+    def _render_page(self):
+        if not self.page_data_list: return
+        page = self.page_data_list[self._cur_page_idx]
         img = page["padded_img"]
-        disp_img, self._scale = self._scale_img(img, self.PREVIEW_W, self.PREVIEW_H)
+        
+        w = int(self.PREVIEW_W * self._zoom_factor)
+        h = int(self.PREVIEW_H * self._zoom_factor)
+        
+        disp_img, self._scale = self._scale_img(img, w, h)
         self._disp_img = ImageTk.PhotoImage(disp_img)
         self._canvas.config(width=disp_img.width, height=disp_img.height)
         self._canvas.config(scrollregion=(0, 0, disp_img.width, disp_img.height))
         self._canvas.delete("all")
         self._canvas.create_image(0, 0, anchor="nw", image=self._disp_img)
-
         self._draw_boxes()
-        self._build_thumbnails()
 
     def _draw_boxes(self):
         """현재 페이지의 모든 박스를 캔버스에 그림."""
@@ -464,6 +495,20 @@ class CropReviewDialog:
     def _on_drag_move(self, event):
         if (not self._is_drawing and not self._is_adding) or not self._drag_start:
             return
+
+        # ── 오토 스크롤 ──
+        h = self._canvas.winfo_height()
+        w = self._canvas.winfo_width()
+        if event.y > h - 40:
+            self._canvas.yview_scroll(1, "units")
+        elif event.y < 40:
+            self._canvas.yview_scroll(-1, "units")
+
+        if event.x > w - 40:
+            self._canvas.xview_scroll(1, "units")
+        elif event.x < 40:
+            self._canvas.xview_scroll(-1, "units")
+
         if self._drag_rect_id:
             self._canvas.delete(self._drag_rect_id)
         x0, y0 = self._drag_start

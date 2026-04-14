@@ -70,17 +70,14 @@ export async function GET(req: NextRequest) {
         if (results.length > 0) {
             const resultIds = results.map((r: any) => r.id);
 
-            // Fetch images
-            const { data: images } = await supabase
-                .from('question_images')
-                .select('*')
-                .in('question_id', resultIds);
+            // Fetch images and key_concepts concurrently to save network roundtrips
+            const [imagesRes, questionsDataRes] = await Promise.all([
+                supabase.from('question_images').select('*').in('question_id', resultIds),
+                supabase.from('questions').select('id, key_concepts').in('id', resultIds)
+            ]);
 
-            // Fetch key_concepts (to be safe if RPC doesn't return them yet)
-            const { data: questionsData } = await supabase
-                .from('questions')
-                .select('id, key_concepts')
-                .in('id', resultIds);
+            const images = imagesRes.data;
+            const questionsData = questionsDataRes.data;
 
             // Attach data to results
             results.forEach((r: any) => {

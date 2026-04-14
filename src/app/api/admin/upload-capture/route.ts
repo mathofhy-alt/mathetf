@@ -20,11 +20,11 @@ export async function POST(req: NextRequest) {
 
         // 1. Storage 업로드 (기본 버킷 'hwpx' 사용)
         const timestamp = Date.now();
-        const filename = `manual_captures/${questionId}_${captureType}_${timestamp}.png`;
+        const filename = `manual_captures/${questionId}_${captureType}_${timestamp}.webp`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('hwpx')
             .upload(filename, file, {
-                contentType: 'image/png',
+                contentType: 'image/webp',
                 upsert: true
             });
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
             .insert({
                 question_id: questionId,
                 original_bin_id: `${prefix}${timestamp}`,
-                format: 'png',
+                format: 'webp',
                 data: publicUrl,
                 size_bytes: file.size
             });

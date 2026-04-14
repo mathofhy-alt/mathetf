@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
             }, { status: 400 });
         }
 
-        // 2. Fetch User's Purchased DBs
+        // 2. Fetch User's Purchased DBs (original_bin_id 목록)
         const { data: purchases, error: purchaseError } = await supabase
             .from('purchases')
             .select(`
@@ -67,15 +67,22 @@ export async function GET(req: NextRequest) {
         ) || [];
 
         const purchasedDbs = dbPurchases.map((p: any) => p.exam_materials);
+        // 구매한 DB의 exam_materials ID 목록 → RPC에 전달해 DB 레벨에서 필터링
+        const allowedBinIds = isAdmin ? null : (purchasedDbs.length > 0 ? purchasedDbs.map((db: any) => db.id) : null);
 
-        // 3. Perform Vector Search via RPC
+        if (!isAdmin && purchasedDbs.length === 0) {
+            return NextResponse.json({ success: false, error: '구매한 DB가 없습니다.', data: [] });
+        }
+
+        // 3. Perform Vector Search via RPC (구매한 DB 범위 안에서만 검색)
         const { data: similarQuestions, error: searchError } = await supabase
             .rpc('match_questions', {
                 query_embedding: source.embedding,
                 match_threshold: 1 - threshold,
-                match_count: 1000, // Fetch way more because most will be filtered out by purchase rights
+                match_count: limit * 5, // 여유있게 limit의 5배만 가져오면 충분
                 filter_exclude_id: id,
-                target_unit: source.unit
+                target_unit: source.unit,
+                allowed_bin_ids: allowedBinIds // ★ DB 레벨 필터링
             });
 
         if (searchError) throw searchError;
@@ -122,14 +129,8 @@ export async function GET(req: NextRequest) {
 
         let results = similarQuestions || [];
 
-        // Admin sees all. Users only see what they purchased.
-        if (!isAdmin) {
-            if (purchasedDbs.length === 0) {
-                 return NextResponse.json({ success: false, error: '구매한 DB가 없습니다.', data: [] });
-            }
-            // Filter by Purchased DBs
-            results = results.filter(metadataFilter);
-        }
+        // DB 레벨에서 이미 구매 필터가 적용됐으므로 JS 후처리 불필요
+        // (admin은 allowed_bin_ids=null로 전체 검색)
 
         // Filter by Unit (Strict matching as requested previously)
         if (source.unit) {

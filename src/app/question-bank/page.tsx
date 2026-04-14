@@ -22,6 +22,7 @@ export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState<any[]>([]);
+    const [hasSearched, setHasSearched] = useState(false);
 
     // Derived State for performance (O(1) lookup)
     const cartIdSet = useMemo(() => new Set((cart || []).filter(item => item && item.id).map(item => item.id)), [cart]);
@@ -217,14 +218,8 @@ export default function QuestionBankPage() {
                         parts.push(`semester.ilike.${semNum}학기%`);
                     }
 
-                    if (db.subject) {
-                        if (db.exam_type === '모의고사' || db.exam_type === '수능') {
-                            // Mock exams typically bundle common subjects (1~22) and elective subjects (23~30)
-                            // Double quotes are REQUIRED for PostgREST .in() syntax when values contain parenthesis (e.g., 수학(상)).
-                            parts.push(`subject.in.("공통수학1","공통수학2","수학(상)","수학(하)","수학I","수학II","대수","미적분I","미적분1","공통","${db.subject}")`);
-                        } else {
-                            parts.push(`subject.eq.${db.subject}`);
-                        }
+                    if (db.subject && db.subject !== '전과정') {
+                        parts.push(`subject.eq.${db.subject}`);
                     }
 
                     return `and(${parts.join(',')})`;
@@ -268,9 +263,26 @@ export default function QuestionBankPage() {
             }
         }
 
-        const { data } = await query;
-        if (data) setQuestions(data);
-        setLoading(false);
+        try {
+            const { data, error } = await query;
+            if (error) {
+                console.error("Query Error:", error);
+                throw new Error("데이터베이스 검색 중 오류가 발생했습니다. (검색 조건이 너무 많을 수 있습니다)");
+            }
+            if (data) {
+                setQuestions(data);
+                setHasSearched(true);
+                if (data.length === 0) {
+                    alert('해당 조건에 일치하는 문항이 없습니다. (0건)');
+                }
+            }
+        } catch (err: any) {
+            console.error("fetchQuestions error:", err);
+            alert(`검색 실패: ${err.message || '오류가 발생했습니다.'}`);
+            setQuestions([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSearch = () => {
@@ -278,6 +290,7 @@ export default function QuestionBankPage() {
             alert('DB를 먼저 선택해주세요.');
             return;
         }
+        setHasSearched(false);
         fetchQuestions(selectedDbIds, filterState);
     };
 
@@ -907,6 +920,7 @@ export default function QuestionBankPage() {
                                     <Database size={48} className="text-slate-200" />
                                     <p className="text-lg font-medium text-slate-500">
                                         {viewMode === 'review' ? '출제할 문항이 없습니다.' :
+                                            hasSearched ? '조건에 맞는 검색 결과가 없습니다 (0건).' :
                                             selectedDbIds.length > 0 ? '조건 설정 후 "검색하기" 버튼을 눌러주세요.' : 'DB를 먼저 선택해주세요.'}
                                     </p>
                                 </div>

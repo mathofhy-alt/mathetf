@@ -6,7 +6,7 @@ import os
 import sys
 import threading
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, simpledialog
 
 from gemini_ocr import run_ocr
 from hml_generator import HMLGenerator
@@ -70,6 +70,29 @@ class App(tk.Tk):
 
         self._build_ui()
         self._center_window()
+        self.after(100, self._check_api_key)
+
+    def _check_api_key(self):
+        from gemini_ocr import load_api_key
+        try:
+            key = load_api_key()
+        except ValueError:
+            self._prompt_api_key(is_startup=True)
+
+    def _prompt_api_key(self, is_startup=False):
+        key = simpledialog.askstring(
+            "API 키 입력",
+            "Gemini API 키를 입력해주세요:\n(한 번 입력하면 gemini_api_key.txt에 저장됩니다.)",
+            parent=self
+        )
+        if key and key.strip():
+            key_file = os.path.join(os.path.dirname(__file__), "gemini_api_key.txt")
+            with open(key_file, "w", encoding="utf-8") as f:
+                f.write(key.strip())
+            messagebox.showinfo("저장 완료", "API 키가 성공적으로 저장되었습니다.")
+        else:
+            if is_startup:
+                messagebox.showwarning("경고", "API 키가 입력되지 않아 변환 기능이 동작하지 않습니다.")
 
     def _center_window(self):
         self.update_idletasks()
@@ -111,6 +134,9 @@ class App(tk.Tk):
                 selectcolor=BG2, activebackground=BG, activeforeground=ACC2,
                 relief="flat", cursor="hand2"
             ).pack(side="left", padx=(0, 14))
+
+        # API 키 설정 버튼
+        self._btn(model_row, "🔑 API 키 설정", lambda: self._prompt_api_key(False), BG3, padx=12, pady=4).pack(side="right", padx=(0, 4))
 
         # ── 좌우 분할 패널 ──
         paned = tk.PanedWindow(body, orient="horizontal", bg=BG,

@@ -585,10 +585,33 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                 const err = await fileRes.json();
                 throw new Error(`로컬 파일을 가져오지 못했습니다: ${err.error}`);
             }
-            const blob = await fileRes.blob();
+            let blob = await fileRes.blob();
+
+            // WebP 변환 (품질 85%)
+            try {
+                const img = new Image();
+                const objectUrl = URL.createObjectURL(blob);
+                img.src = objectUrl;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0);
+                    const webpBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.85));
+                    if (webpBlob) blob = webpBlob;
+                }
+                URL.revokeObjectURL(objectUrl);
+            } catch (err) {
+                console.error('WebP 변환 실패, 원본 사용:', err);
+            }
 
             const formData = new FormData();
-            formData.append('file', blob, `capture_${q.question_number}_${captureType}.png`);
+            formData.append('file', blob, `capture_${q.question_number}_${captureType}.webp`);
             formData.append('questionId', q.id);
             formData.append('captureType', captureType);
 

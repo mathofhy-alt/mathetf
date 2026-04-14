@@ -184,13 +184,13 @@ export default function SignupPage() {
                         marketing_agreed: marketingAgreed,
                         phone: phone,
                     },
-                    emailRedirectTo: `${location.origin}/auth/callback`,
+                    // 이메일 인증 제거로 인한 리다이렉트 제외
                 },
             });
 
             if (error) throw error;
 
-            setSuccessMsg('회원가입 인증 메일이 발송되었습니다. 이메일을 확인해주세요!');
+            setSuccessMsg('회원가입이 성공적으로 완료되었습니다!');
         } catch (error: any) {
             console.error('Signup error:', error);
             setErrorMsg(error.message || '회원가입 중 오류가 발생했습니다.');
@@ -217,13 +217,13 @@ export default function SignupPage() {
                         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
                             ✅
                         </div>
-                        <h2 className="text-xl font-bold text-slate-800 mb-2">가입 신청 완료!</h2>
+                        <h2 className="text-xl font-bold text-slate-800 mb-2">가입 완료!</h2>
                         <p className="text-slate-600 mb-6">
-                            입력하신 이메일로 인증 메일을 보냈습니다.<br />
-                            메일함에서 인증 버튼을 클릭하면 가입이 완료됩니다.
+                            휴대폰 인증을 통해 성공적으로 가입되었습니다.<br />
+                            지금 바로 서비스를 이용하실 수 있습니다.
                         </p>
                         <Link href="/" className="block w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">
-                            홈으로 이동
+                            로그인하고 시작하기
                         </Link>
                     </div>
                 ) : (
