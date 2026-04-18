@@ -930,7 +930,16 @@ export default function QuestionBankPage() {
                                         key={`${viewMode}-${q.id}`}
                                         onClick={() => viewMode === 'search' && toggleCart(q)}
                                         draggable={viewMode === 'review'}
-                                        onDragStart={() => viewMode === 'review' && handleDragStart(idx)}
+                                        onDragStart={(e) => {
+                                            if (viewMode !== 'review') return;
+                                            // data-no-drag 요소에서 시작된 드래그는 차단 (번호 뱃지 클릭)
+                                            const t = e.target as HTMLElement;
+                                            if (t.closest('[data-no-drag]')) {
+                                                e.preventDefault();
+                                                return;
+                                            }
+                                            handleDragStart(idx);
+                                        }}
                                         onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
                                         onDragEnd={() => viewMode === 'review' && handleDragEnd()}
                                         className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
@@ -946,13 +955,11 @@ export default function QuestionBankPage() {
                                         {/* Header */}
                                         <div className="flex justify-between items-center p-4 border-b bg-gray-50/50">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                {/* 번호 백지 클릭 시 선택/해제 토글 */}
+                                                {/* 번호 뱃지 클릭 시 선택/해제 토글 */}
                                                 <span
+                                                    data-no-drag="true"
                                                     onMouseDown={(e) => {
-                                                        // draggable 카드 안에서 클릭이 드래그로 인식되는 것 방지
-                                                        if (viewMode === 'review' && !q._similarOf) {
-                                                            e.stopPropagation();
-                                                        }
+                                                        if (viewMode === 'review' && !q._similarOf) e.stopPropagation();
                                                     }}
                                                     onClick={(e) => {
                                                         if (viewMode !== 'review' || q._similarOf) return;
