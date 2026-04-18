@@ -861,7 +861,13 @@ export default function QuestionBankPage() {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h1 className="text-2xl font-black text-slate-800">시험지 문항 검토</h1>
-                                    <p className="text-sm text-slate-500 mt-1">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
+                                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                        <p className="text-sm text-slate-500">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
+                                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+                                            카드를 드래그해서 순서 변경
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="flex gap-3">
                                     <button
