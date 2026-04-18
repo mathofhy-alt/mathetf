@@ -893,26 +893,46 @@ export default function QuestionBankPage() {
                                         난이도 높은순
                                     </button>
                                 </div>
-                                {/* 유사문항 자동추가 버튼 */}
-                                <button
-                                    onClick={handleAutoAddSimilar}
-                                    disabled={isAutoAdding || cart.length === 0}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm whitespace-nowrap"
-                                >
-                                    {isAutoAdding ? (
-                                        <>
-                                            <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                            </svg>
-                                            분석 중...
-                                        </>
-                                    ) : selectedReviewIds.size > 0 ? (
-                                        <>🔗 선택 {selectedReviewIds.size}개 유사추가</>
-                                    ) : (
-                                        <>🔗 전체 유사문항 자동추가</>
-                                    )}
-                                </button>
+                                {/* 유사문항 자동추가 영역 */}
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className="flex items-center gap-2">
+                                        {/* 선택 상태 안내 */}
+                                        {selectedReviewIds.size > 0 ? (
+                                            <span className="text-[11px] font-bold text-violet-700 bg-violet-100 px-2 py-1 rounded-full">
+                                                ✓ {selectedReviewIds.size}개 선택됨
+                                            </span>
+                                        ) : (
+                                            <span className="text-[11px] text-slate-400 hidden sm:block">
+                                                번호 클릭 → 선택
+                                            </span>
+                                        )}
+                                        <button
+                                            onClick={handleAutoAddSimilar}
+                                            disabled={isAutoAdding || cart.length === 0}
+                                            className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm whitespace-nowrap"
+                                        >
+                                            {isAutoAdding ? (
+                                                <>
+                                                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                                    </svg>
+                                                    분석 중...
+                                                </>
+                                            ) : selectedReviewIds.size > 0 ? (
+                                                <>🔗 선택 {selectedReviewIds.size}개 유사추가</>
+                                            ) : (
+                                                <>🔗 유사문항 자동추가</>
+                                            )}
+                                        </button>
+                                    </div>
+                                    {/* 사용법 힌트 */}
+                                    <p className="text-[10px] text-slate-400 pr-1">
+                                        {selectedReviewIds.size > 0
+                                            ? '선택한 문제에만 유사문항이 추가됩니다'
+                                            : '문제 번호를 클릭하면 선택, 선택 후 누르면 선택 문제만 추가'}
+                                    </p>
+                                </div>
                             </div>
                         </header>
                     )}
