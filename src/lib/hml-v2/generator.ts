@@ -408,10 +408,10 @@ export function generateHmlFromTemplate(
             .replace(/ColumnBreak\s*=\s*"true"/gi, '')
             .replace(/ColumnBreak\s*=\s*"1"/gi, '')
             .replace(/PageBreak\s*=\s*"true"/gi, '')
-            // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 포함한 TEXT의 CharShape를 14(흰색+1pt)로 교체
+            // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 포함한 TEXT의 CharShape를 15(흰색+1pt)로 교체
             // → 미주 번호(위첨자)가 출력 시 보이지 않음. 풀이 내용은 BOX_MIJU로 별도 처리됨
             .replace(/<TEXT\s+CharShape="[^"]*"(\s[^>]*)?>(<ENDNOTE>|<hp:ENDNOTE>)/gi,
-                (match: string) => match.replace(/CharShape="[^"]*"/, 'CharShape="14"'));
+                (match: string) => match.replace(/CharShape="[^"]*"/, 'CharShape="15"'));
 
         // Add ENDNOTE detection logging
         // [FIX V20] Regex-based search for ANY version of endnote tag
@@ -541,8 +541,8 @@ export function generateHmlFromTemplate(
                         (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
                     );
                     if (directEndnote) {
-                        tn.setAttribute('CharShape', '14'); // Height=100, TextColor=16777215(흰색)
-                        console.log(`[HML-V2] Endnote ref TEXT → invisible CharShape(14).`);
+                        tn.setAttribute('CharShape', '15'); // Height=100, TextColor=16777215(흰색), 배열 인덱스 15
+                        console.log(`[HML-V2] Endnote ref TEXT → invisible CharShape(15).`);
                     }
                 }
 
@@ -1221,12 +1221,18 @@ function sanitizeNodeStyles(node: any, validSets: {
 
     // [V58.1] Apply forced CharShape (Font)
     // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 자식으로 가진 TEXT는 예외 처리
-    // → 미주 번호 숨김용 CharShape=14를 그대로 유지
-    if (forcedCs && (node.tagName === 'TEXT' || node.tagName === 'CHARSHAPE')) {
+    // → 미주 번호 숨김용 CharShape=15 (배열 인덱스 15)를 그대로 유지
+    let isEndnoteAnchor = false;
+    if (node.tagName === 'TEXT' || node.tagName === 'CHARSHAPE') {
         const hasDirectEndnote = Array.from(node.childNodes || []).some(
             (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
         );
-        if (!hasDirectEndnote) {
+        if (hasDirectEndnote) {
+            isEndnoteAnchor = true;
+            // 배열 인덱스 15가 수학ETF양식.hml에서 흰색 글꼴입니다. (Id="14"지만 인덱스는 15)
+            node.setAttribute('CharShape', '15');
+            validSets.CharShape.add('15'); // checkAndStrip에서 삭제되지 않도록 보장
+        } else if (forcedCs) {
             node.setAttribute('CharShape', forcedCs);
         }
     }
