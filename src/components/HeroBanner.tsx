@@ -44,21 +44,21 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                     </div>
                 </SwiperSlide>
 
-                {/* SLIDE 2: 서비스 소개 */}
+                {/* SLIDE 2: 전국연합학력평가 무료 제공 */}
                 <SwiperSlide>
                     <div className="w-full h-full bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between px-4 lg:px-20 relative overflow-hidden">
                         <div className="z-10 max-w-lg lg:pl-20 mt-[-40px] md:mt-0 text-center md:text-left">
                             <h1 className="text-3xl font-bold text-slate-800 mb-2 whitespace-nowrap">
-                                <span className="text-brand-600">수학기출문제</span>를 공유하고 다운받으세요!
+                                전국연합학력평가 <span className="text-blue-600">실시간 업로드 중!</span>
                             </h1>
                             <p className="text-slate-600 text-lg mb-6 break-keep">
-                                전국 고등학교 내신 기출을 한 곳에서. 필요한 시험지를 바로 찾아보세요.
+                                최신 모의고사 기출문제들을 지금 바로 무료로 사용하고 다운받아보세요.
                             </p>
                         </div>
                         <div className="absolute right-[30%] top-1/2 -translate-y-1/2 hidden lg:block opacity-60">
                             <div className="w-64 h-48 relative">
-                                <div className="absolute right-4 bottom-4 w-32 h-40 bg-blue-600 rounded-lg transform rotate-3 opacity-20"></div>
-                                <div className="absolute right-0 bottom-0 w-32 h-40 bg-white border-2 border-slate-200 rounded-lg shadow-xl flex flex-col items-center justify-center p-4">
+                                <div className="absolute right-4 bottom-4 w-32 h-40 bg-blue-600 rounded-lg transform rotate-3 opacity-20 animate-pulse"></div>
+                                <div className="absolute right-0 bottom-0 w-32 h-40 bg-white border-2 border-slate-200 rounded-lg shadow-xl flex flex-col items-center justify-center p-4 transition-transform hover:-translate-y-2">
                                     <div className="w-16 h-16 bg-blue-100 rounded-full mb-3 flex items-center justify-center">
                                         <FileText className="text-blue-500" size={32} />
                                     </div>

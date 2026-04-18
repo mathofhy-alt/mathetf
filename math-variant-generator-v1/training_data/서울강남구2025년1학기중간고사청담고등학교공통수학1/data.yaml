@@ -1,0 +1,5 @@
+path: C:/Users/matho/OneDrive/바탕 화면/pdf모음\training_data\서울강남구2025년1학기중간고사청담고등학교공통수학1
+train: images
+val: images
+nc: 1
+names: ['problem']

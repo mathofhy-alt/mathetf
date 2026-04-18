@@ -1,0 +1,15 @@
+[
+  {
+    "question_num": "1",
+    "question": "두 복소수 [[EQUATION:alpha = 4 + 3 i]] 와 [[EQUATION:beta = 2 + i]] 에 대하여 [[EQUATION:alpha bar beta + bar alpha beta + {5 beta} over {bar alpha} + {5 bar beta} over {alpha}]] 의 값은? (단, [[EQUATION:bar alpha]] , [[EQUATION:bar beta]] 는 [[EQUATION:alpha]] , [[EQUATION:beta]] 의 켤레복소수)",
+    "answer_options": [
+      "[[EQUATION:21]]",
+      "[[EQUATION:22]]",
+      "[[EQUATION:23]]",
+      "[[EQUATION:24]]",
+      "[[EQUATION:25]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 복소수 [[EQUATION:alpha = 4 + 3i]], [[EQUATION:\beta = 2 + i]]에 대하여, 그 켤레복소수는 [[EQUATION:\bar{alpha} = 4 - 3i]], [[EQUATION:\bar{\beta} = 2 - i]]입니다. 먼저 [[EQUATION:alpha \bar{alpha}]]의 값을 구하면 [[EQUATION:alpha \bar{alpha} = LEFT( 4 + 3i RIGHT) LEFT( 4 - 3i RIGHT) = 4^2 + 3^2 = 16 + 9 = 25]]입니다. 이제 주어진 식 [[EQUATION:alpha \bar{\beta} + \bar{alpha} \beta + {5 \beta} over {\bar{alpha}} + {5 \bar{\beta}} over {alpha}]]을 두 부분으로 나누어 계산해 보겠습니다. 첫 번째 부분인 [[EQUATION:alpha \bar{\beta} + \bar{alpha} \beta]]를 계산하면, [[EQUATION:alpha \bar{\beta} = LEFT( 4 + 3i RIGHT) LEFT( 2 - i RIGHT) = 8 - 4i + 6i - 3i^2 = 11 + 2i]]이고, [[EQUATION:\bar{alpha} \beta]]는 [[EQUATION:alpha \bar{\beta }의 켤레복소수이므로]]\bar{alpha}\beta = 11 - 2i[[EQUATION:이다. 따라서]]alpha\bar{\beta} + \bar{alpha}\beta = (11 + 2i) + (11 - 2i) = 22[[EQUATION:이다. 한편,]]{5\beta} over {\bar{alpha}} = {5(2+i)} over {4-3i} = {5(2+i)(4+3i)} over {(4-3i)(4+3i)} = {5(8+6i+4i-3)} over {25} = {5(5+10i)} over {25} = 1+2i[[EQUATION:이고,]]{5\bar{\beta}} over {alpha}[[EQUATION:는]]{5\beta} over {\bar{alpha}}[[EQUATION:의 켤레복소수이므로]]{5\bar{\beta}} over {alpha} = 1-2i[[EQUATION:이다. 따라서]]{5\beta} over {\bar{alpha}} + {5\bar{\beta}} over {alpha }[[EQUATION:= (1 + 2i) + (1 - 2i) = 2]]이다. 따라서 구하는 식의 값은 [[EQUATION:(alpha\bar{\beta} + \bar{alpha}\beta) + LEFT( {5\beta} over {\bar{alpha}} + {5\bar{\beta}} over {alpha} RIGHT) = 22 + 2 = 24]]이다. 따라서 정답은 ④이다."
+  }
+]

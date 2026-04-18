@@ -1,0 +1,88 @@
+[
+  {
+    "question_num": "1",
+    "question": "두 실수 [[EQUATION:a]], [[EQUATION:b]]가 다음 조건을 만족시킬 때, [[EQUATION:a^{3} - 2b]]의 값을 구하시오.\n(가) [[EQUATION:b]]는 [[EQUATION:- sqrt {8a}]]의 제곱근이다.\n(나) [[EQUATION:root {3} of {a^{2}} b]]는 [[EQUATION:- 16]]의 세제곱근이다.",
+    "answer_options": [],
+    "explanation": "조건 (가)에서 [[EQUATION:b]]는 [[EQUATION:- sqrt {8a}]]의 제곱근이므로 [[EQUATION:b^{2} = - sqrt {8a}]]이다.\n[[EQUATION:a]], [[EQUATION:b]]는 실수이므로 [[EQUATION:b^{2} ge 0]]이고, 근호 안의 식은 [[EQUATION:8a ge 0]]을 만족해야 하므로 [[EQUATION:a ge 0]]이다.\n따라서 [[EQUATION:sqrt {8a} ge 0]]이므로 [[EQUATION:- sqrt {8a} le 0]]이다.\n[[EQUATION:b^{2} ge 0]]이고 [[EQUATION:- sqrt {8a} le 0]]이므로 이를 만족하는 유일한 실수는 [[EQUATION:b^{2} = 0]] 즉, [[EQUATION:b = 0]]이며, 이때 [[EQUATION:a = 0]]이다.\n조건 (나)에서 [[EQUATION:root {3} of {a^{2}} b]]는 [[EQUATION:- 16]]의 세제곱근이므로 양변을 세제곱하면 [[EQUATION:a^{2}b^{3} = - 16]]이다.\n하지만 [[EQUATION:a = 0]], [[EQUATION:b = 0]]을 대입하면 [[EQUATION:0 = - 16]]이 되어 모순이 발생한다.\n따라서 주어진 조건을 모두 만족하는 실수 [[EQUATION:a]], [[EQUATION:b]]는 존재하지 않는다.\n(참고: 본 해설은 원본 문제의 수식을 엄밀하게 해석한 결과이며, 만약 출제 의도가 [[EQUATION:- sqrt {8a}]]가 아닌 [[EQUATION:- sqrt {8} a]]였다면 [[EQUATION:b^{2} = - 2sqrt {2} a]]에서 [[EQUATION:a = - sqrt {2}]], [[EQUATION:b = - 2]]가 되어 [[EQUATION:a^{3} - 2b = - 2sqrt {2} + 4]]가 도출된다.)\n따라서 답은 해 없음이다."
+  },
+  {
+    "question_num": "1-변형1",
+    "question": "두 정수 [[EQUATION:a]], [[EQUATION:b]]와 2차 함수 [[EQUATION:f ( x ) = x^{2} + ax + b]]에 대하여 함수 [[EQUATION:g ( x )]]를\n[[EQUATION:g ( x ) = cases{f ( x ) ( x < 2 ) #3x - 1 ( xge2 ) }]]\n라 하자. 함수 [[EQUATION:g ( x )]]가 실수 전체의 집합에서 미분가능할 때, [[EQUATION:a + b]]의 값을 구하시오.",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "answer": "2",
+    "explanation": "함수 [[EQUATION:g ( x )]]가 [[EQUATION:x = 2]]에서 연속이어야 하므로,\n[[EQUATION:lim_{x - > 2 - }g ( x ) = lim_{x - > 2 - } ( x^{2} + ax + b ) = 4 + 2a + b]]\n[[EQUATION:lim_{x - > 2 + }g ( x ) = g ( 2 ) = 3 ( 2 ) - 1 = 5]]\n따라서 [[EQUATION:4 + 2a + b = 5]] 즉, [[EQUATION:2a + b = 1]]이다. (기억)\n또한 [[EQUATION:x = 2]]에서 미분계수가 존재해야 하므로,\n[[EQUATION:f' ( x ) = 2x + a]]에서 [[EQUATION:f' ( 2 ) = 4 + a]]이고,\n[[EQUATION:x > 2]]일 때 미분계수는 [[EQUATION:3]]이다.\n따라서 [[EQUATION:4 + a = 3]]에서 [[EQUATION:a = - 1]]이다.\n이 값을 (기억)에 대입하면 [[EQUATION:- 2 + b = 1]], 즉 [[EQUATION:b = 3]]이다.\n따라서 [[EQUATION:a + b = - 1 + 3 = 2]]이다."
+  },
+  {
+    "question_num": "1-변형2",
+    "question": "두 실수 [[EQUATION:a]], [[EQUATION:b]]와 일차함수 [[EQUATION:f ( x ) = ax + b]]에 대하여 함수 [[EQUATION:h ( x )]]를\n[[EQUATION:h ( x ) = cases{f ( x ) ( x < - 1 ) #x^{2} + 2x + 4 ( xge - 1 ) }]]\n이라 하자. 함수 [[EQUATION:h ( x )]]가 실수 전체의 집합에서 미분가능할 때, [[EQUATION:aTIMESb]]의 값을 구하시오.",
+    "options": [
+      "-3",
+      "-1",
+      "0",
+      "1",
+      "3"
+    ],
+    "answer": "0",
+    "explanation": "함수 [[EQUATION:h ( x )]]가 [[EQUATION:x = - 1]]에서 연속이어야 하므로,\n[[EQUATION:lim_{x - > - 1 - }f ( x ) = - a + b]]\n[[EQUATION:h ( - 1 ) = ( - 1 ) ^{2} + 2 ( - 1 ) + 4 = 1 - 2 + 4 = 3]]\n따라서 [[EQUATION:- a + b = 3]]이다. (기억)\n또한 [[EQUATION:x = - 1]]에서 미분가능해야 하므로,\n[[EQUATION:f' ( x ) = a]]이고, [[EQUATION:x > - 1]]에서 [[EQUATION:( x^{2} + 2x + 4 ) ' = 2x + 2]]이므로 [[EQUATION:x = - 1]]에서의 우미분계수는 [[EQUATION:2 ( - 1 ) + 2 = 0]]이다.\n따라서 [[EQUATION:a = 0]]이다.\n이를 (기억)에 대입하면 [[EQUATION:b = 3]]이다.\n따라서 [[EQUATION:aTIMESb = 0TIMES3 = 0]]이다."
+  },
+  {
+    "question_num": "1-변형3",
+    "question": "두 상수 [[EQUATION:a]], [[EQUATION:b]]에 대하여 함수 [[EQUATION:k ( x )]]를\n[[EQUATION:k ( x ) = cases{x^{3} + ax + b ( x < 1 ) #x^{2} + 2x + 1 ( xge1 ) }]]\n이라 하자. 함수 [[EQUATION:k ( x )]]가 실수 전체의 집합에서 미분가능할 때, [[EQUATION:a^{2} + b^{2}]]의 값을 구하시오.",
+    "answer_options": [
+      "1",
+      "3",
+      "5",
+      "7",
+      "9"
+    ],
+    "explanation": "함수 [[EQUATION:k ( x )]]가 실수 전체의 집합에서 미분가능하려면 [[EQUATION:x = 1]]에서 연속이고 미분가능해야 한다.\n먼저 [[EQUATION:x = 1]]에서 연속이어야 하므로,\n[[EQUATION:lim_{x - > 1 - }k ( x ) = lim_{x - > 1 - } ( x^{3} + ax + b ) = 1 + a + b]]\n[[EQUATION:lim_{x - > 1 + }k ( x ) = k ( 1 ) = 1^{2} + 2TIMES1 + 1 = 4]]\n따라서 [[EQUATION:1 + a + b = 4]]에서 [[EQUATION:a + b = 3]]이다. (기억)\n또한 [[EQUATION:x = 1]]에서 미분계수가 존재해야 하므로,\n[[EQUATION:x < 1]]일 때 [[EQUATION:k' ( x ) = 3x^{2} + a]]이고, [[EQUATION:x > 1]]일 때 [[EQUATION:k' ( x ) = 2x + 2]]이다.\n[[EQUATION:x = 1]]에서의 좌미분계수는 [[EQUATION:3 + a]]이고 우미분계수는 [[EQUATION:4]]이므로,\n[[EQUATION:3 + a = 4]]에서 [[EQUATION:a = 1]]이다.\n[[EQUATION:a = 1]]을 (기억)에 대입하면 [[EQUATION:1 + b = 3]]에서 [[EQUATION:b = 2]]이다.\n따라서 [[EQUATION:a^{2} + b^{2} = 1^{2} + 2^{2} = 1 + 4 = 5]]이다."
+  },
+  {
+    "question_num": "2",
+    "question": "두 상수 [[EQUATION:a]], [[EQUATION:b]] ([[EQUATION:1 < a < b]])에 대하여 좌표평면 위의 두 점 [[EQUATION:( a , log _{2}a )]], [[EQUATION:( b , log _{2}b )]]를 지나는 직선의 [[EQUATION:y]]절편과 두 점 [[EQUATION:( a , log _{4}a )]], [[EQUATION:( b , log _{4}b )]]를 지나는 직선의 [[EQUATION:y]]절편이 같다.\n함수 [[EQUATION:f ( x ) = a^{bx} + b^{ax}]]에 대하여 [[EQUATION:f ( 1 ) = 40]]일 때, [[EQUATION:f ( 2 )]]의 값을 구하시오.",
+    "answer_options": [],
+    "explanation": "두 점 [[EQUATION:( a , log _{2}a )]], [[EQUATION:( b , log _{2}b )]]를 지나는 직선의 [[EQUATION:y]]절편을 [[EQUATION:y_{1}]]이라 하자.\n로그의 밑 변환 성질에 의해 [[EQUATION:log _{4}x = frac{1}{2}log _{2}x]]이므로, 두 점 [[EQUATION:( a , log _{4}a )]], [[EQUATION:( b , log _{4}b )]]의 [[EQUATION:y]]좌표는 각각 앞선 두 점의 [[EQUATION:y]]좌표의 [[EQUATION:frac{1}{2}]]배이다.\n따라서 이 두 점을 지나는 직선의 [[EQUATION:y]]절편 [[EQUATION:y_{2}]]는 [[EQUATION:y_{2} = frac{1}{2}y_{1}]]이 된다.\n문제 조건에서 두 직선의 [[EQUATION:y]]절편이 같다고 하였으므로 [[EQUATION:y_{1} = y_{2} = frac{1}{2}y_{1}]]에서 [[EQUATION:y_{1} = 0]]이다.\n직선의 [[EQUATION:y]]절편이 [[EQUATION:0]]이라는 것은 이 직선이 원점 [[EQUATION:( 0 , 0 )]]을 지난다는 의미이다.\n원점과 [[EQUATION:( a , log _{2}a )]], [[EQUATION:( b , log _{2}b )]]가 한 직선 위에 있으므로 원점과 각 점을 연결한 직선의 기울기가 같다.\n즉, [[EQUATION:frac{log _{2}a}{a} = frac{log _{2}b}{b}]]이다.\n이를 정리하면 [[EQUATION:blog _{2}a = alog _{2}b]]가 되고, 로그의 성질에 의해 [[EQUATION:log _{2}a^{b} = log _{2}b^{a}]]이므로 [[EQUATION:a^{b} = b^{a}]]이다.\n함수 [[EQUATION:f ( x ) = a^{bx} + b^{ax} = ( a^{b} ) ^{x} + ( b^{a} ) ^{x}]]에 [[EQUATION:a^{b} = b^{a}]]를 적용하면 [[EQUATION:f ( x ) = 2 ( a^{b} ) ^{x}]]이다.\n[[EQUATION:f ( 1 ) = 2a^{b} = 40]]이므로 [[EQUATION:a^{b} = 20]]이다.\n따라서 우리가 구하고자 하는 값은 [[EQUATION:f ( 2 ) = 2 ( a^{b} ) ^{2} = 2TIMES20^{2} = 800]]이다.\n따라서 답은 [[EQUATION:800]]이다."
+  },
+  {
+    "question_num": "2-변형1",
+    "question": "두 자연수 [[EQUATION:a]], [[EQUATION:b]] ([[EQUATION:1 < a < b]])에 대하여 좌표평면 위의 두 점 [[EQUATION:( a , log _{3}a )]], [[EQUATION:( b , log _{3}b )]]를 지나는 직선의 [[EQUATION:y]]절편과 두 점 [[EQUATION:( a , log _{9}a )]], [[EQUATION:( b , log _{9}b )]]를 지나는 직선의 [[EQUATION:y]]절편이 같다. 수열 [[EQUATION:{x_{n}}]]을 [[EQUATION:x_{n} = int _{n}^{n + 1}a^{t}b^{ - t}dt]]라 할 때, [[EQUATION:sum _{n = 1}^{inf }x_{n}]]의 값을 구하시오.",
+    "answer_options": [
+      "[[EQUATION:frac{1}{4ln 2}]]",
+      "[[EQUATION:frac{1}{2ln 2}]]",
+      "[[EQUATION:frac{1}{ln 2}]]",
+      "[[EQUATION:frac{2}{ln 2}]]",
+      "[[EQUATION:frac{4}{ln 2}]]"
+    ],
+    "explanation": "[[EQUATION:log _{9}x = frac{1}{2}log _{3}x]]이므로, 두 번째 직선의 [[EQUATION:y]]좌표는 첫 번째 직선의 [[EQUATION:frac{1}{2}]]배이며, [[EQUATION:y]]절편 또한 [[EQUATION:frac{1}{2}]]배가 된다.\n두 [[EQUATION:y]]절편이 같으려면 그 값이 [[EQUATION:0]]이어야 하므로, 첫 번째 직선은 원점을 지난다.\n따라서 기울기가 같다는 기하학적 성질에 의해 [[EQUATION:frac{log _{3}a}{a} = frac{log _{3}b}{b}]]가 성립한다.\n이를 정리하면 [[EQUATION:blog _{3}a = alog _{3}b]]에서 [[EQUATION:a^{b} = b^{a}]]이다.\n[[EQUATION:1 < a < b]]인 자연수 중 [[EQUATION:a^{b} = b^{a}]]를 만족하는 해를 찾기 위해 양변에 자연로그를 취하면 [[EQUATION:frac{ln a}{a} = frac{ln b}{b}]]이다.\n함수 [[EQUATION:y = frac{ln x}{x}]]의 그래프를 그려보면 [[EQUATION:x = e]]에서 최댓값을 가지고, [[EQUATION:x > e]]에서 감소한다.\n따라서 [[EQUATION:1 < a < e < b]]를 만족하는 자연수는 [[EQUATION:a = 2]]뿐이다.\n[[EQUATION:a = 2]]를 대입하면 [[EQUATION:2^{b} = b^{2}]]이 되고, 이를 만족하는 [[EQUATION:b > 2]]인 자연수는 [[EQUATION:b = 4]]이다. (만약 [[EQUATION:a ge 3]]이면 [[EQUATION:a < b]]를 만족하는 자연수 해가 존재하지 않는다.)\n이제 수열 [[EQUATION:x_{n}]]을 계산하면, [[EQUATION:a^{t}b^{ - t} = 2^{t}4^{ - t} = LEFT ( frac{1}{2}ight ) ^{t}]]이다.\n[[EQUATION:x_n = \\int_{n}^{n+1} \\left(  frac {1}{2} \right)^t dt = \\left[  frac {(1/2)^t}{-\\ln 2} \right]_{n}^{n+1} =  frac {(1/2)^n - (1/2)^{n+1}}{\\ln 2} =  frac {1}{2 \\ln 2} \\left(  frac {1}{2} \right)^n]]이다.\n구하고자 하는 무한급수는 첫째항이 [[EQUATION:frac{1}{4ln 2}]]이고 공비가 [[EQUATION:frac{1}{2}]]인 등비급수이다.\n[[EQUATION:sum _{n = 1}^{inf }x_{n} = frac{frac{1}{4ln 2}}{1 - frac{1}{2}} = frac{1}{2ln 2}]]이다.\n따라서 답은 [[EQUATION:frac{1}{2ln 2}]]이다."
+  },
+  {
+    "question_num": "2-변형2",
+    "question": "두 실수 [[EQUATION:a]], [[EQUATION:b]] ([[EQUATION:0 < a < b < 2pi]])에 대하여, 두 점 [[EQUATION:( a , acos a )]], [[EQUATION:( b , bcos b )]]를 지나는 직선의 [[EQUATION:y]]절편과 두 점 [[EQUATION:( a , 4acos a )]], [[EQUATION:( b , 4bcos b )]]를 지나는 직선의 [[EQUATION:y]]절편이 같다.\n[[EQUATION:lim _{xoa + b}frac{sin ( x - 2pi ) }{x^{2} - ( a + b ) x}]] 의 값을 구하시오.",
+    "answer_options": [
+      "[[EQUATION:frac{1}{4pi }]]",
+      "[[EQUATION:frac{1}{2pi }]]",
+      "[[EQUATION:frac{1}{pi }]]",
+      "[[EQUATION:frac{2}{pi }]]",
+      "[[EQUATION:frac{4}{pi }]]"
+    ],
+    "explanation": "두 점 [[EQUATION:( a , 4acos a )]], [[EQUATION:( b , 4bcos b )]]를 지나는 직선의 모든 [[EQUATION:y]]좌표는 첫 번째 직선의 [[EQUATION:4]]배이므로, [[EQUATION:y]]절편 또한 [[EQUATION:4]]배가 된다.\n두 직선의 [[EQUATION:y]]절편이 같으려면 그 값이 [[EQUATION:0]]이어야만 하므로, 첫 번째 직선은 원점을 지나야 한다.\n따라서 원점과 두 점을 연결한 기울기가 같으므로 [[EQUATION:frac{acos a}{a} = frac{bcos b}{b}]]에서 [[EQUATION:cos a = cos b]]가 성립한다.\n[[EQUATION:0 < a < b < 2pi]] 범위에서 코사인 함수의 그래프는 [[EQUATION:x = pi]]에 대하여 대칭이므로, [[EQUATION:cos a = cos b]]를 만족하려면 [[EQUATION:a + b = 2pi]]이어야 한다. (만약 [[EQUATION:a = b]]라면 조건 [[EQUATION:a < b]]에 모순이 된다.)\n이제 주어진 극한식에 [[EQUATION:a + b = 2pi]]를 대입하면,\n[[EQUATION:lim _{xo2pi }frac{sin ( x - 2pi ) }{x^{2} - 2pi x} = lim _{xo2pi }frac{sin ( x - 2pi ) }{x ( x - 2pi ) }]]이다.\n[[EQUATION:x - 2pi = t]]로 치환하면 [[EQUATION:xo2pi]]일 때 [[EQUATION:to0]]이므로,\n[[EQUATION:lim _{to0}frac{sin t}{ ( t + 2pi ) t} = lim _{to0}LEFT ( frac{sin t}{t}TIMESfrac{1}{t + 2pi }ight )]]가 된다.\n[[EQUATION:lim _{to0}frac{sin t}{t} = 1]]이므로, 극한값은 [[EQUATION:1TIMESfrac{1}{2pi } = frac{1}{2pi }]]이다.\n따라서 답은 [[EQUATION:frac{1}{2pi }]]이다."
+  },
+  {
+    "question_num": "2-변형3",
+    "question": "두 실수 [[EQUATION:a]], [[EQUATION:b]] ([[EQUATION:0 < a < b]])에 대하여, 좌표평면 위의 두 점 [[EQUATION:( a , a^{3} - 4a^{2} )]], [[EQUATION:( b , b^{3} - 4b^{2} )]]를 지나는 직선의 [[EQUATION:y]]절편과 두 점 [[EQUATION:( a , 2a^{3} - 8a^{2} )]], [[EQUATION:( b , 2b^{3} - 8b^{2} )]]를 지나는 직선의 [[EQUATION:y]]절편이 같다. 함수 [[EQUATION:g ( x ) = int _{a}^{x} ( t - b ) dt]]가 [[EQUATION:x = alpha]]에서 최솟값 [[EQUATION:- 2]]를 가질 때, [[EQUATION:a + b + alpha]]의 값을 구하시오.",
+    "answer_options": [
+      "[[EQUATION:5]]",
+      "[[EQUATION:6]]",
+      "[[EQUATION:7]]",
+      "[[EQUATION:8]]",
+      "[[EQUATION:9]]"
+    ],
+    "explanation": "두 번째 직선의 [[EQUATION:y]]좌표는 첫 번째 직선의 [[EQUATION:2]]배이므로 [[EQUATION:y]]절편도 [[EQUATION:2]]배이다.\n두 직선의 [[EQUATION:y]]절편이 같으려면 그 값이 [[EQUATION:0]]이어야 하므로, 첫 번째 직선은 원점을 지난다.\n원점과 두 점을 잇는 기울기가 같아야 하므로 [[EQUATION:frac{a^{3} - 4a^{2}}{a} = frac{b^{3} - 4b^{2}}{b}]]이다.\n양변을 정리하면 [[EQUATION:a^{2} - 4a = b^{2} - 4b]]이고, 이항하여 인수분해하면 [[EQUATION:( a - b ) ( a + b - 4 ) = 0]]이다.\n조건에서 [[EQUATION:0 < a < b]]이므로 [[EQUATION:a! = b]]이다. 따라서 [[EQUATION:a - b! = 0]]이 되어 [[EQUATION:a + b = 4]]를 얻는다.\n다음으로 함수 [[EQUATION:g ( x ) = int _{a}^{x} ( t - b ) dt]]의 도함수는 [[EQUATION:g' ( x ) = x - b]]이다.\n[[EQUATION:g' ( x )]]는 [[EQUATION:x = b]]에서 부호가 음에서 양으로 바뀌므로, [[EQUATION:g ( x )]]는 [[EQUATION:x = b]]에서 유일한 극소이자 최솟값을 가진다. 따라서 [[EQUATION:alpha = b]]이다.\n최솟값 [[EQUATION:g ( b ) = int _{a}^{b} ( t - b ) dt]]는 기하학적으로 기울기가 [[EQUATION:1]]이고 [[EQUATION:x]]절편이 [[EQUATION:b]]인 직선 [[EQUATION:y = t - b]]와 [[EQUATION:t]]축 사이의 [[EQUATION:a]]부터 [[EQUATION:b]]까지의 넓이에 음의 부호를 붙인 것과 같다.\n해당 영역은 밑변과 높이가 모두 [[EQUATION:b - a]]인 직각이등변삼각형이므로, 정적분 값은 [[EQUATION:- frac{1}{2} ( b - a ) ^{2}]]이 된다.\n이 최솟값이 [[EQUATION:- 2]]이므로 [[EQUATION:- frac{1}{2} ( b - a ) ^{2} = - 2]]에서 [[EQUATION:( b - a ) ^{2} = 4]]이다.\n[[EQUATION:a < b]]이므로 [[EQUATION:b - a = 2]]이다.\n앞서 구한 [[EQUATION:a + b = 4]]와 [[EQUATION:- a + b = 2]]를 연립하면 두 식을 더해 [[EQUATION:2b = 6]]에서 [[EQUATION:b = 3]]을 얻고, [[EQUATION:a = 1]]이 된다. (이는 [[EQUATION:0 < a < b]] 조건을 만족한다.)\n따라서 [[EQUATION:alpha = 3]]이고, 우리가 구하고자 하는 값은 [[EQUATION:a + b + alpha = 1 + 3 + 3 = 7]]이다.\n따라서 답은 [[EQUATION:7]]이다."
+  }
+]

@@ -67,3 +67,12 @@ hwpx-python-tool/
 backup_extract/
 *.zip
 gemini_api_key.txt
+
+# Python virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

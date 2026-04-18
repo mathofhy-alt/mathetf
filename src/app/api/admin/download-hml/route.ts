@@ -298,7 +298,10 @@ export async function POST(req: NextRequest) {
         });
 
         // 4. Load template (Prefer 2-column template)
-        let templatePath = path.join(process.cwd(), '재조립양식.hml');
+        let templatePath = path.join(process.cwd(), '수학ETF양식.hml');
+        if (!fs.existsSync(templatePath)) {
+            templatePath = path.join(process.cwd(), '재조립양식.hml');
+        }
         if (!fs.existsSync(templatePath)) {
             templatePath = path.join(process.cwd(), 'hml v2-test-tem.hml');
         }

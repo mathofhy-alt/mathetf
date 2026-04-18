@@ -1,0 +1,5 @@
+path: C:/Users/matho/OneDrive/바탕 화면/안티그래비티 - 복사본/math-pdf-to-hml-v10.1/dist\training_data\e1
+train: images
+val: images
+nc: 1
+names: ['problem']

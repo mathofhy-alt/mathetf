@@ -1,0 +1,39 @@
+[
+  {
+    "question": "1 두 다항식 $A = 2x^2 + xy - y^2$, $B = x^2 - xy + 2y^2$ 에 대하여 $X - A = B$를 만족시키는 다항식 $X$는?",
+    "answer_options": [
+      "① [[EQUATION:x^2 + y^2]]",
+      "② [[EQUATION:3x^2 - 3y^2]]",
+      "③ [[EQUATION:3x^2 + y^2]]",
+      "④ [[EQUATION:x^2 + 2xy - 3y^2]]",
+      "⑤ [[EQUATION:3x^2 + 2xy + y^2]]"
+    ],
+    "explanation": "$X - A = B$ 이므로 $X = A + B$ 입니다. 주어진 두 다항식을 더하면 다음과 같습니다.\n$X = (2x^2 + xy - y^2) + (x^2 - xy + 2y^2)$\n동류항끼리 묶어서 정리하면,\n$X = (2+1)x^2 + (1-1)xy + (-1+2)y^2 = 3x^2 + y^2$\n따라서 구하는 다항식 $X$는{
+    "question": "2 이차방정식 [[EQUATION:2x^2 + 6x + 3 = 0]]에 대한 설명으로 옳은 것은?",
+    "answer_options": [
+      "① 중근을 갖는다.",
+      "② 근이 존재하지 않는다.",
+      "③ 서로 다른 두 실근을 갖는다.",
+      "④ 서로 다른 두 허근을 갖는다.",
+      "⑤ 하나의 허근과 하나의 실근을 갖는다."
+    ],
+    "explanation": "이차방정식 [[EQUATION:ax^2 + bx + c = 0]]의 판별식 [[EQUATION:D = b^2 - 4ac]]를 이용합니다. 주어진 방정식 [[EQUATION:2x^2 + 6x + 3 = 0]]에서 [[EQUATION:a=2, b=6, c=3]]이므로, [[EQUATION:D/4 = (b/2)^2 - ac = 3^2 - 2 \\times 3 = 9 - 6 = 3 > 0]]입니다. 판별식이 0보다 크므로 서로 다른 두 실근을 갖습니다. 따라서 정답은 ③입니다."
+  },
+  {
+    "question": "3 직선 [[EQUATION:y = x + k]]가 이차함수 [[EQUATION:y = x^2 - 2x{1}{4}]]입니다."
+  },
+  {
+    "question": "5 이차함수 [[EQUATION:y = f(x)]]의 그래프가 [[EQUATION:x]]축과 서로 다른 두 점 [[EQUATION:(\\alpha, 0), (\\beta, 0)]]에서 만나고 [[EQUATION:\\alpha + \\beta = 10]]일 때, 방정식 [[EQUATION:f(2x - 5) = 0]]의 모든 실근의 합은{\\alpha + 5}{2}]] 또는 [[EQUATION:x = \\frac{\\beta + 5}{2}]]입니다. 따라서 모든 실근의 합은 [[EQUATION:\\frac{\\alpha + 5}{2} + \\frac{\\beta + 5}{2} = \\frac{\\alpha + \\beta + 10}{2}]]입니다. 문제에서 [[EQUATION:\\alpha + \\beta = 10]]이므로 합은 [[EQUATION:\\frac{10 + 10}{2} = 10]]입니다. 정답은 ①입니다.\"
+  },
+  {
+    \"question\": \"6 최고차항의 계수가 1인 삼차다항식 [[EQUATION:f(x)]]와 최고차항의 계수가 2인 이차다항식 [[EQUATION:g(x)]]가 다음 조건을 만족시킨다.\\n(가) 모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:f(-x) + f(x) = 0]]이다.\\n(나) 모든 실수 [[EQUATION:x]]에 대하여 [[EQUATION:g(-x) = g(x)]]이다.\\n(다) 다항식 [[EQUATION:f(x) + g(x)]]는 [[EQUATION:x - 1]]로 나누어떨어진다.\\n[[EQUATION:f(2) + 2g(2)]]의 값은?\",
+    \"answer_options\": [
+      \"① [[EQUATION:15]]\",
+      \"② [[EQUATION:16]]\",
+      \"③ [[EQUATION:17]]\",
+      \"④ [[EQUATION:18]]\",
+      \"⑤ [[EQUATION:19]]\"
+    ],
+    \"explanation\": \"조건 (가)에서 [[EQUATION:f(-x) = -f(x)]]이므로 [[EQUATION:f(x)]]는 기함수입니다. 최고차항의 계수가 1인 삼차다항식이므로 [[EQUATION:f(x) = x^3 + ax]]로 놓을 수 있습니다. 조건 (나)에서 [[EQUATION:g(-x) = g(x)]]이므로 [[EQUATION:g(x)]]는 우함수입니다. 최고차항의 계수가 2인 이차다항식이므로 [[EQUATION:g(x) = 2x^2 + b]]로 놓을 수 있습니다. 조건 (다)에서 [[EQUATION:f(x) + g(x)]]가 [[EQUATION:x - 1]]로 나누어떨어지므로 [[EQUATION:f(1) + g(1) = 0]]입니다. [[EQUATION:(1^3 + a \\cdot 1) + (2 \\cdot 1^2 + b) = 1 + a + 2 + b = a + b + 3 = 0]]에서 [[EQUATION:a + b = -3]]입니다. 구하고자 하는 값은 [[EQUATION:f(2) + 2g(2) = (2^3 + 2a) + 2(2 \\cdot 2^2 + b) = 8 + 2a + 16 + 2b = 24 + 2(a + b)]]입니다. [[EQUATION:a + b = -3]]을 대입하면 [[EQUATION:24 + 2(-3) = 24 - 6 = 18]]입니다. 정답은 ④입니다.\"
+  }
+]

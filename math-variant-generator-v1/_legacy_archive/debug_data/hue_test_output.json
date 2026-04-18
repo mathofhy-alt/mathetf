@@ -1,0 +1,14 @@
+{
+  "question_num": "1",
+  "pre_reading_aloud": "🚨[수식 소리내어 눈으로 쫓기]🚨 첫 번째 수식은 알파는 4 더하기 3아이, 베타는 2 더하기 아이. 두 번째 수식은 알파 베타바 더하기 알파바 베타 더하기 분모 알파 분의 분자 5베타 더하기 분모 알파 분의 분자 5베타바. 분모는 둘 다 알파이다. 세 번째 수식은 알파바, 베타바는 알파, 베타의 켤레복소수.",
+  "question": "두 복소수 [[EQUATION:alpha = 4 + 3i]]와 [[EQUATION:beta = 2 + i]]에 대하여\n[[EQUATION:alpha bar beta + bar alpha beta + {{5 beta} over {alpha}} + {{5 bar beta} over {alpha}}]]\n의 값은? (단, [[EQUATION:bar alpha]], [[EQUATION:bar beta]]는 [[EQUATION:alpha]], [[EQUATION:beta]]의 켤레복소수)",
+  "answer_options": [
+    "① [[EQUATION:21]]",
+    "② [[EQUATION:22]]",
+    "③ [[EQUATION:23]]",
+    "④ [[EQUATION:24]]",
+    "⑤ [[EQUATION:25]]"
+  ],
+  "thought_process": "1. 주어진 복소수 [[EQUATION:alpha]], [[EQUATION:beta]]의 켤레복소수를 구한다.\n2. 주어진 식을 계산하기 편하게 앞의 두 항과 뒤의 두 항으로 묶어 변형한다. 특히 뒤의 두 항은 통분한다.\n3. 변형된 식에 필요한 부분들([[EQUATION:alpha bar beta + bar alpha beta]], [[EQUATION:alpha bar alpha]], [[EQUATION:alpha beta + bar alpha bar beta]])을 각각 계산한다.\n4. 계산된 값들을 대입하여 최종 결과를 도출한다.",
+  "explanation": "주어진 복소수 [[EQUATION:alpha = 4 + 3i]], [[EQUATION:beta = 2 + i]]에 대하여 켤레복소수는 각각 [[EQUATION:bar alpha = 4 - 3i]], [[EQUATION:bar beta = 2 - i]]이다.\n\n**1단계: 주어진 식 변형하기**\n구하고자 하는 식을 두 부분으로 나누어 계산하기 쉽게 변형한다.\n[[EQUATION:alpha bar beta + bar alpha beta + {{5 beta} over {bar alpha}} + {{5 bar beta} over {alpha}} = (alpha bar beta + bar alpha beta) + LEFT ( {{5 beta} over {bar alpha}} + {{5 bar beta} over {alpha}} RIGHT )]]\n뒤의 두 항을 통분하면 다음과 같다.\n[[EQUATION:= (alpha bar beta + bar alpha beta) + {{5 alpha beta + 5 bar alpha bar beta} over {alpha bar alpha}}]]\n[[EQUATION:= (alpha bar beta + bar alpha beta) + {{5 (alpha beta + bar alpha bar beta)} over {alpha bar alpha}}]]\n\n**2단계: 각 부분의 값 계산하기**\n첫째, [[EQUATION:alpha bar beta + bar alpha beta]]의 값을 구한다.\n[[EQUATION:alpha bar beta = (4 + 3i)(2 - i) = 8 - 4i + 6i - 3i^2 = 8 + 2i + 3 = 11 + 2i]]\n[[EQUATION:bar alpha beta = (4 - 3i)(2 + i) = 8 + 4i - 6i - 3i^2 = 8 - 2i + 3 = 11 - 2i]]\n따라서 [[EQUATION:alpha bar beta + bar alpha beta = (11 + 2i) + (11 - 2i) = 22]]이다.\n\n둘째, 분모인 [[EQUATION:alpha bar alpha]]의 값을 구한다.\n[[EQUATION:alpha bar alpha = (4 + 3i)(4 - 3i) = 16 - 9i^2 = 16 + 9 = 25]]이다.\n\n셋째, 분자의 일부인 [[EQUATION:alpha beta + bar alpha bar beta]]의 값을 구한다.\n[[EQUATION:alpha beta = (4 + 3i)(2 + i) = 8 + 4i + 6i + 3i^2 = 8 + 10i - 3 = 5 + 10i]]\n[[EQUATION:bar alpha bar beta = (4 - 3i)(2 - i) = 8 - 4i - 6i + 3i^2 = 8 - 10i - 3 = 5 - 10i]]\n따라서 [[EQUATION:alpha beta + bar alpha bar beta = (5 + 10i) + (5 - 10i) = 10]]이다.\n\n**3단계: 최종 식의 값 계산하기**\n구한 값들을 변형한 식에 대입하여 최종 값을 계산한다.\n[[EQUATION:(alpha bar beta + bar alpha beta) + {{5 (alpha beta + bar alpha bar beta)} over {alpha bar alpha}} = 22 + {{5 TIMES 10} over {25}}]]\n[[EQUATION:= 22 + {{50} over {25}}]]\n[[EQUATION:= 22 + 2 = 24]]\n\n따라서 정답은 ④이다."
+}

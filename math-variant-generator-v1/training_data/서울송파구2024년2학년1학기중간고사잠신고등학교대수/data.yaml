@@ -1,0 +1,5 @@
+path: C:/Users/matho/OneDrive/바탕 화면/pdf모음\training_data\서울송파구2024년2학년1학기중간고사잠신고등학교대수
+train: images
+val: images
+nc: 1
+names: ['problem']

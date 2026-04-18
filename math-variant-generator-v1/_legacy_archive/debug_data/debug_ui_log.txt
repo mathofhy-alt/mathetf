@@ -1,0 +1,12 @@
+🚀 총 1개의 PDF 변환 프로세스 시작...
+
+[1/1] 파일 처리 중: 테스트.pdf
+1/3 Gemini API 분석 중 [gemini-3.1-pro-preview] ...
+🚀 [고속 엔진] 총 1장의 PDF 고해상도 병렬 분석을 시작합니다.
+  -> [1페이지] 이미지 렌더링 및 패딩 작업 중...
+  !! [1페이지] 치명적 오류: <HttpError 400 when requesting https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta&key=AIzaSyAfSoS5Lq_AHbZd0b7m_4NWgdhSmUNi83k returned "API key expired. Please renew the API key.". Details: "[{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]">
+
+✅ 분석 완료! 총 0개 문항 추출 및 정렬됨.
+❌ 테스트.pdf: 문제를 추출하지 못했습니다. 건너뜁니다.
+
+✨ 모든 변환 작업이 완료되었습니다! ✨

@@ -1,0 +1,270 @@
+[
+  {
+    "question_num": "1",
+    "question": "두 다항식 [[EQUATION:A = 2 x^{2} - 5 x - 4 , B = 3 x + 7]] 에 대하여 [[EQUATION:X - 2 A = B]] 를 만족시키는 다항식 [[EQUATION:X]] 는?",
+    "answer_options": [
+      "[[EQUATION:4 x^{2} - 7 x - 1]]",
+      "[[EQUATION:4 x^{2} - 7 x + 1]]",
+      "[[EQUATION:4 x^{2} + 7 x - 1]]",
+      "[[EQUATION:- 4 x^{2} - 7 x + 1]]",
+      "[[EQUATION:- 4 x^{2} + 7 x + 1]]"
+    ],
+    "thought_process": "이 문제는 다항식의 덧셈과 뺄셈, 그리고 실수배를 이용하여 미지수 다항식 X를 구하는 문제입니다. \n\n1. 문제에서 주어진 식 [[EQUATION:X - 2A = B]]를 [[EQUATION:X]]에 대해 정리합니다. 이항을 통해 [[EQUATION:X = B + 2A]]임을 알 수 있습니다.\n2. 주어진 다항식 [[EQUATION:A = 2x^2 - 5x - 4]]에 [[EQUATION:2]]를 곱하여 [[EQUATION:2A]]를 구합니다. 분배법칙을 적용하면 [[EQUATION:2A = 4x^2 - 10x - 8]]이 됩니다.\n3. 구한 [[EQUATION:2A]]와 문제에서 주어진 [[EQUATION:B = 3x + 7]]을 더합니다. 이때 차수가 같은 항(동류항)끼리 계산합니다.\n   - [[EQUATION:x^2]]항: [[EQUATION:4x^2]]\n   - [[EQUATION:x]]항: [[EQUATION:3x + ( - 10x) = - 7x]]\n   - 상수항: [[EQUATION:7 + ( - 8) = - 1]]\n4. 최종적으로 [[EQUATION:X = 4x^2 - 7x - 1]]이라는 결과를 얻습니다.\n5. 보기 중에서 해당 결과와 일치하는 번호를 선택합니다.",
+    "explanation": "주어진 다항식의 연산 규칙에 따라 다항식 [[EQUATION:X]]를 구하는 문제입니다.\n\n먼저, 주어진 식 [[EQUATION:X - 2A = B]]를 [[EQUATION:X]]에 관하여 정리하면 다음과 같습니다.\n[[EQUATION:X = B + 2A]]\n\n이제 문제에서 주어진 다항식 [[EQUATION:A = 2x^2 - 5x - 4]]와 [[EQUATION:B = 3x + 7]]을 위 식에 대입합니다.\n\n먼저 [[EQUATION:2A]]를 계산하면,\n[[EQUATION:2A = 2 LEFT( 2x^2 - 5x - 4 RIGHT)]]\n[[EQUATION:2A = 4x^2 - 10x - 8]]\n\n이제 [[EQUATION:X = B + 2A]]에 대입하여 계산하면,\n[[EQUATION:X = LEFT( 3x + 7 RIGHT) + LEFT( 4x^2 - 10x - 8 RIGHT)]]\n\n동류항끼리 모아서 정리하면,\n[[EQUATION:X = 4x^2 + LEFT( 3 - 10 RIGHT) x + LEFT( 7 - 8 RIGHT)]]\n[[EQUATION:X = 4x^2 - 7x - 1]]\n\n따라서 정답은 ①이다."
+  },
+  {
+    "question_num": "2",
+    "question": "[[EQUATION:x = sqrt{10} + sqrt{2}]] 이고 [[EQUATION:y = sqrt{10} - sqrt{2}]] 일 때, [[EQUATION:x^{3} - x^{2} y + x y^{2} - y^{3}]] 의 값은?",
+    "answer_options": [
+      "[[EQUATION:24 sqrt{2}]]",
+      "[[EQUATION:24 sqrt{5}]]",
+      "[[EQUATION:36 sqrt{2}]]",
+      "[[EQUATION:36 sqrt{5}]]",
+      "[[EQUATION:48 sqrt{2}]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 식을 인수분해하여 간단히 만든 후 대입하면 다음과 같습니다. 먼저 식을 인수분해하면 [[EQUATION:x^3 - x^2y + xy^2 - y^3 = x^2(x - y) + y^2(x - y) = (x^2 + y^2)(x - y)]] 입니다. 이때 [[EQUATION:x - y = (sqrt{10} + sqrt{2}) - (sqrt{10} - sqrt{2}) = 2sqrt{2}]] 이고, [[EQUATION:x^2 + y^2 = (sqrt{10} + sqrt{2})^2 + (sqrt{10} - sqrt{2})^2 = (12 + 4sqrt{5}) + (12 - 4sqrt{5}) = 24]] 이므로, 구하는 식의 값은 [[EQUATION:(x^2 + y^2)(x - y) = 24 TIMES 2sqrt{2} = 48sqrt{2}]] 입니다. 따라서 정답은 ⑤이다."
+  },
+  {
+    "question_num": "3",
+    "question": "복소수 [[EQUATION:z = {1 + i} over {sqrt {2}}]] 에 대하여 [[EQUATION:z + z^{2} + z^{3} + CDOTS + z^{2025}]] 의 값은?",
+    "answer_options": [
+      "[[EQUATION:- i]]",
+      "[[EQUATION:{ - 1 - i} over {sqrt {2}}]]",
+      "[[EQUATION:{ - 1 + i} over {sqrt {2}}]]",
+      "[[EQUATION:{1 - i} over {sqrt {2}}]]",
+      "[[EQUATION:{1 + i} over {sqrt {2}}]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 복소수 [[EQUATION:z = {1 + i} over {sqrt{2}}]]의 거듭제곱을 구하여 규칙성을 찾아봅니다. [[EQUATION:z^{2} = LEFT( {1 + i} over {sqrt{2}} RIGHT)^{2} = {1 + 2i + i^{2}} over {2} = {1 + 2i - 1} over {2} = {2i} over {2} = i]] 입니다. 이를 이용하여 더 높은 차수의 거듭제곱을 구하면 [[EQUATION:z^{4} = LEFT( z^{2} RIGHT)^{2} = i^{2} = - 1]], [[EQUATION:z^{8} = LEFT( z^{4} RIGHT)^{2} = LEFT( - 1 RIGHT)^{2} = 1]] 입니다. 따라서 복소수 [[EQUATION:z]]의 거듭제곱은 [[EQUATION:8]]을 주기로 반복됨을 알 수 있습니다. 이때 연속하는 [[EQUATION:8]]개 항의 합을 구해보면 [[EQUATION:z + z^{2} + z^{3} + z^{4} + z^{5} + z^{6} + z^{7} + z^{8} = LEFT( z + z^{2} + z^{3} + z^{4} RIGHT) + LEFT( z^{5} + z^{6} + z^{7} + z^{8} RIGHT)]] 이고, [[EQUATION:z^{n + 4} = z^{n} cdot z^{4} = - z^{n}]] 이므로 [[EQUATION:z^{n} + z^{n + 4} = 0]] 입니다. 즉, [[EQUATION:z + z^{2} + z^{3} + z^{4} + z^{5} + z^{6} + z^{7} + z^{8} = 0]] 입니다. 구하고자 하는 식은 [[EQUATION:z + z^{2} + z^{3} + \\dots + z^{2025}]] 이며 항의 개수는 [[EQUATION:2025]]개입니다. [[EQUATION:2025]]를 [[EQUATION:8]]로 나누면 [[EQUATION:2025 = 8 TIMES 253 + 1]] 이므로 [[EQUATION:z + z^{2} + \\dots + z^{2025} = LEFT( z + \\dots + z^{2024} RIGHT) + z^{2025} = 0 + z^{2025}]] 입니다. [[EQUATION:z^{2025} = LEFT( z^{8} RIGHT)^{253} cdot z = 1^{253} cdot z = z = {1 + i} over {sqrt{2} }]]입니다. 따라서 정답은 ⑤이다."
+  },
+  {
+    "question_num": "4",
+    "question": "[[EQUATION:a - b = 6 , a b = 5]] 일 때, 다항식 [[EQUATION:LEFT ( x^{2} - 2 x + a RIGHT ) LEFT ( x^{2} - 2 x - b RIGHT )]] 를 전개하면?",
+    "answer_options": [
+      "([[EQUATION:1]]) [[EQUATION:x^{4} - 2 x^{3} - 10 x^{2} + 4 x - 5]]",
+      "([[EQUATION:2]]) [[EQUATION:x^{4} - 2 x^{3} + 10 x^{2} - 6 x - 5]]",
+      "([[EQUATION:3]]) [[EQUATION:x^{4} + 4 x^{3} - 6 x^{2} + 10 x - 5]]",
+      "([[EQUATION:4]]) [[EQUATION:x^{4} - 4 x^{3} + 10 x^{2} - 12 x - 5]]",
+      "([[EQUATION:5]]) [[EQUATION:x^{4} - 6 x^{3} + 10 x^{2} - 14 x - 5]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 다항식 [[EQUATION:LEFT( x^{2} - 2 x + a RIGHT ) LEFT( x^{2} - 2 x - b RIGHT )]]에서 공통부분인 [[EQUATION:x^{2} - 2 x]]를 [[EQUATION:X]]로 치환하여 식을 정리해 보겠습니다. 먼저, 식을 [[EQUATION:X]]에 관한 식으로 나타내면 다음과 같습니다. [[EQUATION:LEFT( X + a RIGHT ) LEFT( X - b RIGHT ) = X^{2} + LEFT( a - b RIGHT ) X - ab]] 문제에서 주어진 조건인 [[EQUATION:a - b = 6]]과 [[EQUATION:ab = 5]]를 위 식에 대입하면 다음과 같은 [[EQUATION:X]]에 관한 다항식을 얻을 수 있습니다. [[EQUATION:X^{2} + 6 X - 5]] 이제 [[EQUATION:X]] 대신 원래의 식인 [[EQUATION:x^{2} - 2 x]]를 다시 대입하여 전개합니다. [[EQUATION:LEFT( x^{2} - 2 x RIGHT )^{2} + 6 LEFT( x^{2} - 2 x RIGHT ) - 5]] 각 부분을 전개하면 다음과 같습니다. [[EQUATION:LEFT( x^{2} - 2 x RIGHT )^{2} = LEFT( x^{2} RIGHT )^{2} - 2 · x^{2} · 2 x + LEFT( 2 x RIGHT )^{2 } = x^{4} - 4 x^{3} + 4 x^{2}]] 입니다. 또한 [[EQUATION:6(x^{2} - 2 x) = 6 x^{2} - 12 x]] 이므로, 전체 식은 [[EQUATION:(x^{4} - 4 x^{3} + 4 x^{2}) + (6 x^{2} - 12 x) - 5 = x^{4} - 4 x^{3} + 10 x^{2} - 12 x - 5]] 가 됩니다. 따라서 정답은 ④이다."
+  },
+  {
+    "question_num": "5",
+    "question": "[[EQUATION:x]] 에 대한 이차방정식 [[EQUATION:x^{2} - 6 a x + 9 a^{2} + 2 a - 13 = 0]] 이 실근을 갖도록 하는 정수 [[EQUATION:a]] 의 최댓값은?",
+    "answer_options": [
+      "[[EQUATION:3]]",
+      "[[EQUATION:4]]",
+      "[[EQUATION:5]]",
+      "[[EQUATION:6]]",
+      "[[EQUATION:7]]"
+    ],
+    "thought_process": "1. 문제 분석: 주어진 [[EQUATION:x]]에 대한 이차방정식이 실근을 갖기 위한 정수 [[EQUATION:a]]의 최댓값을 구하는 문제입니다.\n2. 개념 적용: 이차방정식 [[EQUATION:Ax^2 + Bx + C = 0]]이 실근을 가질 조건은 판별식 [[EQUATION:D = B^2 - 4AC ≥ 0]]입니다. 여기서는 [[EQUATION:B = - 6a]]로 짝수이므로 짝수 판별식 [[EQUATION:{D} over {4} = (B/2)^2 - AC ≥ 0]]을 사용합니다.\n3. 식 세우기:\n   - [[EQUATION:A = 1]]\n   - [[EQUATION:B/2 = - 3a]]\n   - [[EQUATION:C = 9a^2 + 2a - 13]]\n   - [[EQUATION:{D} over {4} = ( - 3a)^2 - (9a^2 + 2a - 13) ≥ 0]]\n4. 부등식 풀이:\n   - [[EQUATION:9a^2 - 9a^2 - 2a + 13 ≥ 0]]\n   - [[EQUATION:- 2a + 13 ≥ 0]]\n   - [[EQUATION:2a ≤ 13]]\n   - [[EQUATION:a ≤ 6.5]]\n5. 결론 도출: [[EQUATION:a]]는 정수이므로 [[EQUATION:a ≤ 6.5]]를 만족하는 가장 큰 정수는 [[EQUATION:6]]입니다.\n6. 정답 확인: 보기에서 6은 ④번에 해당합니다.",
+    "explanation": "이차방정식 [[EQUATION:x^{2} - 6 a x + 9 a^{2} + 2 a - 13 = 0]]이 실근을 갖기 위해서는 판별식 [[EQUATION:D]]가 [[EQUATION:D ≥ 0]]이어야 합니다.\n\n주어진 이차방정식에서 [[EQUATION:x]]의 계수가 짝수이므로, 짝수 판별식 [[EQUATION:{D} over {4}]]를 사용하면 다음과 같습니다.\n\n[[EQUATION:{D} over {4} = LEFT( - 3 a RIGHT)^{2} - 1 ∙ LEFT( 9 a^{2} + 2 a - 13 RIGHT) ≥ 0]]\n\n이를 전개하여 정리하면,\n[[EQUATION:9 a^{2} - 9 a^{2} - 2 a + 13 ≥ 0]]\n[[EQUATION:- 2 a + 13 ≥ 0]]\n[[EQUATION:2 a ≤ 13]]\n[[EQUATION:a ≤ {13} over {2} = 6.5]]\n\n따라서 정수 [[EQUATION:a]]의 값은 [[EQUATION:6, 5, 4, …]] 등이 될 수 있으며, 이 중 최댓값은 [[EQUATION:6]]입니다.\n\n따라서 정답은 ④이다."
+  },
+  {
+    "question_num": "6",
+    "question": "등식 [[EQUATION:LEFT ( 3 - 2 i RIGHT ) z + LEFT ( 1 - 4 i RIGHT ) bar z = 5 + 2 i]] 를 만족시키는 복소수 [[EQUATION:z]] 에 대하여 [[EQUATION:z + bar z]] 의 값은? (단, [[EQUATION:bar z]] 는 [[EQUATION:z]] 의 켤레복소수이다.)",
+    "answer_options": [
+      "[[EQUATION:- 9]]",
+      "[[EQUATION:- 8]]",
+      "[[EQUATION:- 7]]",
+      "[[EQUATION:- 6]]",
+      "[[EQUATION:- 5]]"
+    ],
+    "thought_process": "1. 복소수 [[EQUATION:z]]를 [[EQUATION:a + bi]] ([[EQUATION:a, b]]는 실수)로 설정하고, 켤레복소수 [[EQUATION:bar{z} = a - bi]]를 정의한다.\n2. 주어진 등식 [[EQUATION:(3 - 2i)z + (1 - 4i)bar{z} = 5 + 2i]]에 [[EQUATION:z]]와 [[EQUATION:bar{z}]]를 대입한다.\n3. 좌변을 전개하여 실수부분과 허수부분으로 묶어 정리한다.\n   - [[EQUATION:(3 - 2i)(a + bi) = 3a + 3bi - 2ai + 2b = (3a + 2b) + (3b - 2a)i]]\n   - [[EQUATION:(1 - 4i)(a - bi) = a - bi - 4ai - 4b = (a - 4b) + ( - b - 4a)i]]\n   - 합: [[EQUATION:(4a - 2b) + ( - 6a + 2b)i]]\n4. 복소수의 상등 조건을 이용하여 연립방정식을 세운다.\n   - [[EQUATION:4a - 2b = 5]]\n   - [[EQUATION:- 6a + 2b = 2]]\n5. 연립방정식을 풀어 [[EQUATION:a]]의 값을 구한다. (두 식을 더하면 [[EQUATION:- 2a = 7]]이므로 [[EQUATION:a = - 7/2]])\n6. 구하고자 하는 값 [[EQUATION:z + bar{z} = 2a]]를 계산한다.\n   - [[EQUATION:2a = 2 TIMES ( - 7/2) = - 7]]\n7. 보기에서 해당 값을 찾아 정답을 결정한다.",
+    "explanation": "복소수 [[EQUATION:z]]를 [[EQUATION:z = a + bi]] ([[EQUATION:a]], [[EQUATION:b]]는 실수)라고 하면, 그 켤레복소수는 [[EQUATION:bar{z} = a - bi]]입니다.\n\n주어진 등식 [[EQUATION:LEFT( 3 - 2 i RIGHT ) z + LEFT ( 1 - 4 i RIGHT ) bar{z} = 5 + 2 i]]에 이를 대입하면 다음과 같습니다.\n[[EQUATION:LEFT( 3 - 2 i RIGHT ) LEFT( a + bi RIGHT ) + LEFT( 1 - 4 i RIGHT ) LEFT( a - bi RIGHT ) = 5 + 2 i]]\n\n좌변을 전개하여 실수부분과 허수부분으로 정리해 보겠습니다.\n[[EQUATION:LEFT( 3a + 3bi - 2ai - 2bi^2 RIGHT ) + LEFT( a - bi - 4ai + 4bi^2 RIGHT ) = 5 + 2 i]]\n[[EQUATION:i^2 = - 1]]이므로,\n[[EQUATION:LEFT( 3a + 2b RIGHT ) + LEFT( 3b - 2a RIGHT ) i + LEFT( a - 4b RIGHT ) + LEFT( - b - 4a RIGHT ) i = 5 + 2 i]]\n[[EQUATION:LEFT( 3a + 2b + a - 4b RIGHT ) + LEFT( 3b - 2a - b - 4a RIGHT ) i = 5 + 2 i]]\n[[EQUATION:LEFT( 4a - 2b RIGHT ) + LEFT( - 6a + 2b RIGHT ) i = 5 + 2 i]]\n\n복소수가 서로 같을 조건에 의해 실수부분과 허수부분을 각각 비교하면 다음과 같은 연립방정식을 얻습니다.\n1) [[EQUATION:4a - 2b = 5]]\n2) [[EQUATION:- 6a + 2b = 2]]\n\n두 식을 더하면,\n[[EQUATION:LEFT( 4a - 2b RIGHT ) + LEFT( - 6a + 2b RIGHT ) = 5 + 2]]\n[[EQUATION:- 2a = 7]]\n[[EQUATION:a = - {7} over {2}]]\n\n문제에서 구하고자 하는 값은 [[EQUATION:z + bar{z}]]입니다.\n[[EQUATION:z + bar{z} = LEFT( a + bi RIGHT ) + LEFT( a - bi RIGHT ) = 2a]]\n이므로, 구한 [[EQUATION:a]]의 값을 대입하면\n[[EQUATION:z + bar{z} = 2 TIMES LEFT( - {7} over {2} RIGHT ) = - 7]]\n\n따라서 정답은 ③이다."
+  },
+  {
+    "question_num": "7",
+    "question": "이차함수 [[EQUATION:y = x^{2} + a x - 1]] 의 그래프와 직선 [[EQUATION:y = x - 5]] 가 한 점에서 만나도록 하는 실수 [[EQUATION:a]] 의 값의 합은?",
+    "answer_options": [
+      "[[EQUATION:1]]",
+      "[[EQUATION:2]]",
+      "[[EQUATION:3]]",
+      "[[EQUATION:4]]",
+      "[[EQUATION:5]]"
+    ],
+    "thought_process": "1. 문제 분석: 이차함수와 직선이 한 점에서 만날 조건을 구하고, 이를 만족하는 실수 [[EQUATION:a]]의 값들의 합을 구하는 문제입니다.\n2. 연립방정식 세우기: 두 그래프가 만나는 점의 [[EQUATION:x]]좌표를 구하기 위해 [[EQUATION:x^{2} + ax - 1 = x - 5]] 식을 세웁니다.\n3. 이차방정식 정리: 식을 한쪽으로 몰아 [[EQUATION:x^{2} + (a - 1)x + 4 = 0]] 형태의 이차방정식을 만듭니다.\n4. 판별식 적용: '한 점에서 만난다'는 조건은 교점이 하나라는 뜻이므로, 이차방정식의 판별식 [[EQUATION:D = 0]]이어야 합니다.\n5. [[EQUATION:a]]에 관한 식 도출: [[EQUATION:(a - 1)^{2} - 4(1)(4) = 0]]을 통해 [[EQUATION:a^{2} - 2a - 15 = 0]]이라는 [[EQUATION:a]]에 대한 이차방정식을 얻습니다.\n6. 합 구하기: 근과 계수의 관계를 이용하여 [[EQUATION:a]]의 값의 합이 [[EQUATION:2]]임을 구합니다. (또는 직접 [[EQUATION:a = 5, - 3]]을 구해서 더합니다.)\n7. 보기 확인: 계산 결과인 [[EQUATION:2]]가 보기 ②에 있음을 확인합니다.",
+    "explanation": "이차함수 [[EQUATION:y = x^{2} + ax - 1]]의 그래프와 직선 [[EQUATION:y = x - 5]]가 한 점에서 만난다는 것은 두 식을 연립하여 만든 이차방정식이 중근을 갖는다는 것을 의미합니다.\n\n먼저 두 식을 연립하면 다음과 같습니다.\n[[EQUATION:x^{2} + ax - 1 = x - 5]]\n\n이 식을 좌변으로 정리하여 이차방정식의 표준형으로 나타내면\n[[EQUATION:x^{2} + LEFT( a - 1 RIGHT) x + 4 = 0]]\n이 됩니다.\n\n이 이차방정식이 한 점에서 만나기 위해서는 판별식 [[EQUATION:D]]가 [[EQUATION:0]]이어야 합니다.\n[[EQUATION:D = LEFT( a - 1 RIGHT)^{2} - 4 TIMES 1 TIMES 4 = 0]]\n[[EQUATION:LEFT( a - 1 RIGHT)^{2} - 16 = 0]]\n\n위 식을 전개하여 정리하면\n[[EQUATION:a^{2} - 2a + 1 - 16 = 0]]\n[[EQUATION:a^{2} - 2a - 15 = 0]]\n이 됩니다.\n\n이때 실수 [[EQUATION:a]]의 값의 합은 근과 계수의 관계에 의해\n[[EQUATION:- { - 2 } over { 1 } = 2]]\n가 됩니다.\n\n참고로, [[EQUATION:a^{2} - 2a - 15 = 0]]을 인수분해하면 [[EQUATION:LEFT( a - 5 RIGHT) LEFT( a + 3 RIGHT) = 0]]이므로 [[EQUATION:a = 5]] 또는 [[EQUATION:a = - 3]]이며, 이들의 합은 [[EQUATION:5 + LEFT( - 3 RIGHT) = 2]]임을 확인할 수 있습니다.\n\n따라서 정답은 ②이다."
+  },
+  {
+    "question_num": "8",
+    "question": "[[EQUATION:8]] 이차방정식 [[EQUATION:x^{2} - 2 a x - 11 = 0]] 의 두 근이 [[EQUATION:alpha , beta]] 이고 이차방 정식 [[EQUATION:x^{2} + 4 b x + 17 = 0]] 의 두 근은 [[EQUATION:alpha + 2 , beta + 2]] 일 때, [[EQUATION:a - b]] 의 값은? (단, [[EQUATION:a , b]] 는 실수)",
+    "answer_options": [
+      "[[EQUATION:2]]",
+      "[[EQUATION:4]]",
+      "[[EQUATION:6]]",
+      "[[EQUATION:8]]",
+      "[[EQUATION:10]]"
+    ],
+    "thought_process": "",
+    "explanation": "이차방정식의 근과 계수의 관계를 이용하여 상수 [[EQUATION:a]], [[EQUATION:b]]의 값을 구하는 문제입니다. 먼저, 이차방정식 [[EQUATION:x^{2} - 2ax - 11 = 0]]의 두 근이 [[EQUATION:alpha]], [[EQUATION:beta]]이므로 근과 계수의 관계에 의하여 [[EQUATION:alpha + beta = 2a]] ··· ([[EQUATION:1]]), [[EQUATION:alphabeta = - 11]] ··· ([[EQUATION:2]])이 성립합니다. 다음으로, 이차방정식 [[EQUATION:x^{2 + 4bx + 17 = 0]]의 두 근은 [[EQUATION:alpha + 2, beta + 2]]이므로 근과 계수의 관계에 의해 [[EQUATION:(alpha + 2) + (beta + 2) = - 4b]] ··· (3), [[EQUATION:(alpha + 2)(beta + 2) = 17]] ··· (4)가 성립합니다. (4)를 전개하면 [[EQUATION:alphabeta + 2(alpha + beta) + 4 = 17]]이고, 여기에 (1), (2)를 대입하면 [[EQUATION:- 11 + 2(2a) + 4 = 17]], [[EQUATION:4a - 7 = 17]], [[EQUATION:4a = 24]]에서 [[EQUATION:a = 6]]입니다. (3)에서 [[EQUATION:alpha + beta + 4 = - 4b]]이므로 (1)과 [[EQUATION:a = 6]]을 대입하면 [[EQUATION:2(6) + 4 = - 4b]], [[EQUATION:16 = - 4b]]에서 [[EQUATION:b = - 4]]입니다. 따라서 [[EQUATION:a - b = 6 - ( - 4) = 10]]입니다. 따라서 정답은 ⑤이다."
+  },
+  {
+    "question_num": "9",
+    "question": "[[EQUATION:9]] 다항식 [[EQUATION:Q(x)]] 에 대하여 등식 [[EQUATION:x^3 - 5 x^2 + a x + 2 = (x - 1) Q(x) - 4]] 가 [[EQUATION:x]] 에 대한 항등식일 때, [[EQUATION:Q(1)]] 의 값은? (단, [[EQUATION:a]] 는 상수)",
+    "answer_options": [
+      "[[EQUATION:- 9]]",
+      "[[EQUATION:- 8]]",
+      "[[EQUATION:- 7]]",
+      "[[EQUATION:- 6]]",
+      "[[EQUATION:- 5]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 등식 [[EQUATION:x^3 - 5x^2 + ax + 2 = LEFT( x - 1 RIGHT) Q(x) - 4]]가 [[EQUATION:x]]에 대한 항등식이므로, 양변에 [[EQUATION:x = 1]]을 대입하여 상수 [[EQUATION:a]]의 값을 구합니다. [[EQUATION:1^3 - 5 cdot 1^2 + a cdot 1 + 2 = LEFT( 1 - 1 RIGHT) Q(1) - 4]]에서 [[EQUATION:- 2 + a = - 4]]이므로 [[EQUATION:a = - 2]]입니다. 구한 [[EQUATION:a = - 2]]를 원래의 식에 대입하면 [[EQUATION:x^3 - 5x^2 - 2x + 2 = LEFT( x - 1 RIGHT) Q(x) - 4]]가 되고, 우변의 [[EQUATION:- 4]]를 좌변으로 이항하여 정리하면 [[EQUATION:LEFT( x - 1 RIGHT) Q(x) = x^3 - 5x^2 - 2x + 6]]입니다. 다항식 [[EQUATION:x^3 - 5x^2 - 2x + 6]]을 [[EQUATION:x - 1]]로 나누면 [[EQUATION:Q(x) = x^2 - 4x - 6]]을 얻습니다. 따라서 [[EQUATION:Q(1) = 1^2 - 4 cdot 1 - 6 = - 9]]입니다. 따라서 정답은 ①이다."
+  },
+  {
+    "question_num": "10",
+    "question": "이차함수 [[EQUATION:y = x^{2} - 4 x + 2]] [[EQUATION:LEFT ( 1 le x le 5 RIGHT )]] 의 최댓값과 최솟값 의 곱은?",
+    "answer_options": [
+      "[[EQUATION:- 10]]",
+      "[[EQUATION:- 12]]",
+      "[[EQUATION:- 14]]",
+      "[[EQUATION:- 16]]",
+      "[[EQUATION:- 18]]"
+    ],
+    "thought_process": "1. Identify the given quadratic function: [[EQUATION:y = x^2 - 4x + 2]].\n2. Identify the given domain: [[EQUATION:1 le x le 5]].\n3. Convert the quadratic function to vertex form to find the vertex and axis of symmetry: [[EQUATION:y = (x - 2)^2 - 2]]. The vertex is [[EQUATION:(2, - 2)]] and the axis of symmetry is [[EQUATION:x = 2]].\n4. Determine if the axis of symmetry [[EQUATION:x = 2]] lies within the domain [[EQUATION:[1, 5]]]. Since [[EQUATION:1 le 2 le 5]], the vertex is included in the interval.\n5. Since the parabola opens upwards (coefficient of [[EQUATION:x^2]] is positive), the minimum value occurs at the vertex: [[EQUATION:m = - 2]].\n6. The maximum value occurs at the endpoint furthest from the axis of symmetry. The distances from [[EQUATION:x = 2]] to the endpoints are [[EQUATION:|1 - 2| = 1]] and [[EQUATION:|5 - 2| = 3]]. Thus, the maximum occurs at [[EQUATION:x = 5]].\n7. Calculate the value at [[EQUATION:x = 5]]: [[EQUATION:y = 5^2 - 4(5) + 2 = 25 - 20 + 2 = 7]]. So, [[EQUATION:M = 7]].\n8. Calculate the product of the maximum and minimum values: [[EQUATION:M TIMES m = 7 TIMES ( - 2) = - 14]].\n9. Match the result with the given options: Option ③ is -14.",
+    "explanation": "이차함수의 최댓값과 최솟값을 구하기 위해 주어진 식을 표준형으로 변형하여 그래프의 개형을 파악합니다.\n\n먼저, 이차함수 [[EQUATION:y = x^{2} - 4x + 2]]를 완전제곱식 꼴로 나타내면 다음과 같습니다.\n[[EQUATION:y = LEFT( x^{2} - 4x + 4 RIGHT) - 4 + 2]]\n[[EQUATION:y = LEFT( x - 2 RIGHT)^{2} - 2]]\n\n이 이차함수의 그래프는 아래로 볼록한 포물선이며, 꼭짓점의 좌표는 [[EQUATION:LEFT( 2, - 2 RIGHT)]]이고 축의 방정식은 [[EQUATION:x = 2]]입니다.\n\n주어진 [[EQUATION:x]]의 범위가 [[EQUATION:1 le x le 5]]이므로, 축 [[EQUATION:x = 2]]는 이 범위 안에 포함됩니다. 따라서 최솟값은 꼭짓점에서 갖게 됩니다.\n\n1. 최솟값([[EQUATION:m]]) 구하기:\n[[EQUATION:x = 2]]일 때, [[EQUATION:y = - 2]]이므로 최솟값 [[EQUATION:m = - 2]]입니다.\n\n2. 최댓값([[EQUATION:M]]) 구하기:\n이차함수의 그래프는 축 [[EQUATION:x = 2]]를 중심으로 대칭이므로, 축에서 멀리 떨어진 [[EQUATION:x]] 값에서 최댓값을 갖습니다.\n범위의 양 끝값인 [[EQUATION:x = 1]]과 [[EQUATION:x = 5]] 중에서 축 [[EQUATION:x = 2]]로부터 더 멀리 떨어진 값은 [[EQUATION:x = 5]]입니다.\n[[EQUATION:x = 5]]를 식에 대입하면,\n[[EQUATION:y = LEFT( 5 - 2 RIGHT)^{2} - 2 = 3^{2} - 2 = 9 - 2 = 7]]\n따라서 최댓값 [[EQUATION:M = 7]]입니다.\n\n3. 최댓값과 최솟값의 곱 구하기:\n[[EQUATION:M TIMES m = 7 TIMES LEFT( - 2 RIGHT) = - 14]]\n\n따라서 정답은 ③이다."
+  },
+  {
+    "question_num": "11",
+    "question": "다항식 [[EQUATION:x^{4} + 3 x^{3} - 18 x^{2} - 46 x + 24]] 가 [[EQUATION:(x + a)(x + b)LEFT ( x^{2} + c x - 2 RIGHT )]] 로 인수분해 될 때, [[EQUATION:a - b - c]] 의 값은? (단, [[EQUATION:a, b, c]] 는 상수, [[EQUATION:b > 0]] )",
+    "answer_options": [
+      "[[EQUATION:- 11]]",
+      "[[EQUATION:- 4]]",
+      "[[EQUATION:3]]",
+      "[[EQUATION:10]]",
+      "[[EQUATION:17]]"
+    ],
+    "thought_process": "To factorize the polynomial [[EQUATION:P(x) = x^4 + 3x^3 - 18x^2 - 46x + 24]] into the form [[EQUATION:(x + a)(x + b)(x^2 + cx - 2)]], I first use the factor theorem to find integer roots. Testing values, I find [[EQUATION:P( - 3) = 0]] and [[EQUATION:P(4) = 0]], indicating [[EQUATION:(x + 3)]] and [[EQUATION:(x - 4)]] are factors. Using synthetic division twice, I divide [[EQUATION:P(x)]] by [[EQUATION:(x + 3)]] and then the resulting cubic by [[EQUATION:(x - 4)]], which yields the quadratic factor [[EQUATION:x^2 + 4x - 2]]. Comparing the result [[EQUATION:(x + 3)(x - 4)(x^2 + 4x - 2)]] with the given form, I identify [[EQUATION:c = 4]]. For the linear factors, since [[EQUATION:b > 0]], I assign [[EQUATION:b = 3]] and [[EQUATION:a = - 4]]. Finally, I calculate [[EQUATION:a - b - c = - 4 - 3 - 4 = - 11]].",
+    "explanation": "주어진 사차다항식을 [[EQUATION:P(x) = x^{4} + 3 x^{3} - 18 x^{2} - 46 x + 24]]라 하고, 인수정리를 이용하여 인수를 찾습니다.\n\n1. **인수정리를 이용한 인수 찾기**\n[[EQUATION:x = - 3]]을 대입하면,\n[[EQUATION:P( - 3) = ( - 3)^{4} + 3( - 3)^{3} - 18( - 3)^{2} - 46( - 3) + 24]]\n[[EQUATION:P( - 3) = 81 - 81 - 162 + 138 + 24 = 0]]\n따라서 [[EQUATION:(x + 3)]]은 [[EQUATION:P(x)]]의 인수입니다.\n\n[[EQUATION:x = 4]]를 대입하면,\n[[EQUATION:P(4) = 4^{4} + 3(4)^{3} - 18(4)^{2} - 46(4) + 24]]\n[[EQUATION:P(4) = 256 + 192 - 288 - 184 + 24 = 0]]\n따라서 [[EQUATION:(x - 4)]]도 [[EQUATION:P(x)]]의 인수입니다.\n\n2. **조립제법을 이용한 인수분해**\n먼저 [[EQUATION:- 3]]으로 조립제법을 시행합니다.\n$[[EQUATION:\\begin{array}{c|rrrrr} - 3 & 1 & 3 & - 18 & - 46 & 24 \\\\ \\hline & & - 3 & 0 & 54 & - 24 \\\\ \\hline & 1 & 0 & - 18 & 8 & 0 \\end{array}]][[EQUATION:\n몫인 ]]x^{3} - 18 x + 8[[EQUATION:을 다시]]4[[EQUATION:로 조립제법을 시행합니다.\n]][[EQUATION:\\begin{array}{c|rrrr} 4 & 1 & 0 & - 18 & 8 \\\\ \\hline & & 4 & 16 & - 8 \\\\ \\hline & 1 & 4 & - 2 & 0 \\end{array}]][[EQUATION:\n따라서 ]]P(x) = (x + 3)(x - 4)LEFT( x^{2} + 4 x - 2 RIGHT)[[EQUATION:입니다.\n\n3. **상수 ]]a, b, c[[EQUATION:의 값 구하기**\n문제에서 주어진 인수분해 형태인 ]](x + a)(x + b)LEFT( x^{2} + c x - 2 RIGHT)[[EQUATION:와 비교하면,\n이차식 부분에서 ]]x^{2} + c x - 2 = x^{2} + 4 x - 2[[EQUATION:이므로]]c = 4[[EQUATION:입니다.\n일차식 부분에서 ]](x + a)(x + b) = (x + 3)(x - 4)[[EQUATION:이므로]]a, b[[EQUATION:는]]3[[EQUATION:과]]-4[[EQUATION: 중 하나씩 나누어 갖습니다.\n이때 조건에서 ]]b > 0[[EQUATION:이라 하였으므로]]b = 3[[EQUATION:이고,]]a = -4[[EQUATION:가 됩니다.\n\n4. **최종 값 계산**\n]]a = -4, b = 3, c = 4[[EQUATION:이므로\n]]a - b - c = -4 - 3 - 4 = -11$입니다.\n\n따라서 정답은 ①이다."
+  },
+  {
+    "question_num": "12",
+    "question": "[[EQUATION:12]] 두 복소수 [[EQUATION:alpha = 4 + 3 i]] 와 [[EQUATION:beta = 2 + i]] 에 대하여 [[EQUATION:alpha bar beta + bar alpha beta + {5 beta} over {bar alpha} + {5 bar beta} over {alpha}]] 의 값은? (단, [[EQUATION:bar alpha , bar beta]] 는 [[EQUATION:alpha , beta]] 의 켤레복소수)",
+    "answer_options": [
+      "[[EQUATION:21]]",
+      "[[EQUATION:22]]",
+      "[[EQUATION:23]]",
+      "[[EQUATION:24]]",
+      "[[EQUATION:25]]"
+    ],
+    "thought_process": "1. Identify the given complex numbers: [[EQUATION:alpha = 4 + 3i]] and [[EQUATION:beta = 2 + i]]. 2. Determine their conjugates: [[EQUATION:bar{alpha} = 4 - 3i]] and [[EQUATION:bar{beta} = 2 - i]]. 3. Split the expression into two parts: [[EQUATION:P_1 = alpha bar{beta} + bar{alpha} beta]] and [[EQUATION:P_2 = {5 beta} over {bar{alpha}} + {5 bar{beta}} over {alpha}]]. 4. Calculate [[EQUATION:P_1]]: [[EQUATION:alpha bar{beta} = (4 + 3i)(2 - i) = 11 + 2i]]. Since [[EQUATION:bar{alpha} beta]] is the conjugate of [[EQUATION:alpha bar{beta}]], [[EQUATION:bar{alpha} beta = 11 - 2i]]. Thus [[EQUATION:P_1 = 11 + 2i + 11 - 2i = 22]]. 5. Simplify [[EQUATION:P_2]] by finding a common denominator: [[EQUATION:P_2 = {5(alpha beta + bar{alpha} bar{beta})} over {alpha bar{alpha}}]]. 6. Calculate the components for [[EQUATION:P_2]]: [[EQUATION:alpha bar{alpha} = 4^2 + 3^2 = 25]]. [[EQUATION:alpha beta = (4 + 3i)(2 + i) = 5 + 10i]]. [[EQUATION:bar{alpha} bar{beta} = overline{alpha beta} = 5 - 10i]]. 7. Calculate [[EQUATION:P_2]]: [[EQUATION:P_2 = {5(5 + 10i + 5 - 10i)} over {25} = {5 TIMES 10} over {25} = 2]]. 8. Sum the results: [[EQUATION:P_1 + P_2 = 22 + 2 = 24]]. 9. Match the result with the given options: Option ④ is 24.",
+    "explanation": "주어진 복소수 [[EQUATION:alpha = 4 + 3i]], [[EQUATION:beta = 2 + i]]에 대하여 각 항을 나누어 계산해 보겠습니다. 먼저, [[EQUATION:alpha]]와 [[EQUATION:beta]]의 켤레복소수는 각각 [[EQUATION:bar{alpha} = 4 - 3i]], [[EQUATION:bar{beta} = 2 - i]]입니다. 식의 앞부분인 [[EQUATION:alpha bar{beta} + bar{alpha} beta]]를 계산하면 다음과 같습니다. [[EQUATION:alpha bar{beta} = LEFT( 4 + 3i RIGHT) LEFT( 2 - i RIGHT) = 8 - 4i + 6i - 3i^2 = 8 + 2i + 3 = 11 + 2i]]이고, [[EQUATION:bar{alpha} beta]]는 [[EQUATION:alpha bar{beta}]]의 켤레복소수이므로 [[EQUATION:bar{alpha} beta = 11 - 2i]]입니다. 따라서 [[EQUATION:alpha bar{beta} + bar{alpha} beta = LEFT( 11 + 2i RIGHT) + LEFT( 11 - 2i RIGHT) = 22]]입니다. 다음으로, 식의 뒷부분인 [[EQUATION:{5 beta} over {bar{alpha}} + {5 bar{beta}} over {alpha}]]를 통분하여 정리하면 다음과 같습니다. [[EQUATION:{5 beta} over {bar{alpha}} + {5 bar{beta}} over {alpha} = {5 beta alpha + 5 bar{beta} bar{alpha}} over {bar{alpha} alpha} = {5 LEFT( alpha beta + bar{alpha} bar{beta} RIGHT)} over {alpha bar{alpha}}]] 여기서 [[EQUATION:alpha bar{alpha} = LEFT( 4 + 3i RIGHT) LEFT( 4 - 3i RIGHT) = 4^2 + 3^2 = 16 + 9 = 25]]이고, [[EQUATION:alpha beta = LEFT( 4 + 3i RIGHT) LEFT( 2 + i RIGHT) = 8 + 4i + 6i + 3i^2 = 8 + 10i - 3 = 5 + 10i]]이므로 [[EQUATION:alpha beta + bar{alpha} bar{beta} = LEFT( 5 + 10i RIGHT) + LEFT( 5 - 10i RIGHT) = 10]]입니다. 이를 대입하면 뒷부분의 값은 [[EQUATION:{5 TIMES 10} over {25} = {50} over {25} = 2]]가 됩니다. 최종적으로 구하는 값은 [[EQUATION:22 + 2 = 24]]입니다. 따라서 정답은 ④이다."
+  },
+  {
+    "question_num": "13",
+    "question": "[[EQUATION:13]] 경기여고 미술관에서 [[EQUATION:1]] 인당 하루 관람료가 [[EQUATION:4500]] 원일 때, 하루 관광객이 [[EQUATION:100]] 명이다. 이 관람료를 [[EQUATION:300]] 원씩 내릴 때마 다 하루 관람객이 [[EQUATION:20]] 명씩 증가한다고 하면, 이 미술관의 하 루 관람료의 총합이 최대일 때 [[EQUATION:1]] 인 당 하루 관람료는?",
+    "answer_options": [
+      "[[EQUATION:2700]] 원",
+      "[[EQUATION:3000]] 원",
+      "[[EQUATION:3300]] 원",
+      "[[EQUATION:3600]] 원",
+      "[[EQUATION:3900]] 원"
+    ],
+    "thought_process": "",
+    "explanation": "관람료를 [[EQUATION:300]]원씩 [[EQUATION:x]]번 내렸다고 하면, [[EQUATION:1]]인당 하루 관람료는 [[EQUATION:(4500 - 300x)]]원이고, 이때의 하루 관람객 수는 [[EQUATION:(100 + 20x)]]명입니다. 이때 하루 관람료의 총합을 [[EQUATION:y]]원이라 하면 [[EQUATION:y = (4500 - 300x)(100 + 20x)]]라는 이차함수 식을 세울 수 있습니다. 이 식을 전개하여 정리하면 [[EQUATION:y = - 6000x^2 + 90000x - 30000x + 450000]], 즉 [[EQUATION:y = - 6000x^2 + 60000x + 450000]]이 됩니다. 이차함수의 최댓값을 구하기 위해 완전제곱식 꼴로 변형하면, $y = -6000 LEFT( x^2 - 10x RIGHT) + 450000 = -6000 LEFT( x^2 - 10x + 25 - 25 RIGHT) + 450000 = -6000 LEFT( x - 5 RIGHT)^2 + 150000 + 450000 = -6000 LEFT( x - 5 RIGHT)^2 + 600000 이므로 x = 5일 때 관람료의 총합이 최대가 된다. 이때 1인당 하루 관람료는 4500 - 300 * 5 = 3000(원)이다. 따라서 정답은 ②이다."
+  },
+  {
+    "question_num": "14",
+    "question": "[[EQUATION:14]] (가)~(다)에 들어갈 내용으로 모두 옳은 것은? [[EQUATION:{{25}^{4} - 3 TIMES {25}^{3} + 25 TIMES 27 - 81} over {22}]] 의 값은 (가)이고, (가)는 (나), 또한 (가)의 소인수들을 모두 더하면 (다)이다.",
+    "answer_options": [
+      "(1) (가) [[EQUATION:{25}^{3} + {3}^{3}]] (나) 소수이다. (다) [[EQUATION:65]]",
+      "(2) (가) [[EQUATION:{27}^{3} + {3}^{3}]] (나) 소수이다. (다) [[EQUATION:67]]",
+      "(3) (가) [[EQUATION:{25}^{3} + {3}^{3}]] (나) 소수가 아니다. (다) [[EQUATION:65]]",
+      "(4) (가) [[EQUATION:{25}^{3} + {3}^{3}]] (나) 소수가 아니다. (다) [[EQUATION:67]]",
+      "(5) (가) [[EQUATION:{27}^{3} + {3}^{3}]] (나) 소수가 아니다. (다) [[EQUATION:69]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 식을 간단히 하기 위해 분자의 식을 인수분해해 보겠습니다.\n\n먼저 분자 [[EQUATION:[[EQUATION:{25}^{4} - 3 TIMES {25}^{3} + 25 TIMES 27 - 81]]]]에서 [[EQUATION:[[EQUATION:25 = x]]]]라 하면 분자는 다음과 같이 표현됩니다.\n[[EQUATION:[[EQUATION:x^{4} - 3x^{3} + 27x - 81]]]]\n\n이 식을 공통인수로 묶어 인수분해하면\n[[EQUATION:[[EQUATION:x^{3} LEFT( x - 3 RIGHT) + 27 LEFT( x - 3 RIGHT) = LEFT( x^{3} + 27 RIGHT) LEFT( x - 3 RIGHT)]]]]\n[[EQUATION:[[EQUATION:27 = 3^{3}]]]]이므로\n[[EQUATION:[[EQUATION:LEFT( x^{3} + 3^{3} RIGHT) LEFT( x - 3 RIGHT)]]]]가 됩니다.\n\n이제 [[EQUATION:[[EQUATION:x = 25]]]]를 다시 대입하면 분자는\n`[[EQUATION:LEFT( 25^{3} + 3^{3} RIGHT) LEFT( 25 - 3 RIGHT) = LEFT( 25^{3} + 3^{3 } RIGHT) TIMES 22]]가 됩니다. 따라서 주어진 식의 값 (가)는 [[EQUATION:(가) = {(25^3 + 3^3) TIMES 22} over {22} = 25^3 + 3^3]]입니다. 한편, [[EQUATION:25^3 + 3^3 = (25 + 3)(25^2 - 25 TIMES 3 + 3^2) = 28 TIMES 559]]이므로 (가)는 1보다 큰 두 자연수의 곱으로 나타내어져 소수가 아닙니다. 따라서 (나)는 '소수가 아니다'입니다. 또한 (가)를 소인수분해하면 [[EQUATION:28 = 2^2 TIMES 7]], [[EQUATION:559 = 13 TIMES 43]]이므로 (가)의 소인수는 2, 7, 13, 43입니다. 이 소인수들을 모두 더한 값 (다)는 [[EQUATION:(다) = 2 + 7 + 13 + 43 = 65]]입니다. 따라서 정답은 ③이다."
+  },
+  {
+    "question_num": "15",
+    "question": "[[EQUATION:1 le x le 3]] 에서 이차함수 [[EQUATION:f(x) = (x - a)^{2} + b]] 의 최솟값이 [[EQUATION:4]] 일 때, 두 실수 [[EQUATION:a, b]] 에 대하여 옳은 것을 <보기>에서 있는 대 로 고른 것은? <보기> ㄱ. [[EQUATION:a = 2]] 일 때, [[EQUATION:b = 4]] 이다. ㄴ. [[EQUATION:a le 1]] 일 때, [[EQUATION:b = - a^{2} + 2 a + 5]] 이다. ㄷ. [[EQUATION:a + b]] 의 최댓값은 [[EQUATION:7]] 이다.",
+    "answer_options": [
+      "(1) [[EQUATION:ᄀ]]",
+      "(2) [[EQUATION:ᄃ]]",
+      "(3) [[EQUATION:ᄀ, ᄂ]]",
+      "(4) [[EQUATION:ᄀ, ᄃ]]",
+      "(5) [[EQUATION:ᄂ, ᄃ]]"
+    ],
+    "thought_process": "",
+    "explanation": "이차함수 [[EQUATION:f(x) = (x - a)^{2 + b]]의 그래프는 아래로 볼록한 포물선이며 꼭짓점은 [[EQUATION:(a , b)]]이다. [[EQUATION:1 le x le 3]]에서 [[EQUATION:f(x)]]의 최솟값이 4이므로 [[EQUATION:a]]의 값의 범위에 따라 다음과 같이 나눌 수 있다.\n\n(i) [[EQUATION:a < 1]]일 때, [[EQUATION:f(x)]]는 [[EQUATION:x = 1]]에서 최솟값 [[EQUATION:f(1) = (1 - a)^2 + b = 4]]를 가지므로 [[EQUATION:b = - a^2 + 2a + 3]]이다.\n(ii) [[EQUATION:1 le a le 3]]일 때, [[EQUATION:f(x)]]는 [[EQUATION:x = a]]에서 최솟값 [[EQUATION:f(a) = b = 4]]를 갖는다.\n(iii) [[EQUATION:a > 3]]일 때, [[EQUATION:f(x)]]는 [[EQUATION:x = 3]]에서 최솟값 [[EQUATION:f(3) = (3 - a)^2 + b = 4]]를 가지므로 [[EQUATION:b = - a^2 + 6a - 5]]이다.\n\n이제 보기를 살펴보자.\nㄱ. [[EQUATION:a = 2]]이면 (ii)의 경우에 해당하므로 [[EQUATION:b = 4]]이다. (참)\nㄴ. [[EQUATION:a le 1]]일 때, (i)의 경우에 의해 [[EQUATION:b = - a^2 + 2a + 3]]이다. ([[EQUATION:a = 1]]일 때 [[EQUATION:b = 4]]이므로 (ii)의 경우와 일치한다.) 따라서 ㄴ은 참이다. ㄷ. [[EQUATION:a + b]]의 값을 [[EQUATION:g(a)]]라 하면 (i) [[EQUATION:a < 1]]일 때, [[EQUATION:g(a) = a + ( - a^2 + 2a + 3) = - a^2 + 3a + 3]]이고, [[EQUATION:a le 1]] 범위에서 최댓값은 [[EQUATION:g(1) = 5]]이다. (ii) [[EQUATION:1 le a le 3]]일 때, [[EQUATION:g(a) = a + 4]]이므로 최댓값은 [[EQUATION:g(3) = 7]]이다. (iii) [[EQUATION:a > 3]]일 때, [[EQUATION:g(a) = a + ( - a^2 + 6a - 5) = - a^2 + 7a - 5 = - (a - 3.5)^2 + 7.25]]이므로 [[EQUATION:a = 3.5]]일 때 최댓값 7.25를 갖는다. 따라서 [[EQUATION:a + b]]의 최댓값은 7.25이므로 ㄷ은 거짓이다. 이상에서 옳은 것은 ㄱ, ㄴ이다. 따라서 정답은 ③이다."
+  },
+  {
+    "question_num": "16",
+    "question": "두 수 [[EQUATION:p , q]] 에 대하여 [[EQUATION:4 p^{2} q - 8 p^{2} + 4 p q - 8 p + q = 210]] 일 때, [[EQUATION:q - p]] 의 최댓값과 최솟값의 합은? (단, [[EQUATION:2 p]] 와 [[EQUATION:q]] 는 자 연수)",
+    "answer_options": [
+      "[[EQUATION:65]]",
+      "[[EQUATION:67]]",
+      "[[EQUATION:69]]",
+      "[[EQUATION:71]]",
+      "[[EQUATION:73]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 식을 인수분해하여 [[EQUATION:p, q]]의 관계를 파악해 보겠습니다.\n\n먼저 식을 [[EQUATION:q]]에 대하여 묶어 정리하면 다음과 같습니다.\n[[EQUATION:4p^{2}q - 8p^{2} + 4pq - 8p + q = 210]]\n[[EQUATION:q LEFT( 4p^{2} + 4p + 1 RIGHT) - 8p^{2} - 8p = 210]]\n\n여기서 [[EQUATION:4p^{2} + 4p + 1 = LEFT( 2p + 1 RIGHT)^{2}]]임을 이용하기 위해 상수항을 조절합니다.\n[[EQUATION:q LEFT( 2p + 1 RIGHT)^{2} - 2 LEFT( 4p^{2} + 4p RIGHT) = 210]]\n[[EQUATION:q LEFT( 2p + 1 RIGHT)^{2} - 2 LEFT( 4p^{2} + 4p + 1 - 1 RIGHT) = 210]]\n[[EQUATION:q LEFT( 2p + 1 RIGHT)^{2} - 2 LEFT( 2p + 1 RIGHT)^{2} + 2 = 210]]\n[[EQUATION:LEFT( q - 2 RIGHT) LEFT( 2p + 1 RIGHT)^{2 } = 208]] 이때 [[EQUATION:2p]]가 자연수이므로 [[EQUATION:2p + 1 ge 2]]이고, [[EQUATION:LEFT( 2p + 1 RIGHT)^{2}]]은 208의 약수 중 1보다 큰 완전제곱수이다. 208의 약수 중 완전제곱수는 1, 4, 16이므로 [[EQUATION:LEFT( 2p + 1 RIGHT)^{2}]]이 될 수 있는 값은 4, 16이다. (i) [[EQUATION:LEFT( 2p + 1 RIGHT)^{2} = 4]]일 때, [[EQUATION:2p + 1 = 2]]에서 [[EQUATION:2p = 1]]이므로 [[EQUATION:p = 0.5]]이다. 이때 [[EQUATION:q - 2 = 52]]에서 [[EQUATION:q = 54]]이므로 [[EQUATION:q - p = 53.5]]이다. (ii) [[EQUATION:LEFT( 2p + 1 RIGHT)^{2 = 16]]일 때, [[EQUATION:2p + 1 = 4]]에서 [[EQUATION:2p = 3]]이므로 [[EQUATION:p = 1.5]]이다. 이때 [[EQUATION:q - 2 = 13]]에서 [[EQUATION:q = 15]]이므로 [[EQUATION:q - p = 13.5]]이다. 따라서 [[EQUATION:q - p]]의 최댓값은 [[EQUATION:53.5]], 최솟값은 [[EQUATION:13.5]]이므로 그 합은 [[EQUATION:53.5 + 13.5 = 67]]이다. 따라서 정답은 ②이다."
+  },
+  {
+    "question_num": "17",
+    "question": "",
+    "answer_options": [],
+    "thought_process": "",
+    "explanation": "주어진 이차함수 [[EQUATION:y = - x^2 + 2ax]]의 식을 표준형으로 변형하면 다음과 같습니다.\n[[EQUATION:y = - (x^2 - 2ax) = - (x - a)^2 + a^2]]\n이 함수는 위로 볼록한 포물선이며, 꼭짓점의 좌표는 [[EQUATION:(a, a^2)]], 축의 방정식은 [[EQUATION:x = a]]입니다.\n\n[[EQUATION:a]]가 자연수이므로 [[EQUATION:a ge 1]]이고, 주어진 범위 [[EQUATION:0 le x le b]]에서 최댓값을 구하기 위해 꼭짓점의 위치에 따라 경우를 나누어 생각합니다.\n\n1) [[EQUATION:a le b]]인 경우 (꼭짓점이 범위 내에 있거나 왼쪽 끝에 있는 경우)\n이 범위에서 함수의 최댓값은 꼭짓점의 [[EQUATION:y]]좌표인 [[EQUATION:a^2]]입니다.\n[[EQUATION:a^2 = 9]]에서 [[EQUATION:a]]는 자연수이므로 [[EQUATION:a = 3]]입니다.\n이때 조건 [[EQUATION:a le b le 2a]]를 만족해야 하므로 [[EQUATION:3 le b \nle 2(3) = 6]]입니다.\n따라서 가능한 자연수 [[EQUATION:b]]의 값은 [[EQUATION:3, 4, 5, 6]]입니다.\n이때의 순서쌍 [[EQUATION:(a, b)]] 는 [[EQUATION:(3, 3), (3, 4), (3, 5), (3, 6)]]으로 4개입니다. ii) [[EQUATION:b < a]]인 경우, [[EQUATION:0 le x le b]]에서 함수 [[EQUATION:y = - x^2 + 2ax]]는 증가하므로 [[EQUATION:x = b]]에서 최댓값 9를 갖습니다. [[EQUATION:- b^2 + 2ab = 9]]에서 [[EQUATION:2ab = b^2 + 9]]이므로 [[EQUATION:a = {b^2 + 9} over {2b}]]입니다. [[EQUATION:a]]가 자연수가 되려면 [[EQUATION:b]]는 9의 약수 중 홀수여야 하므로 [[EQUATION:b = 1, 3, 9]]입니다. 이때 [[EQUATION:b = 1]]이면 [[EQUATION:a = 5]]로 [[EQUATION:b < a]]를 만족하지만, [[EQUATION:b = 3]]이면 [[EQUATION:a = 3]], [[EQUATION:b = 9]]이면 [[EQUATION:a = 5]]로 [[EQUATION:b < a]]를 만족하지 않습니다. 따라서 가능한 순서쌍 [[EQUATION:(a, b)]]는 [[EQUATION:(5, 1)]]로 1개입니다. i), ii)에 의해 구하는 순서쌍 [[EQUATION:(a, b)]]의 개수는 [[EQUATION:4 + 1 = 5]]입니다. 따라서 정답은 ③이다."
+  },
+  {
+    "question_num": "18",
+    "question": "[[EQUATION:18]] 최고차항의 계수가 [[EQUATION:3]] 인 다항식 [[EQUATION:f(x)]] 가 다음 조건을 만족 시킨다. (가) [[EQUATION:f(x)]] 를 [[EQUATION:x^{3} - 8]] 로 나눈 몫과 나머지가 [[EQUATION:Q(x)]] 로 같다. (나) [[EQUATION:f(x)]] 를 [[EQUATION:x^{2} + x + 1]] 로 나누었을 때의 나머지는 [[EQUATION:- 24 x - 54]] 이다. 이때, [[EQUATION:f(1) + Q(3)]] 의 값은?",
+    "answer_options": [
+      "[[EQUATION:- 72]]",
+      "[[EQUATION:- 70]]",
+      "[[EQUATION:- 68]]",
+      "[[EQUATION:- 66]]",
+      "[[EQUATION:- 64]]"
+    ],
+    "thought_process": "1.  **Analyze condition (가)**: [[EQUATION:f(x) = (x^3 - 8)Q(x) + Q(x) = (x^3 - 7)Q(x)]]. Since [[EQUATION:Q(x)]] is a remainder of a division by a degree 3 polynomial, [[EQUATION:\\deg(Q) < 3]]. \n2.  **Determine [[EQUATION:Q(x)]]**: The leading coefficient of [[EQUATION:f(x)]] is [[EQUATION:3]]. Since [[EQUATION:f(x) = (x^3 - 7)Q(x)]], the leading coefficient of [[EQUATION:Q(x)]] must also be [[EQUATION:3]] and its degree must be [[EQUATION:2]] (if it were lower, the leading coefficient of [[EQUATION:f(x)]] would be different or the degree wouldn't match). Let [[EQUATION:Q(x) = 3x^2 + bx + c]].\n3.  **Analyze condition (나)**: [[EQUATION:f(x) \\equiv - 24x - 54 \\pmod{x^2 + x + 1}]]. \n    Note that [[EQUATION:x^3 - 1 = (x - 1)(x^2 + x + 1)]], so [[EQUATION:x^3 \\equiv 1 \\pmod{x^2 + x + 1}]].\n    Then [[EQUATION:x^3 - 7 \\equiv 1 - 7 = - 6 \\pmod{x^2 + x + 1}]].\n    Thus, [[EQUATION:f(x) = (x^3 - 7)Q(x) \\equiv - 6Q(x) \\pmod{x^2 + x + 1}]].\n4.  **Solve for [[EQUATION:b, c]]**: \n    [[EQUATION:- 6Q(x) = - 6(3x^2 + bx + c) = - 18x^2 - 6bx - 6c]].\n    Dividing by [[EQUATION:x^2 + x + 1]]: \n    [[EQUATION:- 18(x^2 + x + 1) + 18x + 18 - 6bx - 6c = (18 - 6b)x + (18 - 6c)]].\n    Equating to the given remainder: \n    [[EQUATION:18 - 6b = - 24 \\implies 6b = 42 \\implies b = 7]].\n    [[EQUATION:18 - 6c = - 54 \\implies 6c = 72 \\implies c = 12]].\n    So [[EQUATION:Q(x) = 3x^2 + 7x + 12]].\n5.  **Calculate final values**: \n    [[EQUATION:f(1) = (1^3 - 7)Q(1) = - 6 cdot (3 + 7 + 12) = - 6 cdot 22 = - 132]].\n    [[EQUATION:Q(3) = 3(3^2) + 7(3) + 12 = 27 + 21 + 12 = 60]].\n    [[EQUATION:f(1) + Q(3) = - 132 + 60 = - 72]].\n6.  **Match with options**: [[EQUATION:- 72]] is option ①.",
+    "explanation": "1. **조건 (가)를 이용한 다항식 [[EQUATION:f(x)]]의 식 세우기**\n조건 (가)에서 다항식 [[EQUATION:f(x)]]를 [[EQUATION:x^{3} - 8]]로 나눈 몫과 나머지가 [[EQUATION:Q(x)]]이므로, 다항식의 나눗셈 정리에 의해 다음과 같이 나타낼 수 있습니다.\n[[EQUATION:f(x) = (x^{3} - 8)Q(x) + Q(x)]]\n이를 공통인수 [[EQUATION:Q(x)]]로 묶어 정리하면,\n[[EQUATION:f(x) = (x^{3} - 8 + 1)Q(x) = (x^{3} - 7)Q(x)]]\n\n2. **[[EQUATION:Q(x)]]의 차수와 최고차항의 계수 결정**\n[[EQUATION:Q(x)]]는 [[EQUATION:3]]차식인 [[EQUATION:x^{3} - 8]]로 나눈 나머지이므로, [[EQUATION:Q(x)]]의 차수는 [[EQUATION:2]]차 이하입니다.\n[[EQUATION:f(x) = (x^{3} - 7)Q(x)]]에서 [[EQUATION:f(x)]]의 최고차항의 계수가 [[EQUATION:3]]이라고 하였으므로, [[EQUATION:Q(x)]]는 최고차항의 계수가 [[EQUATION:3]]인 [[EQUATION:2]]차식이어야 합니다.\n따라서 [[EQUATION:Q(x) = 3x^{2} + bx + c]] ([[EQUATION:b, c]]는 상수)라고 놓을 수 있습니다.\n\n3. **조건 (나)를 이용한 [[EQUATION:Q(x)]] 구하기**\n조건 (나)에서 [[EQUATION:f(x)]]를 [[EQUATION:x^{2} + x + 1]]로 나눈 나머지가 [[EQUATION:- 24x - 54]]입니다.\n[[EQUATION:x^{3} - 1 = (x - 1)(x^{2} + x + 1)]]임을 이용하면, [[EQUATION:x^{3} - 7]]을 다음과 같이 변형할 수 있습니다.\n[[EQUATION:x^{3} - 7 = (x^{3} - 1) - 6 = (x - 1)(x^{2} + x + 1) - 6]]\n이를 [[EQUATION:f(x)]] 식에 대입하면,\n[[EQUATION:f(x) = LEFT( (x - 1)(x^{2} + x + 1) - 6 RIGHT) Q(x)]]\n[[EQUATION:f(x) = (x - 1)Q(x)(x^{2} + x + 1) - 6Q(x)]]\n\n따라서 [[EQUATION:f(x)]]를 [[EQUATION:x^{2} + x + 1]]로 나눈 나머지는 [[EQUATION:- 6Q(x)]]를 [[EQUATION:x^{2} + x + 1]]로 나눈 나머지 와 같습니다.\n[[EQUATION:- 6Q(x) = - 6(3x^{2} + bx + c) = - 18x^{2} - 6bx - 6c]]\n이를 [[EQUATION:x^{2} + x + 1]]로 직접 나누면,\n[[EQUATION:- 18x^{2} - 6bx - 6c = - 18(x^{2} + x + 1) + (18 - 6b)x + (18 - 6c)]]\n이 나머지가 [[EQUATION:- 24x - 54]]와 일치해야 하므로,\n[[EQUATION:18 - 6b = - 24]] 에서 [[EQUATION:6b = 42]] 이므로 [[EQUATION:b = 7]]\n[[EQUATION:18 - 6c = - 54]] 에서 [[EQUATION:6c = 72]] 이므로 [[EQUATION:c = 12]]\n따라서 [[EQUATION:Q(x) = 3x^{2} + 7x + 12]] 입니다.\n\n4. **[[EQUATION:f(1) + Q(3)]]의 값 계산**\n먼저 [[EQUATION:Q(1)]]과 [[EQUATION:Q(3)]]의 값을 구합니다.\n[[EQUATION:Q(1) = 3(1)^{2} + 7(1) + 12 = 3 + 7 + 12 = 22]]\n[[EQUATION:Q(3) = 3(3)^{2} + 7(3) + 12 = 27 + 21 + 12 = 60]]\n\n이제 [[EQUATION:f(1)]]의 값을 구하면,\n[[EQUATION:f(1) = (1^{3} - 7)Q(1) = - 6 imes 22 = - 132]]\n\n최종적으로 구하는 값은\n[[EQUATION:f(1) + Q(3) = - 132 + 60 = - 72]]\n\n따라서 정답은 ①이다."
+  },
+  {
+    "question_num": "19",
+    "question": "[[EQUATION:a b]] 와 [[EQUATION:c , d]] 가 정수인 상수 [[EQUATION:a , b , c , d]] 에 대하여 [[EQUATION:f ( x ) = x^{3} + a x^{2} - 10 x + b]] 가 다음 세 조건을 만족시킨다. (가) [[EQUATION:f ( x )]] 를 [[EQUATION:x - 3]] 으로 나눈 몫은 [[EQUATION:Q ( x )]], 나머지는 [[EQUATION:- 6]] 이다. (나) [[EQUATION:LEFT ( x^{2} + a RIGHT ) Q ( x - 2 )]] 가 [[EQUATION:x + {4} over {3}]] 으로 나누어 떨어진다. (다) [[EQUATION:f ( x )]] 와 [[EQUATION:x^{3} + c x + 6]] 은 [[EQUATION:x + d]] 를 공통인수로 갖는다. 이때, [[EQUATION:a b - c + d]] 의 값은?",
+    "answer_options": [
+      "(1) [[EQUATION:- 12]]",
+      "(2) [[EQUATION:- 7]]",
+      "(3) [[EQUATION:- 2]]",
+      "(4) [[EQUATION:3]]",
+      "(5) [[EQUATION:8]]"
+    ],
+    "thought_process": "",
+    "explanation": "1. **조건 (가)를 이용한 [[EQUATION:a, b]]의 관계식 구하기**\n나머지 정리에 의해 [[EQUATION:f(3) = - 6]]입니다.\n[[EQUATION:f(3) = 3^{3} + a imes 3^{2} - 10 imes 3 + b = 27 + 9a - 30 + b = 9a + b - 3]]\n따라서 [[EQUATION:9a + b - 3 = - 6]]에서 [[EQUATION:9a + b = - 3 ext{ - - - (1)}]]입니다.\n\n2. **몫 [[EQUATION:Q(x)]] 구하기**\n[[EQUATION:f(x) = x^{3} + a x^{2} - 10 x + b]]를 [[EQUATION:x - 3]]으로 나누면 다음과 같습니다.\n[[EQUATION:x^{3} + a x^{2} - 10 x + b = (x - 3)(x^{2} + (a + 3)x + 3a - 1) + (9a + b - 3)]]\n조건 (가)에서 나머지가 [[EQUATION:- 6]]이므로 [[EQUATION:9a + b - 3 = - 6]]이고, 몫은 [[EQUATION:Q(x) = x^{2} + (a + 3)x + 3a - 1]]입니다.\n\n3. **조건 (나)를 이용한 [[EQUATION:a, b]]의 값 구하기**\n[[EQUATION:LEFT( x^{2} + a RIGHT) Q( x - 2 )]]가 [[EQUATION:x + {4} over {3}]]로 나누어 떨어지므로, [[EQUATION:x = - {4} over {3}]]를 대입하면 [[EQUATION:0]]이 되어야 합니다.\n[[EQUATION:LEFT( LEFT( - {4} over {3} RIGHT)^{2} + a RIGHT) Q LEFT( - {4} over {3} - 2 RIGHT) = 0]]\n[[EQUATION:LEFT( {16} over {9} + a RIGHT) Q LEFT( - {10} over {3} RIGHT) = 0]]\n\n경우 1) [[EQUATION:{16} over {9} + a = 0]]이면 [[EQUATION:a = - {16} over {9}]]입니다.\n식 (1)에 대입하면 [[EQUATION:b = - 3 - 9 imes LEFT( - {16} over {9} RIGHT) = - 3 + 16 = 13]]입니다.\n이때 [[EQUATION:ab = LEFT( - {16} over {9} RIGHT) imes 13 = - {208} over {9}]]인데, 문제에서 [[EQUATION:ab]]는 정수라고 했으므로 모순입니다.\n\n경우 2) [[EQUATION:Q LEFT( - {10} over {3} RIGHT) = 0]]이면\n[[EQUATION:LEFT( - {10} over {3} RIGHT)^{2} + (a + 3) imes LEFT( - {10} over {3} RIGHT) + 3a - 1 = 0]]\n[[EQUATION:{100} over {9} - {10} over {3} a - 10 + 3a - 1 = 0]]\n[[EQUATION:{100} over {9} - 11 - {1} over {3} a = 0]]\n[[EQUATION:{1} over {9} - {1} over {3} a = 0]] 이므로 [[EQUATION:a = {1} over {3}]]입니다.\n식 (1)에 대입하면 [[EQUATION:b = - 3 - 9 imes {1} over {3} = - 6]]입니다.\n이때 [[EQUATION:ab = {1} over {3} imes ( - 6) = - 2]]로 정수 조건을 만족합니다.\n\n4. **조건 (다)를 이용한 [[EQUATION:c, d]]의 값 구하기**\n[[EQUATION:f(x) = x^{3} + {1} over {3} x^{2} - 10 x - 6]]과 [[EQUATION:x^{3} + c x + 6]]이 [[EQUATION:x + d]]를 공통인수로 가지므로 [[EQUATION:f( - d) = 0]]입니다.\n[[EQUATION:- d^{3} + {1} over {3} d^{2} + 10d - 6 = 0]]\n양변에 [[EQUATION:- 3]]을 곱하면 [[EQUATION:3d^{3} - d^{2} - 30d + 18 = 0]]입니다.\n[[EQUATION:d]]는 정수이므로 조립제법을 통해 구하면 [[EQUATION:d = 3]]일 때 [[EQUATION:3(27) - 9 - 90 + 18 = 0]]이 성립합니다.\n([[EQUATION:3d^{2} + 8d - 6 = 0]]의 근은 정수가 아니므로 [[EQUATION:d = 3]]이 유일한 정수해입니다.)\n\n또한 [[EQUATION:x^{3} + c x + 6]]도 [[EQUATION:x + 3]]을 인수로 가지므로 [[EQUATION:x = - 3]]을 대입하면 [[EQUATION:0]]이 되어야 합니다.\n[[EQUATION:( - 3)^{3 + c( - 3) + 6 = 0]]에서 [[EQUATION:- 27 - 3c + 6 = 0]], [[EQUATION:- 3c = 21]]이므로 [[EQUATION:c = - 7]]입니다. 이때 [[EQUATION:ab = - 2]], [[EQUATION:c = - 7]], [[EQUATION:d = 3]]이므로 [[EQUATION:ab - c + d = - 2 - ( - 7) + 3 = 8]]입니다. 따라서 정답은 ⑤이다."
+  },
+  {
+    "question_num": "20",
+    "question": "[[EQUATION:- 1 le x le 1]] 에서 [[EQUATION:y = ( x - 1 ) | x | - a x + 1 ( 1 le a le 3 )]] 의 최댓값과 최솟값을 각각 [[EQUATION:M ( a )]] , [[EQUATION:m ( a )]] 라 할 때, [[EQUATION:M ( a ) - m ( a )]] 의 최댓값과 최솟값의 합은?",
+    "answer_options": [
+      "[[EQUATION:2]]",
+      "[[EQUATION:3]]",
+      "[[EQUATION:4]]",
+      "[[EQUATION:5]]",
+      "[[EQUATION:6]]"
+    ],
+    "thought_process": "",
+    "explanation": "주어진 함수 [[EQUATION:f(x) = (x - 1)|x| - ax + 1]]을 [[EQUATION:x]]의 범위에 따라 나누어 분석합니다.\n\n1) [[EQUATION:0 le x le 1]]일 때:\n[[EQUATION:f(x) = x(x - 1) - ax + 1 = x^2 - (a + 1)x + 1]]\n이 이차함수의 축의 방정식은 $x = {a+1   "
+  },
+  {
+    "question_num": "21",
+    "question": "다항식 [[EQUATION:f LEFT ( x RIGHT )]] 를 [[EQUATION:x - {1} over {8}]] 로 나누었을 때의 몫을 [[EQUATION:Q LEFT ( x RIGHT )]], 나머지를 [[EQUATION:R]] 이라 하자. 다항식 [[EQUATION:LEFT ( x + 2 RIGHT ) f LEFT ( x RIGHT )]] 를 [[EQUATION:8 x - 1]] 로 나누었을 때의 몫과 나머지를 [[EQUATION:Q LEFT ( x RIGHT ), R]] 을 이용하여 나타내어라.",
+    "answer_options": [],
+    "thought_process": "",
+    "explanation": "다항식 [[EQUATION:f LEFT( x RIGHT )]]를 [[EQUATION:x - {1} over {8}]]로 나누었을 때의 몫이 [[EQUATION:Q LEFT( x RIGHT )]], 나머지가 [[EQUATION:R]]이므로 다항식의 나눗셈 정리에 의해 다음과 같은 식을 세울 수 있습니다. [[EQUATION:f LEFT( x RIGHT ) = LEFT( x - {1} over {8} RIGHT ) Q LEFT( x RIGHT ) + R]] 문제에서 요구하는 다항식 [[EQUATION:LEFT( x + 2 RIGHT ) f LEFT( x RIGHT )]]를 구하기 위해 위 식의 양변에 [[EQUATION:LEFT( x + 2 RIGHT )]]를 곱하면 다음과 같습니다. [[EQUATION:LEFT( x + 2 RIGHT ) f LEFT( x RIGHT ) = LEFT( x + 2 RIGHT ) LEFT[ LEFT( x - {1} over {8} RIGHT ) Q LEFT( x RIGHT ) + R RIGHT] = LEFT( x + 2 RIGHT ) LEFT( x - {1} over {8} RIGHT ) Q LEFT( x RIGHT ) + R LEFT( x + 2 RIGHT )]] 이때 [[EQUATION:x - {1} over {8} = {1} over {8} LEFT( 8x - 1 RIGHT )]]이므로 이를 대입하여 식을 변형합니다. $LEFT( x + 2 RIGHT ) f LEFT( x RIGHT ) = LEFT( x + 2 RIGHT ) &#183; {1} over {8} LEFT( 8x - 1 RIGHT ) Q LEFT( x RIGHT ) + R LEFT( x + 2 RIGHT ) = LEFT( 8x - 1 RIGHT ) &#183; {x + 2} over {8 } Q LEFT( x RIGHT ) + R LEFT( x + 2 RIGHT ) = LEFT( 8x - 1 RIGHT ) &#183; {x + 2} over {8} Q LEFT( x RIGHT ) + {R} over {8} LEFT( 8x - 1 RIGHT ) + {17R} over {8} = LEFT( 8x - 1 RIGHT ) LEFT\\{ {x + 2} over {8} Q LEFT( x RIGHT ) + {R} over {8} RIGHT\\} + {17R} over {8} 이므로 (x+2)f(x)를 8x-1로 나누었을 때의 몫은 {x + 2} over {8} Q(x) + {R} over {8} 이고, 나머지는 {17R} over {8} 이다. 따라서 정답은 몫: {x + 2} over {8} Q(x) + {R} over {8}, 나머지: {17R} over {8} 이다."
+  },
+  {
+    "question_num": "22",
+    "question": "이차방정식 [[EQUATION:a x^{2} + b x + c = 0]] 에서 [[EQUATION:b]] 를 잘못보고 풀었더니 두 근이 [[EQUATION:2]] 와 [[EQUATION:{5} over {7}]] 이 되었고, [[EQUATION:c]] 를 잘못보고 풀었더니 두 근이 [[EQUATION:4]] 와 [[EQUATION:{9} over {7}]] 이 되었다. 처음 이 이차방정식의 근을 구하여라. (단, [[EQUATION:a, b, c]] 는 실수)",
+    "answer_options": [],
+    "thought_process": "이차방정식의 근과 계수의 관계를 활용하여 문제를 해결합니다. 계수 [[EQUATION:b]]를 잘못 보았을 때는 두 근의 곱([[EQUATION:{c} over {a}]])이 정확함을 이용하고, 계수 [[EQUATION:c]]를 잘못 보았을 때는 두 근의 합([[EQUATION:- {b} over {a}]])이 정확함을 이용합니다. 각각의 경우에서 얻은 합과 곱의 값을 바탕으로 원래의 이차방정식을 구성한 뒤, 인수분해를 통해 정확한 근을 구합니다.",
+    "explanation": "이차방정식 [[EQUATION:ax^2 + bx + c = 0]]에서 근과 계수의 관계를 이용합니다. 첫째, [[EQUATION:b]]를 잘못 보고 풀었을 때 두 근이 [[EQUATION:2]]와 [[EQUATION:{5} over {7}]]이었으므로, 두 근의 곱은 정확하게 구한 것입니다. 근과 계수의 관계에 의해 두 근의 곱은 [[EQUATION:{c} over {a} = 2 TIMES {5} over {7} = {10} over {7}]]입니다. 둘째, [[EQUATION:c]]를 잘못 보고 풀었을 때 두 근이 [[EQUATION:4]]와 [[EQUATION:{9} over {7}]]이었으므로, 두 근의 합은 정확하게 구한 것입니다. 근과 계수의 관계에 의해 두 근의 합은 [[EQUATION:- {b} over {a} = 4 + {9} over {7} = {37} over {7}]]입니다. 원래의 이차방정식의 양변을 [[EQUATION:a]]로 나누면 [[EQUATION:x^2 + {b} over {a} x + {c} over {a} = 0]], 즉 [[EQUATION:x^2 - LEFT( - {b} over {a} RIGHT) x + {c} over {a} = 0]]이므로 구한 값을 대입하면 [[EQUATION:x^2 - {37} over {7} x + {10} over {7} = 0]]이 됩니다. 양변에 [[EQUATION:7]]을 곱하여 정리하면 [[EQUATION:7x^2 - 37x + 10 = 0]]입니다. 이 식을 인수분해하면 [[EQUATION:LEFT( 7x - 2 RIGHT) LEFT( x - 5 RIGHT) = 0]]이므로 구하는 근은 [[EQUATION:x = {2} over {7}]] 또는 [[EQUATION:x = 5]]입니다. 따라서 정답은 [[EQUATION:x = 5]] 또는 [[EQUATION:x = {2} over {7}]]이다."
+  }
+]

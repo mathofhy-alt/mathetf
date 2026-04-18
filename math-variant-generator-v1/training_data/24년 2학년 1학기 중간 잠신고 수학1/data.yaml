@@ -1,0 +1,5 @@
+path: C:/Users/matho/OneDrive/바탕 화면/pdf모음\training_data\24년 2학년 1학기 중간 잠신고 수학1
+train: images
+val: images
+nc: 1
+names: ['problem']

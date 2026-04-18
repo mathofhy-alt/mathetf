@@ -1,0 +1,77 @@
+``` python
+def solve_v1(k):
+    sols = set()
+    for n in range(1, 100):
+        if (n-3)**2 == 13 - k or (n-3)**2 == 5 - k:
+            sols.add(n)
+    return len(sols)
+
+for k in range(-20, 20):
+    if solve_v1(k) == 3:
+        print(f"k={k}")
+
+```
+```
+k=4
+
+```
+``` python
+def solve_v2(k):
+    sols = set()
+    for n in range(1, 100):
+        if (n-4)**2 == 1 - k or (n-4)**2 == 4 - k:
+            sols.add(n)
+    return len(sols)
+
+for k in range(-20, 20):
+    if solve_v2(k) == 4:
+        print(f"k={k}")
+
+```
+```
+k=0
+
+```
+``` python
+def solve_v3(k):
+    sols = set()
+    for n in range(1, 100):
+        if -k <= (n-3)**2 <= 6 - k:
+            sols.add(n)
+    return len(sols)
+
+for k in range(-20, 20):
+    if solve_v3(k) == 4:
+        print(f"k={k}")
+
+```
+```
+k=-1
+
+```
+[
+  {
+    "question_num": "?2",
+    "question": "함수 [[EQUATION:f(x) = - (x - 2)^2 + k]]에 대하여 다음 조건을 만족시키는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:2]]일 때, 상수 [[EQUATION:k]]의 값을 구하시오.\n[[EQUATION:sqrt {3^{f(n)}}]]의 네제곱근 중 실수인 것을 모두 곱한 것이 [[EQUATION:-9]]이다.",
+    "answer_options": [],
+    "explanation": "어떤 실수 [[EQUATION:A]]의 네제곱근 중 실수인 것은 방정식 [[EQUATION:x^4 = A]]의 실근과 같다.\n[[EQUATION:A = sqrt {3^{f(n)}} = 3^{{f(n)} over {2}} > 0]]이므로, 네제곱근 중 실수인 것은 [[EQUATION:A^{{1} over {4}}]]와 [[EQUATION:- A^{{1} over {4}}]]이다.\n이 두 실수의 곱은 [[EQUATION:- A^{{1} over {2}}]]이다.\n조건에서 이 곱이 [[EQUATION:-9]]라고 하였으므로,\n[[EQUATION:- A^{{1} over {2}} = -9 \implies A^{{1} over {2}} = 9 = 3^2]]이다.\n[[EQUATION:A = 3^{{f(n)} over {2}}]]를 대입하면,\n[[EQUATION:LEFT ( 3^{{f(n)} over {2}} RIGHT )^{{1} over {2}} = 3^{{f(n)} over {4}} = 3^2]]이다.\n지수를 비교하면 [[EQUATION:{f(n)} over {4} = 2 \implies f(n) = 8]]이다.\n함수 [[EQUATION:f(x)]]의 식에 대입하면,\n[[EQUATION:- (n - 2)^2 + k = 8 \implies (n - 2)^2 = k - 8]]이다.\n이를 만족시키는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:2]]이어야 한다.\n이차함수의 대칭축이 [[EQUATION:n = 2]]이므로, [[EQUATION:n = 2]]를 기준으로 대칭인 자연수 쌍이 해가 되어야 한다.\n자연수 쌍은 [[EQUATION:(1, 3)]]뿐이다. (다음 대칭 쌍은 [[EQUATION:(0, 4)]]인데 [[EQUATION:0]]은 자연수가 아니므로 해가 [[EQUATION:1]]개만 추가된다.)\n따라서 방정식의 해는 [[EQUATION:n = 1, 3]]이어야 하므로, [[EQUATION:n = 1]]을 대입하면\n[[EQUATION:(1 - 2)^2 = k - 8 \implies 1 = k - 8 \implies k = 9]]이다.\n만약 [[EQUATION:k - 8 = 4]] (즉, [[EQUATION:k = 12]])라면 해는 [[EQUATION:n = 0, 4]]가 되어 자연수 해는 [[EQUATION:4]] 하나뿐이므로 개수가 [[EQUATION:1]]이 되어 모순이다.\n따라서 답은 [[EQUATION:9]]이다."
+  },
+  {
+    "question_num": "?2-변형1",
+    "question": "함수 [[EQUATION:f(x) = x^2 - 6x + k]]에 대하여 방정식 [[EQUATION:| f(n) | = 4]]를 만족시키는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:3]]일 때, 상수 [[EQUATION:k]]의 값을 구하시오.",
+    "answer_options": [],
+    "explanation": "방정식 [[EQUATION:| f(n) | = 4]]는 [[EQUATION:f(n) = 4]] 또는 [[EQUATION:f(n) = -4]]이다.\n[[EQUATION:n^2 - 6n + k = 4 \implies (n - 3)^2 = 13 - k]] ... (1)\n[[EQUATION:n^2 - 6n + k = -4 \implies (n - 3)^2 = 5 - k]] ... (2)\n자연수 [[EQUATION:n]]에 대하여 [[EQUATION:(n - 3)^2]]이 가질 수 있는 값은 [[EQUATION:n=3]]일 때 [[EQUATION:0]], [[EQUATION:n=2, 4]]일 때 [[EQUATION:1]], [[EQUATION:n=1, 5]]일 때 [[EQUATION:4]], [[EQUATION:n=6]]일 때 [[EQUATION:9]], [[EQUATION:n=7]]일 때 [[EQUATION:16]] 등이다.\n조건을 만족시키는 [[EQUATION:n]]의 개수가 [[EQUATION:3]]이 되려면, (1)과 (2)에서 나오는 자연수 해의 개수의 합이 [[EQUATION:3]]이어야 한다.\n[[EQUATION:13 - k > 5 - k]]이므로 (1)의 우변이 (2)의 우변보다 크다.\n해의 개수가 합하여 [[EQUATION:3]]이 되는 경우는 한 방정식에서 [[EQUATION:2]]개, 다른 방정식에서 [[EQUATION:1]]개의 해를 갖는 경우이다.\n경우 1: (1)에서 [[EQUATION:2]]개, (2)에서 [[EQUATION:1]]개의 해를 갖는 경우\n(2)에서 [[EQUATION:1]]개의 해를 가지려면 우변이 [[EQUATION:0]]이거나 [[EQUATION:9]], [[EQUATION:16]] 등이어야 한다.\n만약 [[EQUATION:5 - k = 0]]이면 [[EQUATION:k = 5]]이다. 이때 (1)은 [[EQUATION:(n - 3)^2 = 8]]이 되어 만족시키는 자연수 [[EQUATION:n]]이 없다. (모순)\n만약 [[EQUATION:5 - k = 9]]이면 [[EQUATION:k = -4]]이다. 이때 (1)은 [[EQUATION:(n - 3)^2 = 17]]이 되어 해가 없다. (모순)\n경우 2: (1)에서 [[EQUATION:1]]개, (2)에서 [[EQUATION:2]]개의 해를 갖는 경우\n(1)에서 [[EQUATION:1]]개의 해를 가지려면 [[EQUATION:13 - k \in \{0, 9, 16, \dots\}]]이어야 한다.\n만약 [[EQUATION:13 - k = 0 \implies k = 13]]이면, (2)는 [[EQUATION:(n - 3)^2 = -8]]이 되어 해가 없다. (모순)\n만약 [[EQUATION:13 - k = 9 \implies k = 4]]이면, (2)는 [[EQUATION:(n - 3)^2 = 1]]이 되어 [[EQUATION:n = 2, 4]] ([[EQUATION:2]]개)를 갖는다.\n이때 (1)은 [[EQUATION:(n - 3)^2 = 9]]가 되어 [[EQUATION:n = 0, 6]]인데 자연수이므로 [[EQUATION:n = 6]] ([[EQUATION:1]]개)을 갖는다.\n총 해는 [[EQUATION:n = 2, 4, 6]]으로 정확히 [[EQUATION:3]]개가 되어 조건을 만족한다.\n만약 [[EQUATION:13 - k = 16 \implies k = -3]]이면, (2)는 [[EQUATION:(n - 3)^2 = 8]]이 되어 해가 없다. (모순)\n따라서 답은 [[EQUATION:4]]이다."
+  },
+  {
+    "question_num": "?2-변형2",
+    "question": "다항식 [[EQUATION:P(x) = x^2 - 5x + 4]]와 이차함수 [[EQUATION:f(x) = (x - 4)^2 + k]]에 대하여, [[EQUATION:P(f(n)) = 0]]을 만족시키는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:4]]일 때, 상수 [[EQUATION:k]]의 값을 구하시오.",
+    "answer_options": [],
+    "explanation": "방정식 [[EQUATION:P(f(n)) = (f(n) - 1)(f(n) - 4) = 0]]이므로 [[EQUATION:f(n) = 1]] 또는 [[EQUATION:f(n) = 4]]이다.\n[[EQUATION:(n - 4)^2 + k = 1 \implies (n - 4)^2 = 1 - k]] ... (1)\n[[EQUATION:(n - 4)^2 + k = 4 \implies (n - 4)^2 = 4 - k]] ... (2)\n자연수 [[EQUATION:n]]에 대하여 [[EQUATION:(n - 4)^2]]이 가질 수 있는 값은 [[EQUATION:0, 1, 4, 9, 16, \dots]]이다.\n자연수 [[EQUATION:n]]의 개수가 [[EQUATION:4]]가 되려면 (1)과 (2)에서 구한 해의 개수의 합이 [[EQUATION:4]]이어야 한다.\n[[EQUATION:4 - k > 1 - k]]이며, 두 값의 차이는 [[EQUATION:3]]이다.\n[[EQUATION:(n - 4)^2 = C]] 꼴의 방정식이 자연수 해를 [[EQUATION:2]]개 가지려면 [[EQUATION:C \in \{1, 4, 9\}]] 등이어야 한다.\n해의 개수의 합이 [[EQUATION:4]]가 되는 경우는 두 방정식 모두 [[EQUATION:2]]개의 해를 갖거나, 한 쪽이 [[EQUATION:3]]개 이상이어야 하는데 이차방정식의 근은 최대 [[EQUATION:2]]개이므로 각각 [[EQUATION:2]]개씩 가져야 한다.\n따라서 [[EQUATION:1 - k]]와 [[EQUATION:4 - k]] 모두 [[EQUATION:1, 4, 9]] 중 하나여야 한다.\n차이가 [[EQUATION:3]]인 두 제곱수는 [[EQUATION:1]]과 [[EQUATION:4]]뿐이므로, [[EQUATION:1 - k = 1]]이고 [[EQUATION:4 - k = 4]]이어야 한다.\n따라서 [[EQUATION:k = 0]]이다.\n이때 (1)에서 [[EQUATION:(n - 4)^2 = 1 \implies n = 3, 5]]이고, (2)에서 [[EQUATION:(n - 4)^2 = 4 \implies n = 2, 6]]이므로 총 [[EQUATION:4]]개의 자연수 해를 가져 조건을 만족한다.\n다른 경우(예를 들어 해의 합이 [[EQUATION:1]]개 + [[EQUATION:3]]개 등)는 이차방정식의 대칭성상 불가능하므로 모순이다.\n따라서 답은 [[EQUATION:0]]이다."
+  },
+  {
+    "question_num": "?2-변형3",
+    "question": "이차함수 [[EQUATION:f(x) = (x - 3)^2 + k]]에 대하여, [[EQUATION:x]]에 대한 이차방정식 [[EQUATION:x^2 - 20x + 91 + 6f(n) - (f(n))^2 = 0]]의 두 근의 곱이 [[EQUATION:91]] 이상이 되도록 하는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:4]]일 때, 정수 [[EQUATION:k]]의 값을 구하시오.",
+    "answer_options": [],
+    "explanation": "이차방정식의 판별식을 [[EQUATION:D]]라 하면, [[EQUATION:{D} over {4} = 100 - (91 + 6f(n) - (f(n))^2) = (f(n) - 3)^2 \ge 0]]이므로 항상 실근을 갖는다.\n근과 계수의 관계에 의해 두 근의 곱은 [[EQUATION:91 + 6f(n) - (f(n))^2]]이다.\n조건에서 두 근의 곱이 [[EQUATION:91]] 이상이므로\n[[EQUATION:91 + 6f(n) - (f(n))^2 \ge 91]]\n[[EQUATION:(f(n))^2 - 6f(n) \le 0 \implies f(n)(f(n) - 6) \le 0]]\n따라서 [[EQUATION:0 \le f(n) \le 6]]이다.\n[[EQUATION:f(n) = (n - 3)^2 + k]]를 대입하면\n[[EQUATION:0 \le (n - 3)^2 + k \le 6 \implies -k \le (n - 3)^2 \le 6 - k]]\n이 부등식을 만족시키는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:4]]이어야 한다.\n자연수 [[EQUATION:n]]에 대하여 [[EQUATION:(n - 3)^2]]이 가질 수 있는 값은 [[EQUATION:0, 1, 4, 9, 16, \dots]]이다.\n구간 [[EQUATION:[-k, 6 - k]]]의 길이는 [[EQUATION:6]]이므로, 이 구간 안에 들어가는 제곱수들의 개수에 따라 [[EQUATION:n]]의 개수가 결정된다.\n[[EQUATION:k = -1]]일 때, 구간은 [[EQUATION:[1, 7]]]이 되고, 포함되는 제곱수는 [[EQUATION:1, 4]]이다.\n[[EQUATION:(n - 3)^2 = 1 \implies n = 2, 4]]\n[[EQUATION:(n - 3)^2 = 4 \implies n = 1, 5]]\n총 [[EQUATION:4]]개의 자연수 해를 가지므로 조건을 만족한다.\n만약 [[EQUATION:k = 0]]이면 구간은 [[EQUATION:[0, 6]]]이 되어 제곱수 [[EQUATION:0, 1, 4]]가 포함되고, [[EQUATION:n = 1, 2, 3, 4, 5]]로 [[EQUATION:5]]개가 되어 모순이다.\n만약 [[EQUATION:k \le -2]]이면 구간의 최솟값이 [[EQUATION:2]] 이상이 되어 제곱수 [[EQUATION:1]]을 포함하지 못한다. 예를 들어 [[EQUATION:k = -2]]이면 [[EQUATION:[2, 8]]]이 되어 제곱수 [[EQUATION:4]]만 포함하므로 해는 [[EQUATION:2]]개가 되어 모순이다.\n따라서 답은 [[EQUATION:-1]]이다."
+  }
+]

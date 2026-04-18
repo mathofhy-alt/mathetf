@@ -1,0 +1,6 @@
+[
+  {
+    "question_num": "2",
+    "question": "함수 [[EQUATION:f(x) = - (x - 2)^2 + k]]에 대하여 다음 조건을 만족시키는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:2]]일 때, 상수 [[EQUATION:k]]의 값을 구하시오.\n[[EQUATION:sqrt {3}^{f(n)}]]의 네제곱근 중 실수인 것을 모두 곱한 것이 [[EQUATION:-9]]이다.",
+    "answer_options": [],
+    "explanation": "[[EQUATION:sqrt {3}^{f(n)}]]의 네제곱근 중 실수인 것을 모두 곱한 것이 [[EQUATION:- 9]]라고 하였다.\n[[EQUATION:sqrt {3}^{f(n)} = LEFT ( 3^{{1} over {2}} RIGHT )^{f(n)} = 3^{{f(n)} over {2}}]] 이다.\n어떤 양수 [[EQUATION:A]]의 네제곱근 중 실수인 것은 [[EQUATION:+- A^{{1} over {4}}]] 이므로,\n[[EQUATION:3^{{f(n)} over {2}}]] 의 네제곱근 중 실수인 것은 [[EQUATION:+- LEFT ( 3^{{f(n)} over {2}} RIGHT )^{{1} over {4}} = +- 3^{{f(n)} over {8}}]] 이다.\n이들의 곱이 [[EQUATION:- 9]]이므로,\n[[EQUATION:LEFT ( 3^{{f(n)} over {8}} RIGHT ) TIMES LEFT ( - 3^{{f(n)} over {8}} RIGHT ) = - 3^{{f(n)} over {4}} = - 9]] 이다.\n[[EQUATION:- 9 = - 3^2]] 이므로, 지수를 비교하면\n[[EQUATION:{f(n)} over {4} = 2]] 이고, 따라서 [[EQUATION:f(n) = 8]] 이다.\n함수 [[EQUATION:f(x) = - ( x - 2 )^2 + k]] 이므로,\n[[EQUATION:f(n) = - ( n - 2 )^2 + k = 8]] 에서\n[[EQUATION:( n - 2 )^2 = k - 8]] 이다.\n이 방정식을 만족시키는 자연수 [[EQUATION:n]]의 개수가 [[EQUATION:2]]가 되어야 한다.\n함수 [[EQUATION:y = ( x - 2 )^2]] 의 그래프는 직선 [[EQUATION:x = 2]] 에 대하여 대칭이다.\n[[EQUATION:n]]이 자연수일 때 [[EQUATION:( n - 2 )^2]] 의 값을 차례로 구해보면,\n[[EQUATION:n = 1]] 일 때 [[EQUATION:( 1 -

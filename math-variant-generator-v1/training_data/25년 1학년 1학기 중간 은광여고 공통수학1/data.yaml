@@ -1,0 +1,5 @@
+path: C:/Users/matho/OneDrive/바탕 화면/pdf모음\training_data\25년 1학년 1학기 중간 은광여고 공통수학1
+train: images
+val: images
+nc: 1
+names: ['problem']

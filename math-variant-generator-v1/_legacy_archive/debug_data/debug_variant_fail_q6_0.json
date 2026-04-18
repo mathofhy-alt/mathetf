@@ -1,0 +1,102 @@
+``` python
+def solve_v2():
+    ans = 0
+    for n in range(1, 31):
+        # find number of k such that 2^{k+2} < n^2 <= 2^{k+3}
+        count = 0
+        for k in range(1, 20):
+            if 2**(k+2) < n**2 <= 2**(k+3):
+                count += 1
+        ans += count
+    return ans
+
+print("V2 ans:", solve_v2())
+
+```
+```
+V2 ans: 28
+
+```
+``` python
+def solve_v3():
+    ans = 0
+    valid_n = []
+    for n in range(1, 21):
+        for k in range(1, 20):
+            if 2**(k+2) < n**2 <= 9 * 2**(k-1):
+                ans += n
+                valid_n.append(n)
+                break
+    return ans, valid_n
+
+print("V3 ans:", solve_v3())
+
+```
+```
+V3 ans: (21, [3, 6, 12])
+
+```
+``` python
+def solve_orig():
+    ans = 0
+    valid_n = []
+    for n in range(1, 21):
+        for k in range(1, 20):
+            if 2**(k+2) < n**2 <= (2**(k+4))/3:
+                ans += n
+                valid_n.append(n)
+                break
+    return ans, valid_n
+
+print("Orig ans:", solve_orig())
+
+```
+```
+Orig ans: (78, [3, 6, 9, 12, 13, 17, 18])
+
+```
+``` python
+def solve_v1():
+    ans = 0
+    valid_n = []
+    for n in range(1, 21):
+        for k in range(1, 20):
+            if 4 * 3**k < n**2 <= 4 * 3**(k+2) / 5:
+                ans += n
+                valid_n.append(n)
+                break
+    return ans, valid_n
+
+print("V1 ans:", solve_v1())
+
+```
+```
+V1 ans: (94, [4, 7, 8, 11, 12, 13, 19, 20])
+
+```
+[
+  {
+    "question_num": "6",
+    "question": "다음 조건을 만족시키는 [[EQUATION:20]] 이하의 모든 자연수 [[EQUATION:n]]의 값의 합을 구하시오.\n\n[[EQUATION:log_{2} ( na - a^{2} )]]과 [[EQUATION:log_{2} ( nb - b^{2} )]]은 같은 자연수이고\n[[EQUATION:0 < b - a le {n} over {2}]]인 두 실수 [[EQUATION:a]], [[EQUATION:b]]가 존재한다.",
+    "answer_options": [],
+    "explanation": "[[EQUATION:log_{2} ( na - a^{2} ) = log_{2} ( nb - b^{2} ) = k]] ([[EQUATION:k]]는 자연수)라 하자.\n[[EQUATION:na - a^{2} = 2^{k}]], [[EQUATION:nb - b^{2} = 2^{k}]]이므로 [[EQUATION:a]], [[EQUATION:b]]는 이차방정식 [[EQUATION:x^{2} - nx + 2^{k} = 0]]의 두 실근이다.\n이차방정식의 근과 계수의 관계에 의해 [[EQUATION:a + b = n]], [[EQUATION:ab = 2^{k}]]이다.\n[[EQUATION:0 < b - a]]이므로 [[EQUATION:a neq b]]이며, [[EQUATION:( b - a )^{2} = ( a + b )^{2} - 4 ab = n^{2} - 2^{k+2}]]이다.\n조건 [[EQUATION:0 < b - a le {n} over {2}]]의 각 변을 제곱하면 [[EQUATION:0 < ( b - a )^{2} le {n^{2}} over {4}]]이다.\n따라서 [[EQUATION:0 < n^{2} - 2^{k+2} le {n^{2}} over {4}]]가 성립한다.\n이를 정리하면 [[EQUATION:2^{k+2} < n^{2}]]이고 [[EQUATION:{3} over {4} n^{2} le 2^{k+2}]]이므로,\n[[EQUATION:2^{k+2} < n^{2} le {2^{k+4}} over {3}]]이다.\n이제 [[EQUATION:k]]가 자연수([[EQUATION:k ge 1]])일 때, [[EQUATION:20]] 이하의 자연수 [[EQUATION:n]]을 구해보자.\n[[EQUATION:k = 1]]일 때, [[EQUATION:8 < n^{2} le 10.6 cdots]]이므로 [[EQUATION:n = 3]]\n[[EQUATION:k = 2]]일 때, [[EQUATION:16 < n^{2} le 21.3 cdots]]이므로 만족하는 [[EQUATION:n]]이 없다.\n[[EQUATION:k = 3]]일 때, [[EQUATION:32 < n^{2} le 42.6 cdots]]이므로 [[EQUATION:n = 6]]\n[[EQUATION:k = 4]]일 때, [[EQUATION:64 < n^{2} le 85.3 cdots]]이므로 [[EQUATION:n = 9]]\n[[EQUATION:k = 5]]일 때, [[EQUATION:128 < n^{2} le 170.6 cdots]]이므로 [[EQUATION:n = 12 , 13]]\n[[EQUATION:k = 6]]일 때, [[EQUATION:256 < n^{2} le 341.3 cdots]]이므로 [[EQUATION:n = 17 , 18]]\n[[EQUATION:k ge 7]]일 때, [[EQUATION:n^{2} > 512]]가 되어 [[EQUATION:n le 20]]을 만족하지 않는다.\n따라서 모든 자연수 [[EQUATION:n]]의 값의 합은 [[EQUATION:3 + 6 + 9 + 12 + 13 + 17 + 18 = 78]]이다."
+  },
+  {
+    "question_num": "6-변형1",
+    "question": "다음 조건을 만족시키는 [[EQUATION:20]] 이하의 모든 자연수 [[EQUATION:n]]의 값의 합을 구하시오.\n\n[[EQUATION:log_{3} ( na - a^{2} )]]과 [[EQUATION:log_{3} ( nb - b^{2} )]]은 같은 자연수이고\n[[EQUATION:0 < b - a le {2 n} over {3}]]인 두 실수 [[EQUATION:a]], [[EQUATION:b]]가 존재한다.",
+    "answer_options": [],
+    "explanation": "[[EQUATION:log_{3} ( na - a^{2} ) = log_{3} ( nb - b^{2} ) = k]] ([[EQUATION:k]]는 자연수)라 하자.\n[[EQUATION:a]], [[EQUATION:b]]는 이차방정식 [[EQUATION:x^{2} - nx + 3^{k} = 0]]의 서로 다른 두 실근이므로 [[EQUATION:a + b = n]], [[EQUATION:ab = 3^{k}]]이다.\n[[EQUATION:( b - a )^{2} = n^{2} - 4 CDOT 3^{k}]]이고, 조건 [[EQUATION:0 < b - a le {2 n} over {3}]]을 제곱하면 [[EQUATION:0 < ( b - a )^{2} le {4 n^{2}} over {9}]]이다.\n따라서 [[EQUATION:0 < n^{2} - 4 CDOT 3^{k} le {4 n^{2}} over {9}]]가 성립한다.\n부등식을 정리하면 [[EQUATION:4 CDOT 3^{k} < n^{2} le {36 CDOT 3^{k}} over {5} = {4 CDOT 3^{k+2}} over {5}]]이다.\n[[EQUATION:k = 1]]일 때, [[EQUATION:12 < n^{2} le 21.6]]이므로 [[EQUATION:n = 4]]\n[[EQUATION:k = 2]]일 때, [[EQUATION:36 < n^{2} le 64.8]]이므로 [[EQUATION:n = 7 , 8]]\n[[EQUATION:k = 3]]일 때, [[EQUATION:108 < n^{2} le 194.4]]이므로 [[EQUATION:n = 11 , 12 , 13]]\n[[EQUATION:k = 4]]일 때, [[EQUATION:324 < n^{2} le 583.2]]이므로 [[EQUATION:n = 19 , 20]]\n[[EQUATION:k ge 5]]일 때, [[EQUATION:n^{2} > 972]]이므로 [[EQUATION:n le 20]]을 만족하지 않는다.\n따라서 모든 자연수 [[EQUATION:n]]의 값의 합은 [[EQUATION:4 + 7 + 8 + 11 + 12 + 13 + 19 + 20 = 94]]이다."
+  },
+  {
+    "question_num": "6-변형2",
+    "question": "자연수 [[EQUATION:n]]에 대하여, [[EQUATION:log_{2} ( na - a^{2} ) = log_{2} ( nb - b^{2} ) = k]] (단, [[EQUATION:k]]는 자연수)이고,\n[[EQUATION:0 < b - a le {n} over {sqrt {2}}]]\n를 만족시키는 두 실수 [[EQUATION:a]], [[EQUATION:b]]가 존재하도록 하는 모든 자연수 [[EQUATION:k]]의 개수를 [[EQUATION:f ( n )]]이라 하자.\n[[EQUATION:sum_{n = 1}^{30} f ( n )]]의 값을 구하시오.",
+    "answer_options": [],
+    "explanation": "[[EQUATION:log_{2} ( na - a^{2} ) = log_{2} ( nb - b^{2} ) = k]]라 하면, [[EQUATION:a]], [[EQUATION:b]]는 이차방정식 [[EQUATION:x^{2} - nx + 2^{k} = 0]]의 두 실근이다.\n[[EQUATION:( b - a )^{2} = n^{2} - 2^{k+2}]]이고, 조건 [[EQUATION:0 < b - a le {n} over {sqrt {2}}]]를 제곱하면 [[EQUATION:0 < n^{2} - 2^{k+2} le {n^{2}} over {2}]]이다.\n부등식을 정리하면 [[EQUATION:2^{k+2} < n^{2} le 2^{k+3}]]이다.\n[[EQUATION:n = 1 , 2]]일 때, [[EQUATION:n^{2} le 4]]이므로 이를 만족하는 자연수 [[EQUATION:k]]는 존재하지 않아 [[EQUATION:f ( 1 ) = 0]], [[EQUATION:f ( 2 ) = 0]]이다.\n[[EQUATION:n ge 3]]일 때, [[EQUATION:n^{2} ge 9]]이다.\n자연수 [[EQUATION:m ge 3]]에 대하여 구간 [[EQUATION:( 2^{m} , 2^{m+1} ]]]들은 [[EQUATION:8]]보다 큰 모든 자연수를 빠짐없이 겹치지 않게 분할한다.\n따라서 [[EQUATION:n^{2}]]은 반드시 어느 한 구간 [[EQUATION:( 2^{m} , 2^{m+1} ]]]에 속하게 되며, 이때 [[EQUATION:k = m - 2]]로 유일하게 결정된다.\n즉, [[EQUATION:n ge 3]]인 모든 자연수 [[EQUATION:n]]에 대하여 조건을 만족하는 자연수 [[EQUATION:k]]는 정확히 [[EQUATION:1]]개 존재하므로 [[EQUATION:f ( n ) = 1]]이다.\n따라서 [[EQUATION:sum_{n = 1}^{30} f ( n ) = 0 + 0 + 28 TIMES 1 = 28]]이다."
+  },
+  {
+    "question_num": "6-변형3",
+    "question": "자연수 [[EQUATION:n]]에 대하여, 곡선 [[EQUATION:y = nx - x^{2}]]과 직선 [[EQUATION:y = 2^{k}]] (단, [[EQUATION:k]]는 자연수)이 서로 다른 두 점 [[EQUATION:( a , 2^{k} )]], [[EQUATION:( b , 2^{k} )]]에서 만난다.\n이 곡선과 직선으로 둘러싸인 부분의 넓이를 [[EQUATION:S]]라 할 때, [[EQUATION:0 < S le {n^{3}} over {162}]]을 만족시키는 자연수 [[EQUATION:k]]가 존재하도록 하는 [[EQUATION:20]] 이하의 모든 자연수 [[EQUATION:n]]의 값의 합을 구하시오.",
+    "answer_options": [],
+    "explanation": "이차함수 [[EQUATION:y = nx - x^{2}]]의 그래프와 직선 [[EQUATION:y = 2^{k}]]의 두 교점의 [[EQUATION:x]]좌표가 [[EQUATION:a]], [[EQUATION:b]]이므로, [[EQUATION:a]], [[EQUATION:b]]는 방정식 [[EQUATION:x^{2} - nx + 2^{k} = 0]]의 두 실근이다.\n두 교점 사이의 [[EQUATION:x]]좌표 차이는 [[EQUATION:b - a = sqrt {n^{2} - 2^{k+2}}]]이다.\n곡선과 직선으로 둘러싸인 부분의 넓이 [[EQUATION:S]]는 이차함수의 정적분 공식에 의해 [[EQUATION:S = {1} over {6} ( b - a )^{3}]]이다.\n조건 [[EQUATION:0 < S le {n^{3}} over {162}]]에 대입하면 [[EQUATION:0 < {1} over {6} ( b - a )^{3} le {n^{3}} over {162}]]이고, 이를 정리하면 [[EQUATION:0 < ( b - a )^{3} le {n^{3}} over {27}]]이므로 [[EQUATION:0 < b - a le {n} over {3}]]이다.\n양변을 제곱하면 [[EQUATION:0 < n^{2} - 2^{k+2} le {n^{2}} over {9}]]가 성립한다.\n부등식을 정리하면 [[EQUATION:2^{k+2} < n^{2} le {9 CDOT 2^{k+2}} over {8} = 9 CDOT 2^{k-1}]]이다.\n[[EQUATION:k = 1]]일 때, [[EQUATION:8 < n^{2} le 9]]이므로 [[EQUATION:n = 3]]\n[[EQUATION:k = 2]]일 때, [[EQUATION:16 < n^{2} le 18]]이므로 만족하는 [[EQUATION:n]]이 없다.\n[[EQUATION:k = 3]]일 때, [[EQUATION:32 < n^{2} le 36]]이므로 [[EQUATION:n = 6]]\n[[EQUATION:k = 4]]일 때, [[EQUATION:64 < n^{2} le 72]]이므로 만족하는 [[EQUATION:n]]이 없다.\n[[EQUATION:k = 5]]일 때, [[EQUATION:128 < n^{2} le 144]]이므로 [[EQUATION:n = 12]]\n[[EQUATION:k = 6]]일 때, [[EQUATION:256 < n^{2} le 288]]이므로 만족하는 [[EQUATION:n]]이 없다. ([[EQUATION:16^{2} = 256]], [[EQUATION:17^{2} = 289]])\n[[EQUATION:k ge 7]]일 때, [[EQUATION:n^{2} > 512]]이므로 [[EQUATION:n le 20]]을 만족하지 않는다.\n따라서 모든 자연수 [[EQUATION:n]]의 값의 합은 [[EQUATION:3 + 6 + 12 = 21]]이다."
+  }
+]

@@ -1,0 +1,18 @@
+=== [🚨 제미나이 언어모델 완전 생(RAW) 출력 텍스트 🚨] ===
+
+```json
+[
+  {
+    "question_num": "1",
+    "pre_reading_aloud": "🚨[수식 극정밀 스캔]🚨 첫 번째 항은 alpha bar beta, 두 번째 항은 bar alpha beta, 세 번째 항은 분자에 5 beta, 분모에 alpha, 네 번째 항은 분자에 5 bar beta, 분모에 alpha가 있습니다. 분모에는 bar가 전혀 없습니다.",
+    "question": "두 복소수 [[EQUATION:alpha = 4 + 3i]]와 [[EQUATION:beta = 2 + i]]에 대하여\n[[EQUATION:alpha bar beta + bar alpha beta + {{{{5 beta}}}} over {{{{alpha}}}} + {{{{5 bar beta}}}} over {{{{alpha}}}}]]\n의 값은? (단, [[EQUATION:bar alpha]], [[EQUATION:bar beta]]는 [[EQUATION:alpha]], [[EQUATION:beta]]의 켤레복소수)",
+    "answer_options": [
+      "① [[EQUATION:21]]",
+      "② [[EQUATION:22]]",
+      "③ [[EQUATION:23]]",
+      "④ [[EQUATION:24]]",
+      "⑤ [[EQUATION:25]]"
+    ]
+  }
+]
+```

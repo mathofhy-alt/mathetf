@@ -1,0 +1,14 @@
+[탐색된 문제 번호: 15]
+[
+  {
+    "problem_num": "15",
+    "question": "[[EQUATION:-1 <= x <= 3]]에서 이차함수 [[EQUATION:f(x)=(x-a)^{2}+b]]의 최댓값이 [[EQUATION:4]]일 때, 실수 [[EQUATION:a]], [[EQUATION:b]]에 대하여 <보기>에서 옳은 것만을 있는 대로 고른 것은?\n<보기>\nㄱ [[EQUATION:a = 2]]이면, [[EQUATION:b = 4]]이다.\nㄴ [[EQUATION:a <= 1]]이면, [[EQUATION:b = -a^{2} + 2a + 5]]이다.\nㄷ [[EQUATION:a + b]]의 최댓값은 [[EQUATION:7]]이다.",
+    "answer_options": [
+      "1) ㄱ",
+      "2) ㄴ",
+      "3) ㄷ",
+      "4) ㄱ, ㄴ",
+      "5) ㄴ, ㄷ"
+    ]
+  }
+]
