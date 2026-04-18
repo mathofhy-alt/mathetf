@@ -58,6 +58,7 @@ export default function QuestionBankPage() {
     }, [cart]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isAutoAdding, setIsAutoAdding] = useState(false);
+    const [selectedReviewIds, setSelectedReviewIds] = useState<Set<string>>(new Set());
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [similarTarget, setSimilarTarget] = useState<any | null>(null);
     const [solutionTarget, setSolutionTarget] = useState<any | null>(null);
@@ -468,17 +469,20 @@ export default function QuestionBankPage() {
         });
     };
 
-    // [유사문항 자동추가] 현재 cart의 모든 문제에 대해 유사도 1위 자동 삽입
+    // [유사문항 자동추가] 선택된 카드만 (없으면 전체) 유사도 1위 자동 삽입
     const handleAutoAddSimilar = async () => {
         if (cart.length === 0) return;
         setIsAutoAdding(true);
 
-        // 현재 cart 스냅샷 (이미 _similarOf가 없는 원본 문제들만)
-        const originalQuestions = cart.filter(q => !q._similarOf);
+        // 선택된 카드가 있으면 그것만, 없으면 원본 문제 전체
+        const targetQuestions = selectedReviewIds.size > 0
+            ? cart.filter(q => !q._similarOf && selectedReviewIds.has(q.id))
+            : cart.filter(q => !q._similarOf);
 
         let updatedCart = [...cart];
+        let addedCount = 0;
 
-        for (const baseQ of originalQuestions) {
+        for (const baseQ of targetQuestions) {
             try {
                 const res = await fetch(`/api/pro/similar-questions?id=${baseQ.id}&limit=1`);
                 if (!res.ok) continue;
@@ -486,10 +490,8 @@ export default function QuestionBankPage() {
                 if (!data.success || !data.data || data.data.length === 0) continue;
 
                 const topSimilar = data.data[0];
-                // 이미 cart에 있으면 건너뜀
                 if (updatedCart.find(q => q.id === topSimilar.id)) continue;
 
-                // baseQ 뒤 (기존 유사문제 뒤)에 삽입
                 const baseIdx = updatedCart.findIndex(q => q.id === baseQ.id);
                 if (baseIdx === -1) continue;
 
@@ -502,14 +504,16 @@ export default function QuestionBankPage() {
                     { ...topSimilar, _similarOf: baseQ.id },
                     ...updatedCart.slice(insertAt)
                 ];
+                addedCount++;
             } catch (e) {
                 console.error(`유사문제 조회 실패 (Q: ${baseQ.id})`, e);
             }
         }
 
         setCart(updatedCart);
+        setSelectedReviewIds(new Set()); // 선택 해제
         setIsAutoAdding(false);
-        alert(`유사문항 자동추가 완료! ${updatedCart.length - cart.length}개 추가됨`);
+        alert(`유사문항 자동추가 완료! ${addedCount}개 추가됨`);
     };
 
     const toggleCart = (question: any) => {
@@ -893,7 +897,7 @@ export default function QuestionBankPage() {
                                 <button
                                     onClick={handleAutoAddSimilar}
                                     disabled={isAutoAdding || cart.length === 0}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm"
+                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm whitespace-nowrap"
                                 >
                                     {isAutoAdding ? (
                                         <>
@@ -903,8 +907,10 @@ export default function QuestionBankPage() {
                                             </svg>
                                             분석 중...
                                         </>
+                                    ) : selectedReviewIds.size > 0 ? (
+                                        <>🔗 선택 {selectedReviewIds.size}개 유사추가</>
                                     ) : (
-                                        <>🔗 유사문항 자동추가</>
+                                        <>🔗 전체 유사문항 자동추가</>
                                     )}
                                 </button>
                             </div>
@@ -928,15 +934,39 @@ export default function QuestionBankPage() {
                                         onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
                                         onDragEnd={() => viewMode === 'review' && handleDragEnd()}
                                         className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
-                                            ${viewMode === 'review' ? (draggingIndex === idx ? 'opacity-40 scale-95 border-brand-500 border-dashed' : 'bg-white border-slate-200 cursor-move hover:border-brand-300 hover:shadow-md') :
-                                                inCart ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500 shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
+                                            ${viewMode === 'review'
+                                                ? draggingIndex === idx
+                                                    ? 'opacity-40 scale-95 border-brand-500 border-dashed'
+                                                    : selectedReviewIds.has(q.id)
+                                                        ? 'bg-violet-50 border-violet-500 ring-2 ring-violet-400 cursor-move hover:shadow-md'
+                                                        : 'bg-white border-slate-200 cursor-move hover:border-brand-300 hover:shadow-md'
+                                                : inCart ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500 shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
                                         `}
                                     >
                                         {/* Header */}
                                         <div className="flex justify-between items-center p-4 border-b bg-gray-50/50">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm ${viewMode === 'review' ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                                    {idx + 1}
+                                                {/* 번호 백지 클릭 시 선택/해제 토글 */}
+                                                <span
+                                                    onClick={(e) => {
+                                                        if (viewMode !== 'review' || q._similarOf) return;
+                                                        e.stopPropagation();
+                                                        setSelectedReviewIds(prev => {
+                                                            const next = new Set(prev);
+                                                            if (next.has(q.id)) next.delete(q.id);
+                                                            else next.add(q.id);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition-colors
+                                                        ${viewMode === 'review' && !q._similarOf ? 'cursor-pointer' : ''}
+                                                        ${selectedReviewIds.has(q.id)
+                                                            ? 'bg-violet-600 text-white ring-2 ring-violet-400'
+                                                            : viewMode === 'review' ? 'bg-brand-600 text-white hover:bg-violet-500' : 'bg-slate-200 text-slate-500'
+                                                        }`}
+                                                    title={viewMode === 'review' && !q._similarOf ? '클릭하여 선택' : ''}
+                                                >
+                                                    {selectedReviewIds.has(q.id) ? '✓' : idx + 1}
                                                 </span>
                                                 {/* [유사문제 뱃지] _similarOf가 있으면 원본 문제 번호 표시 */}
                                                 {viewMode === 'review' && q._similarOf && (() => {
