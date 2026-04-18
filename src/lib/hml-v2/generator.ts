@@ -837,14 +837,14 @@ export function generateHmlFromTemplate(
             combinedContentXmlFull += questionXml;
 
             // [LAYOUT V2] 단당 2문제 고정 레이아웃
-            // 각 문제 뒤에 풀이 공간(gutter)을 삽입하고,
+            // 각 문제 뒤에 빈 줄 8개(풀이 공간)를 삽입하고,
             // 짝수 번째 문제(2, 4, 6...) 뒤에는 반드시 ColBreak를 넣어
             // 한 단에 항상 정확히 2문제, 한 페이지에 정확히 4문제가 들어오게 함.
-            const gutterPsId = (validStyles as any).gutterPsId || "9998";
             const isLastInColumn = (qIndex % 2 === 0); // qIndex는 1-based
 
-            // 풀이 공간 (gutter) - 모든 문제 뒤에 삽입
-            combinedContentXmlFull += `\n<P Style="0" ParaShape="${gutterPsId}"><TEXT CharShape="0">&#160;</TEXT></P>\n`;
+            // 풀이 공간: 빈 줄 8개
+            const emptyLine = `<P Style="0" ParaShape="0"><TEXT CharShape="0"></TEXT></P>`;
+            combinedContentXmlFull += '\n' + Array(8).fill(emptyLine).join('\n') + '\n';
 
             if (isLastInColumn) {
                 // 짝수 번째 문제 → 단 강제 전환
