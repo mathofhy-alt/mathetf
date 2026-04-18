@@ -1220,8 +1220,15 @@ function sanitizeNodeStyles(node: any, validSets: {
     }
 
     // [V58.1] Apply forced CharShape (Font)
+    // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 자식으로 가진 TEXT는 예외 처리
+    // → 미주 번호 숨김용 CharShape=14를 그대로 유지
     if (forcedCs && (node.tagName === 'TEXT' || node.tagName === 'CHARSHAPE')) {
-        node.setAttribute('CharShape', forcedCs);
+        const hasDirectEndnote = Array.from(node.childNodes || []).some(
+            (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
+        );
+        if (!hasDirectEndnote) {
+            node.setAttribute('CharShape', forcedCs);
+        }
     }
 
     checkAndStrip('ParaShape', validSets.ParaShape);
