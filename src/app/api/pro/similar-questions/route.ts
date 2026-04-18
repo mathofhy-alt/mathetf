@@ -139,18 +139,26 @@ export async function GET(req: NextRequest) {
 
         results = results.slice(0, limit);
 
-        // 5. Fetch images
+        // 5. RPC 반환 컬럼이 제한적일 수 있으므로, ID 목록으로 questions 테이블에서 풀 데이터를 다시 조회
         if (results.length > 0) {
             const resultIds = results.map((r: any) => r.id);
-            const { data: images } = await supabase
-                .from('question_images')
-                .select('*')
-                .in('question_id', resultIds);
+            const similarityMap = Object.fromEntries(results.map((r: any) => [r.id, r.similarity]));
 
-            // Attach images
-            results.forEach((r: any) => {
-                r.question_images = images?.filter((img: any) => img.question_id === r.id) || [];
-            });
+            const { data: fullQuestions, error: fullError } = await supabase
+                .from('questions')
+                .select('*, question_images(*)')
+                .in('id', resultIds);
+
+            if (fullError) throw fullError;
+
+            // similarity 점수를 붙이고, RPC 결과 순서대로 정렬
+            results = resultIds
+                .map((id: string) => {
+                    const q = fullQuestions?.find((fq: any) => fq.id === id);
+                    if (!q) return null;
+                    return { ...q, similarity: similarityMap[id] };
+                })
+                .filter(Boolean);
         }
 
         return NextResponse.json({
