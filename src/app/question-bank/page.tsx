@@ -57,6 +57,7 @@ export default function QuestionBankPage() {
         }
     }, [cart]);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isAutoAdding, setIsAutoAdding] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [similarTarget, setSimilarTarget] = useState<any | null>(null);
     const [solutionTarget, setSolutionTarget] = useState<any | null>(null);
@@ -467,6 +468,50 @@ export default function QuestionBankPage() {
         });
     };
 
+    // [유사문항 자동추가] 현재 cart의 모든 문제에 대해 유사도 1위 자동 삽입
+    const handleAutoAddSimilar = async () => {
+        if (cart.length === 0) return;
+        setIsAutoAdding(true);
+
+        // 현재 cart 스냅샷 (이미 _similarOf가 없는 원본 문제들만)
+        const originalQuestions = cart.filter(q => !q._similarOf);
+
+        let updatedCart = [...cart];
+
+        for (const baseQ of originalQuestions) {
+            try {
+                const res = await fetch(`/api/pro/similar-questions?id=${baseQ.id}&limit=1`);
+                if (!res.ok) continue;
+                const data = await res.json();
+                if (!data.success || !data.data || data.data.length === 0) continue;
+
+                const topSimilar = data.data[0];
+                // 이미 cart에 있으면 건너뜀
+                if (updatedCart.find(q => q.id === topSimilar.id)) continue;
+
+                // baseQ 뒤 (기존 유사문제 뒤)에 삽입
+                const baseIdx = updatedCart.findIndex(q => q.id === baseQ.id);
+                if (baseIdx === -1) continue;
+
+                let insertAt = baseIdx + 1;
+                while (insertAt < updatedCart.length && updatedCart[insertAt]._similarOf === baseQ.id) {
+                    insertAt++;
+                }
+                updatedCart = [
+                    ...updatedCart.slice(0, insertAt),
+                    { ...topSimilar, _similarOf: baseQ.id },
+                    ...updatedCart.slice(insertAt)
+                ];
+            } catch (e) {
+                console.error(`유사문제 조회 실패 (Q: ${baseQ.id})`, e);
+            }
+        }
+
+        setCart(updatedCart);
+        setIsAutoAdding(false);
+        alert(`유사문항 자동추가 완료! ${updatedCart.length - cart.length}개 추가됨`);
+    };
+
     const toggleCart = (question: any) => {
         if (cart.find(q => q.id === question.id)) {
             setCart(cart.filter(q => q.id !== question.id));
@@ -830,17 +875,37 @@ export default function QuestionBankPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-white border rounded-2xl p-4 flex items-center gap-4 shadow-sm">
-                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Quick Sort</span>
-                                <div className="h-6 w-px bg-slate-200 mx-1"></div>
-                                <button onClick={() => sortCart('original')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
-                                    원본 번호순
-                                </button>
-                                <button onClick={() => sortCart('diff-asc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
-                                    난이도 낮은순
-                                </button>
-                                <button onClick={() => sortCart('diff-desc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
-                                    난이도 높은순
+                            <div className="bg-white border rounded-2xl p-4 flex items-center gap-4 shadow-sm justify-between">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Quick Sort</span>
+                                    <div className="h-6 w-px bg-slate-200 mx-1"></div>
+                                    <button onClick={() => sortCart('original')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                        원본 번호순
+                                    </button>
+                                    <button onClick={() => sortCart('diff-asc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                        난이도 낮은순
+                                    </button>
+                                    <button onClick={() => sortCart('diff-desc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                        난이도 높은순
+                                    </button>
+                                </div>
+                                {/* 유사문항 자동추가 버튼 */}
+                                <button
+                                    onClick={handleAutoAddSimilar}
+                                    disabled={isAutoAdding || cart.length === 0}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm"
+                                >
+                                    {isAutoAdding ? (
+                                        <>
+                                            <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                            </svg>
+                                            분석 중...
+                                        </>
+                                    ) : (
+                                        <>🔗 유사문항 자동추가</>
+                                    )}
                                 </button>
                             </div>
                         </header>
