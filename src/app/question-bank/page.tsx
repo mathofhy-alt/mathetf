@@ -948,9 +948,16 @@ export default function QuestionBankPage() {
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 {/* 번호 백지 클릭 시 선택/해제 토글 */}
                                                 <span
+                                                    onMouseDown={(e) => {
+                                                        // draggable 카드 안에서 클릭이 드래그로 인식되는 것 방지
+                                                        if (viewMode === 'review' && !q._similarOf) {
+                                                            e.stopPropagation();
+                                                        }
+                                                    }}
                                                     onClick={(e) => {
                                                         if (viewMode !== 'review' || q._similarOf) return;
                                                         e.stopPropagation();
+                                                        e.preventDefault();
                                                         setSelectedReviewIds(prev => {
                                                             const next = new Set(prev);
                                                             if (next.has(q.id)) next.delete(q.id);
@@ -958,7 +965,7 @@ export default function QuestionBankPage() {
                                                             return next;
                                                         });
                                                     }}
-                                                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition-colors
+                                                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition-colors select-none
                                                         ${viewMode === 'review' && !q._similarOf ? 'cursor-pointer' : ''}
                                                         ${selectedReviewIds.has(q.id)
                                                             ? 'bg-violet-600 text-white ring-2 ring-violet-400'
