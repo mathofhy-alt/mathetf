@@ -198,7 +198,7 @@ export function generateHmlFromTemplate(
                     psGutter.insertBefore(margin, psGutter.firstChild);
                 }
                 margin.setAttribute('LineSpacingType', 'Fixed');
-                margin.setAttribute('LineSpacing', '40000'); // [V61] 400pt (Increased from 250pt)
+                margin.setAttribute('LineSpacing', '15000'); // [LAYOUT V2] 150pt 풀이 공간 (단당 2문제 고정 레이아웃)
 
                 psList.appendChild(psGutter);
                 validStyles.ParaShape.add(gutterPsId);
@@ -832,36 +832,29 @@ export function generateHmlFromTemplate(
 
             // [V47] Advanced Layout: Gutter Protection (150pt + KeepTogether)
             // We apply ParaShape 9998 (KeepTogether, 150pt margin) to the VERY LAST paragraph of the question block.
-            // However, to be absolutely sure the gap appears, we add an explicit padding paragraph at the end.
             console.log(`[HML-V2 DEBUG] questionXml length: ${questionXml.length}`);
 
             combinedContentXmlFull += questionXml;
 
-            // [V53] Gutter Padding (250pt Fixed)
-            // Use sequential gutterPsId and Style 0
+            // [LAYOUT V2] 단당 2문제 고정 레이아웃
+            // 각 문제 뒤에 풀이 공간(gutter)을 삽입하고,
+            // 짝수 번째 문제(2, 4, 6...) 뒤에는 반드시 ColBreak를 넣어
+            // 한 단에 항상 정확히 2문제, 한 페이지에 정확히 4문제가 들어오게 함.
             const gutterPsId = (validStyles as any).gutterPsId || "9998";
+            const isLastInColumn = (qIndex % 2 === 0); // qIndex는 1-based
+
+            // 풀이 공간 (gutter) - 모든 문제 뒤에 삽입
             combinedContentXmlFull += `\n<P Style="0" ParaShape="${gutterPsId}"><TEXT CharShape="0">&#160;</TEXT></P>\n`;
 
-            // [V47] SMART LAYOUT STRATEGY (Restored & Refined)
-            // Heuristic: Estimate height in "lines". 1 P = 1 line, 1 Image = 15 lines.
-            // [V61] 400pt gutter is ~16 lines in our heuristic (Increased from 250pt/10 lines)
-            const countImages = (questionXml.match(/<PICTURE|<IMAGE/g) || []).length;
-            const countParas = (questionXml.match(/<P /g) || []).length;
-            const MAX_COL_HEIGHT = 65; // [V63] Adjusted to 65 (User request)
-            const questionHeight = (countParas * 1) + (countImages * 10);
-            const gutterHeight = 16;
-            const totalRequiredSpace = questionHeight + gutterHeight;
-
-            console.log(`[HML-V2 LAYOUT] Q${qIndex}: Paras=${countParas}, Images=${countImages} -> Height=${questionHeight}, Total=${totalRequiredSpace} (Col: ${currentColumnHeight}/${MAX_COL_HEIGHT})`);
-
-            // Logic: Break column if we overflow (including the 10-line gutter)
-            if (currentColumnHeight + totalRequiredSpace > MAX_COL_HEIGHT) {
-                console.log(`[HML-V2] Smart Layout: Question ${qIndex} (Height ${totalRequiredSpace}) overflows column (${currentColumnHeight}/45). Injecting ColBreak.`);
+            if (isLastInColumn) {
+                // 짝수 번째 문제 → 단 강제 전환
+                console.log(`[HML-V2 LAYOUT] Q${qIndex}: 단 2번째 문제 → ColBreak 삽입`);
                 combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
-                currentColumnHeight = 0;
+            } else {
+                // 홀수 번째 문제 → 같은 단에 다음 문제 이어짐
+                console.log(`[HML-V2 LAYOUT] Q${qIndex}: 단 1번째 문제 → 다음 문제 이어짐`);
             }
 
-            currentColumnHeight += totalRequiredSpace;
 
         }
     }
