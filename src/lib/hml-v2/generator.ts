@@ -407,7 +407,12 @@ export function generateHmlFromTemplate(
             .replace(/<(?:hp:)?COLBREAK[^>]*?>/gi, '')
             .replace(/ColumnBreak\s*=\s*"true"/gi, '')
             .replace(/ColumnBreak\s*=\s*"1"/gi, '')
-            .replace(/PageBreak\s*=\s*"true"/gi, '');
+            .replace(/PageBreak\s*=\s*"true"/gi, '')
+            // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 포함한 TEXT의 CharShape를 14(흰색+1pt)로 교체
+            // → 미주 번호(위첨자)가 출력 시 보이지 않음. 풀이 내용은 BOX_MIJU로 별도 처리됨
+            .replace(/<TEXT\s+CharShape="[^"]*"(\s[^>]*)?>(<ENDNOTE>|<hp:ENDNOTE>)/gi,
+                (match: string) => match.replace(/CharShape="[^"]*"/, 'CharShape="14"'));
+
         // Add ENDNOTE detection logging
         // [FIX V20] Regex-based search for ANY version of endnote tag
         if (/<[^>]*?ENDNOTE/i.test(cleanContent)) {
@@ -527,16 +532,18 @@ export function generateHmlFromTemplate(
                     }
                 }
 
-                // [FIX ENDNOTE INVISIBLE] 미주(ENDNOTE)를 품은 단락의 미주 번호를
-                // 흰색+1pt(CharShape Id=14)로 강제 설정 → 출력 시 보이지 않음
-                const hasEndnote = p.getElementsByTagName('ENDNOTE').length > 0
-                    || p.getElementsByTagName('hp:ENDNOTE').length > 0;
-                if (hasEndnote) {
-                    const endnoteTextNodes = Array.from(p.getElementsByTagName('TEXT'));
-                    for (const tn of endnoteTextNodes) {
-                        tn.setAttribute('CharShape', '14'); // Height=100, TextColor=white(16777215)
+
+                // [FIX ENDNOTE INVISIBLE] 미주 번호(위첨자)를 흰색+1pt로 숨기기
+                // ENDNOTE를 직접 자식으로 가진 TEXT만 타겟 (풀이 본문 TEXT는 건드리지 않음)
+                const allTextsInP = Array.from(p.getElementsByTagName('TEXT'));
+                for (const tn of allTextsInP) {
+                    const directEndnote = Array.from(tn.childNodes).find(
+                        (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
+                    );
+                    if (directEndnote) {
+                        tn.setAttribute('CharShape', '14'); // Height=100, TextColor=16777215(흰색)
+                        console.log(`[HML-V2] Endnote ref TEXT → invisible CharShape(14).`);
                     }
-                    console.log(`[HML-V2] Endnote trigger paragraph forced to invisible CharShape(14).`);
                 }
 
                 p.removeAttribute('data-hml-style');
