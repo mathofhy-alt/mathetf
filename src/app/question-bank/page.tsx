@@ -446,6 +446,27 @@ export default function QuestionBankPage() {
         setSimilarTarget(null);
     };
 
+    // [유사문제 삽입] baseQuestion 바로 뒤에 삽입 (이미 추가된 유사문제들 뒤로)
+    const handleAddSimilarAfter = (baseQ: any, newQ: any) => {
+        setCart(prev => {
+            const alreadyIn = prev.find(q => q.id === newQ.id);
+            if (alreadyIn) {
+                // 이미 담긴 경우 → 제거
+                return prev.filter(q => q.id !== newQ.id);
+            }
+            const baseIdx = prev.findIndex(q => q.id === baseQ.id);
+            if (baseIdx === -1) return [...prev, { ...newQ, _similarOf: baseQ.id }];
+            // baseQ 뒤에 이미 있는 유사문제들을 건너뛰고 삽입
+            let insertAt = baseIdx + 1;
+            while (insertAt < prev.length && prev[insertAt]._similarOf === baseQ.id) {
+                insertAt++;
+            }
+            const newCart = [...prev];
+            newCart.splice(insertAt, 0, { ...newQ, _similarOf: baseQ.id });
+            return newCart;
+        });
+    };
+
     const toggleCart = (question: any) => {
         if (cart.find(q => q.id === question.id)) {
             setCart(cart.filter(q => q.id !== question.id));
@@ -848,10 +869,19 @@ export default function QuestionBankPage() {
                                     >
                                         {/* Header */}
                                         <div className="flex justify-between items-center p-4 border-b bg-gray-50/50">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm ${viewMode === 'review' ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
                                                     {idx + 1}
                                                 </span>
+                                                {/* [유사문제 뱃지] _similarOf가 있으면 원본 문제 번호 표시 */}
+                                                {viewMode === 'review' && q._similarOf && (() => {
+                                                    const parentIdx = cart.findIndex(c => c.id === q._similarOf);
+                                                    return parentIdx !== -1 ? (
+                                                        <span className="bg-orange-100 text-orange-700 text-[10px] px-2 py-0.5 rounded-md font-bold border border-orange-200">
+                                                            🔗 {parentIdx + 1}번 유사
+                                                        </span>
+                                                    ) : null;
+                                                })()}
                                                 <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-md font-bold">
                                                     {q.unit || '단원 미정'}
                                                 </span>
@@ -1067,7 +1097,13 @@ export default function QuestionBankPage() {
                         onClose={() => setSimilarTarget(null)}
                         baseQuestion={similarTarget}
                         cart={cart}
-                        onToggleCart={toggleCart}
+                        onToggleCart={
+                            // review 모드: baseQuestion 바로 뒤에 삽입
+                            // search 모드: 그냥 맨 뒤에 추가
+                            viewMode === 'review'
+                                ? (q: any) => handleAddSimilarAfter(similarTarget, q)
+                                : toggleCart
+                        }
                         onReplace={viewMode === 'review' ? handleSimilarReplace : undefined}
                     />
                 )}
