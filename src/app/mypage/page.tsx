@@ -10,7 +10,7 @@ import { Download, FileText, User as UserIcon, Coins, ArrowLeft, RefreshCw, Edit
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import SettlementModal from '@/components/SettlementModal';
 import EditModal from '@/components/EditModal';
-import { deleteFile, deletePurchase } from './actions';
+import { deleteFile, deletePurchase, stopSelling } from './actions';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
@@ -279,7 +279,7 @@ export default function MyPage() {
     };
 
     const handleDelete = async (fileId: string, filePath: string) => {
-        if (!confirm('정말로 이 자료를 삭제하시겠습니까?\n삭제된 자료는 복구할 수시 없습니다.')) return;
+        if (!confirm('해당 자료와 연관된 파일(PDF, HWP 등)이 모두 함께 삭제됩니다. 정말로 삭제하시겠습니까?\n삭제된 자료는 복구할 수 없습니다.')) return;
 
         try {
             const result = await deleteFile(fileId);
@@ -289,10 +289,14 @@ export default function MyPage() {
                 return;
             }
 
-            alert('자료가 삭제되었습니다.');
+            alert(result.message || '자료가 성공적으로 삭제되었습니다.');
 
             // Refresh List Locally
-            setUploads(prev => prev.filter(u => u.id !== fileId));
+            if (result.deletedIds) {
+                setUploads(prev => prev.filter(u => !result.deletedIds.includes(u.id)));
+            } else {
+                setUploads(prev => prev.filter(u => u.id !== fileId));
+            }
 
         } catch (error: any) {
             console.error('Delete error:', error);
@@ -322,6 +326,27 @@ export default function MyPage() {
         } catch (error) {
             console.error('Purchase delete error:', error);
             alert('삭제 중 오류가 발생했습니다.');
+        }
+    };
+
+    const handleStopSelling = async (fileId: string) => {
+        if (!confirm('판매를 중단하시겠습니까?\n\n• 신규 구매는 증단됩니다.\n• 기존 구매자는 30일간 계속 다운로드 가능합니다.')) return;
+
+        try {
+            const result = await stopSelling(fileId);
+            if (!result.success) {
+                alert(result.message || '판매 중단 실패');
+                return;
+            }
+            alert('판매가 중단되었습니다.');
+            if (result.stoppedIds) {
+                setUploads(prev => prev.filter(u => !(result.stoppedIds as string[]).includes(u.id)));
+            } else {
+                setUploads(prev => prev.filter(u => u.id !== fileId));
+            }
+        } catch (error) {
+            console.error('Stop selling error:', error);
+            alert('판매 중단 중 오류가 발생했습니다.');
         }
     };
 
@@ -687,12 +712,22 @@ export default function MyPage() {
                                                 >
                                                     <Edit size={12} /> 수정
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDelete(file.id, file.file_path)}
-                                                    className="flex items-center gap-1 text-slate-400 hover:text-red-600 px-2 py-1 rounded text-xs border border-slate-200 hover:border-red-200 transition-colors"
-                                                >
-                                                    <Trash2 size={12} /> 삭제
-                                                </button>
+                                                {(file.sales_count || 0) > 0 ? (
+                                                    <button
+                                                        onClick={() => handleStopSelling(file.id)}
+                                                        className="flex items-center gap-1 text-slate-400 hover:text-orange-600 px-2 py-1 rounded text-xs border border-slate-200 hover:border-orange-200 transition-colors"
+                                                        title="신규 구매 중단 (기존 구매자 다운로드 유지)"
+                                                    >
+                                                        <span className="text-[10px]">&#9646;</span> 판매중단
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleDelete(file.id, file.file_path)}
+                                                        className="flex items-center gap-1 text-slate-400 hover:text-red-600 px-2 py-1 rounded text-xs border border-slate-200 hover:border-red-200 transition-colors"
+                                                    >
+                                                        <Trash2 size={12} /> 삭제
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

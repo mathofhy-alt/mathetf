@@ -14,10 +14,10 @@ export async function deleteFile(fileId: string) {
 
     const adminSupabase = createAdminClient();
 
-    // 1. Verify ownership securely using Admin Client
+    // 1. Verify ownership & get metadata
     const { data: file, error: fetchError } = await adminSupabase
         .from('exam_materials')
-        .select('uploader_id, file_path, title')
+        .select('uploader_id, file_path, school, grade, semester, exam_type, subject, exam_year, content_type, sales_count')
         .eq('id', fileId)
         .single();
 
@@ -29,72 +29,43 @@ export async function deleteFile(fileId: string) {
         return { success: false, message: '삭제 권한이 없습니다.' };
     }
 
-    // 2. Try Delete from DB (Admin)
+    // 2. Block deletion if anyone has purchased this file
+    if ((file.sales_count || 0) > 0) {
+        return { success: false, message: '구매 내역이 있는 자료는 삭제할 수 없습니다. ‘판매 중단’을 사용해 주세요.' };
+    }
+
+    // 3. Find siblings (PDF & HWP pair)
+    const { data: siblings } = await adminSupabase
+        .from('exam_materials')
+        .select('id, file_path')
+        .eq('uploader_id', user.id)
+        .eq('school', file.school)
+        .eq('grade', file.grade)
+        .eq('semester', file.semester)
+        .eq('exam_type', file.exam_type)
+        .eq('subject', file.subject)
+        .eq('exam_year', file.exam_year)
+        .eq('content_type', file.content_type);
+
+    const siblingIds = siblings && siblings.length > 0 ? siblings.map(s => s.id) : [fileId];
+    const filePaths = siblings && siblings.length > 0 ? siblings.map(s => s.file_path).filter(Boolean) : [file.file_path];
+
+    // 4. Hard Delete from DB
     const { error: deleteDbError } = await adminSupabase
         .from('exam_materials')
         .delete()
-        .eq('id', fileId);
+        .in('id', siblingIds);
 
     if (deleteDbError) {
         console.error('DB Delete Error:', deleteDbError);
-
-        // Foreign Key Violation (e.g. Someone purchased it)
-        if (deleteDbError.code === '23503') {
-            console.log('Foreign key violation - attempting soft delete');
-
-            // Soft Delete Strategy:
-            // 1. Mark as '[Deleted]' in title
-            // 2. Hide from common search filters (change region/school to hidden value)
-            // 3. (Optional) Set uploader_id to null if schema allows, to hide from MyPage logic.
-            //    Since we don't know if uploader_id is nullable, we will rely on filtering 'DELETED' status in frontend or just mangling data.
-            //    Let's try setting uploader_id to NULL to detach from user.
-
-            const { error: updateError } = await adminSupabase
-                .from('exam_materials')
-                .update({
-                    title: `[삭제됨] ${file.title}`,
-                    school: 'DELETED',
-                    region: 'DELETED',
-                    district: 'DELETED',
-                    // Try to nullify uploader_id to remove from user's list. 
-                    // If this fails (NOT NULL constraint), we rely on frontend filtering of 'DELETED' region.
-                    uploader_id: null
-                })
-                .eq('id', fileId);
-
-            if (updateError) {
-                // If setting uploader_id to null failed, try keeping uploader_id but just marking deleted
-                if (updateError.code === '23502') { // NOT NULL violation
-                    const { error: retryError } = await adminSupabase
-                        .from('exam_materials')
-                        .update({
-                            title: `[삭제됨] ${file.title}`,
-                            school: 'DELETED',
-                            region: 'DELETED',
-                            district: 'DELETED'
-                        })
-                        .eq('id', fileId);
-
-                    if (retryError) {
-                        return { success: false, message: '구매 내역이 존재하는 자료라 삭제할 수 없으며, 상태 변경 중 오류가 발생했습니다.' };
-                    }
-                } else {
-                    return { success: false, message: '구매 내역이 존재하는 자료라 삭제할 수 없습니다.' };
-                }
-            }
-
-            // Soft delete successful
-            return { success: true, message: '구매 내역이 있어 목록에서만 숨김 처리되었습니다.' };
-        }
-
         return { success: false, message: `데이터베이스 삭제 중 오류: ${deleteDbError.message}` };
     }
 
-    // 3. Delete from Storage (Admin) - Only if DB delete succeeded (Hard Delete)
-    if (file.file_path) {
+    // 5. Delete from Storage
+    if (filePaths && filePaths.length > 0) {
         const { error: storageError } = await adminSupabase.storage
             .from('exam-materials')
-            .remove([file.file_path]);
+            .remove(filePaths as string[]);
 
         if (storageError) {
             console.error('Storage Delete Warning:', storageError);
@@ -102,7 +73,67 @@ export async function deleteFile(fileId: string) {
     }
 
     revalidatePath('/mypage');
-    return { success: true };
+    return { success: true, deletedIds: siblingIds };
+}
+
+export async function stopSelling(fileId: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { success: false, message: '로그인이 필요합니다.' };
+    }
+
+    const adminSupabase = createAdminClient();
+
+    // 1. Verify ownership & get metadata
+    const { data: file, error: fetchError } = await adminSupabase
+        .from('exam_materials')
+        .select('uploader_id, school, grade, semester, exam_type, subject, exam_year, content_type')
+        .eq('id', fileId)
+        .single();
+
+    if (fetchError || !file) {
+        return { success: false, message: '자료를 찾을 수 없습니다.' };
+    }
+
+    if (file.uploader_id !== user.id) {
+        return { success: false, message: '권한이 없습니다.' };
+    }
+
+    // 2. Find siblings (PDF & HWP pair)
+    const { data: siblings } = await adminSupabase
+        .from('exam_materials')
+        .select('id')
+        .eq('uploader_id', user.id)
+        .eq('school', file.school)
+        .eq('grade', file.grade)
+        .eq('semester', file.semester)
+        .eq('exam_type', file.exam_type)
+        .eq('subject', file.subject)
+        .eq('exam_year', file.exam_year)
+        .eq('content_type', file.content_type);
+
+    const siblingIds = siblings && siblings.length > 0 ? siblings.map(s => s.id) : [fileId];
+
+    // 3. Mark as stopped: school='DELETED' hides from marketplace & uploader list
+    //    file_path and uploader_id are PRESERVED so existing buyers can still download
+    const { error: updateError } = await adminSupabase
+        .from('exam_materials')
+        .update({
+            school: 'DELETED',
+            region: 'DELETED',
+            district: 'DELETED'
+        })
+        .in('id', siblingIds);
+
+    if (updateError) {
+        console.error('Stop Selling Error:', updateError);
+        return { success: false, message: `판매 중단 오류: ${updateError.message}` };
+    }
+
+    revalidatePath('/mypage');
+    return { success: true, stoppedIds: siblingIds };
 }
 
 export async function deletePurchase(purchaseId: string) {
@@ -157,10 +188,9 @@ export async function updateExamMaterial(fileId: string, updates: any) {
 
     const adminSupabase = createAdminClient();
 
-    // 1. Verify ownership
     const { data: file, error: fetchError } = await adminSupabase
         .from('exam_materials')
-        .select('uploader_id')
+        .select('uploader_id, school, grade, semester, exam_type, subject, exam_year, content_type')
         .eq('id', fileId)
         .single();
 
@@ -172,11 +202,48 @@ export async function updateExamMaterial(fileId: string, updates: any) {
         return { success: false, message: '수정 권한이 없습니다.' };
     }
 
-    // 2. Update DB
+    // 2. Find siblings to apply metadata updates
+    const { data: siblings } = await adminSupabase
+        .from('exam_materials')
+        .select('id')
+        .eq('uploader_id', user.id)
+        .eq('school', file.school)
+        .eq('grade', file.grade)
+        .eq('semester', file.semester)
+        .eq('exam_type', file.exam_type)
+        .eq('subject', file.subject)
+        .eq('exam_year', file.exam_year)
+        .eq('content_type', file.content_type);
+
+    const siblingIds = siblings && siblings.length > 0 ? siblings.map(s => s.id) : [fileId];
+
+    // 3. Update DB
+    // First, update the target file with ALL updates (including file_path, price, etc.)
     const { error: updateError } = await adminSupabase
         .from('exam_materials')
         .update(updates)
         .eq('id', fileId);
+
+    // Then, update siblings with ONLY metadata updates to prevent overwriting their file_path/price
+    const metadataUpdates = {
+        school: updates.school,
+        region: updates.region,
+        district: updates.district,
+        exam_year: updates.exam_year,
+        grade: updates.grade,
+        semester: updates.semester,
+        exam_type: updates.exam_type,
+        subject: updates.subject,
+        title: updates.title
+    };
+    
+    const otherSiblingIds = siblingIds.filter(id => id !== fileId);
+    if (otherSiblingIds.length > 0) {
+        await adminSupabase
+            .from('exam_materials')
+            .update(metadataUpdates)
+            .in('id', otherSiblingIds);
+    }
 
     if (updateError) {
         console.error('Update Error:', updateError);
