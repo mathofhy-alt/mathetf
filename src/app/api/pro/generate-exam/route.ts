@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { HwpxMerger } from '@/lib/hwpx/merger';
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const { questionIds } = await req.json();
