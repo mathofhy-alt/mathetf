@@ -205,13 +205,6 @@ export async function POST(req: NextRequest) {
 
         // 5. Upload to Storage
         const fileId = crypto.randomUUID();
-        // [디버그용] 생성된 전체 HML을 로컬 파일로 덤프하여 미주/CharShape 확인
-        const fsDebug = require('fs');
-        const debugPath = path.join(process.cwd(), '임시', 'debug_generated.hml');
-        if (!fsDebug.existsSync(path.dirname(debugPath))) fsDebug.mkdirSync(path.dirname(debugPath), { recursive: true });
-        fsDebug.writeFileSync(debugPath, result.hmlContent, 'utf-8');
-        console.log(`[DEBUG] Dumped final HML to ${debugPath}`);
-
         const storageFilename = `${fileId}.hml`;
         const filePath = `${user.id}/${storageFilename}`;
 
