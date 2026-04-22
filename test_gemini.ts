@@ -1,9 +1,15 @@
-const { generateTags } = require('./src/lib/embeddings');
-(async () => {
+import { generateTags } from './src/lib/embeddings';
+import * as dotenv from 'dotenv';
+dotenv.config({path:'.env.local'});
+
+async function test() {
     try {
-        const result = await generateTags('대수 문제: 2^x = 4일 때 x의 값을 구하시오.', '대수');
-        console.log("RESULT:", result);
-    } catch (e) {
-        console.error(e);
+        console.log('ApiKey check:', process.env.GEMINI_API_KEY ? 'Set' : 'Missing');
+        console.log('ApiKey value:', process.env.GEMINI_API_KEY!.substring(0, 5) + '...');
+        const res = await generateTags('다항식의 곱셈 문제입니다. $x^2 + 2x$', '공통수학1');
+        console.log('Result:', res);
+    } catch(e) {
+        console.error('ERROR:', e);
     }
-})();
+}
+test();

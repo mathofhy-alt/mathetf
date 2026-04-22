@@ -15,7 +15,7 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-[800px] max-w-[95vw] max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="bg-white w-full max-w-[560px] max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="p-4 border-b flex justify-between items-center bg-green-50/50">
                     <div className="flex items-center gap-2">
@@ -40,8 +40,8 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-[400px]">
+                <div className="flex-1 overflow-y-auto bg-slate-50 p-4 flex justify-center">
+                    <div className="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-slate-200 w-full flex justify-center items-center">
                         <QuestionRenderer
                             xmlContent="" // XML not needed for solution image mode
                             externalImages={question.question_images}

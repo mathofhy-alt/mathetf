@@ -7,13 +7,14 @@ import QuestionRenderer from '@/components/QuestionRenderer';
 
 interface SimilarQuestionsModalProps {
     onClose: () => void;
-    baseQuestion: any; // The question we are finding similarities for
+    baseQuestion: any;
     cart: any[];
     onToggleCart: (question: any) => void;
     onReplace?: (oldQuestion: any, newQuestion: any) => void;
+    onViewSolution?: (question: any) => void;
 }
 
-export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onToggleCart, onReplace }: SimilarQuestionsModalProps) {
+export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onToggleCart, onReplace, onViewSolution }: SimilarQuestionsModalProps) {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -169,6 +170,18 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                                     className="border-none shadow-none p-0 !text-sm"
                                                 />
                                             </div>
+
+                                            {/* Card Footer - 해설보기 */}
+                                            {onViewSolution && (
+                                                <div className="px-4 py-2 bg-slate-50 border-t flex justify-end items-center">
+                                                    <button
+                                                        onClick={() => onViewSolution(q)}
+                                                        className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
+                                                    >
+                                                        해설보기
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}

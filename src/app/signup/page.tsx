@@ -8,6 +8,7 @@ import Link from 'next/link';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import MarketingModal from '@/components/MarketingModal';
+import PostcodeModal from '@/components/PostcodeModal';
 
 export default function SignupPage() {
     const [step, setStep] = useState(1);
@@ -37,6 +38,12 @@ export default function SignupPage() {
     const [otpTimer, setOtpTimer] = useState(0);
     const [otpSending, setOtpSending] = useState(false);
     const [otpVerifying, setOtpVerifying] = useState(false);
+
+    // Address states
+    const [isPostcodeModalOpen, setIsPostcodeModalOpen] = useState(false);
+    const [postcode, setPostcode] = useState('');
+    const [address, setAddress] = useState('');
+    const [addressDetail, setAddressDetail] = useState('');
 
     const router = useRouter();
     const supabase = createClient();
@@ -159,6 +166,10 @@ export default function SignupPage() {
             setErrorMsg('모든 필드를 입력해주세요.');
             return;
         }
+        if (!postcode || !address || !addressDetail) {
+            setErrorMsg('정확한 우편번호와 자택 주소를 입력해주세요.');
+            return;
+        }
         if (password.length < 6) {
             setErrorMsg('비밀번호는 6자리 이상이어야 합니다.');
             return;
@@ -183,6 +194,9 @@ export default function SignupPage() {
                         full_name: nickname,
                         marketing_agreed: marketingAgreed,
                         phone: phone,
+                        postcode: postcode,
+                        address: address,
+                        address_detail: addressDetail,
                     },
                     // 이메일 인증 제거로 인한 리다이렉트 제외
                 },
@@ -531,6 +545,57 @@ export default function SignupPage() {
                                             </div>
                                         </div>
                                     )}
+                                    
+                                    {/* Address Field */}
+                                    <div className="pt-4 border-t border-slate-100">
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">
+                                            자택 주소 <span className="text-xs text-slate-400 font-normal ml-2">(법적 등기 발송용, 정확한 입력 필요)</span>
+                                        </label>
+                                        <div className="flex gap-2 mb-2">
+                                            <input
+                                                type="text"
+                                                value={postcode}
+                                                readOnly
+                                                className="w-32 px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none"
+                                                placeholder="우편번호"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsPostcodeModalOpen(true)}
+                                                className="px-3 py-2 text-sm font-bold rounded-lg border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 transition-colors whitespace-nowrap"
+                                            >
+                                                우편번호 찾기
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={address}
+                                            readOnly
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none mb-2"
+                                            placeholder="기본 주소"
+                                            required
+                                        />
+                                        <input
+                                            type="text"
+                                            value={addressDetail}
+                                            onChange={(e) => setAddressDetail(e.target.value)}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
+                                            placeholder="상세 주소 입력"
+                                            required
+                                        />
+                                    </div>
+                                    
+                                    <PostcodeModal
+                                        isOpen={isPostcodeModalOpen}
+                                        onClose={() => setIsPostcodeModalOpen(false)}
+                                        onComplete={(data) => {
+                                            setPostcode(data.postcode);
+                                            setAddress(data.address);
+                                            setIsPostcodeModalOpen(false);
+                                        }}
+                                    />
+                                    
                                 </div>
 
                                 {errorMsg && (

@@ -265,7 +265,8 @@ ${mapStr}`;
         
         let parsed: any = {};
         try {
-            parsed = JSON.parse(output);
+            const cleanOutput = output.replace(/^```(json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+            parsed = JSON.parse(cleanOutput);
         } catch (parseErr) {
             console.error("JSON parse error on Gemini output:", output);
         }

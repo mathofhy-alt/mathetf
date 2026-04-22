@@ -23,6 +23,9 @@ export default function QuestionBankPage() {
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState<any[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalQuestions, setTotalQuestions] = useState(0);
+    const itemsPerPage = 50;
 
     // Derived State for performance (O(1) lookup)
     const cartIdSet = useMemo(() => new Set((cart || []).filter(item => item && item.id).map(item => item.id)), [cart]);
@@ -162,7 +165,7 @@ export default function QuestionBankPage() {
         setPurchasedDbs(uniqueDbs);
     };
 
-    const fetchQuestions = async (dbFilter?: any, advancedFilters?: any) => {
+    const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1) => {
         // Security: Do not fetch ANY questions if no specific DB filter is provided
         // This prevents leaking 'sorted' questions that the user hasn't purchased.
         if (!dbFilter) {
@@ -172,11 +175,16 @@ export default function QuestionBankPage() {
         }
 
         setLoading(true);
+        if (targetPage === 1) setCurrentPage(1);
+
+        const from = (targetPage - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
+
         let query = supabase
             .from('questions')
-            .select('*, question_images(*)')
+            .select('*, question_images(*)', { count: 'exact' })
             .eq('work_status', 'sorted') // Only fetch sorted questions
-            .limit(100); // Increased limit as filters are stricter
+            .range(from, to); // Server-side pagination
 
         if (dbFilter.length > 0) {
             // Find all selected DBs
@@ -266,15 +274,16 @@ export default function QuestionBankPage() {
         }
 
         try {
-            const { data, error } = await query;
+            const { data, error, count } = await query;
             if (error) {
                 console.error("Query Error:", error);
                 throw new Error("데이터베이스 검색 중 오류가 발생했습니다. (검색 조건이 너무 많을 수 있습니다)");
             }
             if (data) {
                 setQuestions(data);
-                setHasSearched(true);
-                if (data.length === 0) {
+                if (count !== null) setTotalQuestions(count);
+                if (targetPage === 1) setHasSearched(true);
+                if (data.length === 0 && targetPage === 1) {
                     alert('해당 조건에 일치하는 문항이 없습니다. (0건)');
                 }
             }
@@ -293,7 +302,14 @@ export default function QuestionBankPage() {
             return;
         }
         setHasSearched(false);
-        fetchQuestions(selectedDbIds, filterState);
+        fetchQuestions(selectedDbIds, filterState, 1);
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+        fetchQuestions(selectedDbIds, filterState, newPage);
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDbToggle = (dbId: string) => {
@@ -456,6 +472,11 @@ export default function QuestionBankPage() {
                 // 이미 담긴 경우 → 제거
                 return prev.filter(q => q.id !== newQ.id);
             }
+            // 50개 제한 체크
+            if (prev.length >= MAX_CART_SIZE) {
+                alert(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`);
+                return prev;
+            }
             const baseIdx = prev.findIndex(q => q.id === baseQ.id);
             if (baseIdx === -1) return [...prev, { ...newQ, _similarOf: baseQ.id }];
             // baseQ 뒤에 이미 있는 유사문제들을 건너뛰고 삽입
@@ -481,8 +502,14 @@ export default function QuestionBankPage() {
 
         let updatedCart = [...cart];
         let addedCount = 0;
+        let skippedCount = 0;
 
         for (const baseQ of targetQuestions) {
+            // 50개 제한 체크 (루프 중에도 매번 확인)
+            if (updatedCart.length >= MAX_CART_SIZE) {
+                skippedCount++;
+                continue;
+            }
             try {
                 const res = await fetch(`/api/pro/similar-questions?id=${baseQ.id}&limit=1`);
                 if (!res.ok) continue;
@@ -513,13 +540,23 @@ export default function QuestionBankPage() {
         setCart(updatedCart);
         setSelectedReviewIds(new Set()); // 선택 해제
         setIsAutoAdding(false);
-        alert(`유사문항 자동추가 완료! ${addedCount}개 추가됨`);
+        if (skippedCount > 0) {
+            alert(`유사문항 자동추가 완료! ${addedCount}개 추가됨. (최대 ${MAX_CART_SIZE}문제 제한으로 ${skippedCount}개 생략)`);
+        } else {
+            alert(`유사문항 자동추가 완료! ${addedCount}개 추가됨`);
+        }
     };
+
+    const MAX_CART_SIZE = 50;
 
     const toggleCart = (question: any) => {
         if (cart.find(q => q.id === question.id)) {
             setCart(cart.filter(q => q.id !== question.id));
         } else {
+            if (cart.length >= MAX_CART_SIZE) {
+                alert(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`);
+                return;
+            }
             setCart([...cart, question]);
         }
     };
@@ -536,7 +573,16 @@ export default function QuestionBankPage() {
         } else {
             // Add all current search results to cart (avoiding duplicates)
             const toAdd = questions.filter(q => q && q.id && !cartIdSet.has(q.id));
-            setCart(prev => [...(Array.isArray(prev) ? prev : []), ...toAdd]);
+            const currentCart = Array.isArray(cart) ? cart : [];
+            const remaining = MAX_CART_SIZE - currentCart.length;
+            if (remaining <= 0) {
+                alert(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`);
+                return;
+            }
+            if (toAdd.length > remaining) {
+                alert(`최대 ${MAX_CART_SIZE}문제 제한으로 인해 ${remaining}개만 추가됩니다. (요청: ${toAdd.length}개)`);
+            }
+            setCart(prev => [...(Array.isArray(prev) ? prev : []), ...toAdd.slice(0, remaining)]);
         }
     };
 
@@ -826,9 +872,9 @@ export default function QuestionBankPage() {
                 </div>
 
                 {/* Main List Area */}
-                <div className="flex-1 p-6 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto relative">
                     {viewMode === 'search' ? (
-                        <header className="flex justify-between items-center mb-6">
+                        <header className="sticky top-0 z-10 flex justify-between items-center px-6 py-4 bg-gray-100/90 backdrop-blur-sm border-b border-slate-200/60 shadow-sm">
                             <h1 className="text-2xl font-bold text-gray-800">
                                 {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
                             </h1>
@@ -846,7 +892,7 @@ export default function QuestionBankPage() {
                                     disabled={cart.length === 0 || isGenerating}
                                     className="bg-indigo-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm transition font-bold flex items-center gap-2"
                                 >
-                                    <span>시험지 생성 ({cart.length})</span>
+                                    <span>시험지 생성 ({cart.length}/{MAX_CART_SIZE})</span>
                                 </button>
                                 <button
                                     onClick={() => setShowAutoModal(true)}
@@ -857,7 +903,7 @@ export default function QuestionBankPage() {
                             </div>
                         </header>
                     ) : (
-                        <header className="flex flex-col gap-4 mb-8">
+                        <header className="sticky top-0 z-10 flex flex-col gap-4 px-6 py-4 bg-gray-100/90 backdrop-blur-sm border-b border-slate-200/60 shadow-sm">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h1 className="text-2xl font-black text-slate-800">시험지 문항 검토</h1>
@@ -880,7 +926,7 @@ export default function QuestionBankPage() {
                                         onClick={() => setShowConfigModal(true)}
                                         className="px-8 py-2.5 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 shadow-lg shadow-brand-600/20 transition-all flex items-center gap-2"
                                     >
-                                        <span>최종 생성하기 ({cart.length})</span>
+                                        <span>최종 생성하기 ({cart.length}/{MAX_CART_SIZE})</span>
                                     </button>
                                 </div>
                             </div>
@@ -948,9 +994,10 @@ export default function QuestionBankPage() {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                         </div>
                     ) : (
-                        <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-3'} gap-6 pb-20 animate-in fade-in duration-500`}>
-                            {(viewMode === 'search' ? questions : cart).length > 0 ? (viewMode === 'search' ? questions : cart).map((q, idx) => {
-                                const inCart = q && cartIdSet.has(q.id);
+                        <>
+                            <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-3'} gap-6 px-6 pt-6 pb-10 animate-in fade-in duration-500`}>
+                                {(viewMode === 'search' ? questions : cart).length > 0 ? (viewMode === 'search' ? questions : cart).map((q, idx) => {
+                                    const inCart = q && cartIdSet.has(q.id);
                                 return (
                                     <div
                                         key={`${viewMode}-${q.id}`}
@@ -968,7 +1015,7 @@ export default function QuestionBankPage() {
                                         }}
                                         onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
                                         onDragEnd={() => viewMode === 'review' && handleDragEnd()}
-                                        className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
+                                        className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group h-[630px]
                                             ${viewMode === 'review'
                                                 ? draggingIndex === idx
                                                     ? 'opacity-40 scale-95 border-brand-500 border-dashed'
@@ -1028,17 +1075,20 @@ export default function QuestionBankPage() {
                                                 {viewMode === 'review' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setSimilarTarget(q); }}
-                                                        className="p-1 hover:bg-brand-50 text-slate-300 hover:text-brand-600 rounded-md transition-all flex items-center gap-1"
+                                                        className="p-1 hover:bg-brand-50 text-slate-300 hover:text-brand-600 rounded-md transition-all flex items-center gap-1 whitespace-nowrap"
                                                         title="유사문항 찾기"
                                                     >
                                                         <Search size={14} />
                                                         <span className="text-[10px] font-bold">유사</span>
                                                     </button>
                                                 )}
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${String(q.difficulty) === 'Hard' || String(q.difficulty) === '상' ? 'bg-red-100 text-red-700' :
-                                                    String(q.difficulty) === 'Easy' || String(q.difficulty) === '하' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                                    }`}>
-                                                    {q.difficulty || '중'}
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                                    !q.difficulty ? 'bg-slate-100 text-slate-500' :
+                                                    Number(q.difficulty) >= 7 ? 'bg-red-100 text-red-600' :
+                                                    Number(q.difficulty) >= 4 ? 'bg-orange-100 text-orange-600' :
+                                                    'bg-emerald-100 text-emerald-600'
+                                                }`}>
+                                                    {q.difficulty ? `Lv.${q.difficulty}` : '미정'}
                                                 </span>
                                                 {viewMode === 'review' && (
                                                     <button
@@ -1052,7 +1102,7 @@ export default function QuestionBankPage() {
                                         </div>
 
                                         {/* Content */}
-                                        <div className="p-5 bg-white flex-1 min-h-[160px]">
+                                        <div className="p-5 bg-white flex-1 min-h-[160px] overflow-y-auto scrollbar-thin">
                                             <QuestionRenderer
                                                 xmlContent={q.content_xml}
                                                 externalImages={q.question_images}
@@ -1070,10 +1120,11 @@ export default function QuestionBankPage() {
                                             {viewMode === 'search' && (
                                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
-                                                        className="text-slate-400 hover:text-brand-600 transition-colors"
+                                                        className="text-[10px] font-bold text-slate-500 hover:text-brand-600 bg-white border border-slate-200 hover:border-brand-300 hover:bg-brand-50 px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
                                                         onClick={(e) => { e.stopPropagation(); setSolutionTarget(q); }}
                                                     >
-                                                        <FileText size={16} />
+                                                        <FileText size={12} />
+                                                        해설보기
                                                     </button>
                                                 </div>
                                             )}
@@ -1191,6 +1242,36 @@ export default function QuestionBankPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Pagination (Only in search mode) */}
+                        {viewMode === 'search' && totalQuestions > itemsPerPage && !loading && (
+                            <div className="py-8 flex justify-center gap-1">
+                                <button
+                                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rotate-180"><path d="m9 18 6-6-6-6"/></svg>
+                                </button>
+                                {Array.from({ length: Math.ceil(totalQuestions / itemsPerPage) }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => handlePageChange(page)}
+                                        className={`w-8 h-8 rounded flex items-center justify-center font-bold transition-colors ${currentPage === page ? 'bg-brand-600 text-white' : 'border border-slate-300 hover:bg-slate-50 text-slate-600'}`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handlePageChange(Math.min(Math.ceil(totalQuestions / itemsPerPage), currentPage + 1))}
+                                    disabled={currentPage === Math.ceil(totalQuestions / itemsPerPage)}
+                                    className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                </button>
+                            </div>
+                        )}
+                        </>
                     )}
                 </div>
 
@@ -1240,6 +1321,7 @@ export default function QuestionBankPage() {
                                 : toggleCart
                         }
                         onReplace={viewMode === 'review' ? handleSimilarReplace : undefined}
+                        onViewSolution={(q: any) => setSolutionTarget(q)}
                     />
                 )}
 

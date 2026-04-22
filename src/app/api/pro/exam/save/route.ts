@@ -33,6 +33,16 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { ids, questions: rawQuestions, title, folderId } = body;
 
+        // [V74] Limit: Max 50 questions per exam
+        const MAX_QUESTIONS_PER_EXAM = 50;
+        const questionCount = ids?.length ?? rawQuestions?.length ?? 0;
+        if (questionCount > MAX_QUESTIONS_PER_EXAM) {
+            return NextResponse.json({
+                success: false,
+                error: `한 시험지에 최대 ${MAX_QUESTIONS_PER_EXAM}문제까지만 담을 수 있습니다. (요청: ${questionCount}개)`
+            }, { status: 400 });
+        }
+
         let questions: any[] = rawQuestions || [];
         let finalImagesByQuestion = new Map<string, any[]>();
 
