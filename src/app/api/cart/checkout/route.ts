@@ -3,47 +3,87 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 
 export async function POST(req: NextRequest) {
     try {
-        const { paymentId, amount, userId, items } = await req.json();
+        const { paymentId, amount, originalTotalAmount, usedPoints, userId, items } = await req.json();
 
         if (!paymentId || amount === undefined || !userId || !items || !Array.isArray(items)) {
             return NextResponse.json({ success: false, message: 'Invalid Data' }, { status: 400 });
         }
 
-        // 1. Verify Payment with PortOne V2 API
-        const secret = process.env.PORTONE_API_SECRET;
-        const response = await fetch(`https://api.portone.io/payments/${paymentId}`, {
-            headers: {
-                'Authorization': `PortOne ${secret}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const safeUsedPoints = usedPoints || 0;
+        const safeOriginalAmount = originalTotalAmount || amount;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('PortOne Verification Failed:', errorText);
-            return NextResponse.json({ success: false, message: 'Payment verification failed' }, { status: 400 });
+        // Security check: Verify originalTotalAmount matches sum of item prices
+        const calculatedTotal = items.reduce((sum: number, item: any) => sum + Number(item.price), 0);
+        if (calculatedTotal !== safeOriginalAmount) {
+            return NextResponse.json({ success: false, message: 'Total amount mismatch with items' }, { status: 400 });
+        }
+        if (safeOriginalAmount - safeUsedPoints !== amount) {
+            return NextResponse.json({ success: false, message: 'Discount amount mismatch' }, { status: 400 });
         }
 
-        const paymentData = await response.json();
-
-        // 2. Double Check Amount
-        if (paymentData.amount.total !== amount) {
-            return NextResponse.json({ success: false, message: 'Amount mismatch' }, { status: 400 });
-        }
-
-        if (paymentData.status !== 'PAID') {
-            return NextResponse.json({ success: false, message: 'Payment not paid' }, { status: 400 });
-        }
-
-        // 3. Update Database (Supabase Admin)
         const supabase = createAdminClient();
+
+        // 1. Verify Payment with PortOne V2 API (Only if amount > 0)
+        if (amount > 0) {
+            const secret = process.env.PORTONE_API_SECRET;
+            const response = await fetch(`https://api.portone.io/payments/${paymentId}`, {
+                headers: {
+                    'Authorization': `PortOne ${secret}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('PortOne Verification Failed:', errorText);
+                return NextResponse.json({ success: false, message: 'Payment verification failed' }, { status: 400 });
+            }
+
+            const paymentData = await response.json();
+
+            // 2. Double Check Amount
+            if (paymentData.amount.total !== amount) {
+                return NextResponse.json({ success: false, message: 'Amount mismatch' }, { status: 400 });
+            }
+
+            if (paymentData.status !== 'PAID') {
+                return NextResponse.json({ success: false, message: 'Payment not paid' }, { status: 400 });
+            }
+        }
+
+        // 2.5 Point Deduction Logic
+        if (safeUsedPoints > 0) {
+            const { data: userProfile } = await supabase.from('profiles').select('earned_points').eq('id', userId).single();
+            if (!userProfile) return NextResponse.json({ success: false, message: 'User profile not found' }, { status: 400 });
+            
+            const earned = userProfile.earned_points || 0;
+            
+            if (earned < safeUsedPoints) {
+                return NextResponse.json({ success: false, message: 'Not enough points' }, { status: 400 });
+            }
+            
+            const { error: profileError } = await supabase.from('profiles').update({
+                earned_points: earned - safeUsedPoints
+            }).eq('id', userId);
+            
+            if (profileError) throw profileError;
+            
+            // Log points usage
+            await supabase.from('point_logs').insert({
+                user_id: userId,
+                amount: -safeUsedPoints,
+                point_type: 'USED',
+                reason: '장바구니 아이템 결제',
+                reference_id: paymentId
+            });
+        }
 
         // 3.1 Record Payment History
         const { error: insertHistoryError } = await supabase.from('payment_history').insert({
             user_id: userId,
             payment_id: paymentId,
             merchant_uid: paymentId,
-            amount: amount,
+            amount: amount, // 실 결제액
             points_added: 0, // Direct purchase, no points
             status: 'PAID'
         });

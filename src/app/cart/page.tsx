@@ -10,10 +10,26 @@ export default function CartPage() {
     const { items, cartCount, totalPrice, isLoading, removeFromCart, fetchCart, clearCart } = useCart();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [user, setUser] = useState<User | null>(null);
+    const [earnedPoints, setEarnedPoints] = useState(0);
+    const [pointsToUse, setPointsToUse] = useState<number | string>('');
     const supabase = createClient();
 
+    const totalPoints = earnedPoints;
+    const usedPoints = typeof pointsToUse === 'number' ? pointsToUse : 0;
+    const finalAmount = Math.max(0, totalPrice - usedPoints);
+
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setUser(data.user));
+        supabase.auth.getUser().then(({ data }) => {
+            setUser(data.user);
+            if (data.user) {
+                supabase.from('profiles').select('earned_points').eq('id', data.user.id).single()
+                .then(({ data: profileData }) => {
+                    if (profileData) {
+                        setEarnedPoints(profileData.earned_points || 0);
+                    }
+                });
+            }
+        });
         fetchCart();
     }, [supabase, fetchCart]);
 
@@ -34,11 +50,40 @@ export default function CartPage() {
         const orderName = items.length === 1 ? items[0].title : `${items[0].title} 외 ${items.length - 1}건`;
 
         try {
+            // 0원 결제 (포인트 전액 결제) 처리
+            if (finalAmount === 0) {
+                // PG 호출 스킵, 바로 API 전송
+                const verifyRes = await fetch('/api/cart/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        paymentId: paymentId,
+                        amount: 0,
+                        originalTotalAmount: totalPrice,
+                        usedPoints: usedPoints,
+                        userId: user.id,
+                        items: items
+                    })
+                });
+
+                const verifyData = await verifyRes.json();
+
+                if (verifyData.success) {
+                    alert(`포인트 결제가 성공적으로 완료되었습니다.`);
+                    await clearCart();
+                    window.location.href = '/mypage';
+                } else {
+                    alert(`주문 처리 실패: ${verifyData.message}`);
+                }
+                setIsCheckingOut(false);
+                return;
+            }
+
             const response = await (window as any).PortOne.requestPayment({
                 storeId,
                 paymentId,
                 orderName: orderName,
-                totalAmount: totalPrice,
+                totalAmount: finalAmount,
                 currency: 'CURRENCY_KRW',
                 channelKey,
                 payMethod: 'CARD', // 장바구니 모델이므로 간편결제, 네이버페이, 카드 등 모두 가능
@@ -63,7 +108,9 @@ export default function CartPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     paymentId: response.paymentId,
-                    amount: totalPrice,
+                    amount: finalAmount,
+                    originalTotalAmount: totalPrice,
+                    usedPoints: usedPoints,
                     userId: user.id,
                     items: items
                 })
@@ -141,10 +188,52 @@ export default function CartPage() {
                             </div>
                         </div>
 
+                        {/* 포인트 사용 UI */}
+                        <div className="border-t border-slate-200 pt-4 mb-6 space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-slate-800 font-bold">포인트 사용</span>
+                                <span className="text-xs text-slate-500">보유: {totalPoints.toLocaleString()}P</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    type="number"
+                                    value={pointsToUse}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val === '') {
+                                            setPointsToUse('');
+                                            return;
+                                        }
+                                        let num = parseInt(val, 10);
+                                        if (isNaN(num)) return;
+                                        if (num < 0) num = 0;
+                                        // 보유 포인트 또는 총 결제 금액을 초과할 수 없음
+                                        const maxUsable = Math.min(totalPoints, totalPrice);
+                                        if (num > maxUsable) num = maxUsable;
+                                        setPointsToUse(num);
+                                    }}
+                                    placeholder="0"
+                                    className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-right focus:outline-none focus:border-brand-500"
+                                />
+                                <button
+                                    onClick={() => setPointsToUse(Math.min(totalPoints, totalPrice))}
+                                    className="px-3 py-2 bg-slate-800 text-white text-sm font-bold rounded-lg hover:bg-slate-700 whitespace-nowrap transition-colors"
+                                >
+                                    전액사용
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="border-t border-slate-200 pt-4 mb-8">
+                            {usedPoints > 0 && (
+                                <div className="flex justify-between items-center text-sm mb-2 text-rose-500 font-bold">
+                                    <span>포인트 할인</span>
+                                    <span>-{usedPoints.toLocaleString()}원</span>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center text-lg">
                                 <span className="font-bold text-slate-800">최종 결제 금액</span>
-                                <span className="font-black text-brand-600 text-2xl">{totalPrice.toLocaleString()}원</span>
+                                <span className="font-black text-brand-600 text-2xl">{finalAmount.toLocaleString()}원</span>
                             </div>
                             <div className="mt-4 p-3 bg-brand-50 rounded-lg text-xs text-brand-700 flex flex-col gap-1">
                                 <p><strong>유의사항:</strong> 구매하신 문서(PDF/HWP)는 결제일로부터 <strong>30일간</strong>만 다운로드 가능합니다. (개인DB 제외)</p>

@@ -707,7 +707,7 @@ export default function ExamPlatform() {
                                                         />
                                                         <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-600' : 'text-slate-400'}`}>개인DB</span>
                                                         <span className={`text-[10px] whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                            {checkAccess(group.files.db.id) ? (user?.email === 'mathofhy@naver.com' ? `관리자권한(${group.files.db.price.toLocaleString()}P)` : '구매완료') : `${group.files.db.price.toLocaleString()}P`}
+                                                            {checkAccess(group.files.db.id) ? (user?.email === 'mathofhy@naver.com' ? `관리자권한(${group.files.db.price.toLocaleString()}원)` : '구매완료') : `${group.files.db.price.toLocaleString()}원`}
                                                         </span>
 
                                                         {/* Hover Overlay */}
