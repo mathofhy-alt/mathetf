@@ -56,6 +56,24 @@ math-pdf-to-hml_stable_backup.zip
 openai_api_key.txt
 *openai_api_key.txt
 **/*openai_api_key.txt
+
+# ==========================================
+# 🚨 절대 깃허브에 올라가면 안 되는 파일들 (초강력 차단) 🚨
+# ==========================================
+.env
+.env.*
+*.env
+*.env.*
+*api_key.txt
+**/*api_key.txt
+*apikey.txt
+**/*apikey.txt
+*secret*.txt
+**/*secret*.txt
+gemini*.txt
+**/gemini*.txt
+# ==========================================
+
 *.exe
 **/*.exe
 
