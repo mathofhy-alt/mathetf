@@ -13,11 +13,12 @@ interface FolderExplorerProps {
     onSelectAll?: (items: UserItem[]) => void;
     selectedIds?: string[];
     filterType?: 'all' | 'db' | 'exam';
-    initialData?: any; // [V68] Pre-fetched content
-    refreshKey?: number; // [V72] External trigger to invalidate cache
+    initialData?: any;
+    refreshKey?: number;
+    onGetViewItems?: (items: UserItem[]) => void;
 }
 
-export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all', initialData, refreshKey = 0 }: FolderExplorerProps) {
+export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all', initialData, refreshKey = 0, onGetViewItems }: FolderExplorerProps) {
     const [allFolders, setAllFolders] = useState<Folder[]>(initialData?.folders || []);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewFolders, setViewFolders] = useState<Folder[]>(initialData?.folders ? initialData.folders.filter((f: Folder) => !f.parent_id) : []);
@@ -112,6 +113,11 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
             setContentCache({});
         }
     }, [refreshKey, refreshTrigger]);
+
+    // Emit current viewItems to parent whenever they change (for 전체선택)
+    useEffect(() => {
+        if (onGetViewItems) onGetViewItems(viewItems);
+    }, [viewItems]);
 
     // Sub-Navigation Fetch: Only runs when currentFolderId changes to a NON-null value
     useEffect(() => {
@@ -338,12 +344,8 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         ))}
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Bulk action buttons moved to parent modal footer to avoid duplication */}
                         <button onClick={handleSync} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium transition-colors"> <DownloadCloud size={16} /> 가져오기 </button>
                         <button onClick={handleCreateFolder} className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors"> <FolderPlus size={16} /> 새 폴더 </button>
-                        {onSelectAll && (
-                            <button onClick={() => { const itemsToSelect = viewItems.filter(i => i.type === 'personal_db' || i.type === 'saved_exam'); if (itemsToSelect.length > 0) onSelectAll(itemsToSelect); }} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-sm font-medium transition-colors"> <CheckSquare size={16} /> 전체 선택 </button>
-                        )}
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto bg-slate-50/30 relative" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'background', id: null }); }}>

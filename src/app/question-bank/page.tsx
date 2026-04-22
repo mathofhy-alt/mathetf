@@ -15,7 +15,7 @@ import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsMo
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
-import { Folder as FolderIcon, Database, X, Trash2, FileText, Search } from 'lucide-react';
+import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
 
 export default function QuestionBankPage() {
@@ -88,6 +88,7 @@ export default function QuestionBankPage() {
     const [storageInitialData, setStorageInitialData] = useState<any>(null);
     const [storageRefreshKey, setStorageRefreshKey] = useState(0);
     const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
+    const [currentExamItems, setCurrentExamItems] = useState<any[]>([]); // tracks viewItems from FolderExplorer
 
     // Pre-fetch Storage Data for Instant Feel
     useEffect(() => {
@@ -731,15 +732,35 @@ export default function QuestionBankPage() {
                             <FolderExplorer
                                 key={storageModalMode}
                                 onItemSelect={handleStorageItemSelect}
-                                onSelectAll={handleDbSelectAll}
+                                onSelectAll={(items) => {
+                                    const ids = items
+                                        .filter(i => i.type === 'saved_exam' || i.type === 'personal_db')
+                                        .map(i => i.reference_id || i.id);
+                                    if (storageModalMode === 'exam') setSelectedExamIds(ids);
+                                    else setSelectedDbIds(ids);
+                                }}
                                 selectedIds={storageModalMode === 'exam' ? selectedExamIds : selectedDbIds}
                                 filterType={storageModalMode}
                                 refreshKey={storageRefreshKey}
+                                onGetViewItems={(items) => setCurrentExamItems(items)}
                             />
                         </div>
                         <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
                             <div className="flex gap-2">
                                 {/* Actions for Exams */}
+                                {storageModalMode === 'exam' && (
+                                    <button
+                                        onClick={() => {
+                                            const ids = currentExamItems
+                                                .filter(i => i.type === 'saved_exam')
+                                                .map(i => i.reference_id || i.id);
+                                            setSelectedExamIds(ids);
+                                        }}
+                                        className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition flex items-center gap-2 border border-slate-200"
+                                    >
+                                        <CheckSquare size={16} /> 전체 선택
+                                    </button>
+                                )}
                                 {storageModalMode === 'exam' && selectedExamIds.length > 0 && (
                                     <>
                                         <button
