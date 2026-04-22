@@ -6,7 +6,7 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileItem } from '@/lib/data';
-import { Download, FileText, User as UserIcon, Coins, ArrowLeft, RefreshCw, Edit, Trash2, Database } from 'lucide-react';
+import { Download, FileText, User as UserIcon, Coins, ArrowLeft, RefreshCw, Edit, Trash2, Database, Gift } from 'lucide-react';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import SettlementModal from '@/components/SettlementModal';
 import EditModal from '@/components/EditModal';
@@ -14,7 +14,7 @@ import { deleteFile, deletePurchase } from './actions';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
-    const [activeTab, setActiveTab] = useState<'purchases' | 'sales'>('purchases');
+    const [activeTab, setActiveTab] = useState<'purchases' | 'sales' | 'submission_earnings'>('purchases');
     const [loading, setLoading] = useState(true);
     const [purchases, setPurchases] = useState<any[]>([]);
     const [uploads, setUploads] = useState<any[]>([]);
@@ -23,6 +23,8 @@ export default function MyPage() {
     const [settlements, setSettlements] = useState<any[]>([]);
     const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
+    const [submissionEarnings, setSubmissionEarnings] = useState<any[]>([]);
+    const [totalSubmissionEarnings, setTotalSubmissionEarnings] = useState(0);
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -129,6 +131,15 @@ export default function MyPage() {
                 .order('created_at', { ascending: false });
 
             if (settlementData) setSettlements(settlementData);
+
+            // Fetch Submission Earnings (제보 수익)
+            const earningsRes = await fetch('/api/submission-earnings');
+            if (earningsRes.ok) {
+                const earningsJson = await earningsRes.json();
+                const earnings = earningsJson.earnings || [];
+                setSubmissionEarnings(earnings);
+                setTotalSubmissionEarnings(earnings.reduce((acc: number, e: any) => acc + (e.earnings_amount || 0), 0));
+            }
 
             setLoading(false);
         };
@@ -354,6 +365,17 @@ export default function MyPage() {
                     >
                         판매 관리 (업로드)
                     </button>
+                    <button
+                        onClick={() => setActiveTab('submission_earnings')}
+                        className={`pb-3 px-2 font-bold text-sm flex items-center gap-1.5 ${activeTab === 'submission_earnings' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-800'}`}
+                    >
+                        <Gift size={14} /> 제보 수익 내역
+                        {totalSubmissionEarnings > 0 && (
+                            <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">
+                                {totalSubmissionEarnings.toLocaleString()}P
+                            </span>
+                        )}
+                    </button>
                 </div>
 
                 {activeTab === 'purchases' && (
@@ -471,6 +493,92 @@ export default function MyPage() {
                                             </div>
                                         );
                                     })
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'submission_earnings' && (
+                    <div className="space-y-4">
+                        {/* 요약 카드 */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                                <div className="text-sm text-slate-500 mb-1">총 제보 건수</div>
+                                <div className="text-2xl font-bold text-slate-800">
+                                    {new Set(submissionEarnings.map(e => e.submission?.id)).size}건
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-lg border border-purple-100 shadow-sm bg-gradient-to-br from-purple-50 to-white">
+                                <div className="text-sm text-purple-600 mb-1">제보 수익 총 적립</div>
+                                <div className="text-2xl font-bold text-purple-700">
+                                    {totalSubmissionEarnings.toLocaleString()} P
+                                </div>
+                                <div className="text-xs text-slate-400 mt-1">판매 수익의 70% 자동 적립</div>
+                            </div>
+                        </div>
+
+                        {/* 수익 내역 테이블 */}
+                        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                                <Gift size={15} className="text-purple-500" />
+                                <h3 className="font-bold text-slate-800 text-sm">제보 수익 상세 내역</h3>
+                            </div>
+                            {submissionEarnings.length === 0 ? (
+                                <div className="p-16 text-center">
+                                    <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-200">
+                                        <Gift size={32} />
+                                    </div>
+                                    <p className="text-slate-400 font-medium">제보 수익 내역이 없습니다.</p>
+                                    <p className="text-xs text-slate-400 mt-1">
+                                        '자료등록 → 원본 시험지 제보'로 시험지를 제보하면,<br />
+                                        해당 시험지 기반 개인DB 판매 시 70%가 적립됩니다.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-4 py-3">적립일</th>
+                                                <th className="px-4 py-3">내 제보 (원본)</th>
+                                                <th className="px-4 py-3">판매된 DB 자료</th>
+                                                <th className="px-4 py-3">판매가</th>
+                                                <th className="px-4 py-3 text-purple-600">적립 포인트 (70%)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {submissionEarnings.map(e => (
+                                                <tr key={e.id} className="hover:bg-slate-50">
+                                                    <td className="px-4 py-3 text-slate-500 text-xs">
+                                                        {new Date(e.created_at).toLocaleDateString('ko-KR')}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="font-medium text-slate-700 text-xs">
+                                                            {e.submission?.title || '-'}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400">
+                                                            {e.submission?.school} · {e.submission?.exam_year}년 {e.submission?.grade}학년
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="font-medium text-slate-700 text-xs">
+                                                            {e.db_item?.title || '-'}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400">{e.db_item?.school}</div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-600 font-medium">
+                                                        {e.sale_amount?.toLocaleString()}P
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className="font-black text-purple-600 text-base">
+                                                            +{e.earnings_amount?.toLocaleString()}P
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
                         </div>
                     </div>

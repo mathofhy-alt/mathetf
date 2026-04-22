@@ -232,9 +232,13 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         const { error: uploadError } = await supabase.storage.from('exam-materials').upload(filePath, file);
         if (uploadError) throw uploadError;
 
+        const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Unknown';
+
         const { error: dbError } = await supabase.from('exam_materials').insert({
             uploader_id: user.id,
-            uploader_name: user?.email?.split('@')[0] || user?.user_metadata?.full_name || 'Unknown',
+            uploader_name: displayName,
+            submitter_id: user.id,
+            submitter_name: displayName,
             school: selectedSchool,
             region: selectedRegion,
             district: selectedDistrict,
@@ -339,7 +343,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                             </h3>
                             <p className="text-xs text-purple-700 font-medium">
                                 폰으로 촬영한 학교 시험지 사진이나 스캔본을 제보해주세요.<br/>
-                                제보된 자료는 관리자에게만 노출되며, 향후 이 자료를 바탕으로 개인DB가 판매될 경우 <span className="text-rose-600 font-bold bg-white px-1">판매 수익의 30%가 포인트로 지급</span>됩니다.
+                                제보된 자료는 관리자에게만 노출되며, 이 자료를 바탕으로 개인DB가 판매될 경우 <span className="text-rose-600 font-bold bg-white px-1">판매 수익의 70%가 포인트로 자동 적립</span>됩니다.
                             </p>
                         </div>
                     )}
@@ -482,7 +486,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                                 <FileUploadSlot
                                     id="upload_raw_scan"
                                     label="진짜 원본 스캔본 (사진/PDF)"
-                                    subLabel="수익 30% 공유 대상"
+                                    subLabel="판매 수익 70% 포인트 적립"
                                     file={fileRawCopy}
                                     setFile={setFileRawCopy}
                                     accept=".pdf,.jpg,.jpeg,.png,.zip"

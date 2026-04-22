@@ -71,66 +71,104 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ success: false, message: 'DB Error writing purchased items' }, { status: 500 });
             }
 
-            // 4. Revenue Sharing Logic for Personal DBs (Original Exam Crowdsourcing)
+            // 4. Revenue Sharing Logic for Personal DBs (Original Exam Crowdsourcing - 70%)
             for (const item of items) {
                 if (item.item_type === 'PERSONAL_DB' || item.item_type === 'DB' || item.item_type === '개인DB') {
-                    // 4.1 Fetch DB metadata and its uploader (admin)
-                    const { data: dbItem } = await supabase
-                        .from('exam_materials')
-                        .select('school, grade, semester, exam_type, subject, exam_year, uploader_id')
-                        .eq('id', item.item_id)
-                        .single();
-
-                    if (dbItem) {
-                        // 4.2 Find original uploader (First person to submit '원본제보' with same metadata)
-                        const { data: originals } = await supabase
+                    try {
+                        // 4.1 Fetch DB item with source_submission_id (직접 연결 방식)
+                        const { data: dbItem } = await supabase
                             .from('exam_materials')
-                            .select('uploader_id')
-                            .eq('school', dbItem.school)
-                            .eq('grade', dbItem.grade)
-                            .eq('semester', dbItem.semester)
-                            .eq('exam_type', dbItem.exam_type)
-                            .eq('subject', dbItem.subject)
-                            .eq('exam_year', dbItem.exam_year)
-                            .eq('content_type', '원본제보')
-                            .order('created_at', { ascending: true })
-                            .limit(1);
+                            .select('source_submission_id, uploader_id, school, grade, semester, exam_type, subject, exam_year')
+                            .eq('id', item.item_id)
+                            .single();
 
-                        if (originals && originals.length > 0) {
-                            const originalUploaderId = originals[0].uploader_id;
+                        if (!dbItem) continue;
+
+                        let submitterId: string | null = null;
+                        let submissionId: string | null = null;
+
+                        // 4.2 Method 1: source_submission_id 직접 참조 (정확함)
+                        if (dbItem.source_submission_id) {
+                            const { data: submission } = await supabase
+                                .from('exam_materials')
+                                .select('submitter_id')
+                                .eq('id', dbItem.source_submission_id)
+                                .single();
                             
-                            // 4.3 Prevent giving revenue to the DB creator (admin) and the buyer themselves
-                            if (originalUploaderId !== dbItem.uploader_id && originalUploaderId !== userId) {
-                                // Lookup Uploader's current points
+                            if (submission?.submitter_id) {
+                                submitterId = submission.submitter_id;
+                                submissionId = dbItem.source_submission_id;
+                            }
+                        }
+
+                        // 4.3 Method 2: Fallback - metadata 매칭 (source_submission_id 없을 때)
+                        if (!submitterId) {
+                            const { data: originals } = await supabase
+                                .from('exam_materials')
+                                .select('id, submitter_id, uploader_id')
+                                .eq('school', dbItem.school)
+                                .eq('grade', dbItem.grade)
+                                .eq('semester', dbItem.semester)
+                                .eq('exam_type', dbItem.exam_type)
+                                .eq('subject', dbItem.subject)
+                                .eq('exam_year', dbItem.exam_year)
+                                .eq('content_type', '원본제보')
+                                .order('created_at', { ascending: true })
+                                .limit(1);
+
+                            if (originals && originals.length > 0) {
+                                const orig = originals[0];
+                                submitterId = orig.submitter_id || orig.uploader_id;
+                                submissionId = orig.id;
+                            }
+                        }
+
+                        // 4.4 수익 배분 (제보자 != DB 제작자(관리자) && 제보자 != 구매자)
+                        if (submitterId && submitterId !== dbItem.uploader_id && submitterId !== userId) {
+                            const reward = Math.floor(Number(item.price) * 0.7); // 70% 배분
+                            if (reward > 0) {
+                                // 4.5 earned_points 적립
                                 const { data: profile } = await supabase
                                     .from('profiles')
                                     .select('earned_points')
-                                    .eq('id', originalUploaderId)
+                                    .eq('id', submitterId)
                                     .single();
 
                                 if (profile) {
-                                    const reward = Math.floor(Number(item.price) * 0.3); // 30% distribution
-                                    if (reward > 0) {
-                                        // 4.4 Add to earned_points
-                                        await supabase
-                                            .from('profiles')
-                                            .update({ earned_points: (profile.earned_points || 0) + reward })
-                                            .eq('id', originalUploaderId);
-
-                                        // 4.5 Log the point transaction
-                                        await supabase
-                                            .from('point_logs')
-                                            .insert({
-                                                user_id: originalUploaderId,
-                                                amount: reward,
-                                                point_type: 'EARNED',
-                                                reason: `[${item.title}] 원본 자료 제공 수익 분배 (30%)`,
-                                                reference_id: paymentId
-                                            });
-                                    }
+                                    await supabase
+                                        .from('profiles')
+                                        .update({ earned_points: (profile.earned_points || 0) + reward })
+                                        .eq('id', submitterId);
                                 }
+
+                                // 4.6 submission_earnings 내역 기록
+                                await supabase
+                                    .from('submission_earnings')
+                                    .insert({
+                                        submission_id: submissionId,
+                                        db_item_id: item.item_id,
+                                        purchase_id: paymentId,
+                                        buyer_id: userId,
+                                        submitter_id: submitterId,
+                                        sale_amount: Number(item.price),
+                                        earnings_amount: reward
+                                    });
+
+                                // 4.7 point_logs 기록
+                                await supabase
+                                    .from('point_logs')
+                                    .insert({
+                                        user_id: submitterId,
+                                        amount: reward,
+                                        point_type: 'EARNED',
+                                        reason: `[${item.title}] 원본 시험지 제보 수익 배분 (70%)`,
+                                        reference_id: paymentId
+                                    });
                             }
                         }
+                    } catch (revenueErr) {
+                        // 수익 배분 실패해도 구매 자체는 완료 처리
+                        console.error('[Revenue Share Error] Item:', item.item_id, revenueErr);
                     }
                 }
             }
