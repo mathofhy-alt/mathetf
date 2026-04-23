@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
             const { data, error } = await supabase
                 .from('questions')
                 .select('id, content_xml, plain_text, equation_scripts, subject, grade, school, difficulty, key_concepts, unit')
-                .is('embedding', null)
+                .or('embedding.is.null,unit.is.null')
                 .limit(10);
 
             if (error) throw error;
