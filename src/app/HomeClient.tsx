@@ -14,6 +14,7 @@ import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 import { useCart } from '@/components/providers/CartProvider';
 import ReportModal from '@/components/ReportModal';
+import TutorialModal from '@/components/TutorialModal';
 
 interface HomeClientProps {
     initialExamData: any[];
@@ -70,6 +71,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
     const [selectedExamForReport, setSelectedExamForReport] = useState<{key: string, title: string} | null>(null);
     const [user, setUser] = useState<User | null>(initialUser);
     const router = useRouter();
@@ -148,6 +150,18 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     };
 
     useEffect(() => {
+        // Check Tutorial Modal
+        const hideUntil = localStorage.getItem('hide_tutorial_until');
+        if (!hideUntil) {
+            setIsTutorialModalOpen(true);
+        } else {
+            const expiryDate = new Date(hideUntil);
+            if (new Date() > expiryDate) {
+                // Expired, show again
+                setIsTutorialModalOpen(true);
+            }
+        }
+
         const checkUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
@@ -793,6 +807,11 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 onClose={() => setIsReportModalOpen(false)}
                 user={user}
                 examGroup={selectedExamForReport}
+            />
+
+            <TutorialModal 
+                isOpen={isTutorialModalOpen} 
+                onClose={() => setIsTutorialModalOpen(false)} 
             />
 
             {/* DB Detail Modal */}
