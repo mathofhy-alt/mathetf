@@ -11,6 +11,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 1.0,
         },
         {
+            url: `${baseUrl}/question-bank`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
             url: `${baseUrl}/login`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
@@ -21,12 +27,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.6,
-        },
-        {
-            url: `${baseUrl}/exam`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.8,
         },
     ];
 }
