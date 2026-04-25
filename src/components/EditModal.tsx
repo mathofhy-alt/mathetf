@@ -234,7 +234,7 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                             <div className="space-y-1">
                                 <label className="text-[11px] font-bold text-slate-500 ml-1">연도</label>
                                 <select value={year} onChange={e => setYear(Number(e.target.value))} className="w-full rounded-lg border-slate-200 text-sm">
-                                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                    {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(y => (
                                         <option key={y} value={y}>{y}년</option>
                                     ))}
                                 </select>

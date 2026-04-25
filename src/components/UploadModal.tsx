@@ -408,7 +408,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
 
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                             <select value={year} onChange={e => setYear(Number(e.target.value))} className="w-full rounded border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
-                                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(y => (
                                     <option key={y} value={y}>{y}년</option>
                                 ))}
                             </select>
