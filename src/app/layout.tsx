@@ -44,13 +44,13 @@ export default function RootLayout({
             <head>
                 <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
                 {/* Google tag (gtag.js) - GA4 + Google Ads */}
-                <script async src="https://www.googletagmanager.com/gtag/js?id=G-CP2H0VKQXY"></script>
+                <script async src="https://www.googletagmanager.com/gtag/js?id=G-FC6EZWV58Q"></script>
                 <script dangerouslySetInnerHTML={{
                     __html: `
                         window.dataLayer = window.dataLayer || [];
                         function gtag(){dataLayer.push(arguments);}
                         gtag('js', new Date());
-                        gtag('config', 'G-CP2H0VKQXY');
+                        gtag('config', 'G-FC6EZWV58Q');
                         gtag('config', 'AW-17263917467');
                     `
                 }} />
