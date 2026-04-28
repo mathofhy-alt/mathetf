@@ -69,6 +69,10 @@ export default function CartPage() {
                 const verifyData = await verifyRes.json();
 
                 if (verifyData.success) {
+                    // Google Ads 전환 추적
+                    if (typeof window !== 'undefined' && (window as any).gtag) {
+                        (window as any).gtag('event', 'conversion', {'send_to': 'AW-17263917467/Rs-WCNjnvOgaEJvziahA'});
+                    }
                     alert(`포인트 결제가 성공적으로 완료되었습니다.`);
                     await clearCart();
                     window.location.href = '/mypage';
@@ -119,6 +123,10 @@ export default function CartPage() {
             const verifyData = await verifyRes.json();
 
             if (verifyData.success) {
+                // Google Ads 전환 추적
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                    (window as any).gtag('event', 'conversion', {'send_to': 'AW-17263917467/Rs-WCNjnvOgaEJvziahA'});
+                }
                 alert(`결제가 성공적으로 완료되었습니다.`);
                 await clearCart();
                 // Optionally redirect to My Page or Library
