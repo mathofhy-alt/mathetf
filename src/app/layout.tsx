@@ -43,7 +43,7 @@ export default function RootLayout({
         <html lang="ko">
             <head>
                 <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-                {/* Google tag (gtag.js) */}
+                {/* Google tag (gtag.js) - GA4 + Google Ads */}
                 <script async src="https://www.googletagmanager.com/gtag/js?id=G-CP2H0VKQXY"></script>
                 <script dangerouslySetInnerHTML={{
                     __html: `
@@ -51,6 +51,7 @@ export default function RootLayout({
                         function gtag(){dataLayer.push(arguments);}
                         gtag('js', new Date());
                         gtag('config', 'G-CP2H0VKQXY');
+                        gtag('config', 'AW-17263917467');
                     `
                 }} />
             </head>
