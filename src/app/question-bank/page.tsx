@@ -123,6 +123,11 @@ export default function QuestionBankPage() {
         supabase.auth.getUser().then(({ data }) => {
             setUser(data.user);
             if (data.user) {
+                // 어드민: 전체 DB를 user_items에 자동 동기화
+                if (data.user.email === 'mathofhy@naver.com') {
+                    fetch('/api/storage/sync', { method: 'POST' })
+                        .then(() => setStorageRefreshKey(prev => prev + 1));
+                }
                 fetchPurchasedDbs(data.user.id, data.user.email ?? undefined);
                 fetchMyPoints(data.user.id);
             }
