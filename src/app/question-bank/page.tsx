@@ -818,36 +818,7 @@ export default function QuestionBankPage() {
                                         </button>
                                     </>
                                 )}
-                                {/* Actions for DBs (Legacy Support) */}
-                                {storageModalMode === 'db' && selectedDbIds.length > 0 && (
-                                    <>
-                                        <button
-                                            onClick={() => {
-                                                selectedDbIds.forEach((id, idx) => {
-                                                    setTimeout(() => {
-                                                        window.location.href = `/api/storage/download?id=${id}`;
-                                                    }, idx * 1000);
-                                                });
-                                            }}
-                                            className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition flex items-center gap-2 border border-indigo-200"
-                                        >
-                                            <FileText size={16} /> 선택 다운로드
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                if (!confirm('선택한 DB 항목을 보관함에서 제거하시겠습니까? (실제 데이터는 보존됩니다)')) return;
-                                                for (const id of selectedDbIds) {
-                                                    await fetch(`/api/storage/items?id=${id}`, { method: 'DELETE' });
-                                                }
-                                                setSelectedDbIds([]);
-                                                setStorageRefreshKey(prev => prev + 1);
-                                            }}
-                                            className="px-4 py-2 bg-red-50 text-red-700 font-bold rounded-lg hover:bg-red-100 transition flex items-center gap-2 border border-red-200"
-                                        >
-                                            <Trash2 size={16} /> 선택 삭제
-                                        </button>
-                                    </>
-                                )}
+
                             </div>
                             <button
                                 onClick={() => {
