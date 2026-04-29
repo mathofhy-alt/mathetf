@@ -925,10 +925,8 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
         if (!confirm(`'${title}' 자료를 정말 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
 
         try {
-            const res = await fetch('/api/storage/items', {
+            const res = await fetch(`/api/admin/activate-db?id=${encodeURIComponent(id)}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
             });
 
             const data = await res.json();

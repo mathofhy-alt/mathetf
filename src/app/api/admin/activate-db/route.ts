@@ -138,3 +138,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: e.message }, { status: 500 });
     }
 }
+
+export async function DELETE(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+
+    const supabase = createAdminClient();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+        return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
+    }
+
+    try {
+        const { error } = await supabase
+            .from('exam_materials')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        return NextResponse.json({ success: true });
+    } catch (e: any) {
+        console.error('Delete DB Error:', e);
+        return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+    }
+}
