@@ -122,7 +122,7 @@ export default function QuestionBankPage() {
         supabase.auth.getUser().then(({ data }) => {
             setUser(data.user);
             if (data.user) {
-                fetchPurchasedDbs(data.user.id);
+                fetchPurchasedDbs(data.user.id, data.user.email ?? undefined);
                 fetchMyPoints(data.user.id);
             }
         });
@@ -131,7 +131,19 @@ export default function QuestionBankPage() {
         setLoading(false);
     }, []);
 
-    const fetchPurchasedDbs = async (userId: string) => {
+    const fetchPurchasedDbs = async (userId: string, userEmail?: string) => {
+        const isAdmin = userEmail === 'mathofhy@naver.com';
+
+        // Admin: 구매 여부 무관하게 전체 DB 조회
+        if (isAdmin) {
+            const { data: allData } = await supabase
+                .from('exam_materials')
+                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+                .eq('file_type', 'DB');
+            if (allData) setPurchasedDbs(allData);
+            return;
+        }
+
         // [V105.1] Modification for Free Mock Exams
         // 1. Get user's purchased DBs
         const { data: purchasedData, error: purchaseError } = await supabase
