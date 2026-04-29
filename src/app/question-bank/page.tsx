@@ -206,59 +206,52 @@ export default function QuestionBankPage() {
             .range(from, to);
 
         if (dbFilter.length > 0) {
-            // Find all selected DBs
             const selectedDbs = purchasedDbs.filter(d => dbFilter.includes(d.id));
 
             if (selectedDbs.length > 0) {
-                // FALLBACK: source_db_id in questions table appears to be stale/mismatched for some schools.
-                // We will use strict metadata matching (School + Grade + Year + Semester).
+                // 전체 DB가 선택된 경우 DB 필터 생략 (단원/과목 필터만으로 검색)
+                const isAllSelected = selectedDbs.length >= purchasedDbs.length;
 
-                const orConditions = selectedDbs.map(db => {
-                    // Map Grade: '1' -> '고1', '고1' -> '고1'
-                    let gradeVal = db.grade;
-                    if (db.grade && ['1', '2', '3'].includes(String(db.grade).replace('고', ''))) {
-                        gradeVal = `고${String(db.grade).replace('고', '')}`;
+                if (!isAllSelected) {
+                    if (selectedDbs.length > 20) {
+                        // 20개 초과 시 school IN(...)으로 단순화 (쿼리 성능)
+                        const schools = [...new Set(selectedDbs.map(db => db.school))];
+                        query = query.in('school', schools);
+                    } else {
+                        // 20개 이하: 정확한 메타데이터 매칭
+                        const orConditions = selectedDbs.map(db => {
+                            let gradeVal = db.grade;
+                            if (db.grade && ['1', '2', '3'].includes(String(db.grade).replace('고', ''))) {
+                                gradeVal = `고${String(db.grade).replace('고', '')}`;
+                            }
+                            const titleYear = db.title?.match(/20\d{2}/)?.[0];
+                            const yearVal = titleYear ? titleYear : (db.exam_year || db.year);
+
+                            let parts = [`school.eq.${db.school}`];
+                            if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
+                            if (yearVal) parts.push(`year.eq.${yearVal}`);
+
+                            if (db.exam_type === '모의고사' || db.exam_type === '수능') {
+                                parts.push(`semester.in.("${db.semester}월","${db.semester}월 모의고사")`);
+                            } else if (db.semester && db.exam_type) {
+                                const semNum = String(db.semester).replace('학기', '');
+                                const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
+                                if (typeShort) parts.push(`semester.eq.${semNum}학기${typeShort}`);
+                            } else if (db.semester) {
+                                const semNum = String(db.semester).replace('학기', '');
+                                parts.push(`semester.ilike.${semNum}학기%`);
+                            }
+                            if (db.subject && db.subject !== '전과정') {
+                                parts.push(`subject.eq.${db.subject}`);
+                            }
+                            return `and(${parts.join(',')})`;
+                        });
+                        if (orConditions.length > 0) query = query.or(orConditions.join(','));
                     }
-
-                    // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
-                    const titleYear = db.title?.match(/20\d{2}/)?.[0];
-                    const yearVal = titleYear ? titleYear : (db.exam_year || db.year);
-
-                    let parts = [
-                        `school.eq.${db.school}`
-                    ];
-
-                    if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
-                    if (yearVal) parts.push(`year.eq.${yearVal}`);
-
-                    // Map Semester & Exam Type (e.g. "1" + "중간고사" -> "1학기중간")
-                    if (db.exam_type === '모의고사' || db.exam_type === '수능') {
-                        // Ingest uses `{month} 모의고사` (e.g. '9월 모의고사'), but fallback to just '9월' just in case.
-                        parts.push(`semester.in.("${db.semester}월","${db.semester}월 모의고사")`); 
-                    } else if (db.semester && db.exam_type) {
-                        const semNum = String(db.semester).replace('학기', '');
-                        const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
-                        if (typeShort) {
-                            parts.push(`semester.eq.${semNum}학기${typeShort}`);
-                        }
-                    } else if (db.semester) {
-                        // Fallback for semester only
-                        const semNum = String(db.semester).replace('학기', '');
-                        parts.push(`semester.ilike.${semNum}학기%`);
-                    }
-
-                    if (db.subject && db.subject !== '전과정') {
-                        parts.push(`subject.eq.${db.subject}`);
-                    }
-
-                    return `and(${parts.join(',')})`;
-                });
-
-                if (orConditions.length > 0) {
-                    query = query.or(orConditions.join(','));
                 }
+                // isAllSelected이면 DB 필터 생략 → 단원/과목 필터만 적용
             } else {
-                // Prevent leak
+                // 매칭 DB 없으면 결과 0건 보장
                 query = query.eq('id', '00000000-0000-0000-0000-000000000000');
             }
         }
