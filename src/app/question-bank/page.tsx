@@ -298,7 +298,7 @@ export default function QuestionBankPage() {
                 if (questionIds.length > 0) {
                     const { data: imgData } = await supabase
                         .from('question_images')
-                        .select('question_id, data, id, original_bin_id, format, storage_path')
+                        .select('question_id, data, id, original_bin_id, format')
                         .in('question_id', questionIds);
                     if (imgData && imgData.length > 0) {
                         const imgMap: Record<string, any[]> = {};
