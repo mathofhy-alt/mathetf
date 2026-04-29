@@ -765,6 +765,23 @@ export default function QuestionBankPage() {
                         </div>
                         <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
                             <div className="flex gap-2">
+                                {/* Actions for DBs - 전체 선택 */}
+                                {storageModalMode === 'db' && (
+                                    <button
+                                        onClick={() => {
+                                            const ids = currentExamItems
+                                                .filter(i => i.type === 'personal_db')
+                                                .map(i => i.reference_id || i.id);
+                                            setSelectedDbIds(prev => {
+                                                const allSelected = ids.every(id => prev.includes(id));
+                                                return allSelected ? prev.filter(id => !ids.includes(id)) : [...new Set([...prev, ...ids])];
+                                            });
+                                        }}
+                                        className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition flex items-center gap-2 border border-slate-200"
+                                    >
+                                        <CheckSquare size={16} /> 전체 선택
+                                    </button>
+                                )}
                                 {/* Actions for Exams */}
                                 {storageModalMode === 'exam' && (
                                     <button
