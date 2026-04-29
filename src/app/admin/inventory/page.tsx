@@ -170,9 +170,9 @@ export default function AdminInventory() {
                         {(districtsMap[selectedRegion] || []).map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                     <select className="form-select text-sm h-10 border-slate-300 rounded w-32" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
-                        <option value="2025">2025년</option>
-                        <option value="2024">2024년</option>
-                        <option value="2023">2023년</option>
+                        {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                            <option key={y} value={String(y)}>{y}년</option>
+                        ))}
                     </select>
                     <select className="form-select text-sm h-10 border-slate-300 rounded w-32" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
                         <option value="1">1학년</option>

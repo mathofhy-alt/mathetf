@@ -539,7 +539,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                     <div className="col-span-4">
                                         <select className="w-full form-select h-10 text-sm" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
                                             <option value="">년도 전체</option>
-                                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                            {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
                                                 <option key={y} value={y}>{y}년</option>
                                             ))}
                                         </select>
