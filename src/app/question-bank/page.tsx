@@ -294,7 +294,7 @@ export default function QuestionBankPage() {
             if (data) {
                 // 이미지 별도 조회 (병렬) - JOIN 제거로 메인 쿼리 속도 향상
                 const questionIds = data.map((q: any) => q.id);
-                let questionsWithImages = data;
+                let questionsWithImages = data.map((q: any) => ({ ...q, question_images: [] }));
                 if (questionIds.length > 0) {
                     const { data: imgData } = await supabase
                         .from('question_images')
@@ -306,7 +306,7 @@ export default function QuestionBankPage() {
                             if (!imgMap[img.question_id]) imgMap[img.question_id] = [];
                             imgMap[img.question_id].push(img);
                         });
-                        questionsWithImages = data.map((q: any) => ({
+                        questionsWithImages = questionsWithImages.map((q: any) => ({
                             ...q,
                             question_images: imgMap[q.id] || []
                         }));
