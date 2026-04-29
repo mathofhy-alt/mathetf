@@ -201,9 +201,9 @@ export default function QuestionBankPage() {
 
         let query = supabase
             .from('questions')
-            .select('*, question_images(*)', { count: 'exact' })
-            .eq('work_status', 'sorted') // Only fetch sorted questions
-            .range(from, to); // Server-side pagination
+            .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id', { count: 'exact' })
+            .eq('work_status', 'sorted')
+            .range(from, to);
 
         if (dbFilter.length > 0) {
             // Find all selected DBs
@@ -299,7 +299,27 @@ export default function QuestionBankPage() {
                 throw new Error("데이터베이스 검색 중 오류가 발생했습니다. (검색 조건이 너무 많을 수 있습니다)");
             }
             if (data) {
-                setQuestions(data);
+                // 이미지 별도 조회 (병렬) - JOIN 제거로 메인 쿼리 속도 향상
+                const questionIds = data.map((q: any) => q.id);
+                let questionsWithImages = data;
+                if (questionIds.length > 0) {
+                    const { data: imgData } = await supabase
+                        .from('question_images')
+                        .select('question_id, data, id')
+                        .in('question_id', questionIds);
+                    if (imgData && imgData.length > 0) {
+                        const imgMap: Record<string, any[]> = {};
+                        imgData.forEach((img: any) => {
+                            if (!imgMap[img.question_id]) imgMap[img.question_id] = [];
+                            imgMap[img.question_id].push(img);
+                        });
+                        questionsWithImages = data.map((q: any) => ({
+                            ...q,
+                            question_images: imgMap[q.id] || []
+                        }));
+                    }
+                }
+                setQuestions(questionsWithImages);
                 if (count !== null) setTotalQuestions(count);
                 if (targetPage === 1) setHasSearched(true);
                 if (data.length === 0 && targetPage === 1) {
@@ -313,6 +333,7 @@ export default function QuestionBankPage() {
         } finally {
             setLoading(false);
         }
+
     };
 
     const handleSearch = () => {
