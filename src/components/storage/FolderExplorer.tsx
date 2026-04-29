@@ -26,6 +26,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
     const [loading, setLoading] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<UserItem[] | null>(null);
 
     // [V67] Component Cache for Instant Navigation
     const [contentCache, setContentCache] = useState<Record<string, { folders: Folder[], items: UserItem[] }>>(() => {
