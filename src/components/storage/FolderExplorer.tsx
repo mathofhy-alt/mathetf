@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { FolderPlus, RefreshCw, Loader2, DownloadCloud, CheckSquare, Trash2 } from 'lucide-react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { FolderPlus, RefreshCw, Loader2, DownloadCloud, Search, X } from 'lucide-react';
 import FolderTree from './FolderTree';
 import FileGrid from './FileGrid';
 import StorageContextMenu from './StorageContextMenu';
@@ -25,6 +25,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
     const [viewItems, setViewItems] = useState<UserItem[]>(initialData?.items || []);
     const [loading, setLoading] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // [V67] Component Cache for Instant Navigation
     const [contentCache, setContentCache] = useState<Record<string, { folders: Folder[], items: UserItem[] }>>(() => {
@@ -114,10 +115,30 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
         }
     }, [refreshKey, refreshTrigger]);
 
-    // Emit current viewItems to parent whenever they change (for 전체선택)
+    // 검색어 입력 시 전체 DB 항목을 API로 검색 (300ms 디바운스)
     useEffect(() => {
-        if (onGetViewItems) onGetViewItems(viewItems);
-    }, [viewItems]);
+        if (!searchQuery.trim()) {
+            setSearchResults(null);
+            return;
+        }
+        const timer = setTimeout(async () => {
+            const itemType = filterType === 'db' ? 'personal_db' : 'saved_exam';
+            const res = await fetch(`/api/storage/items?type=${itemType}&search=${encodeURIComponent(searchQuery.trim())}`);
+            const data = await res.json();
+            setSearchResults(data.items || []);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery, filterType]);
+
+    // 표시할 항목 계산: 검색 중이면 검색결과, 아니면 현재 폴더 항목
+    const filteredItems = useMemo(() => {
+        if (searchResults !== null) return searchResults;
+        return viewItems;
+    }, [viewItems, searchResults]);
+
+    useEffect(() => {
+        if (onGetViewItems) onGetViewItems(filteredItems);
+    }, [filteredItems]);
 
     // Sub-Navigation Fetch: Only runs when currentFolderId changes to a NON-null value
     useEffect(() => {
@@ -334,23 +355,43 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                 </div>
             </div>
             <div className="flex-1 flex flex-col">
-                <div className="h-12 border-b flex items-center px-4 justify-between bg-white">
-                    <div className="flex items-center gap-1 text-sm text-slate-600">
-                        {getBreadcrumbs().map((crumb, idx) => (
-                            <React.Fragment key={crumb.id || 'root'}>
-                                {idx > 0 && <span className="text-slate-300">/</span>}
-                                <button className={`hover:text-blue-600 ${crumb.id === currentFolderId ? 'font-bold text-slate-900' : ''}`} onClick={() => setCurrentFolderId(crumb.id)}> {crumb.name} </button>
-                            </React.Fragment>
-                        ))}
+                <div className="border-b flex flex-col bg-white">
+                    <div className="h-12 flex items-center px-4 justify-between">
+                        <div className="flex items-center gap-1 text-sm text-slate-600">
+                            {getBreadcrumbs().map((crumb, idx) => (
+                                <React.Fragment key={crumb.id || 'root'}>
+                                    {idx > 0 && <span className="text-slate-300">/</span>}
+                                    <button className={`hover:text-blue-600 ${crumb.id === currentFolderId ? 'font-bold text-slate-900' : ''}`} onClick={() => setCurrentFolderId(crumb.id)}> {crumb.name} </button>
+                                </React.Fragment>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={handleSync} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium transition-colors"> <DownloadCloud size={16} /> 가져오기 </button>
+                            <button onClick={handleCreateFolder} className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors"> <FolderPlus size={16} /> 새 폴더 </button>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={handleSync} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium transition-colors"> <DownloadCloud size={16} /> 가져오기 </button>
-                        <button onClick={handleCreateFolder} className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors"> <FolderPlus size={16} /> 새 폴더 </button>
+                    {/* 검색창 */}
+                    <div className="px-4 pb-2">
+                        <div className="relative">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                placeholder="학교명, 연도 등으로 검색..."
+                                className="w-full pl-8 pr-8 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 bg-slate-50"
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                    <X size={13} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto bg-slate-50/30 relative" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'background', id: null }); }}>
                     {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"> <Loader2 className="animate-spin text-blue-600" /> </div>}
-                    <FileGrid folders={viewFolders} items={viewItems} onFolderClick={(f) => setCurrentFolderId(f.id)} onItemClick={onItemSelect} onRename={() => { }} onDelete={handleDelete} onDownload={handleSingleDownload} onContextMenu={(e, type, id) => { setContextMenu({ x: e.clientX, y: e.clientY, type, id }); }} onMoveItem={handleMoveItem} selectedIds={selectedIds} />
+                    <FileGrid folders={searchQuery ? [] : viewFolders} items={filteredItems} onFolderClick={(f) => { setCurrentFolderId(f.id); setSearchQuery(''); }} onItemClick={onItemSelect} onRename={() => { }} onDelete={handleDelete} onDownload={handleSingleDownload} onContextMenu={(e, type, id) => { setContextMenu({ x: e.clientX, y: e.clientY, type, id }); }} onMoveItem={handleMoveItem} selectedIds={selectedIds} />
                 </div>
             </div>
             {contextMenu && (

@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+export async function GET(req: NextRequest) {
+    const supabase = createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type'); // e.g. personal_db
+    const search = searchParams.get('search'); // name filter
+
+    let query = supabase
+        .from('user_items')
+        .select('id, name, type, reference_id, folder_id, created_at')
+        .eq('user_id', user.id);
+
+    if (type) query = query.eq('type', type);
+    if (search) query = query.ilike('name', `%${search}%`);
+
+    query = query.order('name', { ascending: true }).limit(200);
+
+    const { data, error } = await query;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ items: data || [] });
+}
+
 export async function POST(req: NextRequest) {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
