@@ -35,12 +35,12 @@ export async function POST(req: NextRequest) {
             questionsToProcess = data || [];
         } else {
             // Processing pending items (embedding is null)
-            // Limit to 10 at a time to avoid timeout/rate limits
+            // 30개씩 처리 (병렬화로 속도 개선)
             const { data, error } = await supabase
                 .from('questions')
                 .select('id, content_xml, plain_text, equation_scripts, subject, grade, school, difficulty, key_concepts, unit')
                 .or('embedding.is.null,unit.is.null')
-                .limit(10);
+                .limit(30);
 
             if (error) throw error;
             questionsToProcess = data || [];
@@ -54,30 +54,24 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const results = [];
+        const results: any[] = [];
         let successCount = 0;
         let totalEmbeddingTokens = 0;
         let totalTagTokens = 0;
 
-        for (const q of questionsToProcess) {
+        // 문제 처리 함수 (단일 문제)
+        const processQuestion = async (q: any) => {
             try {
-
-                // 1. Construct text for embedding
-                // Combine: Subject + Grade + Plain Text + Equations (LaTeX)
-                // This gives the model context about the math problem
                 const contentParts = [
                     `[과목: ${q.subject || '수학'}]`,
                     `[학년: ${q.grade || '공통'}]`,
                     q.content_xml ? q.content_xml.replace(/<[^>]+>/g, ' ') : (q.plain_text || ''),
                     ...(q.equation_scripts || [])
                 ];
-
                 const textToEmbed = contentParts.join(' ').trim();
 
                 if (!textToEmbed) {
-                    console.warn(`Question ${q.id} has no content to embed.`);
-                    results.push({ id: q.id, status: 'skipped', reason: 'empty_content' });
-                    continue;
+                    return { id: q.id, status: 'skipped', reason: 'empty_content' };
                 }
 
                 let updatedConcepts = q.key_concepts;
@@ -85,65 +79,48 @@ export async function POST(req: NextRequest) {
                 let updatedSubject = q.subject;
                 let updatedDifficulty = q.difficulty;
                 let extractedTagsForEmbedding = '';
-                
+
                 const isForced = forceIds && Array.isArray(forceIds) && forceIds.includes(q.id);
-                
                 const needsTags = isForced || !updatedConcepts || (Array.isArray(updatedConcepts) && updatedConcepts.length === 0) || (typeof updatedConcepts === 'string' && updatedConcepts.trim() === '');
                 const needsUnit = isForced || (!updatedUnit || typeof updatedUnit !== 'string' || updatedUnit.trim() === '');
                 const needsSubject = isForced || (!updatedSubject || updatedSubject === '전과목' || updatedSubject === '수학');
                 const needsDifficulty = isForced || (updatedDifficulty == null || updatedDifficulty === '' || isNaN(Number(updatedDifficulty)));
 
-                // 3. Generate Tags First
                 if (needsTags || needsUnit || needsSubject || needsDifficulty) {
                     try {
-                        let imageUrls: string[] = [];
+                        // 이미지 병렬 fetch
                         const { data: imgData } = await supabase
                             .from('question_images')
                             .select('data')
                             .eq('question_id', q.id)
                             .order('created_at', { ascending: true });
-                        if (imgData && imgData.length > 0) {
-                            imageUrls = imgData.map(row => row.data);
-                        }
+
+                        const imageUrls: string[] = imgData ? imgData.map((row: any) => row.data) : [];
 
                         const tagData = await generateTags(textToEmbed, q.subject || '수학', imageUrls);
                         const extracted = tagData.tags;
                         totalTagTokens += tagData.tokens || 0;
 
                         if (needsTags && extracted.length > 0) {
-                            // Add '#' prefix as required by the frontend/DB convention
                             updatedConcepts = extracted.map((t: string) => `#${t}`);
-                            extractedTagsForEmbedding = extracted.join(', '); // 임베딩 가중치용
+                            extractedTagsForEmbedding = extracted.join(', ');
                         } else if (!needsTags && updatedConcepts) {
-                            // Keep existing concepts for embedding weight
-                            extractedTagsForEmbedding = Array.isArray(updatedConcepts) 
+                            extractedTagsForEmbedding = Array.isArray(updatedConcepts)
                                 ? updatedConcepts.map((t: string) => t.replace(/^#/, '')).join(', ')
                                 : (typeof updatedConcepts === 'string' ? updatedConcepts.replace(/^#/, '') : '');
                         }
-                        
-                        if (needsUnit && tagData.unit) {
-                            updatedUnit = tagData.unit;
-                        }
-                        
-                        if (needsSubject && tagData.subject) {
-                            updatedSubject = tagData.subject;
-                        }
-                        
-                        if (needsDifficulty && tagData.difficulty != null) {
-                            updatedDifficulty = tagData.difficulty.toString();
-                        }
+                        if (needsUnit && tagData.unit) updatedUnit = tagData.unit;
+                        if (needsSubject && tagData.subject) updatedSubject = tagData.subject;
+                        if (needsDifficulty && tagData.difficulty != null) updatedDifficulty = tagData.difficulty.toString();
                     } catch (e) {
                         console.error(`Tag generation failed for ${q.id}:`, e);
                     }
                 } else {
-                    // 이미 태그와 단원 모두 존재
-                    extractedTagsForEmbedding = Array.isArray(updatedConcepts) 
+                    extractedTagsForEmbedding = Array.isArray(updatedConcepts)
                         ? updatedConcepts.map((t: string) => t.replace(/^#/, '')).join(', ')
                         : (typeof updatedConcepts === 'string' ? updatedConcepts.replace(/^#/, '') : '');
                 }
 
-                // 4. Generate Embedding with Tag Hints
-                // 태그 텍스트를 최상단에 강제로 주입하여 유사도 망(Map)을 형성
                 let finalEmbeddingText = textToEmbed;
                 if (extractedTagsForEmbedding) {
                     finalEmbeddingText = `[핵심개념태그: ${extractedTagsForEmbedding}]\n${textToEmbed}`;
@@ -152,7 +129,6 @@ export async function POST(req: NextRequest) {
                 const embedding = embeddingData.embedding;
                 totalEmbeddingTokens += embeddingData.tokens || 0;
 
-                // 4. Update DB
                 const { error: updateError } = await supabase
                     .from('questions')
                     .update({
@@ -165,16 +141,22 @@ export async function POST(req: NextRequest) {
                     .eq('id', q.id);
 
                 if (updateError) throw updateError;
-
-                successCount++;
-                results.push({ id: q.id, status: 'success' });
-
-                // Rate limit safety delay (optional, but good for stability)
-                await new Promise(r => setTimeout(r, 100));
-
+                return { id: q.id, status: 'success' };
             } catch (err: any) {
                 console.error(`Failed to process question ${q.id}:`, err);
-                results.push({ id: q.id, status: 'error', error: err.message });
+                return { id: q.id, status: 'error', error: err.message };
+            }
+        };
+
+        // 5개씩 병렬 처리
+        const CONCURRENCY = 5;
+        for (let i = 0; i < questionsToProcess.length; i += CONCURRENCY) {
+            const batch = questionsToProcess.slice(i, i + CONCURRENCY);
+            const batchResults = await Promise.allSettled(batch.map(q => processQuestion(q)));
+            for (const r of batchResults) {
+                const result = r.status === 'fulfilled' ? r.value : { id: 'unknown', status: 'error', error: 'Promise rejected' };
+                results.push(result);
+                if (result.status === 'success') successCount++;
             }
         }
 
