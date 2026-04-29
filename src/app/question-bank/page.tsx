@@ -70,6 +70,7 @@ export default function QuestionBankPage() {
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [showAutoModal, setShowAutoModal] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const isAdmin = user?.email === 'mathofhy@naver.com';
 
     // Personal DB State
     const [purchasedDbs, setPurchasedDbs] = useState<any[]>([]);
@@ -877,6 +878,18 @@ export default function QuestionBankPage() {
                                 만든 시험지
                             </button>
                         </div>
+                        {/* 관리자 전체 DB 선택 버튼 */}
+                        {isAdmin && purchasedDbs.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    const allIds = purchasedDbs.map((d: any) => d.id);
+                                    setSelectedDbIds(allIds);
+                                }}
+                                className="w-full py-2 px-3 bg-amber-50 text-amber-700 border border-amber-300 rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2 font-bold text-xs transition-colors"
+                            >
+                                ⚡ 관리자: 전체 DB 선택 ({purchasedDbs.length}개)
+                            </button>
+                        )}
 
                         {/* Selected DB count block removed per user request */}
                     </div>
