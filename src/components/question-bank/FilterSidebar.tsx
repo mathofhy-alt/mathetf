@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { CONCEPT_MAP } from '@/lib/concept-map';
 
 export interface FilterState {
     units: string[];
@@ -129,15 +130,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             if (q.subject && q.unit) {
                                 if (!skeleton[q.subject]) skeleton[q.subject] = {};
                                 if (!skeleton[q.subject][q.unit]) skeleton[q.subject][q.unit] = new Set<string>();
-                                if (q.key_concepts) {
-                                    let tags: string[] = [];
-                                    if (Array.isArray(q.key_concepts)) {
-                                        tags = q.key_concepts;
-                                    } else if (typeof q.key_concepts === 'string') {
-                                        tags = q.key_concepts.split(',').map((t: string) => t.trim()).filter(Boolean);
-                                    }
-                                    tags.forEach((tag: string) => skeleton[q.subject][q.unit].add(tag));
-                                }
+                                // DB key_concepts 대신 CONCEPT_MAP 표준 태그 사용
+                                const presetTags = CONCEPT_MAP[q.subject]?.[q.unit] || [];
+                                presetTags.forEach((tag: string) => skeleton[q.subject][q.unit].add(tag));
                             }
                         });
                     }
