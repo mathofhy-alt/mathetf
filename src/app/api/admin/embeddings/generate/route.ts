@@ -148,8 +148,8 @@ export async function POST(req: NextRequest) {
             }
         };
 
-        // 5개씩 병렬 처리
-        const CONCURRENCY = 5;
+        // 8개씩 병렬 처리
+        const CONCURRENCY = 8;
         for (let i = 0; i < questionsToProcess.length; i += CONCURRENCY) {
             const batch = questionsToProcess.slice(i, i + CONCURRENCY);
             const batchResults = await Promise.allSettled(batch.map(q => processQuestion(q)));

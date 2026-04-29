@@ -136,26 +136,30 @@ ${mapStr}`;
 
         const imageParts: any[] = [];
         if (imageUrls && imageUrls.length > 0) {
-            for (const imgUrl of imageUrls) {
-                try {
-                    const res = await fetch(imgUrl);
-                    if (res.ok) {
+            const fetched = await Promise.all(
+                imageUrls.map(async (imgUrl) => {
+                    try {
+                        const res = await fetch(imgUrl);
+                        if (!res.ok) return null;
                         const arrayBuffer = await res.arrayBuffer();
                         const buffer = Buffer.from(arrayBuffer);
-                        imageParts.push({
+                        return {
                             inlineData: {
                                 mimeType: res.headers.get('content-type') || 'image/png',
                                 data: buffer.toString('base64')
                             }
-                        });
+                        };
+                    } catch (e) {
+                        console.error("Failed to fetch image for Gemini:", imgUrl, e);
+                        return null;
                     }
-                } catch (e) {
-                    console.error("Failed to fetch image for Gemini:", imgUrl, e);
-                }
-            }
+                })
+            );
+            imageParts.push(...fetched.filter(Boolean));
         }
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
         
         const response = await fetch(url, {
             method: 'POST',
