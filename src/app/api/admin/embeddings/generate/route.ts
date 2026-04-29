@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
 
         // 문제 처리 함수 (단일 문제)
         const processQuestion = async (q: any) => {
+            const t0 = Date.now();
             try {
                 const contentParts = [
                     `[과목: ${q.subject || '수학'}]`,
@@ -89,15 +90,19 @@ export async function POST(req: NextRequest) {
                 if (needsTags || needsUnit || needsSubject || needsDifficulty) {
                     try {
                         // 이미지 병렬 fetch
+                        const tImg0 = Date.now();
                         const { data: imgData } = await supabase
                             .from('question_images')
                             .select('data')
                             .eq('question_id', q.id)
                             .order('created_at', { ascending: true });
+                        console.log(`[TIMING] ${q.id} | imgDB: ${Date.now() - tImg0}ms (${imgData?.length || 0}개)`);
 
                         const imageUrls: string[] = imgData ? imgData.map((row: any) => row.data) : [];
 
+                        const tGemini0 = Date.now();
                         const tagData = await generateTags(textToEmbed, q.subject || '수학', imageUrls);
+                        console.log(`[TIMING] ${q.id} | Gemini: ${Date.now() - tGemini0}ms | tags:${tagData.tags.length} unit:${tagData.unit}`);
                         const extracted = tagData.tags;
                         totalTagTokens += tagData.tokens || 0;
 
@@ -125,10 +130,13 @@ export async function POST(req: NextRequest) {
                 if (extractedTagsForEmbedding) {
                     finalEmbeddingText = `[핵심개념태그: ${extractedTagsForEmbedding}]\n${textToEmbed}`;
                 }
+                const tEmb0 = Date.now();
                 const embeddingData = await generateEmbedding(finalEmbeddingText);
                 const embedding = embeddingData.embedding;
                 totalEmbeddingTokens += embeddingData.tokens || 0;
+                console.log(`[TIMING] ${q.id} | OpenAI embed: ${Date.now() - tEmb0}ms`);
 
+                const tDb0 = Date.now();
                 const { error: updateError } = await supabase
                     .from('questions')
                     .update({
@@ -139,6 +147,7 @@ export async function POST(req: NextRequest) {
                         ...(updatedDifficulty !== q.difficulty ? { difficulty: updatedDifficulty } : {})
                     })
                     .eq('id', q.id);
+                console.log(`[TIMING] ${q.id} | DB update: ${Date.now() - tDb0}ms | total: ${Date.now() - t0}ms`);
 
                 if (updateError) throw updateError;
                 return { id: q.id, status: 'success' };
@@ -147,6 +156,7 @@ export async function POST(req: NextRequest) {
                 return { id: q.id, status: 'error', error: err.message };
             }
         };
+
 
         // 8개씩 병렬 처리
         const CONCURRENCY = 8;
