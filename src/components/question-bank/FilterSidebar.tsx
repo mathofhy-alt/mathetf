@@ -194,9 +194,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     useEffect(() => {
         onFilterChange({
             units: selectedUnits,
-            concepts: selectedConcepts,
+            concepts: selectedConcepts.map(c => c.startsWith('#') ? c : `#${c}`), // DB는 #태그 형식으로 저장
             difficulty: selectedDifficulty,
-            subjects: [], // Empty subjects implies we rely on units for granularity
+            subjects: [],
             keywords: activeKeywords
         });
     }, [selectedUnits, selectedConcepts, selectedDifficulty, activeKeywords]);
