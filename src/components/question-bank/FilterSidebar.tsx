@@ -50,9 +50,23 @@ interface FilterSidebarProps {
     onFilterChange: (filters: FilterState) => void;
 }
 
+// CONCEPT_MAP으로 초기 트리 즉시 생성 (로딩 없음)
+const buildDefaultTree = (): TreeNode[] => {
+    return SUBJECT_ORDER.filter(sub => CONCEPT_MAP[sub]).map(sub => {
+        const unitMap = CONCEPT_MAP[sub] as Record<string, string[]>;
+        const unitNodes: UnitNode[] = Object.entries(unitMap).map(([uName, tags]) => ({
+            name: uName,
+            concepts: tags,
+            isExpanded: false
+        }));
+        return { subject: sub, unitNodes, isExpanded: false };
+    }).filter(node => node.unitNodes.length > 0);
+};
+
 export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, onFilterChange }: FilterSidebarProps) {
-    const [treeData, setTreeData] = useState<TreeNode[]>([]);
+    const [treeData, setTreeData] = useState<TreeNode[]>(() => buildDefaultTree());
     const [loadingUnits, setLoadingUnits] = useState(false);
+
 
     // Filter States
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
@@ -64,12 +78,17 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
     const supabase = createClient();
 
-    // Fetch Tree Data
+    // Fetch Tree Data - DB 선택 시에만 필터링, 미선택 시 CONCEPT_MAP 기본 트리 사용
     useEffect(() => {
+        // DB 미선택 → 즉시 기본 트리로 복원 (로딩 없음)
+        if (!selectedDbIds || selectedDbIds.length === 0) {
+            setTreeData(buildDefaultTree());
+            return;
+        }
+
         const fetchTree = async () => {
             setLoadingUnits(true);
 
-            // 1. Initialize Tree with Presets (Skeleton)
             const skeleton: Record<string, Record<string, Set<string>>> = {};
             SUBJECT_ORDER.forEach(sub => {
                 skeleton[sub] = {};
@@ -78,8 +97,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 });
             });
 
-            // 2. Fetch distinct Subject/Unit/Concept from DB if DBs are selected
-            if (selectedDbIds && selectedDbIds.length > 0 && purchasedDbs) {
+            if (purchasedDbs) {
                 const selectedDbs = purchasedDbs.filter(d => selectedDbIds.includes(d.id));
 
                 if (selectedDbs.length > 0) {
@@ -93,7 +111,6 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             gradeVal = `고${db.grade}`;
                         }
 
-                        // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
                         const titleYear = db.title?.match(/20\d{2}/)?.[0];
                         let yearVal = titleYear ? titleYear : (db.exam_year || db.year);
 
@@ -101,7 +118,6 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
                         if (yearVal) parts.push(`year.eq.${yearVal}`);
 
-                        // Map Semester & Exam Type (e.g. "1" + "중간고사" -> "1학기중간")
                         if (db.semester && db.exam_type) {
                             const semNum = String(db.semester).replace('학기', '');
                             const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
@@ -117,7 +133,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             parts.push(`subject.eq.${db.subject}`);
                         }
 
-                        return `and(${parts.join(',')})`;
+                        return `and(${parts.join(',')})` ;
                     });
 
                     if (orConditions.length > 0) {
@@ -130,7 +146,6 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             if (q.subject && q.unit) {
                                 if (!skeleton[q.subject]) skeleton[q.subject] = {};
                                 if (!skeleton[q.subject][q.unit]) skeleton[q.subject][q.unit] = new Set<string>();
-                                // DB key_concepts 대신 CONCEPT_MAP 표준 태그 사용
                                 const presetTags = CONCEPT_MAP[q.subject]?.[q.unit] || [];
                                 presetTags.forEach((tag: string) => skeleton[q.subject][q.unit].add(tag));
                             }
@@ -139,7 +154,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 }
             }
 
-            // 3. Flatten to Array
+            // Flatten to Array
             const newTree: TreeNode[] = SUBJECT_ORDER.map(sub => {
                 const unitMap = skeleton[sub] || {};
                 const unitNames = Object.keys(unitMap);
@@ -163,7 +178,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 return {
                     subject: sub,
                     unitNodes,
-                    isExpanded: false // Start collapsed
+                    isExpanded: false
                 };
             }).filter(node => node.unitNodes.length > 0);
 
@@ -173,6 +188,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
         fetchTree();
     }, [selectedDbIds, dbFilter, purchasedDbs]);
+
 
     // Emit changes
     useEffect(() => {
