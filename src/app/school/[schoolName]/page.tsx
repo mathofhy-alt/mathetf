@@ -23,7 +23,7 @@ export async function generateStaticParams() {
 
     const schools = Array.from(new Set(data.map((item: any) => item.school)));
     return schools.map((school: string) => ({
-        schoolName: encodeURIComponent(school),
+        schoolName: school,  // Next.js가 URL 디코딩을 자동으로 처리하므로 인코딩 불필요
     }));
 }
 
