@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { generateEmbedding, generateTags } from '@/lib/embeddings';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export const dynamic = 'force-dynamic';
+
+const LOG_FILE = path.join(process.cwd(), 'ai-timing.log');
+const tlog = (msg: string) => {
+    const line = `[${new Date().toISOString()}] ${msg}`;
+    console.log(line);
+    try { fs.appendFileSync(LOG_FILE, line + '\n'); } catch {}
+};
+
 
 /**
  * POST /api/admin/embeddings/generate
@@ -96,13 +106,13 @@ export async function POST(req: NextRequest) {
                             .select('data')
                             .eq('question_id', q.id)
                             .order('created_at', { ascending: true });
-                        console.log(`[TIMING] ${q.id} | imgDB: ${Date.now() - tImg0}ms (${imgData?.length || 0}개)`);
+                        tlog(`[TIMING] ${q.id} | imgDB: ${Date.now() - tImg0}ms (${imgData?.length || 0}개)`);
 
                         const imageUrls: string[] = imgData ? imgData.map((row: any) => row.data) : [];
 
                         const tGemini0 = Date.now();
                         const tagData = await generateTags(textToEmbed, q.subject || '수학', imageUrls);
-                        console.log(`[TIMING] ${q.id} | Gemini: ${Date.now() - tGemini0}ms | tags:${tagData.tags.length} unit:${tagData.unit}`);
+                        tlog(`[TIMING] ${q.id} | Gemini: ${Date.now() - tGemini0}ms | tags:${tagData.tags.length} unit:${tagData.unit}`);
                         const extracted = tagData.tags;
                         totalTagTokens += tagData.tokens || 0;
 
@@ -134,7 +144,7 @@ export async function POST(req: NextRequest) {
                 const embeddingData = await generateEmbedding(finalEmbeddingText);
                 const embedding = embeddingData.embedding;
                 totalEmbeddingTokens += embeddingData.tokens || 0;
-                console.log(`[TIMING] ${q.id} | OpenAI embed: ${Date.now() - tEmb0}ms`);
+                tlog(`[TIMING] ${q.id} | OpenAI embed: ${Date.now() - tEmb0}ms`);
 
                 const tDb0 = Date.now();
                 const { error: updateError } = await supabase
@@ -147,7 +157,7 @@ export async function POST(req: NextRequest) {
                         ...(updatedDifficulty !== q.difficulty ? { difficulty: updatedDifficulty } : {})
                     })
                     .eq('id', q.id);
-                console.log(`[TIMING] ${q.id} | DB update: ${Date.now() - tDb0}ms | total: ${Date.now() - t0}ms`);
+                tlog(`[TIMING] ${q.id} | DB update: ${Date.now() - tDb0}ms | total: ${Date.now() - t0}ms`);
 
                 if (updateError) throw updateError;
                 return { id: q.id, status: 'success' };
