@@ -18,9 +18,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
         }
 
+        // 무료 시험 판별: 전국연합 모의고사/수능, 경찰대, 사관학교
+        const FREE_SCHOOLS = ['경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
+        const isFreeExam = exam_type === '모의고사' || exam_type === '수능' || FREE_SCHOOLS.includes(school);
+
         // Construct Title: [School] [Year] [Grade] [Semester] [ExamType] [Subject] [개인DB]
         const titleSubjectPart = subject ? `${subject} ` : '';
-        const isMockMode = exam_type === '모의고사' || exam_type === '수능';
+        const isMockMode = exam_type === '모의고사' || exam_type === '수능' || FREE_SCHOOLS.includes(school);
         const semLabel = isMockMode ? `${semester}월` : `${semester}학기`;
         const title = `${school} ${year} ${grade}학년 ${semLabel} ${exam_type} ${titleSubjectPart}[개인DB]`;
         const dummyPath = `db_access/${user?.id || 'admin'}/${Date.now()}`;
@@ -91,8 +95,8 @@ export async function POST(req: NextRequest) {
         let calculatedPrice = 0; // No Base Price
         if (questions && questions.length > 0) {
             console.log(`Found ${questions.length} questions. Calculating price...`);
-            if (exam_type === '모의고사' || exam_type === '수능') {
-                calculatedPrice = 0; // Mock exams are free
+            if (isFreeExam) {
+                calculatedPrice = 0; // 모의고사, 수능, 경찰대, 사관학교는 무료
             } else {
                 questions.forEach(q => {
                     const diff = parseInt(String(q.difficulty)) || 1;
@@ -102,7 +106,7 @@ export async function POST(req: NextRequest) {
         } else {
             // Fallback if no questions found
             console.warn(`WARNING: Still no questions found for ${school}. Falling back to 20,000P.`);
-            calculatedPrice = (exam_type === '모의고사' || exam_type === '수능') ? 0 : 20000;
+            calculatedPrice = isFreeExam ? 0 : 20000;
         }
 
         // 2. Insert into exam_materials

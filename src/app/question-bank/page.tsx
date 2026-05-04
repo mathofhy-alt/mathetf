@@ -170,6 +170,14 @@ export default function QuestionBankPage() {
             .eq('exam_type', '모의고사')
             .eq('file_type', 'DB');
 
+        // 3. Get all Police Academy & Military Academy DBs (Free for everyone)
+        const FREE_SCHOOLS = ['경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
+        const { data: freeSpecialData } = await supabase
+            .from('exam_materials')
+            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+            .in('school', FREE_SCHOOLS)
+            .eq('file_type', 'DB');
+
         let dbs: any[] = [];
         
         if (purchasedData) {
@@ -178,10 +186,14 @@ export default function QuestionBankPage() {
         if (mockData) {
             dbs = [...dbs, ...mockData];
         }
+        if (freeSpecialData) {
+            dbs = [...dbs, ...freeSpecialData];
+        }
 
         // Remove duplicates just in case (e.g., if someone actually bought a mock exam)
         const uniqueDbs = Array.from(new Map(dbs.map(item => [item.id, item])).values());
         setPurchasedDbs(uniqueDbs);
+
     };
 
     const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1) => {

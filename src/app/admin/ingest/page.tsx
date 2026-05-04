@@ -6,7 +6,7 @@ import SchoolAutocomplete from '@/components/SchoolAutocomplete';
 import { KOREA_REGIONS } from '@/data/korean-admin-divisions';
 
 export default function AdminIngestPage() {
-    const [activeTab, setActiveTab] = useState<'regular' | 'mock'>('regular');
+    const [activeTab, setActiveTab] = useState<'regular' | 'mock' | 'police' | 'military'>('regular');
 
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
@@ -27,6 +27,15 @@ export default function AdminIngestPage() {
     const [mockMonth, setMockMonth] = useState('3월');
     const [mockGrade, setMockGrade] = useState('고1');
     const [mockSubject, setMockSubject] = useState('공통(수1,수2)');
+
+    // Metadata state for Police Academy Exams
+    const [policeYear, setPoliceYear] = useState('2025');
+    const [policeSubject, setPoliceSubject] = useState('수학');
+
+    // Metadata state for Military Academy Exams
+    const [militaryYear, setMilitaryYear] = useState('2025');
+    const [militarySubject, setMilitarySubject] = useState('수학');
+    const [militaryType, setMilitaryType] = useState('육군사관학교');
 
     const supabase = createClient();
 
@@ -51,6 +60,22 @@ export default function AdminIngestPage() {
                 formData.append('semester', `${mockMonth} 모의고사`);
                 formData.append('subject', mockSubject);
                 formData.append('grade', mockGrade);
+            } else if (activeTab === 'police') {
+                formData.append('school', '경찰대학교');
+                formData.append('region', '경기');
+                formData.append('district', '용인시');
+                formData.append('year', policeYear);
+                formData.append('semester', '입학시험');
+                formData.append('subject', policeSubject);
+                formData.append('grade', '고3');
+            } else if (activeTab === 'military') {
+                formData.append('school', militaryType);
+                formData.append('region', '전국');
+                formData.append('district', '전국');
+                formData.append('year', militaryYear);
+                formData.append('semester', '입학시험');
+                formData.append('subject', militarySubject);
+                formData.append('grade', '고3');
             } else {
                 formData.append('school', school);
                 formData.append('region', region);
@@ -101,16 +126,28 @@ export default function AdminIngestPage() {
             {/* Tabs */}
             <div className="flex mb-6 border-b">
                 <button
-                    className={`flex-1 py-3 text-center font-bold transition-colors ${activeTab === 'regular' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'regular' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     onClick={() => setActiveTab('regular')}
                 >
                     내신 (학교) 기출
                 </button>
                 <button
-                    className={`flex-1 py-3 text-center font-bold transition-colors ${activeTab === 'mock' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'mock' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     onClick={() => setActiveTab('mock')}
                 >
                     전국연합 모의고사
+                </button>
+                <button
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'police' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => setActiveTab('police')}
+                >
+                    경찰대
+                </button>
+                <button
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'military' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    onClick={() => setActiveTab('military')}
+                >
+                    사관학교
                 </button>
             </div>
 
@@ -280,6 +317,105 @@ export default function AdminIngestPage() {
                                     placeholder="예: 23 (선택과목용)" 
                                     value={startNumber} 
                                     onChange={e => setStartNumber(e.target.value)} 
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {activeTab === 'police' && (
+                    <>
+                        <div className="text-sm text-gray-500 bg-blue-50 border border-blue-200 rounded p-3 mb-2">
+                            🏫 학교: <strong>경찰대학교</strong> | 지역: <strong>경기 / 용인시</strong> | 시험: <strong>입학시험</strong> | 학년: <strong>고3</strong>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">실시 연도</label>
+                                <select className="w-full border p-2 rounded" value={policeYear} onChange={e => setPoliceYear(e.target.value)}>
+                                    {['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017'].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">시험 유형 (과목)</label>
+                                <select className="w-full border p-2 rounded" value={policeSubject} onChange={e => setPoliceSubject(e.target.value)}>
+                                    <optgroup label="현행 (2022학년도~)">
+                                        <option value="수학">수학 (공통+선택)</option>
+                                        <option value="미적분">미적분</option>
+                                        <option value="기하">기하</option>
+                                        <option value="확률과 통계">확률과 통계</option>
+                                    </optgroup>
+                                    <optgroup label="구교과과정 (-2021학년도)">
+                                        <option value="가형">가형</option>
+                                        <option value="나형">나형</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">문항 시작 번호 (선택)</label>
+                                <input
+                                    type="number"
+                                    className="w-full border p-2 rounded"
+                                    placeholder="예: 1 (미입력시 자동)"
+                                    value={startNumber}
+                                    onChange={e => setStartNumber(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {activeTab === 'military' && (
+                    <>
+                        <div className="text-sm text-gray-500 bg-green-50 border border-green-200 rounded p-3 mb-2">
+                            🏫 시험: <strong>입학시험</strong> | 학년: <strong>고3</strong>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">사관학교 구분</label>
+                                <select className="w-full border p-2 rounded" value={militaryType} onChange={e => setMilitaryType(e.target.value)}>
+                                    <option value="육군사관학교">육군사관학교</option>
+                                    <option value="해군사관학교">해군사관학교</option>
+                                    <option value="공군사관학교">공군사관학교</option>
+                                    <option value="국군간호사관학교">국군간호사관학교</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">실시 연도</label>
+                                <select className="w-full border p-2 rounded" value={militaryYear} onChange={e => setMilitaryYear(e.target.value)}>
+                                    {['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017'].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">시험 유형 (과목)</label>
+                                <select className="w-full border p-2 rounded" value={militarySubject} onChange={e => setMilitarySubject(e.target.value)}>
+                                    <optgroup label="현행 (2022학년도~)">
+                                        <option value="수학">수학 (공통+선택)</option>
+                                        <option value="미적분">미적분</option>
+                                        <option value="기하">기하</option>
+                                        <option value="확률과 통계">확률과 통계</option>
+                                    </optgroup>
+                                    <optgroup label="구교과과정 (-2021학년도)">
+                                        <option value="가형">가형</option>
+                                        <option value="나형">나형</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">문항 시작 번호 (선택)</label>
+                                <input
+                                    type="number"
+                                    className="w-full border p-2 rounded"
+                                    placeholder="예: 1 (미입력시 자동)"
+                                    value={startNumber}
+                                    onChange={e => setStartNumber(e.target.value)}
                                 />
                             </div>
                         </div>
