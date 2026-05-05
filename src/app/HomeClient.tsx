@@ -495,23 +495,23 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 <div className="grid grid-cols-12 gap-6">
                     <div className="col-span-12 lg:col-span-9 space-y-6">
                         {/* Search Filter Box */}
-                        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
-                            <div className="space-y-3 mb-4">
+                        <div className="bg-white rounded-lg border border-slate-200 p-4 md:p-6 shadow-sm">
+                            <div className="space-y-2 mb-4">
                                 {/* Row 1: Region, District, School */}
-                                <div className="grid grid-cols-12 gap-2">
-                                    <div className="col-span-3">
+                                <div className="grid grid-cols-2 md:grid-cols-12 gap-2">
+                                    <div className="col-span-1 md:col-span-3">
                                         <select className="w-full form-select h-10 text-sm" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
                                             <option value="">시/도</option>
                                             {regions.map(r => <option key={r} value={r}>{r}</option>)}
                                         </select>
                                     </div>
-                                    <div className="col-span-3">
+                                    <div className="col-span-1 md:col-span-3">
                                         <select className="w-full form-select h-10 text-sm" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
                                             <option value="">구/군</option>
                                             {districts.map(d => <option key={d} value={d}>{d}</option>)}
                                         </select>
                                     </div>
-                                    <div className="col-span-6">
+                                    <div className="col-span-2 md:col-span-6">
                                         <select className="w-full form-select h-10 text-sm" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
                                             <option value="">학교 전체</option>
                                             {schools.map(s => <option key={s} value={s}>{s}</option>)}
@@ -520,23 +520,23 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                 </div>
 
                                 {/* Row 2: Grade, Semester, Year */}
-                                <div className="grid grid-cols-12 gap-2">
-                                    <div className="col-span-4">
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div>
                                         <select className="w-full form-select h-10 text-sm" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
                                             <option value="">학년 전체</option>
                                             {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
                                         </select>
                                     </div>
-                                    <div className="col-span-4">
+                                    <div>
                                         <select className="w-full form-select h-10 text-sm" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
                                             <option value="">시험 전체</option>
-                                            <option value="1-중간고사">1학기 중간고사</option>
-                                            <option value="1-기말고사">1학기 기말고사</option>
-                                            <option value="2-중간고사">2학기 중간고사</option>
-                                            <option value="2-기말고사">2학기 기말고사</option>
+                                            <option value="1-중간고사">1학기 중간</option>
+                                            <option value="1-기말고사">1학기 기말</option>
+                                            <option value="2-중간고사">2학기 중간</option>
+                                            <option value="2-기말고사">2학기 기말</option>
                                         </select>
                                     </div>
-                                    <div className="col-span-4">
+                                    <div>
                                         <select className="w-full form-select h-10 text-sm" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
                                             <option value="">년도 전체</option>
                                             {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
@@ -547,27 +547,24 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                 </div>
                             </div>
 
-                            {/* Checkbox Row (REMOVED) */}
-
                             {/* Search Row */}
                             <div className="flex gap-2 items-center">
-                                <div className="flex-1 w-full flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={searchKeyword}
-                                        onChange={(e) => setSearchKeyword(e.target.value)}
-                                        placeholder="검색어를 입력하세요 (예: 경기고)"
-                                        className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                                    />
-                                    <button className="bg-brand-600 text-white px-6 py-2 rounded font-bold text-sm hover:bg-brand-700">검색하기</button>
-                                </div>
+                                <input
+                                    type="text"
+                                    value={searchKeyword}
+                                    onChange={(e) => setSearchKeyword(e.target.value)}
+                                    placeholder="학교명 검색 (예: 경기고)"
+                                    className="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
+                                />
+                                <button className="bg-brand-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-700 whitespace-nowrap">검색</button>
                             </div>
                         </div>
 
                         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
 
 
-                            <div className="grid grid-cols-12 py-3 px-4 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                            {/* Desktop Table Header - hidden on mobile */}
+                            <div className="hidden md:grid grid-cols-12 py-3 px-4 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
                                 <div className="col-span-6 text-left pl-4">시험명</div>
                                 <div className="col-span-1">등록일</div>
                                 <div className="col-span-1">작성자</div>
@@ -579,7 +576,54 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
                             <div className="divide-y divide-slate-100">
                                 {currentItems.length > 0 ? currentItems.map(group => (
-                                    <div key={group.key} className={`grid grid-cols-12 items-center py-4 px-4 gap-2 text-sm text-center transition-colors duration-200 ${group.isVerified ? 'bg-indigo-50/40 hover:bg-indigo-50/70 border-l-4 border-l-indigo-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}`}>
+                                    <div key={group.key} className={`transition-colors duration-200 ${group.isVerified ? 'bg-indigo-50/40 border-l-4 border-l-indigo-500' : 'border-l-4 border-l-transparent'}`}>
+                                    {/* Mobile Card Layout */}
+                                    <div className={`md:hidden px-4 py-4 space-y-2 hover:bg-slate-50`}>
+                                        <div className="font-bold text-slate-800 text-sm break-keep leading-snug">
+                                            {group.title.includes(']') ? (
+                                                <>
+                                                    <span className="text-indigo-600">{group.title.split(']')[0]}]</span>{' '}
+                                                    <span className="text-slate-600 font-medium">{group.title.split(']')[1].trim()}</span>
+                                                </>
+                                            ) : group.title}
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {group.isVerified && (
+                                                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold">✓ 검수완료</span>
+                                            )}
+                                            <span className="text-[10px] text-slate-400">{group.date}</span>
+                                            {user && (
+                                                <button onClick={(e) => handleReportClick(e, group)} className="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1">
+                                                    <AlertTriangle size={10} /> 신고
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3 pt-1">
+                                            {group.files.pdfSol ? (
+                                                <button onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.pdfSol.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
+                                                    <PdfFileIcon size={24} purchased={checkAccess(group.files.pdfSol.id)} />
+                                                    <span className="text-[10px] font-bold mt-0.5 text-slate-600">PDF</span>
+                                                    <span className={`text-[10px] ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{checkAccess(group.files.pdfSol.id) ? '다운' : `${group.files.pdfSol.price}원`}</span>
+                                                </button>
+                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><PdfFileIcon size={24} grayscale /><span className="text-[10px] text-slate-400 mt-0.5">PDF</span><span className="text-[10px] text-slate-300">미등록</span></div>}
+                                            {group.files.hwpSol ? (
+                                                <button onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.hwpSol.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
+                                                    <HwpFileIcon size={24} purchased={checkAccess(group.files.hwpSol.id)} />
+                                                    <span className="text-[10px] font-bold mt-0.5 text-slate-600">HWP</span>
+                                                    <span className={`text-[10px] ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{checkAccess(group.files.hwpSol.id) ? '다운' : `${group.files.hwpSol.price}원`}</span>
+                                                </button>
+                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><HwpFileIcon size={24} grayscale /><span className="text-[10px] text-slate-400 mt-0.5">HWP</span><span className="text-[10px] text-slate-300">미등록</span></div>}
+                                            {group.files.db ? (
+                                                <button onClick={() => checkAccess(group.files.db!.id) ? handleDownload(group.files.db!) : handleAddToCart(group.files.db!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.db.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
+                                                    <DbFileIcon size={24} purchased={checkAccess(group.files.db.id)} />
+                                                    <span className="text-[10px] font-bold mt-0.5 text-slate-600">DB</span>
+                                                    <span className={`text-[10px] ${checkAccess(group.files.db.id) ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{checkAccess(group.files.db.id) ? '구매완료' : `${group.files.db.price.toLocaleString()}원`}</span>
+                                                </button>
+                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><DbFileIcon size={24} grayscale /><span className="text-[10px] text-slate-400 mt-0.5">DB</span><span className="text-[10px] text-slate-300">대기중</span></div>}
+                                        </div>
+                                    </div>
+                                    {/* Desktop Row Layout */}
+                                    <div className={`hidden md:grid grid-cols-12 items-center py-4 px-4 gap-2 text-sm text-center hover:bg-slate-50`}>
                                         <div className="col-span-6 text-left pl-4">
                                             <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base break-keep leading-tight">
                                                 {group.title.includes(']') ? (
@@ -749,6 +793,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                 </>
                                             )}
                                         </div>
+                                    </div>
                                     </div>
                                 )) : (
                                     <div className="py-20 text-center text-slate-400">

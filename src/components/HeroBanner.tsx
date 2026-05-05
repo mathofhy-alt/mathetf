@@ -20,16 +20,16 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                 loop={true}
                 autoplay={{ delay: 4000, disableOnInteraction: false }}
                 pagination={{ clickable: true, dynamicBullets: true }}
-                className="w-full h-[400px] md:h-[320px] rounded-bl-3xl rounded-br-3xl overflow-hidden shadow-inner"
+                className="w-full h-[240px] sm:h-[280px] md:h-[320px] rounded-bl-3xl rounded-br-3xl overflow-hidden shadow-inner"
             >
                 {/* SLIDE 1: 구매자 핵심 가치 — 대치동 퀄리티 */}
                 <SwiperSlide>
                     <div className="w-full h-full bg-gradient-to-r from-purple-50 to-fuchsia-100 flex items-center justify-between px-4 lg:px-20 relative overflow-hidden">
-                        <div className="z-10 max-w-lg lg:pl-20 mt-[-40px] md:mt-0 text-center md:text-left">
-                            <h1 className="text-3xl font-bold text-slate-800 mb-2 break-keep">
+                        <div className="z-10 max-w-lg w-full px-4 md:pl-20 text-center md:text-left">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 mb-2 break-keep">
                                 <span className="text-purple-600">대치동 퀄리티</span>의 내신 기출문제 즉시 제공
                             </h1>
-                            <p className="text-slate-600 text-lg mb-6 break-keep">
+                            <p className="text-slate-600 text-sm md:text-lg mb-4 break-keep">
                                 꼼꼼하게 정제된 고품질 한글(HWP) 및 PDF 양식으로 바로 수업에 활용하세요.
                             </p>
                         </div>
@@ -47,11 +47,11 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                 {/* SLIDE 2: 전국연합학력평가 무료 제공 */}
                 <SwiperSlide>
                     <div className="w-full h-full bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between px-4 lg:px-20 relative overflow-hidden">
-                        <div className="z-10 max-w-lg lg:pl-20 mt-[-40px] md:mt-0 text-center md:text-left">
-                            <h1 className="text-3xl font-bold text-slate-800 mb-2 whitespace-nowrap">
+                        <div className="z-10 max-w-lg w-full px-4 md:pl-20 text-center md:text-left">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 mb-2 break-keep">
                                 전국연합학력평가 <span className="text-blue-600">실시간 업로드 중!</span>
                             </h1>
-                            <p className="text-slate-600 text-lg mb-6 break-keep">
+                            <p className="text-slate-600 text-sm md:text-lg mb-4 break-keep">
                                 최신 모의고사 기출문제들을 지금 바로 무료로 사용하고 다운받아보세요.
                             </p>
                         </div>
@@ -73,11 +73,11 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                 {/* SLIDE 3: 업로더 유도 */}
                 <SwiperSlide>
                     <div className="w-full h-full bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between px-4 lg:px-20 relative overflow-hidden">
-                        <div className="z-10 max-w-lg lg:pl-20 mt-[-40px] md:mt-0 text-center md:text-left">
-                            <h1 className="text-3xl font-bold text-slate-800 mb-2 break-keep">
+                        <div className="z-10 max-w-lg w-full px-4 md:pl-20 text-center md:text-left">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 mb-2 break-keep">
                                 나만의 <span className="text-emerald-600">고퀄리티 문항</span>으로 수익 창출!
                             </h1>
-                            <p className="text-slate-600 text-lg mb-6 break-keep">
+                            <p className="text-slate-600 text-sm md:text-lg mb-4 break-keep">
                                 학원 선생님, 강사님의 소중한 내신 대비 자료를 업로드하고 부수입을 만드세요.
                             </p>
                         </div>
@@ -95,8 +95,8 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
 
             {/* 로그인 상태일 때만 플로팅 카드 표시 */}
             {user && (
-                <div className="absolute bottom-6 md:bottom-1/2 md:translate-y-1/2 left-1/2 -translate-x-1/2 md:left-auto md:-translate-x-0 md:right-8 lg:right-40 z-20 w-[90%] md:w-auto">
-                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white p-6 min-w-[300px] flex flex-col gap-4">
+                <div className="absolute bottom-4 right-4 md:bottom-1/2 md:translate-y-1/2 md:left-auto md:right-8 lg:right-40 z-20 w-auto">
+                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white p-4 md:p-6 min-w-[200px] md:min-w-[300px] flex flex-col gap-3 md:gap-4">
                         <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
                                 <UserIcon size={20} className="text-slate-500" />

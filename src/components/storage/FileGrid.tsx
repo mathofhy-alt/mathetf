@@ -58,12 +58,19 @@ const formatDate = (dateStr?: string) => {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    const hours = d.getHours();
-    const ampm = hours >= 12 ? '오후' : '오전';
-    const h = hours % 12 || 12;
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd} ${ampm} ${h}:${min}`;
+    return `${yyyy}-${mm}-${dd}`;
 };
+
+// 파일명에서 "전국연합", 4자리 연도 제거 — 핵심 정보(월·학년·형)만 표시
+const shortenName = (name: string, type: string): string => {
+    if (type !== 'personal_db') return name;
+    return name
+        .replace(/전국연합\s*/g, '')   // "전국연합" 제거
+        .replace(/\d{4}(년)?\s*/g, '') // 4자리 연도(+년) 제거
+        .trim()
+        || name; // 빈 문자열이 되면 원본 유지
+};
+
 
 export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, selectedIds = [] }: FileGridProps) {
 
@@ -110,7 +117,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
         return (
             <div
                 key={item.id}
-                className={`group relative grid grid-cols-12 gap-4 px-4 py-1.5 items-center border-b border-slate-100 cursor-pointer transition-colors
+                className={`group relative grid grid-cols-12 gap-1 sm:gap-4 px-2 sm:px-4 py-1.5 items-center border-b border-slate-100 cursor-pointer transition-colors
                     ${isSelected ? 'bg-indigo-50 hover:bg-indigo-100' : 'bg-white hover:bg-slate-50'}
                 `}
                 onClick={() => onItemClick(item)}
@@ -125,25 +132,27 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                 {isSelected && (
                     <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-indigo-500"></div>
                 )}
-                <div className="col-span-7 sm:col-span-8 flex items-center min-w-0 pr-2 pl-10">
+                {/* 이름: 모바일=전체너비, 데스크탑=8칸 */}
+                <div className="col-span-12 sm:col-span-8 flex items-center min-w-0 pr-2 pl-6 sm:pl-10">
                     {item.type === 'personal_db' ? (
                         <DbFileIcon size={18} className="drop-shadow-sm flex-shrink-0 mr-2" />
                     ) : (
                         <FileText size={18} className="text-blue-500 flex-shrink-0 mr-2" />
                     )}
                     <span className={`text-sm truncate min-w-0 flex-1 ${isSelected ? 'font-semibold text-indigo-900' : 'text-slate-700'}`}>
-                        {item.name || '이름 없음'}
+                        {shortenName(item.name || '이름 없음', item.type)}
                     </span>
                     {isSelected && (
-                        <div className="ml-2 text-indigo-600">
+                        <div className="ml-2 text-indigo-600 flex-shrink-0">
                             <CheckCircle2 size={16} className="fill-indigo-100 border-white rounded-full" />
                         </div>
                     )}
                 </div>
-                <div className="col-span-3 sm:col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
+                {/* 날짜·유형: 모바일에서 숨김 */}
+                <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
                     {formatDate(item.created_at)}
                 </div>
-                <div className="col-span-2 text-xs text-slate-500 text-center truncate">
+                <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate">
                     {item.type === 'personal_db' ? '개인DB' : '시험지'}
                 </div>
             </div>
@@ -153,10 +162,10 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
     return (
         <div className="flex flex-col w-full bg-white select-none">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-4 py-2 border-b border-slate-200 text-xs font-bold text-slate-500 bg-slate-50 sticky top-0 z-10">
-                <div className="col-span-7 sm:col-span-8">이름</div>
-                <div className="col-span-3 sm:col-span-2 text-center text-slate-400 font-medium">수정한 날짜</div>
-                <div className="col-span-2 text-center text-slate-400 font-medium">유형</div>
+            <div className="grid grid-cols-12 gap-1 sm:gap-4 px-2 sm:px-4 py-2 border-b border-slate-200 text-xs font-bold text-slate-500 bg-slate-50 sticky top-0 z-10">
+                <div className="col-span-12 sm:col-span-8">이름</div>
+                <div className="hidden sm:block col-span-2 text-center text-slate-400 font-medium">수정한 날짜</div>
+                <div className="hidden sm:block col-span-2 text-center text-slate-400 font-medium">유형</div>
             </div>
 
             <div className="flex flex-col">
@@ -164,7 +173,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                 {folders.map(folder => (
                     <div
                         key={folder.id}
-                        className="group relative grid grid-cols-12 gap-4 px-4 py-1.5 items-center border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors"
+                        className="group relative grid grid-cols-12 gap-1 sm:gap-4 px-2 sm:px-4 py-1.5 items-center border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors"
                         onClick={() => onFolderClick(folder)}
                         onContextMenu={(e) => {
                             e.preventDefault();
@@ -174,16 +183,16 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnFolder(e, folder.id)}
                     >
-                        <div className="col-span-7 sm:col-span-8 flex items-center min-w-0 pr-2">
+                        <div className="col-span-12 sm:col-span-8 flex items-center min-w-0 pr-2">
                             <FolderIcon size={18} className="text-yellow-400 fill-yellow-100 flex-shrink-0 mr-2" />
                             <span className="text-sm text-slate-700 truncate min-w-0 flex-1">
                                 {folder.name}
                             </span>
                         </div>
-                        <div className="col-span-3 sm:col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
+                        <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
                             {formatDate(folder.created_at)}
                         </div>
-                        <div className="col-span-2 text-xs text-slate-500 text-center truncate">파일 폴더</div>
+                        <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate">파일 폴더</div>
                     </div>
                 ))}
 
