@@ -11,14 +11,14 @@ export const metadata: Metadata = {
     description: "대치동 퀄리티의 중고등학교 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식으로 제공. 수학, 영어, 국어 전과목 내신 대비 자료.",
     keywords: ["내신 기출문제", "중간고사", "기말고사", "고등학교 기출", "중학교 기출", "수학 기출", "내신 대비", "기출문제 공유", "수학ETF"],
     authors: [{ name: "수학ETF" }],
-    metadataBase: new URL("https://www.mathetf.com"),
+    metadataBase: new URL("https://mathetf.com"),
     alternates: {
         canonical: "/",
     },
     openGraph: {
         title: "수학ETF - 내신 기출문제 공유 플랫폼",
         description: "대치동 퀄리티의 중고등학교 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식 제공.",
-        url: "https://www.mathetf.com",
+        url: "https://mathetf.com",
         siteName: "수학ETF",
         locale: "ko_KR",
         type: "website",

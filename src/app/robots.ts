@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: ['/admin/', '/api/'],
         },
-        sitemap: 'https://www.mathetf.com/sitemap.xml',
+        sitemap: 'https://mathetf.com/sitemap.xml',
     };
 }

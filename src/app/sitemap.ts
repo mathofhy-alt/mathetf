@@ -4,7 +4,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 export const revalidate = 3600; // 1시간마다 갱신
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://www.mathetf.com';
+    const baseUrl = 'https://mathetf.com';
 
     // 고정 페이지
     const staticPages: MetadataRoute.Sitemap = [
