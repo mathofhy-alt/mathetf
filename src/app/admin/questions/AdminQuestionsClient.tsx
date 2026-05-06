@@ -1120,14 +1120,13 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <option value="공통수학2">공통수학2</option>
                             <option value="대수">대수</option>
                             <option value="미적분I">미적분I</option>
-                            <option value="확률과통계">확률과통계</option>
                             <option value="미적분II">미적분II</option>
+                            <option value="확률과통계">확률과통계</option>
                             <option value="기하">기하</option>
                             <option value="수학(상)">수학(상)</option>
                             <option value="수학(하)">수학(하)</option>
                             <option value="수학I">수학I</option>
                             <option value="수학II">수학II</option>
-                            <option value="미적분">미적분</option>
                         </select>
 
                         {/* Row 2.5: Unit Filter (Conditional) */}
@@ -2232,10 +2231,10 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                             <option value="공통수학1">공통수학1</option>
                                             <option value="공통수학2">공통수학2</option>
                                             <option value="대수">대수</option>
-                                            <option value="미적분1">미적분1</option>
-                                            <option value="미적분2">미적분2</option>
-                                            <option value="기하">기하</option>
-                                            <option value="확통">확통</option>
+                                            <option value="미적분I">미적분I (고담 내신)</option>
+                                            <option value="미적분II">미적분II (고삼 선택)</option>
+                                            <option value="기하">기하 (고삼 선택)</option>
+                                            <option value="확률과통계">확률과통계 (고삼 선택)</option>
                                         </select>
                                     </div>
                                 </div>

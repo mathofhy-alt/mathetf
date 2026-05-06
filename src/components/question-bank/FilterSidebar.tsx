@@ -210,14 +210,14 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     };
 
     return (
-        <div className="w-64 bg-white border-r flex flex-col h-full">
-            <div className="p-4 border-b">
+        <div className="w-full md:w-64 bg-white md:border-r flex flex-col md:h-full">
+            <div className="hidden md:block p-4 border-b">
                 <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2">
                     <Filter size={18} /> 상세 필터
                 </h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex-1 md:overflow-y-auto p-3 md:p-4 space-y-5 md:space-y-6">
 
                 {/* 0. Subject / Unit Tree */}
                 <div>

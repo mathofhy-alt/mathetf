@@ -215,6 +215,7 @@ export default function QuestionBankPage() {
             .from('questions')
             .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id', { count: 'exact' })
             .eq('work_status', 'sorted')
+            .order('question_number', { ascending: true })
             .range(from, to);
 
         if (dbFilter.length > 0) {
@@ -254,7 +255,15 @@ export default function QuestionBankPage() {
                                 parts.push(`semester.ilike.${semNum}학기%`);
                             }
                             if (db.subject && db.subject !== '전과정') {
-                                parts.push(`subject.eq.${db.subject}`);
+                                // 모의고사 선택과목 DB: 공통(1~22번) + 선택과목(23~30번) 함께 조회
+                                const MOCK_SELECT_SUBJECTS = ['기하', '미적분II', '확률과통계', '확률과 통계'];
+                                const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
+                                    && MOCK_SELECT_SUBJECTS.includes(db.subject);
+                                if (isMockSelect) {
+                                    parts.push(`subject.in.("공통수학1","공통수학2","대수","미적분I","${db.subject}")`);
+                                } else {
+                                    parts.push(`subject.eq.${db.subject}`);
+                                }
                             }
                             return `and(${parts.join(',')})`;
                         });
@@ -399,6 +408,7 @@ export default function QuestionBankPage() {
     const handleStorageItemSelect = async (item: UserItem) => {
         if (item.type === 'personal_db') {
             handleDbToggle(item.reference_id);
+            // 개인디비 선택 시 창이 닫히지 않음 - 조건검색하기 버튼에서 닫힘
         } else if (item.type === 'saved_exam') {
             // [V73] Toggle Selection instead of instant load
             setSelectedExamIds(prev => {
@@ -850,6 +860,7 @@ export default function QuestionBankPage() {
                             <button
                                 onClick={() => {
                                     if (storageModalMode === 'db') {
+                                        setShowStorageModal(false); // StorageModal 먼저 닫기 (필터 버튼 정상 작동)
                                         setShowDuplicateModal(true);
                                     } else {
                                         setShowStorageModal(false);
@@ -938,7 +949,14 @@ export default function QuestionBankPage() {
                     </div>
 
                     {/* Advanced Filters */}
-                    <div className="flex-1 overflow-hidden flex flex-col">
+                    <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                        {/* 모바일에서만 보이는 필터 섹션 타이틀 */}
+                        <div className="md:hidden px-4 pt-3 pb-1 border-b">
+                            <h3 className="font-bold text-sm text-slate-700 flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                상세 필터
+                            </h3>
+                        </div>
                         <div className="flex-1 overflow-y-auto">
                             <FilterSidebar
                                 dbFilter={null}
@@ -951,7 +969,11 @@ export default function QuestionBankPage() {
                         </div>
                         <div className="p-4 border-t bg-slate-50">
                             <button
-                                onClick={handleSearch}
+                                onClick={() => {
+                                    handleSearch();
+                                    setShowMobileSidebar(false);
+                                    setShowStorageModal(false);
+                                }}
                                 className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                             >
                                 <span>조건 검색하기</span>
@@ -994,9 +1016,9 @@ export default function QuestionBankPage() {
                                 </button>
                                 <button
                                     onClick={() => setShowAutoModal(true)}
-                                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 shadow-sm transition font-bold"
+                                    className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 shadow-sm transition font-bold whitespace-nowrap text-sm"
                                 >
-                                    자동 생성
+                                    자동생성
                                 </button>
                             </div>
                         </header>
@@ -1495,8 +1517,10 @@ export default function QuestionBankPage() {
                 <DuplicateCheckModal
                     isOpen={showDuplicateModal}
                     onClose={() => {
+                        // 건너뛰기 → DuplicateModal 닫고 필터 사이드바 자동 열기
                         setShowDuplicateModal(false);
                         setShowStorageModal(false);
+                        setShowMobileSidebar(true);
                     }}
                     onCheck={(blockedIds: string[], examName: string) => {
                         const initialCount = selectedDbIds.length;
@@ -1506,6 +1530,7 @@ export default function QuestionBankPage() {
                         setSelectedDbIds(filteredIds);
                         setShowDuplicateModal(false);
                         setShowStorageModal(false);
+                        setShowMobileSidebar(true); // 확인 및 제외 후에도 필터 창 열기
 
                         if (removedCount > 0) {
                             alert(`"${examName}"에 사용된 소스 ${removedCount}개를 제외했습니다.`);

@@ -295,7 +295,7 @@ export default function AdminIngestPage() {
                                 <select className="w-full border p-2 rounded" value={mockSubject} onChange={e => setMockSubject(e.target.value)}>
                                     <optgroup label="현행 (2022학년도~)">
                                         <option value="공통(수1,수2)">공통(수1,수2)</option>
-                                        <option value="미적분">미적분</option>
+                                        <option value="미적분II">미적분II</option>
                                         <option value="기하">기하</option>
                                         <option value="확률과 통계">확률과 통계</option>
                                         <option value="전과목">전과목 (고1, 고2 등)</option>
@@ -342,7 +342,7 @@ export default function AdminIngestPage() {
                                 <select className="w-full border p-2 rounded" value={policeSubject} onChange={e => setPoliceSubject(e.target.value)}>
                                     <optgroup label="현행 (2022학년도~)">
                                         <option value="수학">수학 (공통+선택)</option>
-                                        <option value="미적분">미적분</option>
+                                        <option value="미적분II">미적분II</option>
                                         <option value="기하">기하</option>
                                         <option value="확률과 통계">확률과 통계</option>
                                     </optgroup>
@@ -398,7 +398,7 @@ export default function AdminIngestPage() {
                                 <select className="w-full border p-2 rounded" value={militarySubject} onChange={e => setMilitarySubject(e.target.value)}>
                                     <optgroup label="현행 (2022학년도~)">
                                         <option value="수학">수학 (공통+선택)</option>
-                                        <option value="미적분">미적분</option>
+                                        <option value="미적분II">미적분II</option>
                                         <option value="기하">기하</option>
                                         <option value="확률과 통계">확률과 통계</option>
                                     </optgroup>
