@@ -45,7 +45,7 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
     const [isUploading, setIsUploading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
-    const subjects = ['공통수학1', '공통수학2', '대수', '미적분1', '기하', '확통', '미적분2'];
+    const subjects = ['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '기하와벡터', '확률과통계'];
 
     // Updated Prices (Constants from UploadModal)
     const PRICE_PDF_SOL = 1000;

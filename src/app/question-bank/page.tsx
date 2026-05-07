@@ -255,12 +255,12 @@ export default function QuestionBankPage() {
                                 parts.push(`semester.ilike.${semNum}학기%`);
                             }
                             if (db.subject && db.subject !== '전과정') {
-                                // 모의고사 선택과목 DB: 공통(1~22번) + 선택과목(23~30번) 함께 조회
-                                const MOCK_SELECT_SUBJECTS = ['기하', '미적분II', '확률과통계', '확률과 통계'];
+                                // 모의고사/수능 선택과목 DB: 공통(1~22번, 대수+미적분I) + 선택과목(23~30번) 함께 조회
+                                const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '확률과통계', '확률과 통계'];
                                 const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
                                     && MOCK_SELECT_SUBJECTS.includes(db.subject);
                                 if (isMockSelect) {
-                                    parts.push(`subject.in.("공통수학1","공통수학2","대수","미적분I","${db.subject}")`);
+                                    parts.push(`subject.in.("대수","미적분I","${db.subject}")`);
                                 } else {
                                     parts.push(`subject.eq.${db.subject}`);
                                 }

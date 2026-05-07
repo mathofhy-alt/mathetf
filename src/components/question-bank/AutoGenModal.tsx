@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
-const SUBJECTS = ['공통수학1', '공통수학2', '대수', '미적분', '기하와벡터', '확률과통계'];
+const SUBJECTS = ['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '기하와벡터', '확률과통계'];
 
 const UNIT_PRESETS: Record<string, string[]> = {
     '공통수학1': ['다항식', '항등식', '복소수', '이차방정식', '이차함수', '여러가지방정식', '여러가지부등식', '순열조합', '행렬'],
