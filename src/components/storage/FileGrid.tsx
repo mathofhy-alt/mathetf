@@ -74,13 +74,13 @@ const shortenName = (name: string, type: string): string => {
 
 export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, selectedIds = [] }: FileGridProps) {
 
-    // 학년 아코디언 상태 (기본값: 펼침)
+    // 학년 아코디언 상태 (기본값: 접힘)
     const [openGrades, setOpenGrades] = useState<Record<string, boolean>>({});
-    // 년도 아코디언 상태 (기본값: 펼침)
+    // 년도 아코디언 상태 (기본값: 접힘)
     const [openYears, setOpenYears] = useState<Record<string, boolean>>({});
 
-    const toggleGrade = (grade: string) => setOpenGrades(p => ({ ...p, [grade]: p[grade] === false ? true : false }));
-    const toggleYear = (key: string) => setOpenYears(p => ({ ...p, [key]: p[key] === false ? true : false }));
+    const toggleGrade = (grade: string) => setOpenGrades(p => ({ ...p, [grade]: p[grade] ? false : true }));
+    const toggleYear = (key: string) => setOpenYears(p => ({ ...p, [key]: p[key] ? false : true }));
 
     const handleDragStart = (e: React.DragEvent, type: 'folder' | 'item', id: string) => {
         e.dataTransfer.setData('application/json', JSON.stringify({ type, id }));
@@ -198,7 +198,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
 
                 {/* 개인DB: 학년 → 년도 아코디언 */}
                 {hasDbItems && Object.entries(grouped).map(([grade, yearMap]) => {
-                    const gradeOpen = openGrades[grade] !== false; // 기본 펼침
+                    const gradeOpen = openGrades[grade] === true; // 기본 접힘
                     const totalCount = Object.values(yearMap).flat().length;
                     return (
                         <div key={grade}>
@@ -219,7 +219,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                 .sort(([a], [b]) => b.localeCompare(a)) // 최신년도 위로
                                 .map(([year, yearItems]) => {
                                     const yearKey = `${grade}_${year}`;
-                                    const yearOpen = openYears[yearKey] !== false; // 기본 펼침
+                                    const yearOpen = openYears[yearKey] === true; // 기본 접힘
                                     return (
                                         <div key={year}>
                                             {/* 년도 서브헤더 */}
