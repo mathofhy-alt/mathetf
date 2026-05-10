@@ -8,8 +8,8 @@ import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
     title: "수학ETF - 내신 기출문제 공유 플랫폼",
-    description: "대치동 퀄리티의 중고등학교 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식으로 제공. 수학, 영어, 국어 전과목 내신 대비 자료.",
-    keywords: ["내신 기출문제", "중간고사", "기말고사", "고등학교 기출", "중학교 기출", "수학 기출", "내신 대비", "기출문제 공유", "수학ETF"],
+    description: "수학 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식으로 제공. 고등학교 수학 내신 대비 기출문제 공유 플랫폼.",
+    keywords: ["수학 내신 기출문제", "수학 중간고사", "수학 기말고사", "고등학교 수학 기출", "수학 내신 대비", "수학 기출문제", "내신 기출 공유", "수학ETF"],
     authors: [{ name: "수학ETF" }],
     metadataBase: new URL("https://mathetf.com"),
     alternates: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     },
     openGraph: {
         title: "수학ETF - 내신 기출문제 공유 플랫폼",
-        description: "대치동 퀄리티의 중고등학교 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식 제공.",
+        description: "수학 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식 제공. 고등학교 수학 내신 기출 공유 플랫폼.",
         url: "https://mathetf.com",
         siteName: "수학ETF",
         locale: "ko_KR",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     twitter: {
         card: "summary",
         title: "수학ETF - 내신 기출문제 공유 플랫폼",
-        description: "대치동 퀄리티의 중고등학교 내신 기출문제를 즉시 다운로드.",
+        description: "수학 내신 기출문제를 즉시 다운로드. 고등학교 수학 내신 대비 기출문제 공유.",
     },
     robots: {
         index: true,

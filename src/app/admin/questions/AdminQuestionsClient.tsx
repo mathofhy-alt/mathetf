@@ -1091,6 +1091,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <option value="2-기말고사">2학기 기말</option>
                             <option value="3-모의고사">3월 모의고사</option>
                             <option value="4-모의고사">4월 모의고사</option>
+                            <option value="5-모의고사">5월 모의고사</option>
                             <option value="6-모의고사">6월 모의고사</option>
                             <option value="7-모의고사">7월 모의고사</option>
                             <option value="9-모의고사">9월 모의고사</option>
