@@ -235,7 +235,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                                 <span className="ml-auto text-xs text-slate-400 font-normal">{yearItems.length}개</span>
                                             </button>
 
-                                            {yearOpen && yearItems.map(item => renderItem(item))}
+                                            {yearOpen && [...yearItems].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })).map(item => renderItem(item))}
                                         </div>
                                     );
                                 })
