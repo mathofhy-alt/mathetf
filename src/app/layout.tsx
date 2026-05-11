@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Noto_Sans_KR } from 'next/font/google';
+
+const notoSansKr = Noto_Sans_KR({
+    subsets: ['latin'], // Next.js API automatically handles Korean subsetting
+    weight: ['400', '500', '700', '900'],
+    variable: '--font-noto',
+    display: 'swap',
+});
 
 import { CartProvider } from "@/components/providers/CartProvider";
 import Footer from "@/components/Footer";
@@ -43,10 +51,8 @@ export default function RootLayout({
     return (
         <html lang="ko">
             <head>
-                <link rel="preload" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-                <link rel="stylesheet" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
             </head>
-            <body className={`font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
+            <body className={`${notoSansKr.variable} font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
                 <CartProvider>
                     <main className="flex-1 w-full flex flex-col">
                         {children}
