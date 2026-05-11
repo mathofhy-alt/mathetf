@@ -49,6 +49,7 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                     </div>
 
                     <button
+                        aria-label="닫기"
                         onClick={onClose}
                         className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
                     >
@@ -88,7 +89,7 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                             <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1.5">선생님을 위한 개인DB & 시험지</h3>
                             <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
                                 문항을 편집하거나 <strong>유사문항</strong>으로 새 시험지를 만들려면 <strong>개인DB</strong>를 구매해 보세요.<br/>
-                                <span className="text-brand-600 font-medium block mt-1">전국연합 모의고사 문항 소스는 전면 무료!</span>
+                                <span className="text-brand-700 font-medium block mt-1">전국연합 모의고사 문항 소스는 전면 무료!</span>
                             </p>
                         </div>
                     </div>
@@ -100,7 +101,7 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                         </div>
                         <button
                             onClick={handleNavigate}
-                            className="w-full sm:w-auto px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 group whitespace-nowrap text-sm"
+                            className="w-full sm:w-auto px-5 py-2.5 bg-brand-700 hover:bg-brand-800 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 group whitespace-nowrap text-sm"
                         >
                             시험지 만들기 이동
                             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />

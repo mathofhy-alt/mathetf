@@ -556,7 +556,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                     placeholder="학교명 검색 (예: 경기고)"
                                     className="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
                                 />
-                                <button aria-label="검색" className="bg-brand-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-700 whitespace-nowrap">검색</button>
+                                <button aria-label="검색" className="bg-brand-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-800 whitespace-nowrap">검색</button>
                             </div>
                         </div>
 

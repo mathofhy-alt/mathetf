@@ -11,7 +11,7 @@ export default function Footer() {
     const [isRefundOpen, setIsRefundOpen] = useState(false)
 
     return (
-        <footer className="w-full py-10 bg-slate-50 text-slate-500 border-t mt-auto">
+        <footer className="w-full py-10 bg-slate-50 text-slate-600 border-t mt-auto">
             <div className="max-w-7xl mx-auto px-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b pb-8">
                     <div className="text-left">
@@ -44,7 +44,7 @@ export default function Footer() {
                         </button>
                     </div>
                 </div>
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-slate-400">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
                     <p>© 2025 수학이티에프. All rights reserved.</p>
                     <p>본 사이트의 모든 콘텐츠는 저작권법의 보호를 받습니다.</p>
                 </div>
