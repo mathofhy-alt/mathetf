@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import TermsModal from "./TermsModal"
-import PrivacyModal from "./PrivacyModal"
-import RefundPolicyModal from "./RefundPolicyModal"
+import dynamic from "next/dynamic"
+
+const TermsModal = dynamic(() => import("./TermsModal"), { ssr: false })
+const PrivacyModal = dynamic(() => import("./PrivacyModal"), { ssr: false })
+const RefundPolicyModal = dynamic(() => import("./RefundPolicyModal"), { ssr: false })
 
 export default function Footer() {
     const [isTermsOpen, setIsTermsOpen] = useState(false)

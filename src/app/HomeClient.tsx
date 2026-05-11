@@ -11,10 +11,12 @@ import HeroBanner from '@/components/HeroBanner';
 import RightSidebar from '@/components/RightSidebar';
 import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
-import UploadModal from '@/components/UploadModal';
 import { useCart } from '@/components/providers/CartProvider';
-import ReportModal from '@/components/ReportModal';
-import TutorialModal from '@/components/TutorialModal';
+import dynamic from 'next/dynamic';
+
+const UploadModal = dynamic(() => import('@/components/UploadModal'), { ssr: false });
+const ReportModal = dynamic(() => import('@/components/ReportModal'), { ssr: false });
+const TutorialModal = dynamic(() => import('@/components/TutorialModal'), { ssr: false });
 
 interface HomeClientProps {
     initialExamData: any[];
