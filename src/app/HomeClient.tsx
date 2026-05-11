@@ -564,7 +564,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
 
                             {/* Desktop Table Header - hidden on mobile */}
-                            <div className="hidden md:grid grid-cols-12 py-3 px-4 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                            <div className="hidden md:grid grid-cols-12 py-3 px-4 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
                                 <div className="col-span-6 text-left pl-4">시험명</div>
                                 <div className="col-span-1">등록일</div>
                                 <div className="col-span-1">작성자</div>
@@ -591,9 +591,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                             {group.isVerified && (
                                                 <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold">✓ 검수완료</span>
                                             )}
-                                            <span className="text-[10px] text-slate-400">{group.date}</span>
+                                            <span className="text-[10px] text-slate-500">{group.date}</span>
                                             {user && (
-                                                <button onClick={(e) => handleReportClick(e, group)} className="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1">
+                                                <button onClick={(e) => handleReportClick(e, group)} className="text-[10px] font-bold text-slate-500 hover:text-red-500 flex items-center gap-1">
                                                     <AlertTriangle size={10} /> 신고
                                                 </button>
                                             )}
@@ -603,23 +603,23 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                 <button onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.pdfSol.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
                                                     <PdfFileIcon size={24} purchased={checkAccess(group.files.pdfSol.id)} />
                                                     <span className="text-[10px] font-bold mt-0.5 text-slate-600">PDF</span>
-                                                    <span className={`text-[10px] ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{checkAccess(group.files.pdfSol.id) ? '다운' : `${group.files.pdfSol.price}원`}</span>
+                                                    <span className={`text-[10px] ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>{checkAccess(group.files.pdfSol.id) ? '다운' : `${group.files.pdfSol.price}원`}</span>
                                                 </button>
-                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><PdfFileIcon size={24} grayscale /><span className="text-[10px] text-slate-400 mt-0.5">PDF</span><span className="text-[10px] text-slate-300">미등록</span></div>}
+                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><PdfFileIcon size={24} grayscale /><span className="text-[10px] text-slate-500 mt-0.5">PDF</span><span className="text-[10px] text-slate-300">미등록</span></div>}
                                             {group.files.hwpSol ? (
                                                 <button onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.hwpSol.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
                                                     <HwpFileIcon size={24} purchased={checkAccess(group.files.hwpSol.id)} />
                                                     <span className="text-[10px] font-bold mt-0.5 text-slate-600">HWP</span>
-                                                    <span className={`text-[10px] ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{checkAccess(group.files.hwpSol.id) ? '다운' : `${group.files.hwpSol.price}원`}</span>
+                                                    <span className={`text-[10px] ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>{checkAccess(group.files.hwpSol.id) ? '다운' : `${group.files.hwpSol.price}원`}</span>
                                                 </button>
-                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><HwpFileIcon size={24} grayscale /><span className="text-[10px] text-slate-400 mt-0.5">HWP</span><span className="text-[10px] text-slate-300">미등록</span></div>}
+                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><HwpFileIcon size={24} grayscale /><span className="text-[10px] text-slate-500 mt-0.5">HWP</span><span className="text-[10px] text-slate-300">미등록</span></div>}
                                             {group.files.db ? (
                                                 <button onClick={() => checkAccess(group.files.db!.id) ? handleDownload(group.files.db!) : handleAddToCart(group.files.db!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.db.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
                                                     <DbFileIcon size={24} purchased={checkAccess(group.files.db.id)} />
                                                     <span className="text-[10px] font-bold mt-0.5 text-slate-600">DB</span>
-                                                    <span className={`text-[10px] ${checkAccess(group.files.db.id) ? 'text-indigo-600 font-bold' : 'text-slate-400'}`}>{checkAccess(group.files.db.id) ? '구매완료' : `${group.files.db.price.toLocaleString()}원`}</span>
+                                                    <span className={`text-[10px] ${checkAccess(group.files.db.id) ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>{checkAccess(group.files.db.id) ? '구매완료' : `${group.files.db.price.toLocaleString()}원`}</span>
                                                 </button>
-                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><DbFileIcon size={24} grayscale /><span className="text-[10px] text-slate-400 mt-0.5">DB</span><span className="text-[10px] text-slate-300">대기중</span></div>}
+                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><DbFileIcon size={24} grayscale /><span className="text-[10px] text-slate-500 mt-0.5">DB</span><span className="text-[10px] text-slate-300">대기중</span></div>}
                                         </div>
                                     </div>
                                     {/* Desktop Row Layout */}
@@ -648,7 +648,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                 {user && (
                                                     <button
                                                         onClick={(e) => handleReportClick(e, group)}
-                                                        className="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1 bg-white/50 border border-transparent hover:border-red-100 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                                        className="text-[10px] font-bold text-slate-500 hover:text-red-500 flex items-center gap-1 bg-white/50 border border-transparent hover:border-red-100 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                                                     >
                                                         <AlertTriangle size={11} /> 불편/오류 신고
                                                     </button>
@@ -663,7 +663,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="col-span-1 text-slate-400 text-[11px] whitespace-nowrap">{group.date}</div>
+                                        <div className="col-span-1 text-slate-500 text-[11px] whitespace-nowrap">{group.date}</div>
                                         <div className="col-span-1 text-slate-600 truncate text-[11px]">
                                             {/* mathofhy 계정은 수학ETF팀으로 표시 */}
                                             {group.uploader === 'mathofhy' || group.uploader === 'Anonymous' ? '수학ETF팀' : group.uploader}
@@ -691,7 +691,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                     <PdfFileIcon size={28} grayscale={true} />
-                                                    <span className="text-xs font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
+                                                    <span className="text-xs font-bold text-slate-500 mt-1 whitespace-nowrap">문제+해설</span>
                                                     <span className="text-[11px] text-slate-300 font-medium">미등록</span>
                                                 </div>
                                             )}
@@ -719,7 +719,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                             ) : (
                                                 <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                     <HwpFileIcon size={28} grayscale={true} />
-                                                    <span className="text-xs font-bold text-slate-400 mt-1 whitespace-nowrap">문제+해설</span>
+                                                    <span className="text-xs font-bold text-slate-500 mt-1 whitespace-nowrap">문제+해설</span>
                                                     <span className="text-[11px] text-slate-300 font-medium">미등록</span>
                                                 </div>
                                             )}
@@ -735,7 +735,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                             purchased={checkAccess(group.files.db.id)}
                                                             className="drop-shadow-sm group-hover/db:scale-110 transition-transform duration-300"
                                                         />
-                                                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-600' : 'text-slate-400'}`}>개인DB</span>
+                                                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-600' : 'text-slate-500'}`}>개인DB</span>
                                                         <span className={`text-[10px] whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
                                                             {checkAccess(group.files.db.id) ? (user?.email === 'mathofhy@naver.com' ? `관리자권한(${group.files.db.price.toLocaleString()}원)` : '구매완료') : `${group.files.db.price.toLocaleString()}원`}
                                                         </span>
@@ -770,7 +770,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                 ) : (
                                                     <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
                                                         <DbFileIcon size={28} grayscale={true} />
-                                                        <span className="text-[10px] font-bold text-slate-400 mt-1 whitespace-nowrap">개인DB</span>
+                                                        <span className="text-[10px] font-bold text-slate-500 mt-1 whitespace-nowrap">개인DB</span>
                                                         <span className="text-[10px] text-slate-300 font-medium">대기중</span>
                                                     </div>
                                                 )}
@@ -796,7 +796,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                     </div>
                                     </div>
                                 )) : (
-                                    <div className="py-20 text-center text-slate-400">
+                                    <div className="py-20 text-center text-slate-500">
                                         <p>검색 결과가 없습니다.</p>
                                     </div>
                                 )}
@@ -874,7 +874,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                 </h3>
                                 <p className="text-[11px] text-indigo-100 mt-0.5">{selectedDbForDetail.title}</p>
                             </div>
-                            <button onClick={() => setSelectedDbForDetail(null)} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors">
+                            <button aria-label="닫기" onClick={() => setSelectedDbForDetail(null)} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -913,7 +913,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                     ))}
                                 </div>
                             ) : (
-                                <div className="py-20 text-center text-slate-400">
+                                <div className="py-20 text-center text-slate-500">
                                     <p>등록된 문항 정보가 없습니다.</p>
                                 </div>
                             )}
