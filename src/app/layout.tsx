@@ -5,6 +5,7 @@ import { CartProvider } from "@/components/providers/CartProvider";
 import Footer from "@/components/Footer";
 import FloatingCart from "@/components/FloatingCart";
 import { Analytics } from '@vercel/analytics/react';
+import Script from "next/script";
 
 export const metadata: Metadata = {
     title: "수학ETF - 내신 기출문제 공유 플랫폼",
@@ -42,18 +43,7 @@ export default function RootLayout({
     return (
         <html lang="ko">
             <head>
-                <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-                {/* Google tag (gtag.js) - GA4 + Google Ads */}
-                <script async src="https://www.googletagmanager.com/gtag/js?id=G-FC6EZWV58Q"></script>
-                <script dangerouslySetInnerHTML={{
-                    __html: `
-                        window.dataLayer = window.dataLayer || [];
-                        function gtag(){dataLayer.push(arguments);}
-                        gtag('js', new Date());
-                        gtag('config', 'G-FC6EZWV58Q');
-                        gtag('config', 'AW-17263917467');
-                    `
-                }} />
+                <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
             </head>
             <body className={`font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
                 <CartProvider>
@@ -63,8 +53,23 @@ export default function RootLayout({
                     <Footer />
                     <FloatingCart />
                 </CartProvider>
-                <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+                
+                {/* PortOne SDK - Lazy load */}
+                <Script src="https://cdn.portone.io/v2/browser-sdk.js" strategy="lazyOnload" />
+                
                 <Analytics />
+
+                {/* Google tag (gtag.js) - GA4 + Google Ads */}
+                <Script src="https://www.googletagmanager.com/gtag/js?id=G-FC6EZWV58Q" strategy="afterInteractive" />
+                <Script id="google-analytics" strategy="afterInteractive">
+                    {`
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+                        gtag('config', 'G-FC6EZWV58Q');
+                        gtag('config', 'AW-17263917467');
+                    `}
+                </Script>
             </body>
         </html>
     );

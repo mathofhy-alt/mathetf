@@ -500,19 +500,19 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                 {/* Row 1: Region, District, School */}
                                 <div className="grid grid-cols-2 md:grid-cols-12 gap-2">
                                     <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10 text-sm" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
+                                        <select className="w-full form-select h-10 text-sm" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
                                             <option value="">시/도</option>
                                             {regions.map(r => <option key={r} value={r}>{r}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10 text-sm" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
+                                        <select className="w-full form-select h-10 text-sm" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
                                             <option value="">구/군</option>
                                             {districts.map(d => <option key={d} value={d}>{d}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-2 md:col-span-6">
-                                        <select className="w-full form-select h-10 text-sm" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
+                                        <select className="w-full form-select h-10 text-sm" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
                                             <option value="">학교 전체</option>
                                             {schools.map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
@@ -522,13 +522,13 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                 {/* Row 2: Grade, Semester, Year */}
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
-                                        <select className="w-full form-select h-10 text-sm" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
+                                        <select className="w-full form-select h-10 text-sm" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
                                             <option value="">학년 전체</option>
                                             {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <select className="w-full form-select h-10 text-sm" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
+                                        <select className="w-full form-select h-10 text-sm" aria-label="시험 범위 선택" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
                                             <option value="">시험 전체</option>
                                             <option value="1-중간고사">1학기 중간</option>
                                             <option value="1-기말고사">1학기 기말</option>
@@ -537,7 +537,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                         </select>
                                     </div>
                                     <div>
-                                        <select className="w-full form-select h-10 text-sm" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
+                                        <select className="w-full form-select h-10 text-sm" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
                                             <option value="">년도 전체</option>
                                             {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
                                                 <option key={y} value={y}>{y}년</option>
@@ -556,7 +556,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                     placeholder="학교명 검색 (예: 경기고)"
                                     className="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
                                 />
-                                <button className="bg-brand-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-700 whitespace-nowrap">검색</button>
+                                <button aria-label="검색" className="bg-brand-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-700 whitespace-nowrap">검색</button>
                             </div>
                         </div>
 
@@ -805,6 +805,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                             {totalPages > 1 && (
                                 <div className="py-4 border-t border-slate-200 flex justify-center gap-1">
                                     <button
+                                        aria-label="이전 페이지"
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                         disabled={currentPage === 1}
                                         className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
@@ -814,6 +815,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                                         <button
                                             key={page}
+                                            aria-label={`페이지 ${page}`}
                                             onClick={() => setCurrentPage(page)}
                                             className={`w-8 h-8 rounded flex items-center justify-center font-bold transition-colors ${currentPage === page ? 'bg-brand-600 text-white' : 'border border-slate-300 hover:bg-slate-50 text-slate-600'}`}
                                         >
@@ -821,6 +823,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                         </button>
                                     ))}
                                     <button
+                                        aria-label="다음 페이지"
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
                                         className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
