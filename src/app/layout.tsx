@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import localFont from "next/font/local";
 
-const pretendard = localFont({
-    src: "./PretendardVariable.woff2",
-    display: "swap",
-    weight: "45 920",
-    variable: "--font-pretendard",
-});
 import { CartProvider } from "@/components/providers/CartProvider";
 import Footer from "@/components/Footer";
 import FloatingCart from "@/components/FloatingCart";
@@ -50,9 +43,10 @@ export default function RootLayout({
     return (
         <html lang="ko">
             <head>
-                {/* Fonts are imported via css above */}
+                <link rel="preload" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+                <link rel="stylesheet" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
             </head>
-            <body className={`${pretendard.variable} font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
+            <body className={`font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
                 <CartProvider>
                     <main className="flex-1 w-full flex flex-col">
                         {children}
