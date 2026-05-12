@@ -3,6 +3,12 @@ Allow: /
 Disallow: /admin/
 Disallow: /api/
 
+# 네이버 검색로봇 명시적 허용
+User-agent: Yeti
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
 Sitemap: https://mathetf.com/sitemap.xml
 
 #DaumWebMasterTool:4e290b2d559b2197ee12ffc2e977ac55d04cfb8444693cfc70109b9c109dd8b2:9QC48RIDoACLXH3FbFNbCg==
