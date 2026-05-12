@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://mathetf.com/sitemap.xml
+
+#DaumWebMasterTool:4e290b2d559b2197ee12ffc2e977ac55d04cfb8444693cfc70109b9c109dd8b2:9QC48RIDoACLXH3FbFNbCg==
