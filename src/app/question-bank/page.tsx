@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
 import SaveLocationModal from '@/components/storage/SaveLocationModal';
 import AutoGenModal from '@/components/question-bank/AutoGenModal';
 import FolderExplorer from '@/components/storage/FolderExplorer';
@@ -123,8 +124,8 @@ export default function QuestionBankPage() {
         supabase.auth.getUser().then(({ data }) => {
             setUser(data.user);
             if (data.user) {
-                // 어드민: 전체 DB를 user_items에 자동 동기화
-                if (data.user.email === 'mathofhy@naver.com') {
+                // 어드민 또는 무료 모드: 전체 DB를 user_items에 자동 동기화
+                if (data.user.email === 'mathofhy@naver.com' || PERSONAL_DB_FREE_MODE) {
                     fetch('/api/storage/sync', { method: 'POST' })
                         .then(() => setStorageRefreshKey(prev => prev + 1));
                 }
@@ -142,6 +143,16 @@ export default function QuestionBankPage() {
 
         // Admin: 구매 여부 무관하게 전체 DB 조회
         if (isAdmin) {
+            const { data: allData } = await supabase
+                .from('exam_materials')
+                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+                .eq('file_type', 'DB');
+            if (allData) setPurchasedDbs(allData);
+            return;
+        }
+
+        // [FREE MODE] 무료 기간 중에는 구매 여부 무관하게 전체 개인DB 허용
+        if (PERSONAL_DB_FREE_MODE) {
             const { data: allData } = await supabase
                 .from('exam_materials')
                 .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')

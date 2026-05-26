@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
 
 export async function POST(req: NextRequest) {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // 1. Fetch all purchased DBs (or ALL DBs if admin)
+    // 1. Fetch all purchased DBs (or ALL DBs if admin or free mode)
     let dbPurchases: any[] = [];
     const isAdmin = user.email === 'mathofhy@naver.com';
 
-    if (isAdmin) {
-        // [ADMIN] Fetch ALL DBs regardless of purchase, EXCLUDE Mock Exams
+    if (isAdmin || PERSONAL_DB_FREE_MODE) {
+        // [ADMIN / FREE MODE] Fetch ALL DBs regardless of purchase, EXCLUDE Mock Exams
         const { data: allDBs, error: dbError } = await supabase
             .from('exam_materials')
             .select('id, title, file_type, content_type, exam_type')
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
             exam_materials: db
         }));
     } else {
+        // [PAID MODE] Only sync DBs the user has purchased
         const { data: purchases, error: purchaseError } = await supabase
             .from('purchases')
             .select(`

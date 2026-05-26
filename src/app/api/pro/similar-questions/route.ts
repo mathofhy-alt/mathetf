@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
 
 /**
  * GET /api/pro/similar-questions?id={questionId}&limit={limit}
@@ -47,30 +48,52 @@ export async function GET(req: NextRequest) {
         }
 
         // 2. Fetch User's Purchased DBs (original_bin_id 목록)
-        const { data: purchases, error: purchaseError } = await supabase
-            .from('purchases')
-            .select(`
-                exam_materials!inner (
-                    id, title, school, grade, semester, exam_type, subject, file_type, content_type
-                )
-            `)
-            .eq('user_id', user.id);
+        // [FREE MODE] 무료 기간 중에는 구매 여부 무관하게 전체 개인DB 허용
+        let purchasedDbs: any[] = [];
 
-        if (purchaseError) {
-            console.error("Purchase Fetch Error:", purchaseError);
-            return NextResponse.json({ success: false, error: 'Failed to fetch purchased databases' }, { status: 500 });
+        if (isAdmin || PERSONAL_DB_FREE_MODE) {
+            // 전체 개인DB를 허용 (모의고사 제외)
+            const { data: allDbs, error: allDbError } = await supabase
+                .from('exam_materials')
+                .select('id, title, school, grade, semester, exam_type, subject, file_type, content_type')
+                .eq('file_type', 'DB')
+                .neq('exam_type', '모의고사');
+
+            if (allDbError) {
+                console.error("All DB Fetch Error:", allDbError);
+                return NextResponse.json({ success: false, error: 'Failed to fetch databases' }, { status: 500 });
+            }
+            purchasedDbs = allDbs || [];
+        } else {
+            // [PAID MODE] 구매한 DB만 허용
+            const { data: purchases, error: purchaseError } = await supabase
+                .from('purchases')
+                .select(`
+                    exam_materials!inner (
+                        id, title, school, grade, semester, exam_type, subject, file_type, content_type
+                    )
+                `)
+                .eq('user_id', user.id);
+
+            if (purchaseError) {
+                console.error("Purchase Fetch Error:", purchaseError);
+                return NextResponse.json({ success: false, error: 'Failed to fetch purchased databases' }, { status: 500 });
+            }
+
+            const dbPurchases = purchases?.filter((p: any) =>
+                p.exam_materials.file_type === 'DB' ||
+                p.exam_materials.content_type === '개인DB'
+            ) || [];
+            purchasedDbs = dbPurchases.map((p: any) => p.exam_materials);
         }
 
-        const dbPurchases = purchases?.filter((p: any) =>
-            p.exam_materials.file_type === 'DB' ||
-            p.exam_materials.content_type === '개인DB'
-        ) || [];
-
-        const purchasedDbs = dbPurchases.map((p: any) => p.exam_materials);
         // 구매한 DB의 exam_materials ID 목록 → RPC에 전달해 DB 레벨에서 필터링
-        const allowedBinIds = isAdmin ? null : (purchasedDbs.length > 0 ? purchasedDbs.map((db: any) => db.id) : null);
+        // 무료 모드/어드민은 null (전체 허용), 유료 모드는 구매한 DB ID 목록
+        const allowedBinIds = (isAdmin || PERSONAL_DB_FREE_MODE)
+            ? null
+            : (purchasedDbs.length > 0 ? purchasedDbs.map((db: any) => db.id) : null);
 
-        if (!isAdmin && purchasedDbs.length === 0) {
+        if (!isAdmin && !PERSONAL_DB_FREE_MODE && purchasedDbs.length === 0) {
             return NextResponse.json({ success: false, error: '구매한 DB가 없습니다.', data: [] });
         }
 
