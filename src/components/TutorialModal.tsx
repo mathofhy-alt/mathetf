@@ -90,7 +90,7 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                             <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
                                 문항을 편집하거나 <strong>유사문항</strong>으로 새 시험지를 만들 수 있어요.<br/>
                                 <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-[11px] mt-2">
-                                    🎉 개인DB 전체 무료 공개 중! (~2027.05.26)
+                                    🎉 현재 개인DB 전체 무료 공개 중!
                                 </span>
                             </p>
                         </div>
