@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Filter, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { CONCEPT_MAP } from '@/lib/concept-map';
@@ -66,7 +66,8 @@ const buildDefaultTree = (): TreeNode[] => {
 export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, onFilterChange }: FilterSidebarProps) {
     const [treeData, setTreeData] = useState<TreeNode[]>(() => buildDefaultTree());
     const [loadingUnits, setLoadingUnits] = useState(false);
-
+    // 캐시 맵: 같은 DB 조합은 두 번째부터 즉시 반환 (DB 조회 0회)
+    const treeCache = useRef<Record<string, TreeNode[]>>({});
 
     // Filter States
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
@@ -87,6 +88,15 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
         }
 
         const fetchTree = async () => {
+            // 쮨시 키: 선택된 DB ID 조합 (안정적 문자열)
+            const cacheKey = [...selectedDbIds].sort().join(',');
+
+            // 쮨시 히트 → DB 조회 없이 즉시 반환
+            if (treeCache.current[cacheKey]) {
+                setTreeData(treeCache.current[cacheKey]);
+                return;
+            }
+
             setLoadingUnits(true);
 
             const skeleton: Record<string, Record<string, Set<string>>> = {};
@@ -130,12 +140,11 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         }
 
                         if (db.subject && db.subject !== '전과정') {
-                            // 모의고사/수능 선택과목 DB: 공통(대수+미적분I) + 선택과목 함께 조회
                             const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '확률과통계', '확률과 통계'];
                             const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
                                 && MOCK_SELECT_SUBJECTS.includes(db.subject);
                             if (isMockSelect) {
-                                parts.push(`subject.in.("대수","미적분I","${db.subject}")`);
+                                parts.push(`subject.in.("\ub300\uc218","\ubbf8\uc801\ubd84I","${db.subject}")`);
                             } else {
                                 parts.push(`subject.eq.${db.subject}`);
                             }
@@ -190,12 +199,14 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 };
             }).filter(node => node.unitNodes.length > 0);
 
+            // 쮨시 저장 → 다음번 같은 DB 조합 선택 시 즉시 반환
+            treeCache.current[cacheKey] = newTree;
             setTreeData(newTree);
             setLoadingUnits(false);
         };
 
         fetchTree();
-    }, [selectedDbIds, dbFilter, purchasedDbs]);
+    }, [selectedDbIds?.join(',')]); // 안정적 의존성 (purchasedDbs 객체 참조 제거)
 
 
     // Emit changes

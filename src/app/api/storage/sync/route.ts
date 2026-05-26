@@ -97,16 +97,29 @@ export async function POST(req: NextRequest) {
 
     const existingRefIds = new Set(existingItems?.map(i => i.reference_id) || []);
 
-    // 4. Filter missing items
+    // 4. Filter missing items (to add)
+    const validRefIds = new Set(dbPurchases.map(p => p.exam_materials.id));
+
     const newItems = dbPurchases
         .filter(p => !existingRefIds.has(p.exam_materials.id))
         .map(p => ({
             user_id: user.id,
-            folder_id: targetFolder.id, // Sync to specific folder
+            folder_id: targetFolder.id,
             type: 'personal_db',
             reference_id: p.exam_materials.id,
             name: p.exam_materials.title
         }));
+
+    // 5. Delete orphaned user_items (reference_id no longer in exam_materials)
+    const orphanedRefIds = [...existingRefIds].filter(id => !validRefIds.has(id));
+    if (orphanedRefIds.length > 0) {
+        await supabase
+            .from('user_items')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('type', 'personal_db')
+            .in('reference_id', orphanedRefIds);
+    }
 
     if (newItems.length > 0) {
         const { error: insertError } = await supabase
@@ -116,5 +129,6 @@ export async function POST(req: NextRequest) {
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ count: newItems.length });
+    return NextResponse.json({ count: newItems.length, removed: orphanedRefIds.length });
+
 }

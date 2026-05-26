@@ -131,15 +131,13 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                                     <img
                                         src={img.data}
                                         alt={`${displayMode} capture`}
-                                        className={`max-w-full h-auto object-contain rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
-                                        style={{ maxHeight: '1000px' }}
+                                        className={`w-full h-auto object-contain rounded-xl ${displayMode === 'solution' ? '' : 'ring-4 ring-blue-500/5'}`}
                                     />
                                 ) : (
                                     <LazyImage
                                         lazyInfo={`LAZY_ID:${img.id}:${img.format || 'png'}`}
                                         alt={`${displayMode} capture`}
-                                        className={`max-w-full h-auto object-contain rounded-xl shadow-2xl border-2 border-white bg-white ${displayMode === 'solution' ? 'ring-4 ring-green-500/5' : 'ring-4 ring-blue-500/5'}`}
-                                        style={{ maxHeight: '1000px' }}
+                                        className={`w-full h-auto object-contain rounded-xl ${displayMode === 'solution' ? '' : 'ring-4 ring-blue-500/5'}`}
                                     />
                                 )}
                                 {onDeleteCapture && (
@@ -527,39 +525,51 @@ function LazyImage({ lazyInfo, alt, className, style }: { lazyInfo: string, alt?
     const [dataUri, setDataUri] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [inView, setInView] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    // 화면에 보일 때만 로딩 시작
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { setInView(true); observer.disconnect(); } },
+            { rootMargin: '200px' }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
-        const fetchImage = async () => {
-            const [, id, format] = lazyInfo.split(':');
+        if (!inView) return;
+        const [, id, format] = lazyInfo.split(':');
+        (async () => {
             try {
                 const res = await fetch(`/api/admin/questions/images/${id}`);
                 const json = await res.json();
                 if (json.success && json.data) {
                     if (json.data.startsWith('http')) {
-                        // It's a URL (Manual Capture)
                         setDataUri(json.data);
                     } else {
-                        // It's Base64 data
                         setDataUri(`data:image/${format === 'svg' ? 'svg+xml' : format};base64,${json.data}`);
                     }
                 } else {
                     setError(true);
                 }
-            } catch (e) {
+            } catch {
                 setError(true);
             } finally {
                 setLoading(false);
             }
-        };
+        })();
+    }, [inView, lazyInfo]);
 
-        fetchImage();
-    }, [lazyInfo]);
+    if (!inView || loading) return <div ref={ref} className="inline-block w-full h-24 bg-gray-100 animate-pulse rounded align-middle" />;
+    if (error || !dataUri) return <span ref={ref} className="text-xs text-red-400">Image load error</span>;
 
-    if (loading) return <div className="inline-block w-20 h-20 bg-gray-100 animate-pulse rounded align-middle" />;
-    if (error || !dataUri) return <span className="text-xs text-red-400">Image load error</span>;
-
-    return <img src={dataUri} alt={alt} className={className} style={style} />;
+    return <img ref={ref as any} src={dataUri} alt={alt} className={className} style={style} />;
 }
+
 
 function TextRunInner({ node, extractedImages }: { node: ChildNode, extractedImages: Map<string, string> }) {
     const nName = node.nodeName.toUpperCase().replace('HP:', '');

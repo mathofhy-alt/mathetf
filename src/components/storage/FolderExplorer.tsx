@@ -11,6 +11,7 @@ import type { Folder, UserItem } from '@/types/storage';
 interface FolderExplorerProps {
     onItemSelect: (item: UserItem) => void;
     onSelectAll?: (items: UserItem[]) => void;
+    onGroupSelect?: (items: UserItem[], select: boolean) => void;
     selectedIds?: string[];
     filterType?: 'all' | 'db' | 'exam';
     initialData?: any;
@@ -18,7 +19,7 @@ interface FolderExplorerProps {
     onGetViewItems?: (items: UserItem[]) => void;
 }
 
-export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds = [], filterType = 'all', initialData, refreshKey = 0, onGetViewItems }: FolderExplorerProps) {
+export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelect, selectedIds = [], filterType = 'all', initialData, refreshKey = 0, onGetViewItems }: FolderExplorerProps) {
     const [allFolders, setAllFolders] = useState<Folder[]>(initialData?.folders || []);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewFolders, setViewFolders] = useState<Folder[]>(initialData?.folders ? initialData.folders.filter((f: Folder) => !f.parent_id) : []);
@@ -312,6 +313,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, selectedIds 
                         onContextMenu={(e, type, id) => setContextMenu({ x: e.clientX, y: e.clientY, type, id })}
                         onMoveItem={handleMoveItem}
                         selectedIds={selectedIds}
+                        onGroupSelect={onGroupSelect}
                     />
                 </div>
             </div>

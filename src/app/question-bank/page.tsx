@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
 import SaveLocationModal from '@/components/storage/SaveLocationModal';
@@ -10,7 +10,7 @@ import FilterSidebar from '@/components/question-bank/FilterSidebar';
 import QuestionPreview from '@/components/question-bank/QuestionPreview';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
-import ExamCart from '@/components/question-bank/ExamCart';
+
 import ConfigModal from '@/components/question-bank/ConfigModal';
 import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsModal';
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
@@ -18,6 +18,9 @@ import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
 import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
+
+
+const MAX_CART_SIZE = 50;
 
 export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
@@ -69,9 +72,24 @@ export default function QuestionBankPage() {
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [viewMode, setViewMode] = useState<'search' | 'review'>('search');
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+    const dragOrderRef = useRef<any[]>([]); // 드래그 중 순서를 ref에만 저장 (re-render 최소화)
     const [showAutoModal, setShowAutoModal] = useState(false);
     const [user, setUser] = useState<any>(null);
     const isAdmin = user?.email === 'mathofhy@naver.com';
+    const mainScrollRef = useRef<HTMLDivElement>(null);
+
+    // 해설/유사문항 모달 열릴 때 배경 스크롤 전체 차단
+    useEffect(() => {
+        if (!solutionTarget && !similarTarget) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            const isInsideModal = (e.target as Element)?.closest('[data-modal-scroll]');
+            if (!isInsideModal) e.preventDefault();
+        };
+
+        document.addEventListener('wheel', handleWheel, { passive: false });
+        return () => document.removeEventListener('wheel', handleWheel);
+    }, [solutionTarget, similarTarget]);
 
     // Personal DB State
     const [purchasedDbs, setPurchasedDbs] = useState<any[]>([]);
@@ -110,6 +128,12 @@ export default function QuestionBankPage() {
     const [previewPos, setPreviewPos] = useState<{ x: number, y: number } | null>(null);
 
     const supabase = createClient();
+
+    // 전역 레이아웃의 Footer 때문에 생기는 브라우저 스크롤 제거
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = ''; };
+    }, []);
 
     const fetchMyPoints = async (userId: string) => {
         const { data, error } = await supabase.from('profiles').select('purchased_points, earned_points').eq('id', userId).single();
@@ -324,31 +348,37 @@ export default function QuestionBankPage() {
                 throw new Error("데이터베이스 검색 중 오류가 발생했습니다. (검색 조건이 너무 많을 수 있습니다)");
             }
             if (data) {
-                // 이미지 별도 조회 (병렬) - JOIN 제거로 메인 쿼리 속도 향상
+                // 1단계: 문제 카드 즉시 표시 (이미지 없이)
                 const questionIds = data.map((q: any) => q.id);
-                let questionsWithImages = data.map((q: any) => ({ ...q, question_images: [] }));
-                if (questionIds.length > 0) {
-                    const { data: imgData } = await supabase
-                        .from('question_images')
-                        .select('question_id, data, id, original_bin_id, format')
-                        .in('question_id', questionIds);
-                    if (imgData && imgData.length > 0) {
-                        const imgMap: Record<string, any[]> = {};
-                        imgData.forEach((img: any) => {
-                            if (!imgMap[img.question_id]) imgMap[img.question_id] = [];
-                            imgMap[img.question_id].push(img);
-                        });
-                        questionsWithImages = questionsWithImages.map((q: any) => ({
-                            ...q,
-                            question_images: imgMap[q.id] || []
-                        }));
-                    }
-                }
-                setQuestions(questionsWithImages);
+                const questionsNoImg = data.map((q: any) => ({ ...q, question_images: null })); // null = 이미지 로딩 중
+                setQuestions(questionsNoImg);
+                setLoading(false);
                 if (count !== null) setTotalQuestions(count);
                 if (targetPage === 1) setHasSearched(true);
                 if (data.length === 0 && targetPage === 1) {
                     alert('해당 조건에 일치하는 문항이 없습니다. (0건)');
+                    return;
+                }
+
+                // 2단계: 이미지는 백그라운드에서 로드 후 업데이트
+                if (questionIds.length > 0) {
+                    supabase
+                        .from('question_images')
+                        .select('question_id, data, id, original_bin_id, format')
+                        .in('question_id', questionIds)
+                        .then(({ data: imgData }) => {
+                            if (imgData && imgData.length > 0) {
+                                const imgMap: Record<string, any[]> = {};
+                                imgData.forEach((img: any) => {
+                                    if (!imgMap[img.question_id]) imgMap[img.question_id] = [];
+                                    imgMap[img.question_id].push(img);
+                                });
+                                setQuestions(prev => prev.map((q: any) => ({
+                                    ...q,
+                                    question_images: imgMap[q.id] || []
+                                })));
+                            }
+                        });
                 }
             }
         } catch (err: any) {
@@ -373,8 +403,8 @@ export default function QuestionBankPage() {
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
         fetchQuestions(selectedDbIds, filterState, newPage);
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll to top of the actual scrollable container
+        if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
     };
 
     const handleDbToggle = (dbId: string) => {
@@ -392,29 +422,7 @@ export default function QuestionBankPage() {
         // No auto fetch
     };
 
-    const handleDbSelectAll = (items: UserItem[]) => {
-        const itemIds = items.map(i => i.reference_id || i.id);
 
-        // Check if all are currently selected
-        const allSelected = itemIds.every(id => selectedDbIds.includes(id));
-
-        let newIds = [...selectedDbIds];
-        if (allSelected) {
-            // Deselect all
-            newIds = newIds.filter(id => !itemIds.includes(id));
-        } else {
-            // Select all (add missing)
-            itemIds.forEach(id => {
-                if (!newIds.includes(id)) newIds.push(id);
-            });
-        }
-
-        setSelectedDbIds(newIds);
-        if (newIds.length === 0) {
-            setQuestions([]);
-        }
-        // No auto fetch
-    };
 
     const handleStorageItemSelect = async (item: UserItem) => {
         if (item.type === 'personal_db') {
@@ -496,27 +504,18 @@ export default function QuestionBankPage() {
         }
     };
 
-    // [V73] Bulk Download for Exams
     const handleBulkDownloadExams = async () => {
         if (selectedExamIds.length === 0) return alert('다운로드할 시험지를 선택해주세요.');
-
-        setLoading(true);
-        try {
-            selectedExamIds.forEach((id, idx) => {
-                setTimeout(() => {
-                    const link = document.createElement('a');
-                    link.href = `/api/storage/download?id=${id}`;
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }, idx * 1000); // 1s delay
-            });
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+        selectedExamIds.forEach((id, idx) => {
+            setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = `/api/storage/download?id=${id}`;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, idx * 1000);
+        });
     };
 
     const handleSimilarReplace = (oldQ: any, newQ: any) => {
@@ -556,55 +555,71 @@ export default function QuestionBankPage() {
         });
     };
 
-    // [유사문항 자동추가] 선택된 카드만 (없으면 전체) 유사도 1위 자동 삽입
+    // [유사문항 자동추가] Promise.allSettled로 병렬 호출 (기존 직렬: 최대 100초 → 병렬: 1~2초)
     const handleAutoAddSimilar = async () => {
         if (cart.length === 0) return;
         setIsAutoAdding(true);
 
-        // 선택된 카드가 있으면 그것만, 없으면 원본 문제 전체
         const targetQuestions = selectedReviewIds.size > 0
             ? cart.filter(q => !q._similarOf && selectedReviewIds.has(q.id))
             : cart.filter(q => !q._similarOf);
 
-        let updatedCart = [...cart];
-        let addedCount = 0;
-        let skippedCount = 0;
+        const existingIds = new Set(cart.map(q => q.id));
+        const availableSlots = MAX_CART_SIZE - cart.length;
+        const eligible = targetQuestions.slice(0, Math.max(0, availableSlots));
+        const skippedCount = targetQuestions.length - eligible.length;
 
-        for (const baseQ of targetQuestions) {
-            // 50개 제한 체크 (루프 중에도 매번 확인)
-            if (updatedCart.length >= MAX_CART_SIZE) {
-                skippedCount++;
-                continue;
-            }
-            try {
-                const res = await fetch(`/api/pro/similar-questions?id=${baseQ.id}&limit=1`);
-                if (!res.ok) continue;
-                const data = await res.json();
-                if (!data.success || !data.data || data.data.length === 0) continue;
+        // 병렬 API 호출 (기존 for-await 직렬 → Promise.allSettled 병렬)
+        const apiResults = await Promise.allSettled(
+            eligible.map(baseQ =>
+                fetch(`/api/pro/similar-questions?id=${baseQ.id}&limit=1`)
+                    .then(r => r.ok ? r.json() : null)
+                    .catch(() => null)
+                    .then(data => ({
+                        baseId: baseQ.id,
+                        similar: data?.success && data?.data?.[0] ? data.data[0] : null
+                    }))
+            )
+        );
 
-                const topSimilar = data.data[0];
-                if (updatedCart.find(q => q.id === topSimilar.id)) continue;
-
-                const baseIdx = updatedCart.findIndex(q => q.id === baseQ.id);
-                if (baseIdx === -1) continue;
-
-                let insertAt = baseIdx + 1;
-                while (insertAt < updatedCart.length && updatedCart[insertAt]._similarOf === baseQ.id) {
-                    insertAt++;
+        // baseId → similar 맵 구성 (중복/기존 제외)
+        const insertMap = new Map<string, any>();
+        for (const result of apiResults) {
+            if (result.status === 'fulfilled' && result.value?.similar) {
+                const { baseId, similar } = result.value;
+                if (!existingIds.has(similar.id) && !insertMap.has(similar.id)) {
+                    insertMap.set(baseId, similar);
                 }
-                updatedCart = [
-                    ...updatedCart.slice(0, insertAt),
-                    { ...topSimilar, _similarOf: baseQ.id },
-                    ...updatedCart.slice(insertAt)
-                ];
-                addedCount++;
-            } catch (e) {
-                console.error(`유사문제 조회 실패 (Q: ${baseQ.id})`, e);
             }
         }
 
+        // 원본 cart 순서대로 올바른 위치에 삽입
+        let updatedCart = [...cart];
+        let addedCount = 0;
+        let offset = 0;
+
+        for (let i = 0; i < cart.length; i++) {
+            const baseQ = cart[i];
+            const similar = insertMap.get(baseQ.id);
+            if (!similar) continue;
+
+            const baseIdxInUpdated = i + offset;
+            let insertAt = baseIdxInUpdated + 1;
+            // 이미 있는 유사문항 이후에 삽입
+            while (insertAt < updatedCart.length && updatedCart[insertAt]._similarOf === baseQ.id) {
+                insertAt++;
+            }
+            updatedCart = [
+                ...updatedCart.slice(0, insertAt),
+                { ...similar, _similarOf: baseQ.id },
+                ...updatedCart.slice(insertAt)
+            ];
+            addedCount++;
+            offset++;
+        }
+
         setCart(updatedCart);
-        setSelectedReviewIds(new Set()); // 선택 해제
+        setSelectedReviewIds(new Set());
         setIsAutoAdding(false);
         if (skippedCount > 0) {
             alert(`유사문항 자동추가 완료! ${addedCount}개 추가됨. (최대 ${MAX_CART_SIZE}문제 제한으로 ${skippedCount}개 생략)`);
@@ -613,7 +628,7 @@ export default function QuestionBankPage() {
         }
     };
 
-    const MAX_CART_SIZE = 50;
+
 
     const toggleCart = (question: any) => {
         if (cart.find(q => q.id === question.id)) {
@@ -674,7 +689,7 @@ export default function QuestionBankPage() {
         return map[String(diff)] || 5;
     };
 
-    const sortCart = (option: 'original' | 'diff-asc' | 'diff-desc' | 'selection') => {
+    const sortCart = (option: 'original' | 'diff-asc' | 'diff-desc') => {
         let sorted = [...cart];
         if (option === 'diff-asc') sorted.sort((a, b) => getDifficultyValue(a.difficulty) - getDifficultyValue(b.difficulty));
         else if (option === 'diff-desc') sorted.sort((a, b) => getDifficultyValue(b.difficulty) - getDifficultyValue(a.difficulty));
@@ -683,7 +698,10 @@ export default function QuestionBankPage() {
     };
 
     // Drag and Drop Handlers
+    // dragOrderRef: 드래그 중 순서를 ref에 저장 → dragEnd 시에만 setCart 1회 호출
+    // (기존: onDragOver마다 setCart → 50카드 수백 번 re-render → 극심한 성능 저하)
     const handleDragStart = (idx: number) => {
+        dragOrderRef.current = [...cart]; // 현재 cart 스냅샷
         setDraggingIndex(idx);
     };
 
@@ -691,16 +709,20 @@ export default function QuestionBankPage() {
         e.preventDefault();
         if (draggingIndex === null || draggingIndex === idx) return;
 
-        const newCart = [...cart];
-        const draggedItem = newCart[draggingIndex];
-        newCart.splice(draggingIndex, 1);
-        newCart.splice(idx, 0, draggedItem);
-
-        setDraggingIndex(idx);
-        setCart(newCart);
+        // ref만 업데이트 (state 변경 없음 → re-render 없음)
+        const newOrder = [...dragOrderRef.current];
+        const draggedItem = newOrder[draggingIndex];
+        newOrder.splice(draggingIndex, 1);
+        newOrder.splice(idx, 0, draggedItem);
+        dragOrderRef.current = newOrder;
+        setDraggingIndex(idx); // 인덱스 표시만 state (숫자 1개, 경량)
     };
 
     const handleDragEnd = () => {
+        if (dragOrderRef.current.length > 0) {
+            setCart(dragOrderRef.current); // 드래그 완료 시 딱 1번만 setCart
+        }
+        dragOrderRef.current = [];
         setDraggingIndex(null);
     };
 
@@ -768,7 +790,7 @@ export default function QuestionBankPage() {
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
     return (
-        <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
+        <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden">
             <Header
                 user={user}
                 purchasedPoints={purchasedPoints}
@@ -805,6 +827,22 @@ export default function QuestionBankPage() {
                                     if (storageModalMode === 'exam') setSelectedExamIds(ids);
                                     else setSelectedDbIds(ids);
                                 }}
+                                onGroupSelect={(items, select) => {
+                                    const ids = items.map(i => i.reference_id || i.id);
+                                    if (storageModalMode === 'db') {
+                                        setSelectedDbIds(prev =>
+                                            select
+                                                ? [...new Set([...prev, ...ids])]
+                                                : prev.filter(id => !ids.includes(id))
+                                        );
+                                    } else {
+                                        setSelectedExamIds(prev =>
+                                            select
+                                                ? [...new Set([...prev, ...ids])]
+                                                : prev.filter(id => !ids.includes(id))
+                                        );
+                                    }
+                                }}
                                 selectedIds={storageModalMode === 'exam' ? selectedExamIds : selectedDbIds}
                                 filterType={storageModalMode}
                                 refreshKey={storageRefreshKey}
@@ -814,22 +852,35 @@ export default function QuestionBankPage() {
                         <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
                             <div className="flex gap-2">
                                 {/* Actions for DBs - 전체 선택 */}
-                                {storageModalMode === 'db' && (
-                                    <button
-                                        onClick={() => {
-                                            const ids = currentExamItems
-                                                .filter(i => i.type === 'personal_db')
-                                                .map(i => i.reference_id || i.id);
-                                            setSelectedDbIds(prev => {
-                                                const allSelected = ids.every(id => prev.includes(id));
-                                                return allSelected ? prev.filter(id => !ids.includes(id)) : [...new Set([...prev, ...ids])];
-                                            });
-                                        }}
-                                        className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition flex items-center gap-2 border border-slate-200"
-                                    >
-                                        <CheckSquare size={16} /> 전체 선택
-                                    </button>
-                                )}
+                                {storageModalMode === 'db' && (() => {
+                                        const allDbIds = currentExamItems
+                                            .filter(i => i.type === 'personal_db')
+                                            .map(i => i.reference_id || i.id);
+                                        const allSelected = allDbIds.length > 0 && allDbIds.every(id => selectedDbIds.includes(id));
+                                        return (
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedDbIds(prev => allSelected
+                                                        ? prev.filter(id => !allDbIds.includes(id))
+                                                        : [...new Set([...prev, ...allDbIds])]);
+                                                }}
+                                                className={`px-4 py-2 font-bold rounded-lg transition flex items-center gap-2 border ${
+                                                    allSelected
+                                                        ? 'bg-[#497AB7] text-white border-[#3A6BA0] hover:bg-[#3A6BA0]'
+                                                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                                }`}
+                                            >
+                                                <CheckSquare size={16} />
+                                                {allSelected ? '전체 해제' : '전체 선택'}
+                                                {selectedDbIds.length > 0 && (
+                                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${allSelected ? 'bg-white/30 text-white' : 'bg-[#497AB7] text-white'}`}>
+                                                        {selectedDbIds.length}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })()
+                                }
                                 {/* Actions for Exams */}
                                 {storageModalMode === 'exam' && (
                                     <button
@@ -926,7 +977,7 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-3 px-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl hover:bg-indigo-100 flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <Database size={16} />
                                 DB 문제
@@ -937,7 +988,7 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-3 px-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl hover:bg-purple-100 flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <FolderIcon size={16} />
                                 만든 시험지
@@ -978,14 +1029,14 @@ export default function QuestionBankPage() {
                                 }}
                             />
                         </div>
-                        <div className="p-4 border-t bg-slate-50">
+                        <div className="p-4 border-t bg-[#F2F3F0]">
                             <button
                                 onClick={() => {
                                     handleSearch();
                                     setShowMobileSidebar(false);
                                     setShowStorageModal(false);
                                 }}
-                                className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-[#497AB7] text-white font-bold rounded-xl shadow-md hover:bg-[#3A6599] transition flex items-center justify-center gap-2"
                             >
                                 <span>조건 검색하기</span>
                             </button>
@@ -994,9 +1045,9 @@ export default function QuestionBankPage() {
                 </div>
 
                 {/* Main List Area */}
-                <div className="flex-1 overflow-y-auto relative">
+                <div ref={mainScrollRef} id="main-scroll" className="flex-1 overflow-y-auto relative">
                     {viewMode === 'search' ? (
-                        <header className="sticky top-0 z-10 flex justify-between items-center px-3 sm:px-6 py-2 sm:py-4 bg-gray-100/90 backdrop-blur-sm border-b border-slate-200/60 shadow-sm">
+                        <header className="sticky top-0 z-10 flex justify-between items-center px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#B7D1EA]/60 shadow-sm">
                             <div className="flex items-center gap-2 min-w-0">
                                 <button
                                     className="md:hidden flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 flex-shrink-0"
@@ -1013,7 +1064,7 @@ export default function QuestionBankPage() {
                                 {questions.length > 0 && (
                                     <button
                                         onClick={handleSelectAllToggle}
-                                        className="border border-slate-300 text-slate-600 px-4 py-2 rounded-lg hover:bg-white hover:text-indigo-600 hover:border-indigo-600 shadow-sm transition font-bold"
+                                        className="border border-[#B7D1EA] text-[#497AB7] px-4 py-2 rounded-lg hover:bg-[#EEF4FB] shadow-sm transition font-bold"
                                     >
                                         {questions.every(q => q && cartIdSet.has(q.id)) ? '전체 해제' : '전체 선택'}
                                     </button>
@@ -1021,20 +1072,20 @@ export default function QuestionBankPage() {
                                 <button
                                     onClick={handleGenerate}
                                     disabled={cart.length === 0 || isGenerating}
-                                    className="bg-indigo-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm transition font-bold flex items-center gap-2"
+                                    className="bg-[#497AB7] disabled:bg-slate-300 text-white px-4 py-2 rounded-lg hover:bg-[#3A6599] shadow-sm transition font-bold flex items-center gap-2"
                                 >
                                     <span>시험지 생성 ({cart.length}/{MAX_CART_SIZE})</span>
                                 </button>
                                 <button
                                     onClick={() => setShowAutoModal(true)}
-                                    className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 shadow-sm transition font-bold whitespace-nowrap text-sm"
+                                    className="bg-[#5CC6C3] text-white px-3 py-2 rounded-lg hover:bg-[#3AADA9] shadow-sm transition font-bold whitespace-nowrap text-sm"
                                 >
                                     자동생성
                                 </button>
                             </div>
                         </header>
                     ) : (
-                        <header className="sticky top-0 z-10 flex flex-col gap-4 px-3 sm:px-6 py-2 sm:py-4 bg-gray-100/90 backdrop-blur-sm border-b border-slate-200/60 shadow-sm">
+                        <header className="sticky top-0 z-10 flex flex-col gap-4 px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#B7D1EA]/60 shadow-sm">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h1 className="text-2xl font-black text-slate-800">시험지 문항 검토</h1>
@@ -1055,7 +1106,7 @@ export default function QuestionBankPage() {
                                     </button>
                                     <button
                                         onClick={() => setShowConfigModal(true)}
-                                        className="px-8 py-2.5 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 shadow-lg shadow-brand-600/20 transition-all flex items-center gap-2"
+                                        className="px-8 py-2.5 bg-[#497AB7] text-white rounded-xl font-bold hover:bg-[#3A6599] shadow-lg shadow-[#497AB7]/20 transition-all flex items-center gap-2"
                                     >
                                         <span>최종 생성하기 ({cart.length}/{MAX_CART_SIZE})</span>
                                     </button>
@@ -1066,13 +1117,13 @@ export default function QuestionBankPage() {
                                 <div className="flex items-center gap-4">
                                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Quick Sort</span>
                                     <div className="h-6 w-px bg-slate-200 mx-1"></div>
-                                    <button onClick={() => sortCart('original')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                    <button onClick={() => sortCart('original')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all">
                                         원본 번호순
                                     </button>
-                                    <button onClick={() => sortCart('diff-asc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                    <button onClick={() => sortCart('diff-asc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all">
                                         난이도 낮은순
                                     </button>
-                                    <button onClick={() => sortCart('diff-desc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-all">
+                                    <button onClick={() => sortCart('diff-desc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all">
                                         난이도 높은순
                                     </button>
                                 </div>
@@ -1092,7 +1143,7 @@ export default function QuestionBankPage() {
                                         <button
                                             onClick={handleAutoAddSimilar}
                                             disabled={isAutoAdding || cart.length === 0}
-                                            className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm whitespace-nowrap"
+                                            className="px-4 py-2 rounded-xl text-xs font-bold bg-[#5CC6C3] text-white hover:bg-[#3AADA9] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm whitespace-nowrap"
                                         >
                                             {isAutoAdding ? (
                                                 <>
@@ -1126,7 +1177,7 @@ export default function QuestionBankPage() {
                         </div>
                     ) : (
                         <>
-                            <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-3'} gap-6 px-6 pt-6 pb-10 animate-in fade-in duration-500`}>
+                            <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-4'} gap-6 px-6 pt-6 pb-10 animate-in fade-in duration-500`}>
                                 {(viewMode === 'search' ? questions : cart).length > 0 ? (viewMode === 'search' ? questions : cart).map((q, idx) => {
                                     const inCart = q && cartIdSet.has(q.id);
                                 return (
@@ -1149,11 +1200,11 @@ export default function QuestionBankPage() {
                                         className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group min-h-[500px] sm:h-[630px]
                                             ${viewMode === 'review'
                                                 ? draggingIndex === idx
-                                                    ? 'opacity-40 scale-95 border-brand-500 border-dashed'
+                                                    ? 'opacity-40 scale-95 border-[#497AB7] border-dashed'
                                                     : selectedReviewIds.has(q.id)
-                                                        ? 'bg-violet-50 border-violet-500 ring-2 ring-violet-400 cursor-move hover:shadow-md'
-                                                        : 'bg-white border-slate-200 cursor-move hover:border-brand-300 hover:shadow-md'
-                                                : inCart ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500 shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
+                                                        ? 'bg-[#E0F7F6] border-[#5CC6C3] ring-2 ring-[#5CC6C3] cursor-move hover:shadow-md'
+                                                        : 'bg-white border-slate-200 cursor-move hover:border-[#B7D1EA] hover:shadow-md'
+                                                : inCart ? 'bg-[#EEF4FB] border-[#497AB7] ring-2 ring-[#497AB7] shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
                                         `}
                                     >
                                         {/* Header */}
@@ -1179,8 +1230,8 @@ export default function QuestionBankPage() {
                                                     className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition-colors select-none
                                                         ${viewMode === 'review' && !q._similarOf ? 'cursor-pointer' : ''}
                                                         ${selectedReviewIds.has(q.id)
-                                                            ? 'bg-violet-600 text-white ring-2 ring-violet-400'
-                                                            : viewMode === 'review' ? 'bg-brand-600 text-white hover:bg-violet-500' : 'bg-slate-200 text-slate-500'
+                                                            ? 'bg-[#5CC6C3] text-white ring-2 ring-[#5CC6C3]/50'
+                                                            : viewMode === 'review' ? 'bg-[#497AB7] text-white hover:bg-[#5CC6C3]' : 'bg-slate-200 text-slate-500'
                                                         }`}
                                                     title={viewMode === 'review' && !q._similarOf ? '클릭하여 선택' : ''}
                                                 >
@@ -1195,7 +1246,7 @@ export default function QuestionBankPage() {
                                                         </span>
                                                     ) : null;
                                                 })()}
-                                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-md font-bold">
+                                                <span className="bg-[#E8F0FB] text-[#497AB7] text-xs px-2 py-0.5 rounded-md font-bold">
                                                     {q.unit || '단원 미정'}
                                                 </span>
                                                 <span className="text-[11px] font-bold text-gray-500">
@@ -1234,13 +1285,23 @@ export default function QuestionBankPage() {
 
                                         {/* Content */}
                                         <div className="p-5 bg-white flex-1 min-h-[160px] overflow-y-auto scrollbar-thin">
-                                            <QuestionRenderer
-                                                xmlContent={q.content_xml}
-                                                externalImages={q.question_images}
-                                                displayMode="question"
-                                                showDownloadAction={false}
-                                                className="border-none shadow-none p-0 !text-base"
-                                            />
+                                            {q.question_images === null ? (
+                                                // 이미지 로딩 중 스켈레톤
+                                                <div className="space-y-2 animate-pulse">
+                                                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                                                    <div className="h-4 bg-gray-200 rounded w-full" />
+                                                    <div className="h-20 bg-gray-200 rounded w-full mt-3" />
+                                                    <div className="h-4 bg-gray-200 rounded w-1/2" />
+                                                </div>
+                                            ) : (
+                                                <QuestionRenderer
+                                                    xmlContent={q.content_xml}
+                                                    externalImages={q.question_images}
+                                                    displayMode="question"
+                                                    showDownloadAction={false}
+                                                    className="border-none shadow-none p-0 !text-base"
+                                                />
+                                            )}
                                         </div>
 
                                         {/* Meta/Actions Footer */}
@@ -1251,7 +1312,7 @@ export default function QuestionBankPage() {
                                             {viewMode === 'search' && (
                                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
-                                                        className="text-[10px] font-bold text-slate-500 hover:text-brand-600 bg-white border border-slate-200 hover:border-brand-300 hover:bg-brand-50 px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
+                                                        className="text-[10px] font-bold text-slate-500 hover:text-[#497AB7] bg-white border border-slate-200 hover:border-[#B7D1EA] hover:bg-[#EEF4FB] px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
                                                         onClick={(e) => { e.stopPropagation(); setSolutionTarget(q); }}
                                                     >
                                                         <FileText size={12} />
@@ -1456,9 +1517,7 @@ export default function QuestionBankPage() {
                     )}
                 </div>
 
-                {/* Right Sidebar: Cart */}
-                {/* Right Sidebar: Cart (REMOVED) */}
-                {/* <ExamCart ... /> */}
+
 
                 {showConfigModal && (
                     <ConfigModal

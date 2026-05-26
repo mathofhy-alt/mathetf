@@ -162,27 +162,43 @@ export async function GET(req: NextRequest) {
 
         results = results.slice(0, limit);
 
-        // 5. RPC 반환 컬럼이 제한적일 수 있으므로, ID 목록으로 questions 테이블에서 풀 데이터를 다시 조회
+        // 5. RPC 결과를 그대로 사용, question_images만 별도 조회 후 merge
+        //    (기존: questions 전체 재조회 + question_images JOIN → DB 왕복 2회)
+        //    (개선: question_images만 조회 → DB 왕복 1회 감소, 전송 데이터 대폭 감소)
         if (results.length > 0) {
             const resultIds = results.map((r: any) => r.id);
-            const similarityMap = Object.fromEntries(results.map((r: any) => [r.id, r.similarity]));
+            const similarityMap = Object.fromEntries(
+                results.map((r: any) => [r.id, r.similarity])
+            );
 
-            const { data: fullQuestions, error: fullError } = await supabase
-                .from('questions')
-                .select('*, question_images(*)')
-                .in('id', resultIds);
+            // images만 조회 (questions 전체 재조회 불필요)
+            const { data: images } = await supabase
+                .from('question_images')
+                .select('*')
+                .in('question_id', resultIds);
 
-            if (fullError) throw fullError;
+            // question_id 기준으로 그룹화
+            const imagesMap: Record<string, any[]> = {};
+            for (const img of images || []) {
+                if (!imagesMap[img.question_id]) imagesMap[img.question_id] = [];
+                imagesMap[img.question_id].push(img);
+            }
 
-            // similarity 점수를 붙이고, RPC 결과 순서대로 정렬
+            // RPC 결과 순서 유지하면서 similarity + images 병합
+            const rpcResults = results;
             results = resultIds
-                .map((id: string) => {
-                    const q = fullQuestions?.find((fq: any) => fq.id === id);
+                .map((rid: string) => {
+                    const q = rpcResults.find((r: any) => r.id === rid);
                     if (!q) return null;
-                    return { ...q, similarity: similarityMap[id] };
+                    return {
+                        ...q,
+                        question_images: imagesMap[rid] || [],
+                        similarity: similarityMap[rid]
+                    };
                 })
                 .filter(Boolean);
         }
+
 
         return NextResponse.json({
             success: true,

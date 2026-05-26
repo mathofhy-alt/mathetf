@@ -40,7 +40,6 @@ export default function AutoGenModal({
     const handleSubmit = async () => {
         setGenerating(true);
         try {
-            // Build criteria object
             const criteria = {
                 subject,
                 unit: selectedUnits.length > 0 ? selectedUnits : undefined,
@@ -53,6 +52,16 @@ export default function AutoGenModal({
                 method: 'POST',
                 body: JSON.stringify(criteria),
             });
+
+            // 미로그인 → 회원가입 페이지로 이동
+            if (res.status === 401) {
+                onClose();
+                if (confirm('자동 시험지 생성은 회원만 이용할 수 있습니다.\n회원가입 페이지로 이동하시겠습니까?')) {
+                    window.location.href = '/signup';
+                }
+                return;
+            }
+
             const data = await res.json();
 
             if (data.questions && data.questions.length > 0) {

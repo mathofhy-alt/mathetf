@@ -49,6 +49,7 @@ interface FileGridProps {
     onContextMenu: (e: React.MouseEvent, type: 'folder' | 'item', id: string) => void;
     onMoveItem: (itemId: string, targetFolderId: string | null) => void;
     selectedIds?: string[];
+    onGroupSelect?: (items: UserItem[], select: boolean) => void;
 }
 
 const formatDate = (dateStr?: string) => {
@@ -72,7 +73,7 @@ const shortenName = (name: string, type: string): string => {
 };
 
 
-export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, selectedIds = [] }: FileGridProps) {
+export default function FileGrid({ folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, selectedIds = [], onGroupSelect }: FileGridProps) {
 
     // 학년 아코디언 상태 (기본값: 접힘)
     const [openGrades, setOpenGrades] = useState<Record<string, boolean>>({});
@@ -204,7 +205,13 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                         <div key={grade}>
                             {/* 학년 헤더 */}
                             <button
-                                className="w-full flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 border-b border-slate-200 transition-colors text-left"
+                                className={`w-full flex items-center gap-2 px-4 py-2 border-b transition-colors text-left ${
+                                    Object.values(yearMap).flat().some(item =>
+                                        selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
+                                    )
+                                        ? 'bg-[#E8F0FB] hover:bg-[#D4E4F7] border-[#B7D1EA]'
+                                        : 'bg-slate-100 hover:bg-slate-200 border-slate-200'
+                                }`}
                                 onClick={() => toggleGrade(grade)}
                             >
                                 {gradeOpen
@@ -212,7 +219,38 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                     : <ChevronRight size={15} className="text-slate-500 flex-shrink-0" />
                                 }
                                 <span className="text-sm font-bold text-slate-700">📚 {grade}</span>
-                                <span className="ml-auto text-xs text-slate-400 font-normal">{totalCount}개</span>
+                                <span className="ml-auto flex items-center gap-2">
+                                    {(() => {
+                                        const allInGrade = Object.values(yearMap).flat();
+                                        const selCount = allInGrade.filter(item =>
+                                            selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
+                                        ).length;
+                                        const gradeAllSel = selCount === allInGrade.length && allInGrade.length > 0;
+                                        return (
+                                            <>
+                                                {selCount > 0 ? (
+                                                    <span className="bg-[#497AB7] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                        {selCount}/{allInGrade.length} 선택
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400 font-normal">{totalCount}개</span>
+                                                )}
+                                                {onGroupSelect && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onGroupSelect(allInGrade, !gradeAllSel); }}
+                                                        className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
+                                                            gradeAllSel
+                                                                ? 'bg-[#497AB7] text-white border-[#3A6BA0]'
+                                                                : 'bg-white text-[#497AB7] border-[#B7D1EA] hover:bg-[#E8F0FB]'
+                                                        }`}
+                                                    >
+                                                        {gradeAllSel ? '전체 해제' : '전체 선택'}
+                                                    </button>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </span>
                             </button>
 
                             {gradeOpen && Object.entries(yearMap)
@@ -224,7 +262,13 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                         <div key={year}>
                                             {/* 년도 서브헤더 */}
                                             <button
-                                                className="w-full flex items-center gap-2 pl-8 pr-4 py-1.5 bg-slate-50 hover:bg-blue-50 border-b border-slate-100 transition-colors text-left"
+                                                className={`w-full flex items-center gap-2 pl-8 pr-4 py-1.5 border-b transition-colors text-left ${
+                                                    yearItems.some(item =>
+                                                        selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
+                                                    )
+                                                        ? 'bg-[#EEF4FD] hover:bg-[#E0ECFB] border-[#C5D9F0]'
+                                                        : 'bg-slate-50 hover:bg-blue-50 border-slate-100'
+                                                }`}
                                                 onClick={() => toggleYear(yearKey)}
                                             >
                                                 {yearOpen
@@ -232,7 +276,37 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                                     : <ChevronRight size={13} className="text-slate-400 flex-shrink-0" />
                                                 }
                                                 <span className="text-xs font-semibold text-slate-600">📅 {year}년</span>
-                                                <span className="ml-auto text-xs text-slate-400 font-normal">{yearItems.length}개</span>
+                                                <span className="ml-auto flex items-center gap-2">
+                                                    {(() => {
+                                                        const selCount = yearItems.filter(item =>
+                                                            selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
+                                                        ).length;
+                                                        const yearAllSel = selCount === yearItems.length && yearItems.length > 0;
+                                                        return (
+                                                            <>
+                                                                {selCount > 0 ? (
+                                                                    <span className="bg-[#5CC6C3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                                                        {selCount}/{yearItems.length}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-xs text-slate-400 font-normal">{yearItems.length}개</span>
+                                                                )}
+                                                                {onGroupSelect && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); onGroupSelect(yearItems, !yearAllSel); }}
+                                                                        className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
+                                                                            yearAllSel
+                                                                                ? 'bg-[#5CC6C3] text-white border-[#3AADA9]'
+                                                                                : 'bg-white text-[#3AADA9] border-[#5CC6C3]/50 hover:bg-[#EEF4FD]'
+                                                                        }`}
+                                                                    >
+                                                                        {yearAllSel ? '해제' : '전체'}
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </span>
                                             </button>
 
                                             {yearOpen && [...yearItems].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })).map(item => renderItem(item))}

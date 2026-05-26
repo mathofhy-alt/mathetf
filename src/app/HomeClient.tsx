@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem } from '../lib/data';
 import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle, Search } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -79,7 +79,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     const router = useRouter();
     const supabase = createClient();
     const { addToCart, items: cartItems } = useCart();
-    const cartItemIds = new Set(cartItems.map((item) => item.item_id));
+    // useMemo: cartItems가 바뀔 때만 Set 재생성 (기존: 매 렌더마다 new Set)
+    const cartItemIds = useMemo(() => new Set(cartItems.map((item) => item.item_id)), [cartItems]);
 
     const [selectedDbForDetail, setSelectedDbForDetail] = useState<FileItem | null>(null);
     const [dbDetails, setDbDetails] = useState<any[]>([]);
@@ -89,8 +90,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     const districts = selectedRegion ? districtsMap[selectedRegion] || [] : [];
     const schools = (selectedRegion && selectedDistrict) ? schoolsMap[selectedRegion]?.[selectedDistrict] || [] : [];
 
-    // Client-side Filtering Logic
-    const filteredFiles = groupedFiles.filter(group => {
+    // useMemo: 필터 조건이나 groupedFiles가 바뀔 때만 재계산 (기존: 매 렌더마다 filter 실행)
+    const filteredFiles = useMemo(() => groupedFiles.filter(group => {
         // 0. Keyword Search
         if (searchKeyword) {
             const keyword = searchKeyword.toLowerCase();
@@ -131,7 +132,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
         }
 
         return true;
-    });
+    }), [groupedFiles, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope]);
 
     const fetchMyPoints = async (userId: string) => {
         const { data, error } = await supabase.from('profiles').select('purchased_points, earned_points').eq('id', userId).single();

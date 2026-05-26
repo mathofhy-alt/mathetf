@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, BookOpen } from 'lucide-react';
 import QuestionRenderer from '@/components/QuestionRenderer';
 
@@ -14,10 +14,10 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
     if (!question) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-[560px] max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onWheel={(e) => e.stopPropagation()}>
+            <div className="bg-white w-full max-w-md max-h-[90vh] rounded-2xl shadow-2xl flex flex-col">
                 {/* Header */}
-                <div className="p-4 border-b flex justify-between items-center bg-green-50/50">
+                <div className="p-4 border-b flex justify-between items-center bg-green-50/50 flex-shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="bg-green-100 text-green-700 p-2 rounded-lg">
                             <BookOpen size={20} />
@@ -40,10 +40,10 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto bg-slate-50 p-4 flex justify-center">
-                    <div className="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-slate-200 w-full flex justify-center items-center">
+                <div data-modal-scroll className="flex-1 overflow-y-auto overflow-x-auto bg-slate-50 p-4">
+                    <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 min-w-0">
                         <QuestionRenderer
-                            xmlContent="" // XML not needed for solution image mode
+                            xmlContent=""
                             externalImages={question.question_images}
                             displayMode="solution"
                             showDownloadAction={false}
@@ -54,4 +54,5 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
             </div>
         </div>
     );
+
 }
