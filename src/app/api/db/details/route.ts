@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-    const supabase = createClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(req.url);
 
     const school = searchParams.get('school');

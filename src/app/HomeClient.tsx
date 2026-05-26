@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileItem } from '../lib/data';
-import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle, Search } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -476,7 +476,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     const checkAccess = (id: string) => purchasedIds.has(id) || user?.email === 'mathofhy@naver.com';
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] text-slate-900 font-sans">
+        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
             <Header
                 user={user}
                 purchasedPoints={purchasedPoints}
@@ -487,333 +487,206 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
             <HeroBanner user={user} earnedPoints={earnedPoints} />
 
             <main className="max-w-[1200px] mx-auto px-4 pb-20">
-                <div className="grid grid-cols-12 gap-6">
-                    <div className="col-span-12 lg:col-span-9 space-y-6">
-                        {/* Search Filter Box */}
-                        <div className="bg-white rounded-lg border border-slate-200 p-4 md:p-6 shadow-sm">
-                            <div className="space-y-2 mb-4">
+                <div className="flex flex-col gap-6">
+                    <div className="space-y-6">
+                        {/* 검색 필터 박스 */}
+                        <div className="bg-white rounded-2xl border border-[#B7D1EA] shadow-sm p-5">
+                            <p className="text-xs font-bold text-[#497AB7] mb-3 flex items-center gap-1.5">
+                                <Search size={12} /> 기출 자료 검색
+                            </p>
+                            <div className="space-y-2 mb-3">
                                 {/* Row 1: Region, District, School */}
                                 <div className="grid grid-cols-2 md:grid-cols-12 gap-2">
                                     <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10 text-sm" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
+                                        <select className="w-full form-select h-10" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
                                             <option value="">시/도</option>
                                             {regions.map(r => <option key={r} value={r}>{r}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10 text-sm" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
+                                        <select className="w-full form-select h-10" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
                                             <option value="">구/군</option>
                                             {districts.map(d => <option key={d} value={d}>{d}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-2 md:col-span-6">
-                                        <select className="w-full form-select h-10 text-sm" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
+                                        <select className="w-full form-select h-10" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
                                             <option value="">학교 전체</option>
                                             {schools.map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                     </div>
                                 </div>
-
                                 {/* Row 2: Grade, Semester, Year */}
                                 <div className="grid grid-cols-3 gap-2">
-                                    <div>
-                                        <select className="w-full form-select h-10 text-sm" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
-                                            <option value="">학년 전체</option>
-                                            {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <select className="w-full form-select h-10 text-sm" aria-label="시험 범위 선택" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
-                                            <option value="">시험 전체</option>
-                                            <option value="1-중간고사">1학기 중간</option>
-                                            <option value="1-기말고사">1학기 기말</option>
-                                            <option value="2-중간고사">2학기 중간</option>
-                                            <option value="2-기말고사">2학기 기말</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <select className="w-full form-select h-10 text-sm" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
-                                            <option value="">년도 전체</option>
-                                            {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                                                <option key={y} value={y}>{y}년</option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                    <select className="w-full form-select h-10" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
+                                        <option value="">학년 전체</option>
+                                        {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
+                                    </select>
+                                    <select className="w-full form-select h-10" aria-label="시험 범위 선택" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
+                                        <option value="">시험 전체</option>
+                                        <option value="1-중간고사">1학기 중간</option>
+                                        <option value="1-기말고사">1학기 기말</option>
+                                        <option value="2-중간고사">2학기 중간</option>
+                                        <option value="2-기말고사">2학기 기말</option>
+                                    </select>
+                                    <select className="w-full form-select h-10" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
+                                        <option value="">년도 전체</option>
+                                        {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                            <option key={y} value={y}>{y}년</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
-
-                            {/* Search Row */}
-                            <div className="flex gap-2 items-center">
+                            {/* Search Input */}
+                            <div className="relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#AAAAC4] pointer-events-none" />
                                 <input
                                     type="text"
                                     value={searchKeyword}
                                     onChange={(e) => setSearchKeyword(e.target.value)}
                                     placeholder="학교명 검색 (예: 경기고)"
-                                    className="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
+                                    className="w-full pl-9 pr-3 py-2.5 border border-[#B7D1EA] rounded-lg text-sm focus:border-[#497AB7] focus:outline-none focus:ring-2 focus:ring-[#497AB7]/10 transition-colors"
                                 />
-                                <button aria-label="검색" className="bg-brand-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-800 whitespace-nowrap">검색</button>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
-
-
-                            {/* Desktop Table Header - hidden on mobile */}
-                            <div className="hidden md:grid grid-cols-12 py-3 px-4 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
-                                <div className="col-span-6 text-left pl-4">시험명</div>
-                                <div className="col-span-1">등록일</div>
-                                <div className="col-span-1">작성자</div>
-                                <div className="col-span-4 flex flex-col items-center justify-center -mt-1">
-                                    <span>다운로드 (PDF / HWP / DB)</span>
-                                    <span className="text-[9px] text-brand-500 normal-case mt-0.5 tracking-normal bg-brand-50 px-2 py-0.5 rounded-full">* PDF/HWP 결제일로부터 30일간 제한</span>
-                                </div>
-                            </div>
-
-                            <div className="divide-y divide-slate-100">
-                                {currentItems.length > 0 ? currentItems.map(group => (
-                                    <div key={group.key} className={`transition-colors duration-200 ${group.isVerified ? 'bg-indigo-50/40 border-l-4 border-l-indigo-500' : 'border-l-4 border-l-transparent'}`}>
-                                    {/* Mobile Card Layout */}
-                                    <div className={`md:hidden px-4 py-4 space-y-2 hover:bg-slate-50`}>
-                                        <div className="font-bold text-slate-800 text-sm break-keep leading-snug">
-                                            {group.title.includes(']') ? (
-                                                <>
-                                                    <span className="text-indigo-600">{group.title.split(']')[0]}]</span>{' '}
-                                                    <span className="text-slate-600 font-medium">{group.title.split(']')[1].trim()}</span>
-                                                </>
-                                            ) : group.title}
-                                        </div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            {group.isVerified && (
-                                                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold">✓ 검수완료</span>
-                                            )}
-                                            <span className="text-[10px] text-slate-500">{group.date}</span>
-                                            {user && (
-                                                <button onClick={(e) => handleReportClick(e, group)} className="text-[10px] font-bold text-slate-500 hover:text-red-500 flex items-center gap-1">
-                                                    <AlertTriangle size={10} /> 신고
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-3 pt-1">
-                                            {group.files.pdfSol ? (
-                                                <button onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.pdfSol.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
-                                                    <PdfFileIcon size={24} purchased={checkAccess(group.files.pdfSol.id)} />
-                                                    <span className="text-[10px] font-bold mt-0.5 text-slate-600">PDF</span>
-                                                    <span className={`text-[10px] ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>{checkAccess(group.files.pdfSol.id) ? '다운' : `${group.files.pdfSol.price}원`}</span>
-                                                </button>
-                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><PdfFileIcon size={24} grayscale /><span className="text-[10px] text-slate-500 mt-0.5">PDF</span><span className="text-[10px] text-slate-300">미등록</span></div>}
-                                            {group.files.hwpSol ? (
-                                                <button onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.hwpSol.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
-                                                    <HwpFileIcon size={24} purchased={checkAccess(group.files.hwpSol.id)} />
-                                                    <span className="text-[10px] font-bold mt-0.5 text-slate-600">HWP</span>
-                                                    <span className={`text-[10px] ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>{checkAccess(group.files.hwpSol.id) ? '다운' : `${group.files.hwpSol.price}원`}</span>
-                                                </button>
-                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><HwpFileIcon size={24} grayscale /><span className="text-[10px] text-slate-500 mt-0.5">HWP</span><span className="text-[10px] text-slate-300">미등록</span></div>}
-                                            {group.files.db ? (
-                                                <button onClick={() => checkAccess(group.files.db!.id) ? handleDownload(group.files.db!) : handleAddToCart(group.files.db!)} className={`flex flex-col items-center p-1.5 rounded-lg border transition-colors ${checkAccess(group.files.db.id) ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
-                                                    <DbFileIcon size={24} purchased={checkAccess(group.files.db.id)} />
-                                                    <span className="text-[10px] font-bold mt-0.5 text-slate-600">DB</span>
-                                                    <span className={`text-[10px] ${checkAccess(group.files.db.id) ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>{checkAccess(group.files.db.id) ? '구매완료' : `${group.files.db.price.toLocaleString()}원`}</span>
-                                                </button>
-                                            ) : <div className="flex flex-col items-center p-1.5 opacity-40"><DbFileIcon size={24} grayscale /><span className="text-[10px] text-slate-500 mt-0.5">DB</span><span className="text-[10px] text-slate-300">대기중</span></div>}
-                                        </div>
-                                    </div>
-                                    {/* Desktop Row Layout */}
-                                    <div className={`hidden md:grid grid-cols-12 items-center py-4 px-4 gap-2 text-sm text-center hover:bg-slate-50`}>
-                                        <div className="col-span-6 text-left pl-4">
-                                            <div className="font-bold text-slate-800 hover:text-brand-600 cursor-pointer text-base break-keep leading-tight">
-                                                {group.title.includes(']') ? (
-                                                    <>
-                                                        <span className="text-indigo-600">
-                                                            {group.title.split(']')[0]}]
-                                                        </span>
-                                                        <br />
-                                                        <span className="text-slate-500 text-sm font-medium">
-                                                            {group.title.split(']')[1].trim()}
-                                                        </span>
-                                                    </>
-                                                ) : group.title}
-                                            </div>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                {group.isVerified && (
-                                                    <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold">
-                                                        ✓ 관리자 검수완료
-                                                    </span>
-                                                )}
-                                                {/* 로그인한 사용자에게만 신고 버튼 표시 */}
-                                                {user && (
-                                                    <button
-                                                        onClick={(e) => handleReportClick(e, group)}
-                                                        className="text-[10px] font-bold text-slate-500 hover:text-red-500 flex items-center gap-1 bg-white/50 border border-transparent hover:border-red-100 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                                                    >
-                                                        <AlertTriangle size={11} /> 불편/오류 신고
-                                                    </button>
-                                                )}
-                                                {user?.email === 'mathofhy@naver.com' && (
-                                                    <button
-                                                        onClick={(e) => handleVerifyAdmin(e, group)}
-                                                        className={`text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded transition-colors ${group.isVerified ? 'text-indigo-600 bg-indigo-100/50 hover:bg-indigo-200' : 'text-slate-500 bg-slate-200 hover:bg-indigo-100 hover:text-indigo-700'}`}
-                                                    >
-                                                        {group.isVerified ? '인증 취소' : '관리자 인증'}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="col-span-1 text-slate-500 text-[11px] whitespace-nowrap">{group.date}</div>
-                                        <div className="col-span-1 text-slate-600 truncate text-[11px]">
-                                            {/* mathofhy 계정은 수학ETF팀으로 표시 */}
-                                            {group.uploader === 'mathofhy' || group.uploader === 'Anonymous' ? '수학ETF팀' : group.uploader}
-                                        </div>
-
-                                        <div className="col-span-4 flex items-start justify-center gap-3">
-                                            {/* PDF Problem (REMOVED) */}
-
-                                            {/* PDF Solution */}
-                                            {group.files.pdfSol ? (
-                                                <button
-                                                    onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)}
-                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${checkAccess(group.files.pdfSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.pdfSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
-                                                >
-                                                    <PdfFileIcon
-                                                        size={28}
-                                                        purchased={checkAccess(group.files.pdfSol.id)}
-                                                        className="drop-shadow-sm group-hover:scale-110 transition-transform"
-                                                    />
-                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
-                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${checkAccess(group.files.pdfSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.pdfSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                        {checkAccess(group.files.pdfSol.id) ? '다운로드' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.pdfSol.price}원</>}
-                                                    </span>
-                                                </button>
-                                            ) : (
-                                                <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
-                                                    <PdfFileIcon size={28} grayscale={true} />
-                                                    <span className="text-xs font-bold text-slate-500 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[11px] text-slate-300 font-medium">미등록</span>
+                        {/* 기출 자료 카드 목록 */}
+                        <div id="main-list" className="space-y-2">
+                            {currentItems.length > 0 ? currentItems.map(group => (
+                                <div key={group.key} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-l-4 ${group.isVerified ? 'border-l-[#5CC6C3]' : 'border-l-[#497AB7]'}`}>
+                                    <div className="p-3 md:p-4">
+                                        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                                            {/* Title + meta */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-bold text-base break-keep leading-snug mb-1.5">
+                                                    {group.title.includes(']') ? (
+                                                        <>
+                                                            <span className="text-[#497AB7]">{group.title.split(']')[0]}]</span>{' '}
+                                                            <span className="text-[#1E2D4F]">{group.title.split(']')[1].trim()}</span>
+                                                        </>
+                                                    ) : <span className="text-[#1E2D4F]">{group.title}</span>}
                                                 </div>
-                                            )}
-
-                                            <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
-
-                                            {/* HWP Problem (REMOVED) */}
-
-                                            {/* HWP Solution */}
-                                            {group.files.hwpSol ? (
-                                                <button
-                                                    onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)}
-                                                    className={`group flex flex-col items-center p-1 rounded transition-colors ${checkAccess(group.files.hwpSol.id) ? 'bg-indigo-50/50' : cartItemIds.has(group.files.hwpSol.id) ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
-                                                >
-                                                    <HwpFileIcon
-                                                        size={28}
-                                                        purchased={checkAccess(group.files.hwpSol.id)}
-                                                        className="drop-shadow-sm group-hover:scale-110 transition-transform"
-                                                    />
-                                                    <span className={`text-xs font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-600' : 'text-slate-700'}`}>문제+해설</span>
-                                                    <span className={`text-[11px] whitespace-nowrap flex items-center gap-1 ${checkAccess(group.files.hwpSol.id) ? 'text-indigo-700 font-bold' : cartItemIds.has(group.files.hwpSol.id) ? 'text-brand-600 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                        {checkAccess(group.files.hwpSol.id) ? '다운로드' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : <><ShoppingCart size={10} /> {group.files.hwpSol.price}원</>}
-                                                    </span>
-                                                </button>
-                                            ) : (
-                                                <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
-                                                    <HwpFileIcon size={28} grayscale={true} />
-                                                    <span className="text-xs font-bold text-slate-500 mt-1 whitespace-nowrap">문제+해설</span>
-                                                    <span className="text-[11px] text-slate-300 font-medium">미등록</span>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    {group.isVerified && (
+                                                        <span className="text-[10px] bg-teal-50 text-teal-600 border border-teal-200 px-2 py-0.5 rounded-full font-bold">✓ 검수완료</span>
+                                                    )}
+                                                    <span className="text-[11px] text-[#AAAAC4]">{group.date}</span>
+                                                    <span className="text-[11px] text-[#AAAAC4]">·</span>
+                                                    <span className="text-[11px] text-[#AAAAC4]">{group.uploader === 'mathofhy' || group.uploader === 'Anonymous' ? '수학ETF팀' : group.uploader}</span>
+                                                    {user && (
+                                                        <button onClick={(e) => handleReportClick(e, group)} className="text-[10px] text-[#AAAAC4] hover:text-red-400 flex items-center gap-0.5 transition-colors">
+                                                            <AlertTriangle size={9} /> 신고
+                                                        </button>
+                                                    )}
+                                                    {user?.email === 'mathofhy@naver.com' && (
+                                                        <button onClick={(e) => handleVerifyAdmin(e, group)} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${group.isVerified ? 'bg-teal-50 border-teal-200 text-teal-600 hover:bg-teal-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-[#497AB7] hover:text-[#497AB7]'}`}>
+                                                            {group.isVerified ? '인증 취소' : '관리자 인증'}
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            )}
+                                            </div>
 
-                                            <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
-
-                                            {/* Personal DB */}
-                                            <div className="relative group/db p-1 rounded-xl transition-all duration-300 border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30">
-                                                {group.files.db ? (
-                                                    <div className="flex flex-col items-center min-w-[64px]">
-                                                        <DbFileIcon
-                                                            size={28}
-                                                            purchased={checkAccess(group.files.db.id)}
-                                                            className="drop-shadow-sm group-hover/db:scale-110 transition-transform duration-300"
-                                                        />
-                                                        <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-600' : 'text-slate-500'}`}>개인DB</span>
-                                                        <span className={`text-[10px] whitespace-nowrap ${checkAccess(group.files.db.id) ? 'text-indigo-700 font-bold' : 'text-slate-500 font-medium'}`}>
-                                                            {checkAccess(group.files.db.id) ? (user?.email === 'mathofhy@naver.com' ? `관리자권한(${group.files.db.price.toLocaleString()}원)` : '구매완료') : `${group.files.db.price.toLocaleString()}원`}
-                                                        </span>
-
-                                                        {/* Hover Overlay */}
-                                                        <div className="absolute inset-x-[-4px] inset-y-[-4px] bg-white/95 rounded-xl border border-indigo-200 shadow-xl opacity-0 group-hover/db:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-1 z-10 p-1.5 pointer-events-none group-hover/db:pointer-events-auto">
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    fetchDbDetails(group.files.db!);
-                                                                }}
-                                                                className="w-full py-1 text-[9px] font-extrabold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors flex items-center justify-center gap-1"
-                                                            >
-                                                                <Info size={10} /> 구성 확인
-                                                            </button>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    if(checkAccess(group.files.db!.id)) {
-                                                                        handleDownload(group.files.db!);
-                                                                    } else {
-                                                                        handleAddToCart(group.files.db!);
-                                                                    }
-                                                                }}
-                                                                className={`w-full py-1 text-[9px] font-extrabold text-white rounded-md transition-all active:scale-95 flex items-center justify-center gap-1 ${checkAccess(group.files.db.id) ? 'bg-indigo-500 hover:bg-indigo-600' : cartItemIds.has(group.files.db.id) ? 'bg-brand-500 hover:bg-brand-600' : 'bg-brand-600 hover:bg-brand-700 shadow-sm'
-                                                                    }`}
-                                                            >
-                                                                {checkAccess(group.files.db.id) ? <><Download size={10} /> 열기</> : cartItemIds.has(group.files.db.id) ? '장바구니 담김' : <><ShoppingCart size={10} /> 장바구니</>}
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                            {/* Download chips */}
+                                            <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+                                                {/* PDF */}
+                                                {group.files.pdfSol ? (
+                                                    <button
+                                                        onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)}
+                                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                                                            checkAccess(group.files.pdfSol.id)
+                                                                ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100'
+                                                                : cartItemIds.has(group.files.pdfSol.id)
+                                                                ? 'bg-brand-50 text-brand-600 border-brand-200'
+                                                                : 'bg-red-50 text-red-400 border-red-100 hover:border-red-200 hover:text-red-500'
+                                                        }`}
+                                                    >
+                                                        <PdfFileIcon size={13} purchased={checkAccess(group.files.pdfSol.id)} />
+                                                        <span>{checkAccess(group.files.pdfSol.id) ? 'PDF 다운' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : `PDF ${group.files.pdfSol.price}원`}</span>
+                                                    </button>
                                                 ) : (
-                                                    <div className="flex flex-col items-center p-1 opacity-50 cursor-not-allowed grayscale">
-                                                        <DbFileIcon size={28} grayscale={true} />
-                                                        <span className="text-[10px] font-bold text-slate-500 mt-1 whitespace-nowrap">개인DB</span>
-                                                        <span className="text-[10px] text-slate-300 font-medium">대기중</span>
+                                                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
+                                                        <PdfFileIcon size={13} grayscale /> PDF
                                                     </div>
                                                 )}
-                                            </div>
 
-                                            {/* Admin Raw Source Downloads */}
-                                            {user?.email === 'mathofhy@naver.com' && group.files.raw && (
-                                                <>
-                                                    <div className="w-px h-8 bg-slate-200 mx-1 self-center"></div>
+                                                {/* HWP */}
+                                                {group.files.hwpSol ? (
                                                     <button
-                                                        onClick={() => handleDownload(group.files.raw!)}
-                                                        title="제고자 원천 자료 다운로드"
-                                                        className="flex flex-col items-center justify-center p-1 rounded transition-colors hover:bg-purple-50 group"
+                                                        onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)}
+                                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                                                            checkAccess(group.files.hwpSol.id)
+                                                                ? 'bg-[#E0F7F6] text-[#3AADA9] border-teal-200 hover:bg-teal-100'
+                                                                : cartItemIds.has(group.files.hwpSol.id)
+                                                                ? 'bg-brand-50 text-brand-600 border-brand-200'
+                                                                : 'bg-[#E0F7F6] text-[#3AADA9] border-teal-100 hover:border-teal-200'
+                                                        }`}
                                                     >
-                                                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                                                            <Download size={16} className="text-purple-600" />
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-purple-600 mt-1 whitespace-nowrap">스캔본 ({group.files.raw.type})</span>
+                                                        <HwpFileIcon size={13} purchased={checkAccess(group.files.hwpSol.id)} />
+                                                        <span>{checkAccess(group.files.hwpSol.id) ? 'HWP 다운' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : `HWP ${group.files.hwpSol.price}원`}</span>
                                                     </button>
-                                                </>
-                                            )}
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
+                                                        <HwpFileIcon size={13} grayscale /> HWP
+                                                    </div>
+                                                )}
+
+                                                {/* DB */}
+                                                <div className="relative group/db">
+                                                    {group.files.db ? (
+                                                        <>
+                                                            <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                                                                checkAccess(group.files.db.id)
+                                                                    ? 'bg-[#E8F0FB] text-[#497AB7] border-blue-200 hover:bg-blue-100'
+                                                                    : cartItemIds.has(group.files.db.id)
+                                                                    ? 'bg-brand-50 text-brand-600 border-brand-200'
+                                                                    : 'bg-[#E8F0FB] text-[#497AB7] border-blue-100 hover:border-blue-200'
+                                                            }`}>
+                                                                <DbFileIcon size={13} purchased={checkAccess(group.files.db.id)} />
+                                                                <span>{checkAccess(group.files.db.id) ? 'DB 이용중' : '개인DB'}</span>
+                                                            </button>
+                                                            <div className="absolute right-0 top-full mt-1 bg-white rounded-xl border border-[#B7D1EA] shadow-xl z-20 p-2 w-36 opacity-0 group-hover/db:opacity-100 pointer-events-none group-hover/db:pointer-events-auto transition-all duration-200">
+                                                                <button onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }} className="w-full py-1.5 px-2 text-xs font-bold text-slate-500 hover:text-[#497AB7] hover:bg-blue-50 rounded-lg flex items-center gap-1 transition-colors">
+                                                                    <Info size={11} /> 구성 확인
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); if(checkAccess(group.files.db!.id)) { handleDownload(group.files.db!); } else { handleAddToCart(group.files.db!); } }}
+                                                                    className="w-full mt-1 py-1.5 px-2 text-xs font-extrabold bg-[#497AB7] text-white hover:bg-[#3A6599] rounded-lg flex items-center gap-1 justify-center transition-colors"
+                                                                >
+                                                                    {checkAccess(group.files.db.id) ? <><Download size={11} /> 열기</> : <><ShoppingCart size={11} /> 장바구니</>}
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
+                                                            <DbFileIcon size={13} grayscale /> DB
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Admin raw */}
+                                                {user?.email === 'mathofhy@naver.com' && group.files.raw && (
+                                                    <button onClick={() => handleDownload(group.files.raw!)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-purple-50 text-purple-500 border border-purple-200 hover:bg-purple-100 transition-colors">
+                                                        <Download size={11} /> 원본
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                    </div>
-                                )) : (
-                                    <div className="py-20 text-center text-slate-500">
-                                        <p>검색 결과가 없습니다.</p>
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )) : (
+                                <div className="py-20 text-center text-[#AAAAC4] bg-white rounded-xl shadow-sm">
+                                    <p>검색 결과가 없습니다.</p>
+                                </div>
+                            )}
 
+                            {/* 페이지네이션 */}
                             {totalPages > 1 && (
-                                <div className="py-4 border-t border-slate-200 flex justify-center gap-1">
-                                    <button
-                                        aria-label="이전 페이지"
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
-                                    >
-                                        <ChevronRight size={14} className="rotate-180" />
+                                <div className="py-6 flex justify-center gap-1.5">
+                                    <button aria-label="이전 페이지" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-9 h-9 border border-[#B7D1EA] rounded-lg hover:bg-[#EEF4FB] flex items-center justify-center text-[#497AB7] disabled:opacity-30 transition-colors">
+                                        <ChevronRight size={15} className="rotate-180" />
                                     </button>
                                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                        <button
-                                            key={page}
-                                            aria-label={`페이지 ${page}`}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`w-8 h-8 rounded flex items-center justify-center font-bold transition-colors ${currentPage === page ? 'bg-brand-600 text-white' : 'border border-slate-300 hover:bg-slate-50 text-slate-600'}`}
-                                        >
+                                        <button key={page} aria-label={`페이지 ${page}`} onClick={() => setCurrentPage(page)} className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold transition-colors text-sm ${currentPage === page ? 'bg-[#497AB7] text-white shadow-sm' : 'border border-[#B7D1EA] hover:bg-[#EEF4FB] text-[#497AB7]'}`}>
                                             {page}
                                         </button>
                                     ))}
@@ -821,17 +694,13 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                         aria-label="다음 페이지"
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
-                                        className="w-8 h-8 border border-slate-300 rounded hover:bg-slate-50 flex items-center justify-center text-slate-500 disabled:opacity-30"
+                                        className="w-9 h-9 border border-[#B7D1EA] rounded-lg hover:bg-[#EEF4FB] flex items-center justify-center text-[#497AB7] disabled:opacity-30 transition-colors"
                                     >
-                                        <ChevronRight size={14} />
+                                        <ChevronRight size={15} />
                                     </button>
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    <div className="hidden lg:block lg:col-span-3 space-y-6">
-                        <RightSidebar user={user} points={purchasedPoints} />
                     </div>
                 </div>
             </main>

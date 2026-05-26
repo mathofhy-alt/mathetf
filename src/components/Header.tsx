@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
 import DepositModal from './payments/DepositModal';
@@ -136,6 +136,14 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                     <UserIcon size={14} />
                                     <span>마이페이지</span>
                                 </Link>
+                                <button
+                                    onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
+                                    className="flex items-center gap-1 px-3 py-1.5 border-l border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    title="로그아웃"
+                                >
+                                    <LogOut size={14} />
+                                    <span className="hidden lg:inline text-xs">로그아웃</span>
+                                </button>
                             </div>
                         ) : (
                             !mobileMenuOpen && !['/login', '/signup', '/'].includes(pathname) && (

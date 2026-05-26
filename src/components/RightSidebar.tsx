@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { User, LogIn, ChevronRight, FileText, MessageSquare } from 'lucide-react';
+import { User, LogIn } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
@@ -10,19 +10,6 @@ export default function RightSidebar({ user, points }: { user: any, points: numb
     const [loginId, setLoginId] = useState('');
     const [loginPw, setLoginPw] = useState('');
     const [loading, setLoading] = useState(false);
-    const [recentFiles, setRecentFiles] = useState<any[]>([]);
-
-    React.useEffect(() => {
-        const fetchRecentFiles = async () => {
-            const { data } = await supabase
-                .from('exam_materials')
-                .select('id, title')
-                .order('created_at', { ascending: false })
-                .limit(5);
-            if (data) setRecentFiles(data);
-        };
-        fetchRecentFiles();
-    }, []);
 
     const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -56,15 +43,11 @@ export default function RightSidebar({ user, points }: { user: any, points: numb
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
                 {user ? (
                     <div className="text-center">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full mx-auto mb-3 flex items-center justify-center text-brand-600">
+                        <div className="w-16 h-16 bg-brand-50 rounded-full mx-auto mb-3 flex items-center justify-center text-brand-600">
                             <User size={32} />
                         </div>
-                        <p className="font-bold text-slate-800 mb-1">{user.email}</p>
-                        <div className="flex justify-center items-center gap-2 mt-4">
-                            <button onClick={() => supabase.auth.signOut().then(() => window.location.reload())} className="text-xs text-slate-500 underline">로그아웃</button>
-                            <span className="text-slate-300">|</span>
-                            <Link href="/mypage" className="text-xs text-slate-500 underline">마이페이지</Link>
-                        </div>
+                        <p className="font-bold text-slate-800 text-sm">{user.email}</p>
+                        <p className="text-xs text-[#AAAAC4] mt-1">로그인 중</p>
                     </div>
                 ) : (
                     <form onSubmit={handleLogin} className="space-y-3">
@@ -105,28 +88,6 @@ export default function RightSidebar({ user, points }: { user: any, points: numb
                     </form>
                 )}
             </div>
-
-            {/* Recently Updated Items */}
-            <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-                <h3 className="font-bold text-slate-800 mb-4 text-sm border-b pb-2 border-slate-100">
-                    최근 업데이트 된 자료
-                </h3>
-                <ul className="space-y-3">
-                    {recentFiles.length > 0 ? recentFiles.map((file, i) => (
-                        <li key={file.id} className="flex items-start gap-2 text-sm group cursor-pointer">
-                            <span className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-xs font-bold text-white ${i <= 2 ? 'bg-brand-500' : 'bg-slate-300'}`}>
-                                {i + 1}
-                            </span>
-                            <span className="text-slate-600 group-hover:text-brand-600 line-clamp-1 group-hover:underline">
-                                {file.title}
-                            </span>
-                        </li>
-                    )) : (
-                        <li className="text-xs text-slate-400 text-center py-4">최근 자료가 없습니다.</li>
-                    )}
-                </ul>
-            </div>
-
 
         </div>
     );

@@ -190,7 +190,7 @@ export async function updateExamMaterial(fileId: string, updates: any) {
 
     const { data: file, error: fetchError } = await adminSupabase
         .from('exam_materials')
-        .select('uploader_id, school, grade, semester, exam_type, subject, exam_year, content_type')
+        .select('uploader_id, school, grade, semester, exam_type, subject, exam_year, content_type, file_path')
         .eq('id', fileId)
         .single();
 
@@ -255,6 +255,20 @@ export async function updateExamMaterial(fileId: string, updates: any) {
             };
         }
         return { success: false, message: `수정 중 오류 발생: ${updateError.message}` };
+    }
+
+    // Delete old file from storage if it was replaced with a new one
+    if (file?.file_path && updates.file_path && file.file_path !== updates.file_path) {
+        try {
+            const { error: storageErr } = await adminSupabase.storage
+                .from('exam-materials')
+                .remove([file.file_path]);
+            if (storageErr) {
+                console.error('Failed to remove old file from storage during update:', storageErr);
+            }
+        } catch (err) {
+            console.error('Error during old file storage removal:', err);
+        }
     }
 
     // 3. Invalidate Caches (CRITICAL: Includes homepage)
