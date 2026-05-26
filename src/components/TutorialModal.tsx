@@ -88,8 +88,10 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                             </div>
                             <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-1.5">선생님을 위한 개인DB & 시험지</h3>
                             <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                                문항을 편집하거나 <strong>유사문항</strong>으로 새 시험지를 만들려면 <strong>개인DB</strong>를 구매해 보세요.<br/>
-                                <span className="text-brand-700 font-medium block mt-1">전국연합 모의고사 문항 소스는 전면 무료!</span>
+                                문항을 편집하거나 <strong>유사문항</strong>으로 새 시험지를 만들 수 있어요.<br/>
+                                <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-[11px] mt-2">
+                                    🎉 개인DB 전체 무료 공개 중! (~2027.05.26)
+                                </span>
                             </p>
                         </div>
                     </div>
@@ -98,6 +100,7 @@ export default function TutorialModal({ isOpen, onClose }: TutorialModalProps) {
                         <div>
                             <p className="font-bold text-indigo-900 mb-0.5 text-sm sm:text-base">지금 바로 시험지를 만들어보세요!</p>
                             <p className="text-indigo-600 text-xs sm:text-sm">상단 메뉴의 '시험지출제'를 클릭하면 이동합니다.</p>
+                            <p className="text-emerald-600 text-xs font-bold mt-1">✅ 현재 모든 개인DB를 무료로 이용하실 수 있습니다.</p>
                         </div>
                         <button
                             onClick={handleNavigate}
