@@ -399,7 +399,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
         try {
             // Check if purchased
-            const isAdmin = user?.email === 'mathofhy@naver.com';
             if (!purchasedIds.has(file.id) && !isAdmin) {
                 alert('구매가 완료되지 않은 자료입니다. 장바구니를 통해 결제해주세요.');
                 return;
@@ -418,22 +417,16 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
             // e.g. 경기고_2024_1_1_중간고사_문제.pdf
             const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_${safeContentType}.${originalExt}`;
 
-            console.log('Generating signed URL for:', file.filePath);
-            console.log('Download filename:', filename);
-
             // 1. Get raw signed URL (no download param)
             // Increase expiry to 1 hour (3600s) to handle client/server clock drift
             const { data, error: urlError } = await supabase.storage
                 .from('exam-materials')
                 .createSignedUrl(file.filePath, 3600);
 
-            if (data?.signedUrl) console.log('Generated Signed URL:', data.signedUrl);
-
             if (urlError) throw urlError;
             if (!data?.signedUrl) throw new Error('다운로드 URL 생성 실패');
 
             // 2. Fetch Blob
-            console.log('Fetching file blob...');
             const response = await fetch(data.signedUrl);
 
             // Check if response is JSON error (even with 200 OK sometimes, or 400/403)
