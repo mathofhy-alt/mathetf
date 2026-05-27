@@ -33,10 +33,10 @@ export const metadata: Metadata = {
         type: "website",
         images: [
             {
-                url: "/api/og",
+                url: "/og-image.png",
                 width: 1200,
                 height: 630,
-                alt: "수학ETF - 수학 시험지 자동 출제 플랫폼",
+                alt: "수학ETF",
             },
         ],
     },
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         title: "수학ETF - 내신 기출문제 공유 플랫폼",
         description: "수학 내신 기출문제를 즉시 다운로드. 고등학교 수학 내신 대비 기출문제 공유.",
-        images: ["/api/og"],
+        images: ["/og-image.png"],
     },
     robots: {
         index: true,
