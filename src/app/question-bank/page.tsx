@@ -248,7 +248,7 @@ export default function QuestionBankPage() {
 
         let query = supabase
             .from('questions')
-            .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id', { count: 'exact' })
+            .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_images(question_id, data, id, original_bin_id, format)', { count: 'exact' })
             .eq('work_status', 'sorted')
             .order('question_number', { ascending: true })
             .range(from, to);
@@ -348,37 +348,14 @@ export default function QuestionBankPage() {
                 throw new Error("데이터베이스 검색 중 오류가 발생했습니다. (검색 조건이 너무 많을 수 있습니다)");
             }
             if (data) {
-                // 1단계: 문제 카드 즉시 표시 (이미지 없이)
-                const questionIds = data.map((q: any) => q.id);
-                const questionsNoImg = data.map((q: any) => ({ ...q, question_images: null })); // null = 이미지 로딩 중
-                setQuestions(questionsNoImg);
+                // questions + question_images를 한 번에 가져옴 (DB 왕복 2회 → 1회)
+                setQuestions(data);
                 setLoading(false);
                 if (count !== null) setTotalQuestions(count);
                 if (targetPage === 1) setHasSearched(true);
                 if (data.length === 0 && targetPage === 1) {
                     alert('해당 조건에 일치하는 문항이 없습니다. (0건)');
                     return;
-                }
-
-                // 2단계: 이미지는 백그라운드에서 로드 후 업데이트
-                if (questionIds.length > 0) {
-                    supabase
-                        .from('question_images')
-                        .select('question_id, data, id, original_bin_id, format')
-                        .in('question_id', questionIds)
-                        .then(({ data: imgData }) => {
-                            if (imgData && imgData.length > 0) {
-                                const imgMap: Record<string, any[]> = {};
-                                imgData.forEach((img: any) => {
-                                    if (!imgMap[img.question_id]) imgMap[img.question_id] = [];
-                                    imgMap[img.question_id].push(img);
-                                });
-                                setQuestions(prev => prev.map((q: any) => ({
-                                    ...q,
-                                    question_images: imgMap[q.id] || []
-                                })));
-                            }
-                        });
                 }
             }
         } catch (err: any) {
