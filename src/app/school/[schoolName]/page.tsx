@@ -16,8 +16,7 @@ export async function generateStaticParams() {
     const { data } = await supabase
         .from('exam_materials')
         .select('school')
-        .neq('school', 'DELETED')
-        .neq('school', '전국연합');
+        .neq('school', 'DELETED');
 
     if (!data) return [];
 
@@ -30,14 +29,64 @@ export async function generateStaticParams() {
 // 동적 메타 태그 - 학교명 포함
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const schoolName = decodeURIComponent(params.schoolName);
-    return {
-        title: `${schoolName} 기출문제 - 수학ETF`,
-        description: `${schoolName} 내신 기출문제 다운로드. 중간고사, 기말고사 HWP, PDF 형식 제공. 수학ETF에서 즉시 확인하세요.`,
-        keywords: [`${schoolName} 기출문제`, `${schoolName} 내신`, `${schoolName} 중간고사`, `${schoolName} 기말고사`, '내신 기출문제'],
-        openGraph: {
-            title: `${schoolName} 기출문제 - 수학ETF`,
-            description: `${schoolName} 내신 기출문제를 즉시 다운로드하세요.`,
+
+    // 경찰대·사관학교·전국연합 특화 키워드
+    const SPECIAL_SCHOOLS: Record<string, { title: string; description: string; keywords: string[] }> = {
+        '경찰대학교': {
+            title: '경찰대학교 수학 기출문제 - 수학ETF',
+            description: '경찰대학교 수학 기출문제 다운로드. 경찰대 입학시험 수학 HWP, PDF 형식 제공. 수학ETF에서 즉시 확인하세요.',
+            keywords: ['경찰대 수학', '경찰대 기출문제', '경찰대 수학 문제', '경찰대학교 입학시험', '경찰대 수학 기출'],
         },
+        '육군사관학교': {
+            title: '육군사관학교 수학 기출문제 - 수학ETF',
+            description: '육군사관학교 수학 기출문제 다운로드. 사관학교 수학 HWP, PDF 형식 제공.',
+            keywords: ['육군사관학교 수학', '사관학교 수학', '사관학교 기출문제', '육사 수학 기출'],
+        },
+        '해군사관학교': {
+            title: '해군사관학교 수학 기출문제 - 수학ETF',
+            description: '해군사관학교 수학 기출문제 다운로드. 사관학교 수학 HWP, PDF 형식 제공.',
+            keywords: ['해군사관학교 수학', '사관학교 수학', '사관학교 기출문제', '해사 수학 기출'],
+        },
+        '공군사관학교': {
+            title: '공군사관학교 수학 기출문제 - 수학ETF',
+            description: '공군사관학교 수학 기출문제 다운로드. 사관학교 수학 HWP, PDF 형식 제공.',
+            keywords: ['공군사관학교 수학', '사관학교 수학', '사관학교 기출문제', '공사 수학 기출'],
+        },
+        '국군간호사관학교': {
+            title: '국군간호사관학교 수학 기출문제 - 수학ETF',
+            description: '국군간호사관학교 수학 기출문제 다운로드. 사관학교 수학 HWP, PDF 형식 제공.',
+            keywords: ['국군간호사관학교 수학', '사관학교 수학', '간호사관학교 수학 기출'],
+        },
+        '전국연합': {
+            title: '전국연합학력평가 수학 기출문제 - 수학ETF',
+            description: '전국연합학력평가 수학 기출문제 다운로드. 3월·6월·9월·11월 모의고사 수학 HWP, PDF 형식 제공.',
+            keywords: ['전국연합학력평가 수학', '수학 모의고사', '3월 모의고사 수학', '6월 모의고사 수학', '9월 모의고사 수학', '11월 모의고사 수학', '고1 모의고사 수학', '고2 모의고사 수학', '고3 모의고사 수학'],
+        },
+    };
+
+    const special = SPECIAL_SCHOOLS[schoolName];
+    if (special) {
+        return {
+            title: special.title,
+            description: special.description,
+            keywords: special.keywords,
+            openGraph: {
+                title: special.title,
+                description: special.description,
+            },
+            alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
+        };
+    }
+
+    return {
+        title: `${schoolName} 수학 기출문제 - 수학ETF`,
+        description: `${schoolName} 수학 내신 기출문제 다운로드. 중간고사, 기말고사 HWP, PDF 형식 제공. 수학ETF에서 즉시 확인하세요.`,
+        keywords: [`${schoolName} 수학 기출문제`, `${schoolName} 내신`, `${schoolName} 중간고사`, `${schoolName} 기말고사`, '수학 내신 기출문제', '수학 문제은행'],
+        openGraph: {
+            title: `${schoolName} 수학 기출문제 - 수학ETF`,
+            description: `${schoolName} 수학 내신 기출문제를 즉시 다운로드하세요.`,
+        },
+        alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
     };
 }
 

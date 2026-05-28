@@ -16,17 +16,24 @@ import { Analytics } from '@vercel/analytics/react';
 import Script from "next/script";
 
 export const metadata: Metadata = {
-    title: "수학ETF - 내신 기출문제 공유 플랫폼",
-    description: "수학 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식으로 제공. 고등학교 수학 내신 대비 기출문제 공유 플랫폼.",
-    keywords: ["수학 내신 기출문제", "수학 중간고사", "수학 기말고사", "고등학교 수학 기출", "수학 내신 대비", "수학 기출문제", "내신 기출 공유", "수학ETF"],
+    title: "수학ETF - 수학 문제은행 | 내신·모의고사·경찰대·사관학교 기출",
+    description: "수학 문제은행 - 고등학교 수학 내신 기출문제, 전국연합학력평가 모의고사, 경찰대·사관학교 수학 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식 제공.",
+    keywords: [
+        "수학 문제은행", "고등학교 수학 문제은행", "수학 기출문제",
+        "수학 내신 기출문제", "수학 중간고사", "수학 기말고사",
+        "전국연합학력평가 수학", "수학 모의고사", "고1 모의고사 수학", "고2 모의고사 수학", "고3 모의고사 수학",
+        "경찰대 수학", "경찰대 기출문제", "경찰대 수학 문제",
+        "사관학교 수학", "사관학교 기출문제", "육군사관학교 수학", "해군사관학교 수학", "공군사관학교 수학",
+        "수학ETF", "수학 내신 대비", "고등학교 수학 기출"
+    ],
     authors: [{ name: "수학ETF" }],
     metadataBase: new URL("https://mathetf.com"),
     alternates: {
         canonical: "/",
     },
     openGraph: {
-        title: "수학ETF - 내신 기출문제 공유 플랫폼",
-        description: "수학 내신 기출문제를 즉시 다운로드. 한글(HWP), PDF 형식 제공. 고등학교 수학 내신 기출 공유 플랫폼.",
+        title: "수학ETF - 수학 문제은행 | 내신·모의고사·경찰대·사관학교 기출",
+        description: "수학 문제은행 - 고등학교 수학 내신 기출문제, 전국연합학력평가 모의고사, 경찰대·사관학교 수학 기출문제를 즉시 다운로드.",
         url: "https://mathetf.com",
         siteName: "수학ETF",
         locale: "ko_KR",
@@ -36,14 +43,14 @@ export const metadata: Metadata = {
                 url: "/og-image.png",
                 width: 1200,
                 height: 630,
-                alt: "수학ETF",
+                alt: "수학ETF 수학 문제은행",
             },
         ],
     },
     twitter: {
         card: "summary_large_image",
-        title: "수학ETF - 내신 기출문제 공유 플랫폼",
-        description: "수학 내신 기출문제를 즉시 다운로드. 고등학교 수학 내신 대비 기출문제 공유.",
+        title: "수학ETF - 수학 문제은행 | 내신·모의고사·경찰대·사관학교 기출",
+        description: "수학 문제은행 - 고등학교 수학 내신 기출문제, 전국연합학력평가 모의고사, 경찰대·사관학교 수학 기출문제 즉시 다운로드.",
         images: ["/og-image.png"],
     },
     robots: {

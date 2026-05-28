@@ -14,6 +14,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { url: `${baseUrl}/mypage`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
     ];
 
+    // 경찰대·사관학교 전용 고우선순위 페이지 (SEO: "경찰대 수학", "사관학교 수학" 검색 유입)
+    const specialSchoolPages: MetadataRoute.Sitemap = [
+        { url: `${baseUrl}/school/${encodeURIComponent('경찰대학교')}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
+        { url: `${baseUrl}/school/${encodeURIComponent('육군사관학교')}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
+        { url: `${baseUrl}/school/${encodeURIComponent('해군사관학교')}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
+        { url: `${baseUrl}/school/${encodeURIComponent('공군사관학교')}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
+        { url: `${baseUrl}/school/${encodeURIComponent('국군간호사관학교')}`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
+        { url: `${baseUrl}/school/${encodeURIComponent('전국연합')}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+    ];
+
     // DB에서 실제 시험지 있는 학교 목록 가져오기
     try {
         const supabase = createAdminClient();
@@ -21,10 +31,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .from('exam_materials')
             .select('school, created_at')
             .neq('school', 'DELETED')
-            .neq('school', '전국연합')
             .order('created_at', { ascending: false });
 
-        if (!data) return staticPages;
+        if (!data) return [...staticPages, ...specialSchoolPages];
 
         // 학교별 최신 업데이트 날짜 추출
         const schoolMap: Record<string, Date> = {};
@@ -41,9 +50,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         }));
 
-        return [...staticPages, ...schoolPages];
+        return [...staticPages, ...specialSchoolPages, ...schoolPages];
     } catch {
-        return staticPages;
+        return [...staticPages, ...specialSchoolPages];
     }
 }
+
 
