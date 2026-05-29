@@ -155,6 +155,9 @@ export default function QuestionBankPage() {
                 }
                 fetchPurchasedDbs(data.user.id, data.user.email ?? undefined);
                 fetchMyPoints(data.user.id);
+            } else if (PERSONAL_DB_FREE_MODE) {
+                // 비로그인이어도 무료 모드라면 DB 목록 자동 로드
+                fetchPurchasedDbs('', '');
             }
         });
 
@@ -181,7 +184,13 @@ export default function QuestionBankPage() {
                 .from('exam_materials')
                 .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
                 .eq('file_type', 'DB');
-            if (allData) setPurchasedDbs(allData);
+            if (allData) {
+                setPurchasedDbs(allData);
+                // 비로그인 유저에게는 전체 DB 자동 선택으로 바로 검색 가능하게
+                if (!userId) {
+                    setSelectedDbIds(allData.map((d: any) => d.id));
+                }
+            }
             return;
         }
 
@@ -645,8 +654,15 @@ export default function QuestionBankPage() {
     };
 
     // 1. Initial Review Block (Switch to Review Mode)
+    const [showLoginGate, setShowLoginGate] = useState(false);
+
     const handleGenerate = () => {
         if (cart.length === 0) return;
+        if (!user) {
+            // 비로그인 유저: 로그인 유도 모달 표시
+            setShowLoginGate(true);
+            return;
+        }
         setViewMode('review');
     };
 
@@ -776,6 +792,57 @@ export default function QuestionBankPage() {
             />
 
             <div className="flex flex-1 overflow-hidden relative">
+
+                {/* 로그인 게이트 모달 - 비로그인 유저가 시험지 생성 클릭 시 */}
+                {showLoginGate && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" onClick={() => setShowLoginGate(false)}>
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+                            {/* 상단 그라데이션 배너 */}
+                            <div className="bg-gradient-to-br from-[#497AB7] to-[#5CC6C3] px-6 py-8 text-center">
+                                <div className="text-4xl mb-3">📄</div>
+                                <h2 className="text-xl font-black text-white">시험지 생성을 위해</h2>
+                                <h2 className="text-xl font-black text-white">회원가입이 필요해요</h2>
+                                <p className="text-white/80 text-sm mt-2">가입은 무료이며 30초면 충분해요!</p>
+                            </div>
+                            <div className="px-6 py-5 space-y-3">
+                                <div className="flex items-center gap-3 bg-blue-50 rounded-xl p-3">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Database size={16} className="text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-700">런칭 기념 전체 무료</p>
+                                        <p className="text-xs text-slate-400">전국 기출 DB를 지금 바로 무료 이용</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 bg-teal-50 rounded-xl p-3">
+                                    <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <FileText size={16} className="text-teal-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-700">시험지 저장 &amp; 다운로드</p>
+                                        <p className="text-xs text-slate-400">선택한 문제로 나만의 시험지 생성</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* 버튼 */}
+                            <div className="px-6 pb-6 flex flex-col gap-2">
+                                <a
+                                    href="/login"
+                                    className="w-full py-3.5 bg-[#497AB7] text-white rounded-2xl font-black text-base text-center hover:bg-[#3A6599] transition-colors shadow-lg shadow-[#497AB7]/30"
+                                >
+                                    무료 회원가입 / 로그인 →
+                                </a>
+                                <button
+                                    onClick={() => setShowLoginGate(false)}
+                                    className="w-full py-2.5 text-slate-400 text-sm font-medium hover:text-slate-600 transition-colors"
+                                >
+                                    계속 둘러보기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Storage Modal - Persistent Rendering for 0s Loading */}
                 <div className={`fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm p-8 ${showStorageModal ? 'flex' : 'hidden'}`}>
                     <div className="bg-white w-full max-w-5xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
@@ -948,28 +1015,38 @@ export default function QuestionBankPage() {
                         <h2 className="font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
                         {/* ... existing DB selectors ... */}
                         <div className="flex gap-2 mb-2">
-                            <button
-                                onClick={() => {
-                                    setStorageModalMode('db');
-                                    setShowStorageModal(true);
-                                    setShowMobileSidebar(false);
-                                }}
-                                className="flex-1 py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
-                            >
-                                <Database size={16} />
-                                DB 문제
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setStorageModalMode('exam');
-                                    setShowStorageModal(true);
-                                    setShowMobileSidebar(false);
-                                }}
-                                className="flex-1 py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
-                            >
-                                <FolderIcon size={16} />
-                                만든 시험지
-                            </button>
+                            {!user ? (
+                                /* 비로그인: 전체 DB 자동 선택 안내 */
+                                <div className="flex-1 py-3 px-3 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-green-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    전체 DB 자동 선택됨 ({purchasedDbs.length}개)
+                                </div>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setStorageModalMode('db');
+                                            setShowStorageModal(true);
+                                            setShowMobileSidebar(false);
+                                        }}
+                                        className="flex-1 py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                    >
+                                        <Database size={16} />
+                                        DB 문제
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setStorageModalMode('exam');
+                                            setShowStorageModal(true);
+                                            setShowMobileSidebar(false);
+                                        }}
+                                        className="flex-1 py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                    >
+                                        <FolderIcon size={16} />
+                                        만든 시험지
+                                    </button>
+                                </>
+                            )}
                         </div>
                         {/* 관리자 전체 DB 선택 버튼 */}
                         {isAdmin && purchasedDbs.length > 0 && (
@@ -1049,7 +1126,7 @@ export default function QuestionBankPage() {
                                 <button
                                     onClick={handleGenerate}
                                     disabled={cart.length === 0 || isGenerating}
-                                    className="bg-[#497AB7] disabled:bg-slate-300 text-white px-4 py-2 rounded-lg hover:bg-[#3A6599] shadow-sm transition font-bold flex items-center gap-2"
+                                    className="bg-[#497AB7] disabled:bg-slate-300 text-white px-4 py-2 rounded-lg hover:bg-[#3A6599] shadow-sm transition font-bold flex items-center gap-2 whitespace-nowrap"
                                 >
                                     <span>시험지 생성 ({cart.length}/{MAX_CART_SIZE})</span>
                                 </button>
@@ -1062,88 +1139,61 @@ export default function QuestionBankPage() {
                             </div>
                         </header>
                     ) : (
-                        <header className="sticky top-0 z-10 flex flex-col gap-4 px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#B7D1EA]/60 shadow-sm">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h1 className="text-2xl font-black text-slate-800">시험지 문항 검토</h1>
-                                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                                        <p className="text-sm text-slate-500">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
-                                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
-                                            카드를 드래그해서 순서 변경
-                                        </span>
-                                    </div>
+                        <header className="sticky top-0 z-10 flex flex-col gap-2 sm:gap-4 px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#B7D1EA]/60 shadow-sm">
+                            {/* 모바일: 컴팩트 단일 행 / 데스크탑: 2행 */}
+                            <div className="flex justify-between items-center gap-2">
+                                <div className="min-w-0">
+                                    <h1 className="text-base sm:text-2xl font-black text-slate-800 whitespace-nowrap">시험지 문항 검토</h1>
+                                    <p className="hidden sm:block text-sm text-slate-500 mt-1">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="flex gap-2 flex-shrink-0">
                                     <button
                                         onClick={() => setViewMode('search')}
-                                        className="px-5 py-2.5 border border-slate-300 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+                                        className="px-3 sm:px-5 py-2 sm:py-2.5 border border-slate-300 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all text-xs sm:text-sm whitespace-nowrap"
                                     >
-                                        <span>← 검색으로 돌아가기</span>
+                                        ← <span className="hidden sm:inline">검색으로 </span>돌아가기
                                     </button>
                                     <button
                                         onClick={() => setShowConfigModal(true)}
-                                        className="px-8 py-2.5 bg-[#497AB7] text-white rounded-xl font-bold hover:bg-[#3A6599] shadow-lg shadow-[#497AB7]/20 transition-all flex items-center gap-2"
+                                        className="px-3 sm:px-8 py-2 sm:py-2.5 bg-[#497AB7] text-white rounded-xl font-bold hover:bg-[#3A6599] shadow-lg shadow-[#497AB7]/20 transition-all text-xs sm:text-sm whitespace-nowrap"
                                     >
-                                        <span>최종 생성하기 ({cart.length}/{MAX_CART_SIZE})</span>
+                                        최종 생성 ({cart.length})
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="bg-white border rounded-2xl p-4 flex items-center gap-4 shadow-sm justify-between">
-                                <div className="flex items-center gap-4">
-                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Quick Sort</span>
-                                    <div className="h-6 w-px bg-slate-200 mx-1"></div>
-                                    <button onClick={() => sortCart('original')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all">
-                                        원본 번호순
-                                    </button>
-                                    <button onClick={() => sortCart('diff-asc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all">
-                                        난이도 낮은순
-                                    </button>
-                                    <button onClick={() => sortCart('diff-desc')} className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all">
-                                        난이도 높은순
-                                    </button>
-                                </div>
-                                {/* 유사문항 자동추가 영역 */}
-                                <div className="flex flex-col items-end gap-1">
-                                    <div className="flex items-center gap-2">
-                                        {/* 선택 상태 안내 */}
-                                        {selectedReviewIds.size > 0 ? (
-                                            <span className="text-[11px] font-bold text-violet-700 bg-violet-100 px-2 py-1 rounded-full">
-                                                ✓ {selectedReviewIds.size}개 선택됨
-                                            </span>
-                                        ) : (
-                                            <span className="text-[11px] text-slate-400 hidden sm:block">
-                                                번호 클릭 → 선택
-                                            </span>
-                                        )}
-                                        <button
-                                            onClick={handleAutoAddSimilar}
-                                            disabled={isAutoAdding || cart.length === 0}
-                                            className="px-4 py-2 rounded-xl text-xs font-bold bg-[#5CC6C3] text-white hover:bg-[#3AADA9] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm whitespace-nowrap"
-                                        >
-                                            {isAutoAdding ? (
-                                                <>
-                                                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                                    </svg>
-                                                    분석 중...
-                                                </>
-                                            ) : selectedReviewIds.size > 0 ? (
-                                                <>🔗 선택 {selectedReviewIds.size}개 유사추가</>
-                                            ) : (
-                                                <>🔗 유사문항 자동추가</>
-                                            )}
-                                        </button>
-                                    </div>
-                                    {/* 사용법 힌트 */}
-                                    <p className="text-[10px] text-slate-400 pr-1">
-                                        {selectedReviewIds.size > 0
-                                            ? '선택한 문제에만 유사문항이 추가됩니다'
-                                            : '문제 번호를 클릭하면 선택, 선택 후 누르면 선택 문제만 추가'}
-                                    </p>
-                                </div>
+                            {/* 정렬 + 유사문항 - 모바일에서 가로 스크롤 */}
+                            <div className="bg-white border rounded-xl sm:rounded-2xl px-3 py-2 sm:p-4 flex items-center gap-2 sm:gap-4 shadow-sm overflow-x-auto">
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex-shrink-0 hidden sm:block">Quick Sort</span>
+                                <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+                                <button onClick={() => sortCart('original')} className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all whitespace-nowrap flex-shrink-0">
+                                    원본순
+                                </button>
+                                <button onClick={() => sortCart('diff-asc')} className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all whitespace-nowrap flex-shrink-0">
+                                    쉬운순
+                                </button>
+                                <button onClick={() => sortCart('diff-desc')} className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all whitespace-nowrap flex-shrink-0">
+                                    어려운순
+                                </button>
+                                <div className="flex-1"></div>
+                                {selectedReviewIds.size > 0 && (
+                                    <span className="text-[11px] font-bold text-violet-700 bg-violet-100 px-2 py-1 rounded-full flex-shrink-0">
+                                        ✓ {selectedReviewIds.size}개 선택
+                                    </span>
+                                )}
+                                <button
+                                    onClick={handleAutoAddSimilar}
+                                    disabled={isAutoAdding || cart.length === 0}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#5CC6C3] text-white hover:bg-[#3AADA9] disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap flex-shrink-0"
+                                >
+                                    {isAutoAdding ? (
+                                        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                        </svg>
+                                    ) : '🔗'}
+                                    <span>{isAutoAdding ? '분석중' : selectedReviewIds.size > 0 ? `${selectedReviewIds.size}개 유사추가` : '유사문항'}</span>
+                                </button>
                             </div>
                         </header>
                     )}
@@ -1328,13 +1378,28 @@ export default function QuestionBankPage() {
                                     ) : (
                                         /* 초기 상태 — 전체 사용법 안내 */
                                         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                            {/* 비로그인 유저 전용 CTA */}
+                                            {!user && (
+                                                <div className="mx-4 mt-4 bg-gradient-to-r from-[#497AB7] to-[#5CC6C3] rounded-2xl p-4 flex items-center justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="font-black text-white text-sm">🎉 런칭 기념 전체 무료 개방 중!</p>
+                                                        <p className="text-xs text-white/80 mt-0.5">회원가입 후 전국 기출 DB 바로 이용하세요</p>
+                                                    </div>
+                                                    <a
+                                                        href="/login"
+                                                        className="flex-shrink-0 px-4 py-2 bg-white text-[#497AB7] rounded-xl font-black text-sm whitespace-nowrap shadow-sm hover:bg-slate-50 transition-colors"
+                                                    >
+                                                        무료 시작
+                                                    </a>
+                                                </div>
+                                            )}
                                             {/* 헤더 */}
-                                            <div className="px-8 pt-8 pb-6 text-center border-b border-slate-100 bg-gradient-to-b from-indigo-50/60 to-white">
+                                            <div className="px-8 pt-6 pb-6 text-center border-b border-slate-100 bg-gradient-to-b from-indigo-50/60 to-white">
                                                 <div className="inline-flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
                                                     <span>📋</span> 시험지 출제 사용 가이드
                                                 </div>
                                                 <h2 className="text-xl font-black text-slate-800">4단계로 나만의 시험지를 만들어보세요</h2>
-                                                <p className="text-sm text-slate-500 mt-1">구매한 내신 기출 DB에서 문제를 골라 원하는 구성으로 출제할 수 있어요.</p>
+                                                <p className="text-sm text-slate-500 mt-1">{user ? '구매한 내신 기출 DB에서 문제를 골라 원하는 구성으로 출제할 수 있어요.' : '로그인 후 무료로 이용 가능합니다.'}</p>
                                             </div>
 
                                             {/* 스텝 */}

@@ -59,7 +59,7 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                                 </div>
                                 <div>
                                     <p className="text-[11px] text-[#AAAAC4] font-medium">기출자료</p>
-                                    <p className="text-sm font-extrabold text-[#1E2D4F]">전국 고등학교</p>
+                                    <p className="text-sm font-extrabold text-[#1E2D4F] whitespace-nowrap">전국 고등학교</p>
                                 </div>
                             </div>
                         </div>
@@ -71,7 +71,7 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                                 </div>
                                 <div>
                                     <p className="text-[11px] text-[#AAAAC4] font-medium">개인DB</p>
-                                    <p className="text-sm font-extrabold text-[#1E2D4F]">지금 무료 이용 중 🎉</p>
+                                    <p className="text-sm font-extrabold text-[#1E2D4F] whitespace-nowrap">지금 무료 이용 중 🎉</p>
                                 </div>
                             </div>
                         </div>
