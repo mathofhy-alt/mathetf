@@ -1099,7 +1099,7 @@ export default function QuestionBankPage() {
                 </div>
 
                 {/* Main List Area */}
-                <div ref={mainScrollRef} id="main-scroll" className="flex-1 overflow-y-auto relative">
+                <div ref={mainScrollRef} id="main-scroll" className="flex-1 overflow-y-auto overflow-x-hidden relative">
                     {viewMode === 'search' ? (
                         <header className="sticky top-0 z-10 flex justify-between items-center px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#B7D1EA]/60 shadow-sm">
                             <div className="flex items-center gap-2 min-w-0">
