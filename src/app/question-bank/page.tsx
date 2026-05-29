@@ -1114,11 +1114,11 @@ export default function QuestionBankPage() {
                                     {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
                                 </h1>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1.5 sm:gap-2 items-center">
                                 {questions.length > 0 && (
                                     <button
                                         onClick={handleSelectAllToggle}
-                                        className="border border-[#B7D1EA] text-[#497AB7] px-4 py-2 rounded-lg hover:bg-[#EEF4FB] shadow-sm transition font-bold"
+                                        className="border border-[#B7D1EA] text-[#497AB7] px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#EEF4FB] shadow-sm transition font-bold text-xs sm:text-sm whitespace-nowrap"
                                     >
                                         {questions.every(q => q && cartIdSet.has(q.id)) ? '전체 해제' : '전체 선택'}
                                     </button>
@@ -1126,13 +1126,14 @@ export default function QuestionBankPage() {
                                 <button
                                     onClick={handleGenerate}
                                     disabled={cart.length === 0 || isGenerating}
-                                    className="bg-[#497AB7] disabled:bg-slate-300 text-white px-4 py-2 rounded-lg hover:bg-[#3A6599] shadow-sm transition font-bold flex items-center gap-2 whitespace-nowrap"
+                                    className="bg-[#497AB7] disabled:bg-slate-300 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#3A6599] shadow-sm transition font-bold flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm"
                                 >
-                                    <span>시험지 생성 ({cart.length}/{MAX_CART_SIZE})</span>
+                                    <span className="hidden sm:inline">시험지 생성 ({cart.length}/{MAX_CART_SIZE})</span>
+                                    <span className="sm:hidden">생성 ({cart.length})</span>
                                 </button>
                                 <button
                                     onClick={() => setShowAutoModal(true)}
-                                    className="bg-[#5CC6C3] text-white px-3 py-2 rounded-lg hover:bg-[#3AADA9] shadow-sm transition font-bold whitespace-nowrap text-sm"
+                                    className="bg-[#5CC6C3] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-[#3AADA9] shadow-sm transition font-bold whitespace-nowrap text-xs sm:text-sm"
                                 >
                                     자동생성
                                 </button>
