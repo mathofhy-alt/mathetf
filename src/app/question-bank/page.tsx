@@ -1399,8 +1399,8 @@ export default function QuestionBankPage() {
                                                 <div className="inline-flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
                                                     <span>📋</span> 시험지 출제 사용 가이드
                                                 </div>
-                                                <h2 className="text-xl font-black text-slate-800">4단계로 나만의 시험지를 만들어보세요</h2>
-                                                <p className="text-sm text-slate-500 mt-1">{user ? '구매한 내신 기출 DB에서 문제를 골라 원하는 구성으로 출제할 수 있어요.' : '로그인 후 무료로 이용 가능합니다.'}</p>
+                                                <h2 className="text-xl font-black text-slate-800" style={{wordBreak:'keep-all'}}>4단계로 나만의 시험지 만들기</h2>
+                                                <p className="text-sm text-slate-500 mt-1" style={{wordBreak:'keep-all'}}>{user ? '기출 DB에서 원하는 문제를 골라 시험지를 출제해보세요.' : '로그인 후 무료로 이용 가능합니다.'}</p>
                                             </div>
 
                                             {/* 스텝 */}
@@ -1414,7 +1414,7 @@ export default function QuestionBankPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-black text-slate-700">DB 선택</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5">하단 「DB 문제」 버튼 → 사용할 기출 DB 선택</p>
+                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>「DB 문제」 버튼으로 기출 DB를 선택하세요</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -1426,7 +1426,7 @@ export default function QuestionBankPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-black text-slate-700">조건 검색</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5">단원·난이도 필터 설정 → 「조건 검색하기」 클릭</p>
+                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>단원·난이도 설정 후 「조건 검색하기」 클릭</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -1438,7 +1438,7 @@ export default function QuestionBankPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-black text-slate-700">문제 담기</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5">검색된 문제 카드 클릭 → 담은 수가 상단에 표시</p>
+                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>문제 카드를 클릭해서 담으면 상단에 수량 표시</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -1450,7 +1450,7 @@ export default function QuestionBankPage() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-black text-slate-700">시험지 생성</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5">「시험지 생성」 클릭 → 순서·난이도 검토 후 HML 저장</p>
+                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>「시험지 생성」으로 검토 후 HML 파일 저장</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1517,9 +1517,8 @@ export default function QuestionBankPage() {
                                                 <div className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center shrink-0 mt-0.5">
                                                     <span className="text-[10px] font-black">!</span>
                                                 </div>
-                                                <div className="text-xs text-amber-800 leading-relaxed">
-                                                    <span className="font-bold">TIP.</span> 왼쪽 <span className="font-bold text-purple-600">「만든 시험지」</span> 버튼으로 이전에 저장한 시험지를 불러와 편집하거나,
-                                                    상단 <span className="font-bold text-purple-600">「자동 생성」</span>으로 조건만 입력하면 AI가 문제를 자동으로 골라드려요.
+                                                <div className="text-xs text-amber-800 leading-relaxed" style={{wordBreak:'keep-all'}}>
+                                                    <span className="font-bold">TIP.</span> 왼쪽 <span className="font-bold text-purple-600">「만든 시험지」</span>로 저장된 시험지를 불러와 편집하거나, 상단 <span className="font-bold text-purple-600">「자동 생성」</span>으로 조건만 입력하면 문제를 자동으로 골라드려요.
                                                 </div>
                                             </div>
                                         </div>
