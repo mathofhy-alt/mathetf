@@ -844,8 +844,8 @@ export default function QuestionBankPage() {
                 )}
 
                 {/* Storage Modal - Persistent Rendering for 0s Loading */}
-                <div className={`fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm p-8 ${showStorageModal ? 'flex' : 'hidden'}`}>
-                    <div className="bg-white w-full max-w-5xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+                <div className={`fixed inset-0 z-50 items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm ${showStorageModal ? 'flex' : 'hidden'}`}>
+                    <div className="bg-white w-full sm:max-w-5xl sm:mx-4 max-h-[90dvh] sm:h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                         <div className="p-4 border-b flex justify-between items-center bg-slate-50">
                             <h3 className="font-bold text-lg flex items-center gap-2">
                                 {storageModalMode === 'db' ? (

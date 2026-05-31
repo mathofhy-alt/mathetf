@@ -377,24 +377,24 @@ export default function MyPage() {
             </header>
 
             <main className="max-w-[1200px] mx-auto px-4 py-8">
-                <div className="flex gap-4 mb-6 border-b border-slate-200">
+                <div className="flex gap-2 sm:gap-4 mb-6 border-b border-slate-200 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('purchases')}
-                        className={`pb-3 px-2 font-bold text-sm ${activeTab === 'purchases' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
+                        className={`pb-3 px-2 font-bold text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'purchases' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
                     >
                         구매 내역
                     </button>
                     <button
                         onClick={() => setActiveTab('sales')}
-                        className={`pb-3 px-2 font-bold text-sm ${activeTab === 'sales' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
+                        className={`pb-3 px-2 font-bold text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'sales' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
                     >
-                        판매 관리 (업로드)
+                        판매 관리
                     </button>
                     <button
                         onClick={() => setActiveTab('submission_earnings')}
-                        className={`pb-3 px-2 font-bold text-sm flex items-center gap-1.5 ${activeTab === 'submission_earnings' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-800'}`}
+                        className={`pb-3 px-2 font-bold text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${activeTab === 'submission_earnings' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-800'}`}
                     >
-                        <Gift size={14} /> 제보 수익 내역
+                        <Gift size={14} /> 제보 수익
                         {totalSubmissionEarnings > 0 && (
                             <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">
                                 {totalSubmissionEarnings.toLocaleString()}P
@@ -526,16 +526,16 @@ export default function MyPage() {
                 {activeTab === 'submission_earnings' && (
                     <div className="space-y-4">
                         {/* 요약 카드 */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-sm">
                                 <div className="text-sm text-slate-500 mb-1">총 제보 건수</div>
-                                <div className="text-2xl font-bold text-slate-800">
+                                <div className="text-xl sm:text-2xl font-bold text-slate-800">
                                     {new Set(submissionEarnings.map(e => e.submission?.id)).size}건
                                 </div>
                             </div>
-                            <div className="bg-white p-6 rounded-lg border border-purple-100 shadow-sm bg-gradient-to-br from-purple-50 to-white">
+                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-purple-100 shadow-sm bg-gradient-to-br from-purple-50 to-white">
                                 <div className="text-sm text-purple-600 mb-1">제보 수익 총 적립</div>
-                                <div className="text-2xl font-bold text-purple-700">
+                                <div className="text-xl sm:text-2xl font-bold text-purple-700">
                                     {totalSubmissionEarnings.toLocaleString()} P
                                 </div>
                                 <div className="text-xs text-slate-400 mt-1">판매 수익의 70% 자동 적립</div>
@@ -611,15 +611,15 @@ export default function MyPage() {
 
                 {activeTab === 'sales' && (
                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-sm">
                                 <div className="text-sm text-slate-500 mb-1">총 판매 건수</div>
-                                <div className="text-2xl font-bold text-slate-800">{uploads.reduce((acc, curr) => acc + (curr.sales_count || 0), 0)}건</div>
+                                <div className="text-xl sm:text-2xl font-bold text-slate-800">{uploads.reduce((acc, curr) => acc + (curr.sales_count || 0), 0)}건</div>
                             </div>
-                            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden">
                                 <div className="relative z-10">
                                     <div className="text-sm text-slate-500 mb-1">현재 보유 수익 포인트</div>
-                                    <div className="text-2xl font-bold text-brand-600">
+                                    <div className="text-xl sm:text-2xl font-bold text-brand-600">
                                         {earnedPoints.toLocaleString()} P
                                     </div>
                                     <div className="text-xs text-slate-400 mt-1">총 누적 수익: {(uploads.reduce((acc, curr) => acc + (Math.floor(curr.sales_count * curr.price * 0.7) || 0), 0)).toLocaleString()} P</div>
@@ -681,41 +681,41 @@ export default function MyPage() {
                                 <div className="p-10 text-center text-slate-400">업로드한 자료가 없습니다.</div>
                             ) : (
                                 uploads.map(file => (
-                                    <div key={file.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 flex items-center justify-center bg-slate-100 rounded text-slate-400">
+                                    <div key={file.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-slate-50">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-slate-100 rounded text-slate-400">
                                                 {file.file_type === 'PDF' ? <FileText size={20} /> : <FileText size={20} />}
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-sm font-bold text-brand-600">{file.school}</span>
-                                                    <span className="w-px h-3 bg-slate-300"></span>
-                                                    <span className="text-xs text-slate-500">{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>
+                                                    <span className="text-sm font-bold text-brand-600 truncate">{file.school}</span>
+                                                    <span className="w-px h-3 bg-slate-300 flex-shrink-0"></span>
+                                                    <span className="text-xs text-slate-500 truncate">{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>
                                                 </div>
-                                                <div className="font-medium text-slate-900">{file.title}</div>
+                                                <div className="font-medium text-slate-900 text-sm break-keep">{file.title}</div>
                                                 <div className="text-xs text-slate-400 mt-1">
-                                                    등록일: {new Date(file.created_at).toLocaleDateString()} <span className="mx-1">·</span> {file.subject} <span className="mx-1">·</span> {file.price}P
+                                                    등록일: {new Date(file.created_at).toLocaleDateString()} · {file.subject} · {file.price}P
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="text-right flex flex-col items-end gap-2">
+                                        <div className="flex items-center justify-between sm:justify-end sm:flex-col sm:items-end gap-2">
                                             <div>
                                                 <div className="text-sm font-bold text-slate-800">{file.sales_count || 0}회 판매</div>
                                                 <div className="text-xs text-brand-600 font-bold">
                                                     +{Math.floor((file.sales_count || 0) * file.price * 0.7).toLocaleString()}P 수익
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1.5">
                                                 <button
                                                     onClick={() => { setEditingFile(file); setIsEditModalOpen(true); }}
-                                                    className="flex items-center gap-1 text-slate-400 hover:text-brand-600 px-2 py-1 rounded text-xs border border-slate-200 hover:border-brand-200 transition-colors"
+                                                    className="flex items-center gap-1 text-slate-400 hover:text-brand-600 px-3 py-2 rounded text-xs border border-slate-200 hover:border-brand-200 transition-colors"
                                                 >
                                                     <Edit size={12} /> 수정
                                                 </button>
                                                 {(file.sales_count || 0) > 0 ? (
                                                     <button
                                                         onClick={() => handleStopSelling(file.id)}
-                                                        className="flex items-center gap-1 text-slate-400 hover:text-orange-600 px-2 py-1 rounded text-xs border border-slate-200 hover:border-orange-200 transition-colors"
+                                                        className="flex items-center gap-1 text-slate-400 hover:text-orange-600 px-3 py-2 rounded text-xs border border-slate-200 hover:border-orange-200 transition-colors"
                                                         title="신규 구매 중단 (기존 구매자 다운로드 유지)"
                                                     >
                                                         <span className="text-[10px]">&#9646;</span> 판매중단
@@ -723,7 +723,7 @@ export default function MyPage() {
                                                 ) : (
                                                     <button
                                                         onClick={() => handleDelete(file.id, file.file_path)}
-                                                        className="flex items-center gap-1 text-slate-400 hover:text-red-600 px-2 py-1 rounded text-xs border border-slate-200 hover:border-red-200 transition-colors"
+                                                        className="flex items-center gap-1 text-slate-400 hover:text-red-600 px-3 py-2 rounded text-xs border border-slate-200 hover:border-red-200 transition-colors"
                                                     >
                                                         <Trash2 size={12} /> 삭제
                                                     </button>

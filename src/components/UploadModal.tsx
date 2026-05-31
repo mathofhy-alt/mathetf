@@ -305,8 +305,15 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
 
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="bg-white w-full rounded-t-2xl sm:rounded-xl sm:max-w-3xl sm:mx-4 max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+                {/* 모바일 드래그 핸들 */}
+                <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+                    <div className="w-10 h-1 rounded-full bg-slate-300" />
+                </div>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                     <h2 className="text-lg font-bold text-slate-800">자료 등록</h2>
@@ -523,7 +530,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                     )}
 
                     {/* Footer Actions */}
-                    <div className="pt-2 flex justify-end gap-3 border-t border-slate-100">
+                    <div className="pt-2 flex justify-end gap-3 border-t border-slate-100" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
                         <button
                             type="button"
                             onClick={onClose}
