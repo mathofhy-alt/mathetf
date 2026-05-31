@@ -38,10 +38,18 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                         </p>
 
                         {/* CTA Buttons */}
-                        <div className="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-2 md:gap-3 items-center md:items-start justify-center md:justify-start">
+                            {!user && (
+                                <Link
+                                    href="/signup"
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 md:px-6 md:py-2.5 bg-[#497AB7] text-white font-extrabold rounded-full text-sm hover:bg-[#3A6599] transition-colors shadow-md"
+                                >
+                                    무료로 시작하기 →
+                                </Link>
+                            )}
                             <Link
                                 href="/question-bank"
-                                className="inline-flex items-center gap-2 px-5 py-2 md:px-6 md:py-2.5 bg-[#497AB7] text-white font-bold rounded-full text-sm hover:bg-[#3A6599] transition-colors shadow-sm"
+                                className={`${user ? 'w-full sm:w-auto' : 'hidden sm:inline-flex'} inline-flex items-center justify-center gap-2 px-5 py-2 md:px-6 md:py-2.5 bg-[#497AB7] text-white font-bold rounded-full text-sm hover:bg-[#3A6599] transition-colors shadow-sm`}
                             >
                                 시험지 만들기 <ArrowRight size={15} />
                             </Link>

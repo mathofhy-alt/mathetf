@@ -154,6 +154,16 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             )
                         )}
 
+                        {/* 비로그인 모바일: 무료 시작 버튼 상시 노출 */}
+                        {!user && !mobileMenuOpen && !['login', 'signup'].some(p => pathname.includes(p)) && (
+                            <Link
+                                href="/signup"
+                                className="md:hidden px-3 py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg hover:bg-brand-700 transition-colors"
+                            >
+                                무료 시작 →
+                            </Link>
+                        )}
+
                         {/* Hamburger Button - Mobile Only */}
                         <button
                             className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"

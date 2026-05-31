@@ -16,7 +16,6 @@ import dynamic from 'next/dynamic';
 
 const UploadModal = dynamic(() => import('@/components/UploadModal'), { ssr: false });
 const ReportModal = dynamic(() => import('@/components/ReportModal'), { ssr: false });
-const TutorialModal = dynamic(() => import('@/components/TutorialModal'), { ssr: false });
 
 interface HomeClientProps {
     initialExamData: any[];
@@ -73,7 +72,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-    const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [selectedExamForReport, setSelectedExamForReport] = useState<{key: string, title: string} | null>(null);
     const [user, setUser] = useState<User | null>(initialUser);
     const router = useRouter();
@@ -153,18 +152,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     };
 
     useEffect(() => {
-        // Check Tutorial Modal
-        const hideUntil = localStorage.getItem('hide_tutorial_until');
-        if (!hideUntil) {
-            setIsTutorialModalOpen(true);
-        } else {
-            const expiryDate = new Date(hideUntil);
-            if (new Date() > expiryDate) {
-                // Expired, show again
-                setIsTutorialModalOpen(true);
-            }
-        }
-
         const checkUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
@@ -326,10 +313,14 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
     const handleUploadClick = () => {
         if (!user) {
-            if (confirm('로그인이 필요한 서비스입니다.\\n로그인 페이지로 이동하시겠습니까?')) router.push('/login');
+            setShowLoginPrompt(true);
             return;
         }
         setIsUploadModalOpen(true);
+    };
+
+    const handleNeedLogin = () => {
+        setShowLoginPrompt(true);
     };
 
     const handleReportClick = (e: React.MouseEvent, group: any) => {
@@ -370,7 +361,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
     const handleAddToCart = async (file: FileItem) => {
         if (!user) {
-            if (confirm('로그인이 필요합니다. 로그인하시겠습니까?')) router.push('/login');
+            setShowLoginPrompt(true);
             return;
         }
         try {
@@ -394,7 +385,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
     const handleDownload = async (file: FileItem) => {
         if (!user) {
-            if (confirm('로그인이 필요합니다. 로그인하시겠습니까?')) router.push('/login');
+            setShowLoginPrompt(true);
             return;
         }
 
@@ -722,10 +713,45 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 examGroup={selectedExamForReport}
             />
 
-            <TutorialModal 
-                isOpen={isTutorialModalOpen} 
-                onClose={() => setIsTutorialModalOpen(false)} 
-            />
+            {/* 로그인 유도 바텀시트 */}
+            {showLoginPrompt && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 backdrop-blur-sm"
+                    onClick={() => setShowLoginPrompt(false)}
+                >
+                    <div
+                        className="bg-white w-full rounded-t-3xl p-6 pb-10 shadow-2xl"
+                        style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex justify-center mb-4">
+                            <div className="w-10 h-1 rounded-full bg-slate-300" />
+                        </div>
+                        <div className="text-center mb-6">
+                            <div className="text-3xl mb-3">📚</div>
+                            <h3 className="text-xl font-extrabold text-slate-800 mb-2">무료로 이용해보세요</h3>
+                            <p className="text-sm text-slate-500 break-keep leading-relaxed">
+                                전국 내신 기출 즉시 다운로드,<br />
+                                나만의 시험지 제작까지 <strong className="text-brand-600">지금 바로 무료</strong>로 시작하세요.
+                            </p>
+                        </div>
+                        <div className="space-y-3">
+                            <Link
+                                href="/signup"
+                                className="block w-full py-4 bg-brand-600 text-white font-extrabold text-base text-center rounded-2xl hover:bg-brand-700 transition-colors shadow-sm"
+                            >
+                                무료 회원가입 →
+                            </Link>
+                            <Link
+                                href="/login"
+                                className="block w-full py-3.5 border-2 border-slate-200 text-slate-600 font-bold text-sm text-center rounded-2xl hover:bg-slate-50 transition-colors"
+                            >
+                                이미 계정이 있어요 (로그인)
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* DB Detail Modal */}
             {selectedDbForDetail && (
