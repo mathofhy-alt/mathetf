@@ -214,8 +214,8 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-md max-w-md w-full p-8 border border-slate-200">
+        <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4 overflow-x-hidden">
+            <div className="bg-white rounded-lg shadow-md max-w-md w-full px-5 py-8 sm:px-8 border border-slate-200 overflow-hidden">
                 <h1 className="text-2xl font-bold text-center mb-6 text-slate-800">
                     회원가입
                 </h1>
@@ -419,34 +419,29 @@ export default function SignupPage() {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-1">이메일 (아이디)</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="email"
-                                                value={email}
-                                                onChange={(e) => {
-                                                    setEmail(e.target.value);
-                                                    if (emailStatus === 'available') setEmailStatus('idle'); // Reset checking if changed
-                                                }}
-                                                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
-                                                placeholder="example@email.com"
-                                                required
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleCheckEmail}
-                                                disabled={emailStatus === 'checking' || (emailStatus === 'available' && email === checkedEmail)}
-                                                className={`px-3 py-2 text-sm font-bold rounded-lg border transition-colors whitespace-nowrap
-                                                    ${emailStatus === 'available' && email === checkedEmail
-                                                        ? 'bg-green-50 text-green-600 border-green-200'
-                                                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-                                            >
-                                                {emailStatus === 'checking' ? '확인 중...' :
-                                                    emailStatus === 'available' && email === checkedEmail ? '사용 가능' : '중복확인'}
-                                            </button>
-                                        </div>
-                                        {emailStatus === 'available' && email === checkedEmail && (
-                                            <p className="text-xs text-green-600 mt-1 pl-1">사용 가능한 이메일입니다.</p>
-                                        )}
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => {
+                                                setEmail(e.target.value);
+                                                if (emailStatus === 'available') setEmailStatus('idle');
+                                            }}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
+                                            placeholder="example@email.com"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleCheckEmail}
+                                            disabled={emailStatus === 'checking' || (emailStatus === 'available' && email === checkedEmail)}
+                                            className={`w-full mt-1.5 py-2 text-sm font-bold rounded-lg border transition-colors
+                                                ${emailStatus === 'available' && email === checkedEmail
+                                                    ? 'bg-green-50 text-green-600 border-green-200'
+                                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                                        >
+                                            {emailStatus === 'checking' ? '확인 중...' :
+                                                emailStatus === 'available' && email === checkedEmail ? '✓ 사용 가능한 이메일' : '중복 확인'}
+                                        </button>
                                         {emailStatus === 'taken' && (
                                             <p className="text-xs text-red-500 mt-1 pl-1">이미 사용 중인 이메일입니다.</p>
                                         )}
@@ -490,32 +485,30 @@ export default function SignupPage() {
                                     </div>
                                     <div className="pt-2 border-t border-slate-100">
                                         <label className="block text-sm font-bold text-slate-700 mb-1">휴대폰 번호 인증</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="tel"
-                                                value={phone}
-                                                onChange={(e) => {
-                                                    setPhone(e.target.value.replace(/[^0-9]/g, ''));
-                                                    setIsPhoneVerified(false);
-                                                    setIsOtpSent(false);
-                                                }}
-                                                disabled={isPhoneVerified}
-                                                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
-                                                placeholder="숫자만 입력 (예: 01012345678)"
-                                                required
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleSendOtp}
-                                                disabled={isPhoneVerified || otpSending || !phone || phone.length < 10}
-                                                className={`px-3 py-2 text-sm font-bold rounded-lg border transition-colors whitespace-nowrap
-                                                    ${isPhoneVerified 
-                                                        ? 'bg-green-50 text-green-600 border-green-200' 
-                                                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 disabled:opacity-50'}`}
-                                            >
-                                                {isPhoneVerified ? '인증완료' : otpSending ? '발송 중...' : isOtpSent ? '재발송' : '인증번호 발송'}
-                                            </button>
-                                        </div>
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => {
+                                                setPhone(e.target.value.replace(/[^0-9]/g, ''));
+                                                setIsPhoneVerified(false);
+                                                setIsOtpSent(false);
+                                            }}
+                                            disabled={isPhoneVerified}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
+                                            placeholder="숫자만 입력 (예: 01012345678)"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleSendOtp}
+                                            disabled={isPhoneVerified || otpSending || !phone || phone.length < 10}
+                                            className={`w-full mt-1.5 py-2 text-sm font-bold rounded-lg border transition-colors
+                                                ${isPhoneVerified
+                                                    ? 'bg-green-50 text-green-600 border-green-200'
+                                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 disabled:opacity-50'}`}
+                                        >
+                                            {isPhoneVerified ? '✓ 인증 완료' : otpSending ? '발송 중...' : isOtpSent ? '재발송' : '인증번호 발송'}
+                                        </button>
                                     </div>
                                     
                                     {isOtpSent && !isPhoneVerified && (
@@ -556,16 +549,16 @@ export default function SignupPage() {
                                                 type="text"
                                                 value={postcode}
                                                 readOnly
-                                                className="w-32 px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none"
+                                                className="flex-1 min-w-0 px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none"
                                                 placeholder="우편번호"
                                                 required
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setIsPostcodeModalOpen(true)}
-                                                className="px-3 py-2 text-sm font-bold rounded-lg border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 transition-colors whitespace-nowrap"
+                                                className="flex-shrink-0 px-3 py-2 text-sm font-bold rounded-lg border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 transition-colors"
                                             >
-                                                우편번호 찾기
+                                                주소 검색
                                             </button>
                                         </div>
                                         <input
