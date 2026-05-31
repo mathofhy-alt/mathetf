@@ -713,19 +713,31 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 examGroup={selectedExamForReport}
             />
 
-            {/* 로그인 유도 바텀시트 */}
+            {/* 로그인 유도 - 모바일: 바텀시트, PC: 중앙 모달 */}
             {showLoginPrompt && (
                 <div
-                    className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 backdrop-blur-sm"
+                    className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm"
                     onClick={() => setShowLoginPrompt(false)}
                 >
+                    {/* 모바일: 바텀시트 / PC: 중앙 모달 */}
                     <div
-                        className="bg-white w-full rounded-t-3xl p-6 pb-10 shadow-2xl"
+                        className="bg-white w-full md:w-auto md:min-w-[400px] md:max-w-md rounded-t-3xl md:rounded-3xl p-6 pb-10 md:pb-6 shadow-2xl"
                         style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="flex justify-center mb-4">
+                        {/* 모바일 드래그 핸들 */}
+                        <div className="flex justify-center mb-4 md:hidden">
                             <div className="w-10 h-1 rounded-full bg-slate-300" />
+                        </div>
+                        {/* PC 닫기 버튼 */}
+                        <div className="hidden md:flex justify-end mb-2">
+                            <button
+                                onClick={() => setShowLoginPrompt(false)}
+                                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100"
+                                aria-label="닫기"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
                         </div>
                         <div className="text-center mb-6">
                             <div className="text-3xl mb-3">📚</div>

@@ -146,7 +146,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 </button>
                             </div>
                         ) : (
-                            !mobileMenuOpen && !['/login', '/signup', '/'].includes(pathname) && (
+                            !mobileMenuOpen && !['/login', '/signup'].includes(pathname) && (
                                 <div className="hidden sm:flex items-center gap-2">
                                     <Link href="/login" className="px-4 py-1.5 text-slate-600 font-bold text-sm hover:bg-slate-50 border border-slate-200 rounded">로그인</Link>
                                     <Link href="/signup" className="px-4 py-1.5 bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 rounded">회원가입</Link>
