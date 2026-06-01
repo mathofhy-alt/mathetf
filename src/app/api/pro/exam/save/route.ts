@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
         console.log('[SaveAPI] Request received');
         const body = await req.json();
-        const { ids, questions: rawQuestions, title, folderId } = body;
+        const { ids, questions: rawQuestions, title, folderId, dbIds } = body;
 
         // [V74] Limit: Max 50 questions per exam
         const MAX_QUESTIONS_PER_EXAM = 50;
@@ -224,7 +224,9 @@ export async function POST(req: NextRequest) {
         const avgDifficulty = Number((totalDifficulty / questions.length).toFixed(2));
 
         const metaData = {
-            source_db_ids: Array.from(new Set(questions.map((q: any) => q.source_db_id).filter(Boolean))),
+            source_db_ids: Array.isArray(dbIds) && dbIds.length > 0
+                ? dbIds  // 프론트에서 전달된 exam_materials UUID 배열 사용
+                : Array.from(new Set(questions.map((q: any) => q.source_db_id).filter(Boolean))),  // fallback
             question_ids: questions.map((q: any) => q.id), // [V73] For re-editing
             question_count: questions.length,
             average_difficulty: avgDifficulty,

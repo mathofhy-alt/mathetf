@@ -42,53 +42,20 @@ export default function DuplicateCheckModal({ isOpen, onClose, onCheck }: Duplic
         setSelectedExamIds(next);
     };
 
-    const handleConfirm = async () => {
+    const handleConfirm = () => {
         if (selectedExamIds.size === 0) return;
 
-        setLoading(true);
         const selectedExams = exams.filter(e => selectedExamIds.has(e.id));
         const allUsedSources = new Set<string>();
-        const supabase = createClient();
 
-        // New Logic: Fetch metadata sidecar JSON files from Storage
-        try {
-            const promises = selectedExams.map(async (exam) => {
-                const fileId = exam.reference_id; // reference_id is the file UUID
-                // The filename structure is user_id/fileId.hml
-                // The metadata json is user_id/fileId.json
-                // But wait, user_items doesn't store the user_id path explicitly unless we assume current user.
-                // Yes, user can only see own items.
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return [];
+        // user_items.details에 source_db_ids가 이미 저장되어 있으므로 바로 사용
+        selectedExams.forEach((exam) => {
+            const ids: string[] = exam.details?.source_db_ids || [];
+            ids.forEach((id: string) => allUsedSources.add(id));
+        });
 
-                const jsonPath = `${user.id}/${fileId}.json`;
-
-                const { data, error } = await supabase.storage
-                    .from('exams')
-                    .download(jsonPath);
-
-                if (error) {
-                    console.warn(`Metadata missing for ${exam.name} (${jsonPath})`, error);
-                    return [];
-                }
-
-                const text = await data.text();
-                const json = JSON.parse(text);
-                return json.source_db_ids || [];
-            });
-
-            const results = await Promise.all(promises);
-            results.flat().forEach((id: string) => allUsedSources.add(id));
-
-            setLoading(false);
-            const examNames = selectedExams.map(e => e.name).join(', ');
-            onCheck(Array.from(allUsedSources), examNames);
-
-        } catch (e) {
-            console.error("Error fetching metadata", e);
-            setLoading(false);
-            alert("일부 시험지의 정보를 불러오는 중 오류가 발생했습니다.");
-        }
+        const examNames = selectedExams.map(e => e.name).join(', ');
+        onCheck(Array.from(allUsedSources), examNames);
     };
 
     if (!isOpen) return null;

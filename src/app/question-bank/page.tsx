@@ -75,6 +75,7 @@ export default function QuestionBankPage() {
     const dragOrderRef = useRef<any[]>([]); // 드래그 중 순서를 ref에만 저장 (re-render 최소화)
     const [showAutoModal, setShowAutoModal] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const [isDbInitialized, setIsDbInitialized] = useState(false);
     const isAdmin = user?.email === 'mathofhy@naver.com';
     const mainScrollRef = useRef<HTMLDivElement>(null);
 
@@ -153,11 +154,13 @@ export default function QuestionBankPage() {
                     fetch('/api/storage/sync', { method: 'POST' })
                         .then(() => setStorageRefreshKey(prev => prev + 1));
                 }
-                fetchPurchasedDbs(data.user.id, data.user.email ?? undefined);
+                fetchPurchasedDbs(data.user.id, data.user.email ?? undefined).finally(() => setIsDbInitialized(true));
                 fetchMyPoints(data.user.id);
             } else if (PERSONAL_DB_FREE_MODE) {
                 // 비로그인이어도 무료 모드라면 DB 목록 자동 로드
-                fetchPurchasedDbs('', '');
+                fetchPurchasedDbs('', '').finally(() => setIsDbInitialized(true));
+            } else {
+                setIsDbInitialized(true);
             }
         });
 
@@ -475,13 +478,31 @@ export default function QuestionBankPage() {
         if (!confirm(`${selectedExamIds.length}개의 시험지를 영구 삭제하시겠습니까?`)) return;
 
         setLoading(true);
+        let successCount = 0;
+        let failCount = 0;
         try {
             for (const id of selectedExamIds) {
-                await fetch(`/api/storage/items?id=${id}`, { method: 'DELETE' });
+                try {
+                    const res = await fetch(`/api/storage/items?id=${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        const errData = await res.json().catch(() => ({}));
+                        console.error(`[DeleteExam] Failed to delete id=${id}, status=${res.status}`, errData);
+                        failCount++;
+                    }
+                } catch (fetchErr) {
+                    console.error(`[DeleteExam] Network error for id=${id}`, fetchErr);
+                    failCount++;
+                }
             }
             setSelectedExamIds([]);
             setStorageRefreshKey(prev => prev + 1);
-            alert('삭제되었습니다.');
+            if (failCount > 0) {
+                alert(`${successCount}개 삭제 완료, ${failCount}개 삭제 실패. 실패한 항목은 새로고침 후 다시 시도해주세요.`);
+            } else {
+                alert(`${successCount}개 시험지가 삭제되었습니다.`);
+            }
         } catch (e) {
             console.error(e);
             alert('삭제 중 오류가 발생했습니다.');
@@ -739,7 +760,8 @@ export default function QuestionBankPage() {
                 body: JSON.stringify({
                     ids: cart.map(q => q.id),
                     title: examTitle,
-                    folderId: folderId || 'root'
+                    folderId: folderId || 'root',
+                    dbIds: selectedDbIds  // 현재 선택된 DB UUID들 전달
                 }),
             });
 
@@ -865,21 +887,30 @@ export default function QuestionBankPage() {
                                 key={storageModalMode}
                                 onItemSelect={handleStorageItemSelect}
                                 onSelectAll={(items) => {
-                                    const ids = items
-                                        .filter(i => i.type === 'saved_exam' || i.type === 'personal_db')
-                                        .map(i => i.reference_id || i.id);
-                                    if (storageModalMode === 'exam') setSelectedExamIds(ids);
-                                    else setSelectedDbIds(ids);
+                                    if (storageModalMode === 'exam') {
+                                        // DELETE/download API는 user_items.id(기본키)를 사용
+                                        const ids = items
+                                            .filter(i => i.type === 'saved_exam')
+                                            .map(i => i.id);
+                                        setSelectedExamIds(ids);
+                                    } else {
+                                        const ids = items
+                                            .filter(i => i.type === 'personal_db')
+                                            .map(i => i.reference_id || i.id);
+                                        setSelectedDbIds(ids);
+                                    }
                                 }}
                                 onGroupSelect={(items, select) => {
-                                    const ids = items.map(i => i.reference_id || i.id);
                                     if (storageModalMode === 'db') {
+                                        const ids = items.map(i => i.reference_id || i.id);
                                         setSelectedDbIds(prev =>
                                             select
                                                 ? [...new Set([...prev, ...ids])]
                                                 : prev.filter(id => !ids.includes(id))
                                         );
                                     } else {
+                                        // exam 모드: user_items.id(기본키) 사용
+                                        const ids = items.map(i => i.id);
                                         setSelectedExamIds(prev =>
                                             select
                                                 ? [...new Set([...prev, ...ids])]
@@ -929,9 +960,10 @@ export default function QuestionBankPage() {
                                 {storageModalMode === 'exam' && (
                                     <button
                                         onClick={() => {
+                                            // user_items.id(기본키)를 사용해야 DELETE API가 정상 동작함
                                             const ids = currentExamItems
                                                 .filter(i => i.type === 'saved_exam')
-                                                .map(i => i.reference_id || i.id);
+                                                .map(i => i.id);
                                             setSelectedExamIds(ids);
                                         }}
                                         className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition flex items-center gap-2 border border-slate-200"
@@ -1375,6 +1407,11 @@ export default function QuestionBankPage() {
                                             </div>
                                             <p className="text-base font-semibold text-slate-600">왼쪽 필터 조건 설정 후 <span className="text-indigo-600">「조건 검색하기」</span>를 눌러주세요.</p>
                                             <p className="text-sm text-slate-400">단원, 난이도, 키워드를 조합해 원하는 문제를 찾을 수 있어요.</p>
+                                        </div>
+                                    ) : !isDbInitialized ? (
+                                        /* DB 초기 로딩 중 - 가이드 깜빡임 방지 */
+                                        <div className="flex justify-center py-20">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                                         </div>
                                     ) : (
                                         /* 초기 상태 — 전체 사용법 안내 */
