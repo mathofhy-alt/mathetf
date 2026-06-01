@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
 import SaveLocationModal from '@/components/storage/SaveLocationModal';
 import AutoGenModal from '@/components/question-bank/AutoGenModal';
 import FolderExplorer from '@/components/storage/FolderExplorer';
 import FilterSidebar from '@/components/question-bank/FilterSidebar';
-import QuestionPreview from '@/components/question-bank/QuestionPreview';
+
 import QuestionRenderer from '@/components/QuestionRenderer';
 import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 
@@ -31,19 +31,45 @@ export default function QuestionBankPage() {
     const [totalQuestions, setTotalQuestions] = useState(0);
     const itemsPerPage = 50;
 
+    // Toast 알림 시스템
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
+    const toastTimerRef = useRef<any>(null);
+    const showToast = useCallback((msg: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToastMessage(msg);
+        setToastType(type);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => setToastMessage(''), 3500);
+    }, []);
+
     // Derived State for performance (O(1) lookup)
     const cartIdSet = useMemo(() => new Set((cart || []).filter(item => item && item.id).map(item => item.id)), [cart]);
 
-    // Load Cart from LocalStorage
+    // Load Cart from LocalStorage + DB에서 실제 데이터 복원
     useEffect(() => {
-        const savedCartIds = localStorage.getItem('exam_cart_ids'); // Use IDs only
+        const savedCartIds = localStorage.getItem('exam_cart_ids');
         if (savedCartIds && savedCartIds !== 'undefined' && savedCartIds !== 'null') {
             try {
                 const parsedIds = JSON.parse(savedCartIds);
-                if (Array.isArray(parsedIds)) {
-                    // Initialize cart with skeleton objects. 
-                    // The Save API and highlight logic only need the .id property.
+                if (Array.isArray(parsedIds) && parsedIds.length > 0) {
+                    // 먼저 스켈레톤으로 빠르게 표시
                     setCart(parsedIds.map(id => ({ id })));
+                    // DB에서 실제 데이터 복원
+                    const supabaseClient = createClient();
+                    supabaseClient
+                        .from('questions')
+                        .select('*, question_images(*)')
+                        .in('id', parsedIds)
+                        .then(({ data }) => {
+                            if (data && data.length > 0) {
+                                const qMap = new Map(data.map(q => [q.id, q]));
+                                // 원래 순서 유지
+                                const restored = parsedIds
+                                    .map(id => qMap.get(id))
+                                    .filter(Boolean);
+                                setCart(restored);
+                            }
+                        });
                 }
             } catch (e) {
                 console.error("Failed to load cart", e);
@@ -78,6 +104,8 @@ export default function QuestionBankPage() {
     const [isDbInitialized, setIsDbInitialized] = useState(false);
     const isAdmin = user?.email === 'mathofhy@naver.com';
     const mainScrollRef = useRef<HTMLDivElement>(null);
+    const [heroStats, setHeroStats] = useState({ questionCount: 0, schoolCount: 0 });
+
 
     // 해설/유사문항 모달 열릴 때 배경 스크롤 전체 차단
     useEffect(() => {
@@ -110,6 +138,23 @@ export default function QuestionBankPage() {
     const [storageRefreshKey, setStorageRefreshKey] = useState(0);
     const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
     const [currentExamItems, setCurrentExamItems] = useState<any[]>([]); // tracks viewItems from FolderExplorer
+    const [excludedQuestionIds, setExcludedQuestionIds] = useState<string[]>([]); // 중복출제 방지용 제외 문제 ID
+
+    // ESC로 모달 닫기
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (solutionTarget) setSolutionTarget(null);
+                else if (similarTarget) setSimilarTarget(null);
+                else if (showConfigModal) setShowConfigModal(false);
+                else if (showSaveModal) setShowSaveModal(false);
+                else if (showAutoModal) setShowAutoModal(false);
+                else if (showStorageModal) setShowStorageModal(false);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+        return () => document.removeEventListener('keydown', handleEsc);
+    }, [solutionTarget, similarTarget, showConfigModal, showSaveModal, showAutoModal, showStorageModal]);
 
     // Pre-fetch Storage Data for Instant Feel
     useEffect(() => {
@@ -124,9 +169,7 @@ export default function QuestionBankPage() {
         }
     }, [user]);
 
-    // Question Preview State
-    const [previewQuestion, setPreviewQuestion] = useState<any>(null);
-    const [previewPos, setPreviewPos] = useState<{ x: number, y: number } | null>(null);
+
 
     const supabase = createClient();
 
@@ -134,6 +177,30 @@ export default function QuestionBankPage() {
     useEffect(() => {
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = ''; };
+    }, []);
+
+    // Hero Stats: DB에서 실제 문제 수 / 학교 수 조회
+    useEffect(() => {
+        (async () => {
+            try {
+                const { count } = await supabase
+                    .from('questions')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('work_status', 'sorted');
+                const { data: schools } = await supabase
+                    .from('questions')
+                    .select('school')
+                    .eq('work_status', 'sorted')
+                    .not('school', 'is', null);
+                const uniqueSchools = new Set(schools?.map(s => s.school).filter(Boolean));
+                setHeroStats({
+                    questionCount: count ?? 0,
+                    schoolCount: uniqueSchools.size,
+                });
+            } catch (e) {
+                console.error('Hero stats fetch error:', e);
+            }
+        })();
     }, []);
 
     const fetchMyPoints = async (userId: string) => {
@@ -260,10 +327,17 @@ export default function QuestionBankPage() {
 
         let query = supabase
             .from('questions')
-            .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_images(question_id, data, id, original_bin_id, format)', { count: 'exact' })
+            .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)', { count: 'exact' })
             .eq('work_status', 'sorted')
             .order('question_number', { ascending: true })
             .range(from, to);
+
+        // 중복출제 방지: 이전 시험지에 사용된 문제 제외
+        if (excludedQuestionIds.length > 0) {
+            // Supabase는 .not('id', 'in', '(...)') 형태 — 최대 100개씩 분할
+            const chunk = excludedQuestionIds.slice(0, 100);
+            query = query.not('id', 'in', `(${chunk.join(',')})`);
+        }
 
         if (dbFilter.length > 0) {
             const selectedDbs = purchasedDbs.filter(d => dbFilter.includes(d.id));
@@ -366,13 +440,13 @@ export default function QuestionBankPage() {
                 if (count !== null) setTotalQuestions(count);
                 if (targetPage === 1) setHasSearched(true);
                 if (data.length === 0 && targetPage === 1) {
-                    alert('해당 조건에 일치하는 문항이 없습니다. (0건)');
+                    showToast('해당 조건에 일치하는 문항이 없습니다. (0건)', 'info');
                     return;
                 }
             }
         } catch (err: any) {
             console.error("fetchQuestions error:", err);
-            alert(`검색 실패: ${err.message || '오류가 발생했습니다.'}`);
+            showToast(`검색 실패: ${err.message || '오류가 발생했습니다.'}`, 'error');
             setQuestions([]);
         } finally {
             setLoading(false);
@@ -382,7 +456,7 @@ export default function QuestionBankPage() {
 
     const handleSearch = () => {
         if (selectedDbIds.length === 0) {
-            alert('DB를 먼저 선택해주세요.');
+            showToast('DB를 먼저 선택해주세요.', 'info');
             return;
         }
         setHasSearched(false);
@@ -424,14 +498,14 @@ export default function QuestionBankPage() {
                 return [...prev, item.id];
             });
         } else {
-            alert('알 수 없는 파일 형식입니다.');
+            showToast('알 수 없는 파일 형식입니다.', 'error');
         }
     };
 
     // [V73] Dedicated Load function for editing
     const handleEditSelectedExam = async () => {
-        if (selectedExamIds.length === 0) return alert('수정할 시험지를 선택해주세요.');
-        if (selectedExamIds.length > 1) return alert('한 번에 하나의 시험지만 수정할 수 있습니다.');
+        if (selectedExamIds.length === 0) return showToast('수정할 시험지를 선택해주세요.', 'info');
+        if (selectedExamIds.length > 1) return showToast('한 번에 하나의 시험지만 수정할 수 있습니다.', 'info');
 
         const examId = selectedExamIds[0];
         setLoading(true);
@@ -447,7 +521,7 @@ export default function QuestionBankPage() {
 
             const qIds = item.details?.question_ids;
             if (!qIds || !Array.isArray(qIds) || qIds.length === 0) {
-                return alert('이 시험지는 재편집 기능을 지원하지 않는 이전 버전입니다. \n방금 업데이트 이후로 새롭게 생성한 시험지부터 재편집이 가능합니다.');
+                return showToast('이 시험지는 재편집 기능을 지원하지 않는 이전 버전입니다. 새록게 생성한 시험지부터 재편집이 가능합니다.', 'info');
             }
 
             const { data, error } = await supabase
@@ -463,10 +537,10 @@ export default function QuestionBankPage() {
             setViewMode('review');
             setShowStorageModal(false);
             setSelectedExamIds([]); // Reset selection
-            alert(`"${item.name}" 시험지 구성을 불러왔습니다. 수정 후 새로운 이름으로 저장할 수 있습니다.`);
+            showToast(`"${item.name}" 시험지 구성을 불러왔습니다.`, 'success');
         } catch (err: any) {
             console.error("Failed to load exam questions:", err);
-            alert("시험지 데이터를 불러오는데 실패했습니다.");
+            showToast('시험지 데이터를 불러오는데 실패했습니다.', 'error');
         } finally {
             setLoading(false);
         }
@@ -474,7 +548,7 @@ export default function QuestionBankPage() {
 
     // [V73] Bulk Delete for Exams
     const handleBulkDeleteExams = async () => {
-        if (selectedExamIds.length === 0) return alert('삭제할 시험지를 선택해주세요.');
+        if (selectedExamIds.length === 0) return showToast('삭제할 시험지를 선택해주세요.', 'info');
         if (!confirm(`${selectedExamIds.length}개의 시험지를 영구 삭제하시겠습니까?`)) return;
 
         setLoading(true);
@@ -499,20 +573,20 @@ export default function QuestionBankPage() {
             setSelectedExamIds([]);
             setStorageRefreshKey(prev => prev + 1);
             if (failCount > 0) {
-                alert(`${successCount}개 삭제 완료, ${failCount}개 삭제 실패. 실패한 항목은 새로고침 후 다시 시도해주세요.`);
+                showToast(`${successCount}개 삭제 완료, ${failCount}개 삭제 실패. 실패한 항목은 새로고침 후 다시 시도해주세요.`, 'error');
             } else {
-                alert(`${successCount}개 시험지가 삭제되었습니다.`);
+                showToast(`${successCount}개 시험지가 삭제되었습니다.`, 'success');
             }
         } catch (e) {
             console.error(e);
-            alert('삭제 중 오류가 발생했습니다.');
+            showToast('삭제 중 오류가 발생했습니다.', 'error');
         } finally {
             setLoading(false);
         }
     };
 
     const handleBulkDownloadExams = async () => {
-        if (selectedExamIds.length === 0) return alert('다운로드할 시험지를 선택해주세요.');
+        if (selectedExamIds.length === 0) return showToast('다운로드할 시험지를 선택해주세요.', 'info');
         selectedExamIds.forEach((id, idx) => {
             setTimeout(() => {
                 const link = document.createElement('a');
@@ -546,7 +620,7 @@ export default function QuestionBankPage() {
             }
             // 50개 제한 체크
             if (prev.length >= MAX_CART_SIZE) {
-                alert(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`);
+                showToast(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`, 'info');
                 return prev;
             }
             const baseIdx = prev.findIndex(q => q.id === baseQ.id);
@@ -629,9 +703,9 @@ export default function QuestionBankPage() {
         setSelectedReviewIds(new Set());
         setIsAutoAdding(false);
         if (skippedCount > 0) {
-            alert(`유사문항 자동추가 완료! ${addedCount}개 추가됨. (최대 ${MAX_CART_SIZE}문제 제한으로 ${skippedCount}개 생략)`);
+            showToast(`유사문항 자동추가 완료! ${addedCount}개 추가됨. (최대 ${MAX_CART_SIZE}문제 제한으로 ${skippedCount}개 생략)`, 'success');
         } else {
-            alert(`유사문항 자동추가 완료! ${addedCount}개 추가됨`);
+            showToast(`유사문항 자동추가 완료! ${addedCount}개 추가됨`, 'success');
         }
     };
 
@@ -642,7 +716,7 @@ export default function QuestionBankPage() {
             setCart(cart.filter(q => q.id !== question.id));
         } else {
             if (cart.length >= MAX_CART_SIZE) {
-                alert(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`);
+                showToast(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`, 'info');
                 return;
             }
             setCart([...cart, question]);
@@ -664,11 +738,11 @@ export default function QuestionBankPage() {
             const currentCart = Array.isArray(cart) ? cart : [];
             const remaining = MAX_CART_SIZE - currentCart.length;
             if (remaining <= 0) {
-                alert(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`);
+                showToast(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`, 'info');
                 return;
             }
             if (toAdd.length > remaining) {
-                alert(`최대 ${MAX_CART_SIZE}문제 제한으로 인해 ${remaining}개만 추가됩니다. (요청: ${toAdd.length}개)`);
+                showToast(`최대 ${MAX_CART_SIZE}문제 제한으로 인해 ${remaining}개만 추가됩니다.`, 'info');
             }
             setCart(prev => [...(Array.isArray(prev) ? prev : []), ...toAdd.slice(0, remaining)]);
         }
@@ -703,11 +777,38 @@ export default function QuestionBankPage() {
         return map[String(diff)] || 5;
     };
 
-    const sortCart = (option: 'original' | 'diff-asc' | 'diff-desc') => {
+    const SORT_OPTIONS: Record<string, { label: string; compareFn: (a: any, b: any) => number }> = {
+        'type-mc': { label: '객관식→단답형', compareFn: (a, b) => { const o = (t: string) => t === 'multiple_choice' ? 0 : 1; return o(a.question_type) - o(b.question_type); } },
+        'type-sa': { label: '단답형→객관식', compareFn: (a, b) => { const o = (t: string) => t === 'short_answer' ? 0 : 1; return o(a.question_type) - o(b.question_type); } },
+        'diff-asc': { label: '쉬운순', compareFn: (a, b) => getDifficultyValue(a.difficulty) - getDifficultyValue(b.difficulty) },
+        'diff-desc': { label: '어려운순', compareFn: (a, b) => getDifficultyValue(b.difficulty) - getDifficultyValue(a.difficulty) },
+        'unit': { label: '단원순', compareFn: (a, b) => (a.unit || '').localeCompare(b.unit || '', 'ko') },
+        'original': { label: '원본순', compareFn: (a, b) => (a.question_number || 0) - (b.question_number || 0) },
+    };
+
+    // 상충되는 기준 그룹: 같은 그룹 내 기준은 동시 선택 불가
+    const SORT_CONFLICTS: Record<string, string[]> = {
+        'type-mc': ['type-sa'],
+        'type-sa': ['type-mc'],
+        'diff-asc': ['diff-desc'],
+        'diff-desc': ['diff-asc'],
+    };
+
+    const [sortKeys, setSortKeys] = useState<string[]>([]);
+
+    const applySortKeys = (keys: string[]) => {
+        setSortKeys(keys);
+        if (keys.length === 0) return;
         let sorted = [...cart];
-        if (option === 'diff-asc') sorted.sort((a, b) => getDifficultyValue(a.difficulty) - getDifficultyValue(b.difficulty));
-        else if (option === 'diff-desc') sorted.sort((a, b) => getDifficultyValue(b.difficulty) - getDifficultyValue(a.difficulty));
-        else if (option === 'original') sorted.sort((a, b) => (a.question_number || 0) - (b.question_number || 0));
+        sorted.sort((a, b) => {
+            for (const key of keys) {
+                const opt = SORT_OPTIONS[key];
+                if (!opt) continue;
+                const result = opt.compareFn(a, b);
+                if (result !== 0) return result;
+            }
+            return 0;
+        });
         setCart(sorted);
     };
 
@@ -774,7 +875,7 @@ export default function QuestionBankPage() {
                 throw new Error(result.error || 'Save failed');
             }
 
-            alert('보관함에 저장되었습니다! "내 보관함"에서 확인 및 다운로드 가능합니다.');
+            showToast('보관함에 저장되었습니다! "내 보관함"에서 확인 및 다운로드 가능합니다.', 'success');
             setCart([]);
             localStorage.removeItem('exam_cart');
             setShowSaveModal(false);
@@ -793,21 +894,33 @@ export default function QuestionBankPage() {
 
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
-            alert('저장 실패: ' + errorMessage);
+            showToast('저장 실패: ' + errorMessage, 'error');
         } finally {
             setIsGenerating(false);
         }
     };
 
     const handleUploadClick = () => {
-        if (!user) return alert('로그인이 필요합니다.');
+        if (!user) return showToast('로그인이 필요합니다.', 'info');
         setIsUploadModalOpen(true);
     };
 
     const [showDuplicateModal, setShowDuplicateModal] = useState(false);
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
+    // Mouse Parallax for Hero Section
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const heroRef = useRef<HTMLDivElement>(null);
+    const handleHeroMouse = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        if (!heroRef.current) return;
+        const rect = heroRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2; // -1 to 1
+        const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+        setMousePos({ x, y });
+    }, []);
+
     return (
+        <>
         <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden">
             <Header
                 user={user}
@@ -1016,12 +1129,7 @@ export default function QuestionBankPage() {
                     </div>
                 </div>
 
-                {/* Question Preview Overlay */}
-                <QuestionPreview
-                    question={previewQuestion}
-                    position={previewPos}
-                    onClose={() => setPreviewQuestion(null)}
-                />
+
 
                 {/* Mobile overlay */}
                 {showMobileSidebar && viewMode !== 'review' && (
@@ -1195,41 +1303,81 @@ export default function QuestionBankPage() {
                                     >
                                         최종 생성 ({cart.length})
                                     </button>
+                                    <button
+                                        onClick={() => { if (confirm('장바구니를 비우시겠습니까?')) { setCart([]); showToast('장바구니를 비웠습니다.', 'info'); } }}
+                                        className="px-3 py-2 border border-red-200 text-red-500 rounded-xl font-bold hover:bg-red-50 transition-all text-xs whitespace-nowrap"
+                                    >
+                                        비우기
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* 정렬 + 유사문항 - 모바일에서 가로 스크롤 */}
-                            <div className="bg-white border rounded-xl sm:rounded-2xl px-3 py-2 sm:p-4 flex items-center gap-2 sm:gap-4 shadow-sm overflow-x-auto">
-                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex-shrink-0 hidden sm:block">Quick Sort</span>
-                                <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
-                                <button onClick={() => sortCart('original')} className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all whitespace-nowrap flex-shrink-0">
-                                    원본순
-                                </button>
-                                <button onClick={() => sortCart('diff-asc')} className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all whitespace-nowrap flex-shrink-0">
-                                    쉬운순
-                                </button>
-                                <button onClick={() => sortCart('diff-desc')} className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-[#EEF4FB] hover:text-[#497AB7] transition-all whitespace-nowrap flex-shrink-0">
-                                    어려운순
-                                </button>
-                                <div className="flex-1"></div>
-                                {selectedReviewIds.size > 0 && (
-                                    <span className="text-[11px] font-bold text-violet-700 bg-violet-100 px-2 py-1 rounded-full flex-shrink-0">
-                                        ✓ {selectedReviewIds.size}개 선택
-                                    </span>
-                                )}
-                                <button
-                                    onClick={handleAutoAddSimilar}
-                                    disabled={isAutoAdding || cart.length === 0}
-                                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#5CC6C3] text-white hover:bg-[#3AADA9] disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap flex-shrink-0"
-                                >
-                                    {isAutoAdding ? (
-                                        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                        </svg>
-                                    ) : '🔗'}
-                                    <span>{isAutoAdding ? '분석중' : selectedReviewIds.size > 0 ? `${selectedReviewIds.size}개 유사추가` : '유사문항'}</span>
-                                </button>
+                            {/* 정렬 + 유사문항 */}
+                            <div className="bg-white border rounded-xl sm:rounded-2xl px-3 py-2.5 sm:p-4 shadow-sm">
+                                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex-shrink-0">정렬</span>
+                                    {sortKeys.map((key, idx) => (
+                                        <div key={idx} className="flex items-center gap-0.5">
+                                            {idx > 0 && <span className="text-slate-300 text-xs mr-1">→</span>}
+                                            <select
+                                                value={key}
+                                                onChange={(e) => {
+                                                    const next = [...sortKeys];
+                                                    next[idx] = e.target.value;
+                                                    // 중복 제거: 이후 레벨에서 같은 기준 있으면 잘라냄
+                                                    const deduped = next.slice(0, idx + 1);
+                                                    applySortKeys(deduped);
+                                                }}
+                                                className="text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg px-2 py-1.5 outline-none cursor-pointer hover:bg-indigo-100 transition-colors"
+                                            >
+                                                {Object.entries(SORT_OPTIONS).map(([k, v]) => (
+                                                    <option key={k} value={k} disabled={
+                                                        (sortKeys.includes(k) && sortKeys[idx] !== k) ||
+                                                        (sortKeys[idx] !== k && sortKeys.some(sk => (SORT_CONFLICTS[sk] || []).includes(k)))
+                                                    }>{v.label}</option>
+                                                ))}
+                                            </select>
+                                            <button onClick={() => { const next = sortKeys.slice(0, idx); applySortKeys(next); }} className="text-slate-300 hover:text-red-400 transition-colors text-sm px-0.5">✕</button>
+                                        </div>
+                                    ))}
+                                    {sortKeys.length < Object.keys(SORT_OPTIONS).length && (
+                                        <button
+                                            onClick={() => {
+                                                const used = new Set(sortKeys);
+                                                const conflicted = new Set(sortKeys.flatMap(sk => SORT_CONFLICTS[sk] || []));
+                                                const nextKey = Object.keys(SORT_OPTIONS).find(k => !used.has(k) && !conflicted.has(k));
+                                                if (nextKey) applySortKeys([...sortKeys, nextKey]);
+                                            }}
+                                            className="px-2 py-1 rounded-lg text-xs font-bold text-slate-400 border border-dashed border-slate-200 hover:border-indigo-300 hover:text-indigo-500 transition-all"
+                                        >
+                                            + 기준 추가
+                                        </button>
+                                    )}
+                                    {sortKeys.length > 0 && (
+                                        <button onClick={() => applySortKeys([])} className="text-[10px] text-slate-400 hover:text-red-500 transition-colors font-bold">
+                                            초기화
+                                        </button>
+                                    )}
+                                    <div className="flex-1"></div>
+                                    {selectedReviewIds.size > 0 && (
+                                        <span className="text-[11px] font-bold text-violet-700 bg-violet-100 px-2 py-1 rounded-full flex-shrink-0">
+                                            ✓ {selectedReviewIds.size}개 선택
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={handleAutoAddSimilar}
+                                        disabled={isAutoAdding || cart.length === 0}
+                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#5CC6C3] text-white hover:bg-[#3AADA9] disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap flex-shrink-0"
+                                    >
+                                        {isAutoAdding ? (
+                                            <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                            </svg>
+                                        ) : '🔗'}
+                                        <span>{isAutoAdding ? '분석중' : selectedReviewIds.size > 0 ? `${selectedReviewIds.size}개 유사추가` : '유사문항'}</span>
+                                    </button>
+                                </div>
                             </div>
                         </header>
                     )}
@@ -1373,7 +1521,7 @@ export default function QuestionBankPage() {
                                                 {q.school} {q.exam_year}
                                             </div>
                                             {viewMode === 'search' && (
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         className="text-[10px] font-bold text-slate-500 hover:text-[#497AB7] bg-white border border-slate-200 hover:border-[#B7D1EA] hover:bg-[#EEF4FB] px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
                                                         onClick={(e) => { e.stopPropagation(); setSolutionTarget(q); }}
@@ -1418,147 +1566,300 @@ export default function QuestionBankPage() {
                                         </div>
                                     ) : (
                                         /* 초기 상태 — 전체 사용법 안내 */
-                                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                                            {/* 비로그인 유저 전용 CTA */}
+                                        <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-100/80">
+                                            {/* 비로그인 유저 전용 CTA — 강화 */}
                                             {!user && (
-                                                <div className="mx-4 mt-4 bg-gradient-to-r from-[#497AB7] to-[#5CC6C3] rounded-2xl p-4 flex items-center justify-between gap-3">
-                                                    <div className="min-w-0">
-                                                        <p className="font-black text-white text-sm">🎉 런칭 기념 전체 무료 개방 중!</p>
+                                                <div className="relative mx-4 mt-4 rounded-2xl p-4 flex items-center justify-between gap-3 overflow-hidden animate-border-glow border-2 border-transparent">
+                                                    {/* Animated gradient BG */}
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-[#497AB7] via-[#5CC6C3] to-[#818cf8] animate-gradient-shift rounded-2xl" style={{ backgroundSize: '200% 200%' }}></div>
+                                                    <div className="relative min-w-0">
+                                                        <p className="font-black text-white text-sm flex items-center gap-1.5">
+                                                            <span className="inline-flex w-5 h-5 items-center justify-center bg-white/20 rounded-full text-[10px]">🎉</span>
+                                                            런칭 기념 전체 무료 개방 중!
+                                                        </p>
                                                         <p className="text-xs text-white/80 mt-0.5">회원가입 후 전국 기출 DB 바로 이용하세요</p>
                                                     </div>
                                                     <a
                                                         href="/login"
-                                                        className="flex-shrink-0 px-4 py-2 bg-white text-[#497AB7] rounded-xl font-black text-sm whitespace-nowrap shadow-sm hover:bg-slate-50 transition-colors"
+                                                        className="relative flex-shrink-0 px-5 py-2.5 bg-white text-[#497AB7] rounded-xl font-black text-sm whitespace-nowrap shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.03] transition-all duration-300"
                                                     >
-                                                        무료 시작
+                                                        무료 시작 →
                                                     </a>
                                                 </div>
                                             )}
-                                            {/* 헤더 */}
-                                            <div className="px-8 pt-6 pb-6 text-center border-b border-slate-100 bg-gradient-to-b from-indigo-50/60 to-white">
-                                                <div className="inline-flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
-                                                    <span>📋</span> 시험지 출제 사용 가이드
+
+                                            {/* ══════════════════════════════════════
+                                                 히어로 섹션 — Premium Parallax
+                                               ══════════════════════════════════════ */}
+                                            <div
+                                                ref={heroRef}
+                                                onMouseMove={handleHeroMouse}
+                                                className="relative overflow-hidden"
+                                            >
+                                                {/* Deep dark base */}
+                                                <div className="absolute inset-0 bg-[#0a0a1a]"></div>
+
+                                                {/* Animated mesh gradient overlay */}
+                                                <div className="absolute inset-0 mesh-gradient-bg opacity-90"></div>
+
+                                                {/* 3D Parallax Orbs */}
+                                                <div
+                                                    className="absolute top-4 right-8 w-80 h-80 rounded-full animate-float-3d"
+                                                    style={{
+                                                        background: 'radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, rgba(99, 102, 241, 0.08) 60%, transparent 80%)',
+                                                        filter: 'blur(40px)',
+                                                        transform: `translate3d(${mousePos.x * 20}px, ${mousePos.y * 15}px, 0)`,
+                                                        transition: 'transform 0.3s ease-out',
+                                                    }}
+                                                ></div>
+                                                <div
+                                                    className="absolute -bottom-12 left-8 w-64 h-64 rounded-full"
+                                                    style={{
+                                                        background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.08) 60%, transparent 80%)',
+                                                        filter: 'blur(35px)',
+                                                        transform: `translate3d(${mousePos.x * -15}px, ${mousePos.y * -12}px, 0)`,
+                                                        transition: 'transform 0.4s ease-out',
+                                                        animation: 'float-3d 10s ease-in-out 2s infinite',
+                                                    }}
+                                                ></div>
+                                                <div
+                                                    className="absolute top-1/3 left-1/4 w-48 h-48 rounded-full"
+                                                    style={{
+                                                        background: 'radial-gradient(circle, rgba(236, 72, 153, 0.12) 0%, transparent 70%)',
+                                                        filter: 'blur(30px)',
+                                                        transform: `translate3d(${mousePos.x * 10}px, ${mousePos.y * -8}px, 0)`,
+                                                        transition: 'transform 0.5s ease-out',
+                                                        animation: 'float-3d 12s ease-in-out 4s infinite',
+                                                    }}
+                                                ></div>
+
+                                                {/* Dot grid pattern */}
+                                                <div className="absolute inset-0 opacity-[0.04]" style={{
+                                                    backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
+                                                    backgroundSize: '24px 24px',
+                                                }}></div>
+
+                                                {/* Subtle noise */}
+                                                <div className="absolute inset-0 opacity-[0.02]" style={{
+                                                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+                                                }}></div>
+
+                                                {/* Content */}
+                                                <div className="relative px-6 sm:px-10 pt-8 sm:pt-10 pb-6 sm:pb-8">
+                                                    <div className="max-w-2xl">
+                                                        {/* Badge */}
+                                                        <div className="animate-entrance delay-100">
+                                                            <div className="inline-flex items-center gap-2 glass-card text-white/90 text-[11px] font-bold px-3 py-1.5 rounded-full mb-4">
+                                                                <span className="relative flex h-2 w-2">
+                                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                                                                </span>
+                                                                시험지 출제 시스템
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Headline */}
+                                                        <div className="animate-entrance delay-200">
+                                                            <h2 className="text-2xl sm:text-4xl font-black text-white leading-[1.15] tracking-tight" style={{wordBreak:'keep-all'}}>
+                                                                기출 문제를 골라담으면,<br/>
+                                                                <span className="bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-300 bg-clip-text text-transparent">
+                                                                    유사문항까지 자동으로
+                                                                </span>{' '}
+                                                                <span className="relative inline-block">
+                                                                    채워드려요
+                                                                    <svg className="absolute -bottom-1.5 left-0 w-full" height="8" viewBox="0 0 200 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <path d="M0 4 Q40 1 80 4 T160 4 T200 4" stroke="url(#ug2)" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.5" className="line-draw"/>
+                                                                        <defs><linearGradient id="ug2" x1="0" y1="0" x2="200" y2="0"><stop offset="0%" stopColor="#67e8f9"/><stop offset="50%" stopColor="#818cf8"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
+                                                                    </svg>
+                                                                </span>
+                                                            </h2>
+                                                        </div>
+
+                                                        {/* Subtext */}
+                                                        <div className="animate-entrance delay-300">
+                                                            <p className="text-xs sm:text-sm text-white/40 mt-3 leading-relaxed max-w-lg" style={{wordBreak:'keep-all'}}>
+                                                                전국 기출 문제를 단원·난이도로 검색하고, 원하는 문제를 골라 시험지를 만드세요. 비슷한 유형의 문제를 자동으로 추천받을 수 있습니다.
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Stats Counter Row */}
+                                                        <div className="animate-entrance delay-400">
+                                                            <div className="flex items-center gap-5 sm:gap-8 mt-5 sm:mt-6">
+                                                                {[
+                                                                    { label: '기출문제 보유', value: heroStats.questionCount > 0 ? heroStats.questionCount.toLocaleString() : '—', suffix: heroStats.questionCount > 0 ? '+' : '', color: 'from-cyan-400 to-cyan-300' },
+                                                                    { label: '학교 기출', value: heroStats.schoolCount > 0 ? heroStats.schoolCount.toLocaleString() : '—', suffix: heroStats.schoolCount > 0 ? '+' : '', color: 'from-indigo-400 to-blue-300' },
+                                                                    { label: 'HML 시험지 생성', value: '무제한', suffix: '', color: 'from-violet-400 to-purple-300' },
+                                                                ].map((stat, i) => (
+                                                                    <div key={i} className="group">
+                                                                        <div className={`text-lg sm:text-xl font-black bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+                                                                            {stat.value}<span className="text-sm">{stat.suffix}</span>
+                                                                        </div>
+                                                                        <div className="text-[10px] sm:text-xs text-white/30 font-medium mt-0.5 group-hover:text-white/50 transition-colors">{stat.label}</div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* CTA Glow Button */}
+                                                        <div className="animate-entrance delay-500 mt-5 sm:mt-6 flex items-center gap-4">
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (!user) {
+                                                                        setStorageModalMode('db');
+                                                                        setShowStorageModal(true);
+                                                                    } else {
+                                                                        setStorageModalMode('db');
+                                                                        setShowStorageModal(true);
+                                                                    }
+                                                                }}
+                                                                className="glow-button px-6 py-2.5 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.03] hover:shadow-lg hover:shadow-indigo-500/20"
+                                                            >
+                                                                <span className="relative z-10 flex items-center gap-2">
+                                                                    지금 시작하기
+                                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                                                </span>
+                                                            </button>
+                                                            <span className="text-xs text-white/20 font-medium hidden sm:inline">가입 없이 바로 검색 가능</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <h2 className="text-xl font-black text-slate-800" style={{wordBreak:'keep-all'}}>4단계로 나만의 시험지 만들기</h2>
-                                                <p className="text-sm text-slate-500 mt-1" style={{wordBreak:'keep-all'}}>{user ? '기출 DB에서 원하는 문제를 골라 시험지를 출제해보세요.' : '로그인 후 무료로 이용 가능합니다.'}</p>
+
+                                                {/* Bottom glow line */}
+                                                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
                                             </div>
 
-                                            {/* 스텝 */}
-                                            <div className="block sm:hidden px-4 py-4 space-y-3">
-                                                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <div className="relative flex-shrink-0">
-                                                        <div className="w-11 h-11 rounded-xl bg-blue-50 border-2 border-blue-200 flex items-center justify-center">
-                                                            <Database size={20} className="text-blue-500" />
+                                            {/* ══════════════════════════════════════
+                                                 피처 카드 — Liquid Glass
+                                               ══════════════════════════════════════ */}
+                                            <div className="relative px-4 sm:px-6 -mt-1 pb-4 pt-4 space-y-2 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-3 bg-gradient-to-b from-slate-50/80 to-white">
+                                                {/* Ambient gradient behind cards */}
+                                                <div className="absolute inset-0 opacity-40" style={{
+                                                    background: 'radial-gradient(ellipse 60% 40% at 20% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 70% 50%, rgba(6, 182, 212, 0.06) 0%, transparent 60%)'
+                                                }}></div>
+
+                                                {/* Card 1: 조건 검색 */}
+                                                <div className="animate-entrance delay-200 relative group glass-card-light rounded-2xl p-4 sm:p-5 cursor-default" style={{perspective: '800px'}}>
+                                                    <div className="relative group-hover:rotate-x-1 group-hover:rotate-y-1 transition-transform duration-500">
+                                                        {/* Icon with glow */}
+                                                        <div className="relative mb-3">
+                                                            <div className="absolute inset-0 w-10 h-10 bg-indigo-500/20 rounded-xl blur-xl group-hover:blur-2xl group-hover:bg-indigo-500/30 transition-all duration-500"></div>
+                                                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200/50 group-hover:scale-110 group-hover:shadow-indigo-300/70 group-hover:rotate-3 transition-all duration-500">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                                            </div>
                                                         </div>
-                                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-black flex items-center justify-center">1</span>
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-black text-slate-700">DB 선택</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>「DB 문제」 버튼으로 기출 DB를 선택하세요</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <div className="relative flex-shrink-0">
-                                                        <div className="w-11 h-11 rounded-xl bg-violet-50 border-2 border-violet-200 flex items-center justify-center">
-                                                            <Search size={20} className="text-violet-500" />
+                                                        <p className="text-sm font-black text-slate-800 mb-1">조건 검색</p>
+                                                        <p className="text-xs text-slate-400 leading-relaxed" style={{wordBreak:'keep-all'}}>과목·단원·난이도·키워드로 원하는 문제를 정밀하게 찾으세요</p>
+                                                        {/* Mini visual */}
+                                                        <div className="mt-3 flex gap-1">
+                                                            {['과목', '단원', '난이도'].map((tag, i) => (
+                                                                <span key={i} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-500 border border-indigo-100/60 group-hover:bg-indigo-100 group-hover:border-indigo-200 transition-all duration-300" style={{animationDelay: `${0.1*i}s`}}>
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
                                                         </div>
-                                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-violet-500 text-white text-[9px] font-black flex items-center justify-center">2</span>
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-black text-slate-700">조건 검색</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>단원·난이도 설정 후 「조건 검색하기」 클릭</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <div className="relative flex-shrink-0">
-                                                        <div className="w-11 h-11 rounded-xl bg-green-50 border-2 border-green-200 flex items-center justify-center">
-                                                            <span className="text-xl">✅</span>
-                                                        </div>
-                                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-black flex items-center justify-center">3</span>
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-black text-slate-700">문제 담기</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>문제 카드를 클릭해서 담으면 상단에 수량 표시</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <div className="relative flex-shrink-0">
-                                                        <div className="w-11 h-11 rounded-xl bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center">
-                                                            <FileText size={20} className="text-indigo-500" />
-                                                        </div>
-                                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-indigo-500 text-white text-[9px] font-black flex items-center justify-center">4</span>
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-black text-slate-700">시험지 생성</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed mt-0.5" style={{wordBreak:'keep-all'}}>「시험지 생성」으로 검토 후 HML 파일 저장</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="hidden sm:grid grid-cols-4 divide-x divide-slate-100 px-2 py-6">
-                                                {/* STEP 1 */}
-                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
-                                                    <div className="relative">
-                                                        <div className="w-14 h-14 rounded-2xl bg-blue-50 border-2 border-blue-200 flex items-center justify-center shadow-sm">
-                                                            <Database size={26} className="text-blue-500" />
-                                                        </div>
-                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-black flex items-center justify-center">1</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-slate-700">DB 선택</p>
-                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">왼쪽 상단<br/><span className="font-bold text-blue-500">「DB 문제」</span> 버튼을 눌러<br/>사용할 기출 DB를 선택하세요.</p>
                                                     </div>
                                                 </div>
 
-                                                {/* STEP 2 */}
-                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
-                                                    <div className="relative">
-                                                        <div className="w-14 h-14 rounded-2xl bg-violet-50 border-2 border-violet-200 flex items-center justify-center shadow-sm">
-                                                            <Search size={26} className="text-violet-500" />
+                                                {/* Card 2: 유사문항 추천 (HOT) */}
+                                                <div className="animate-entrance delay-300 relative group glass-card-light rounded-2xl p-4 sm:p-5 cursor-default" style={{perspective: '800px'}}>
+                                                    {/* HOT badge */}
+                                                    <div className="absolute -top-2.5 right-3 z-10">
+                                                        <div className="relative">
+                                                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full blur-md opacity-50 animate-pulse-ring"></div>
+                                                            <div className="relative bg-gradient-to-r from-cyan-500 to-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg shadow-cyan-500/30">HOT</div>
                                                         </div>
-                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-violet-500 text-white text-[10px] font-black flex items-center justify-center">2</span>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-slate-700">조건 검색</p>
-                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">단원·난이도·키워드 등<br/>필터를 설정하고<br/><span className="font-bold text-violet-500">「조건 검색하기」</span>를 누르세요.</p>
+                                                    <div className="relative group-hover:rotate-x-1 group-hover:-rotate-y-1 transition-transform duration-500">
+                                                        <div className="relative mb-3">
+                                                            <div className="absolute inset-0 w-10 h-10 bg-cyan-500/20 rounded-xl blur-xl group-hover:blur-2xl group-hover:bg-cyan-500/30 transition-all duration-500"></div>
+                                                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-200/50 group-hover:scale-110 group-hover:shadow-cyan-300/70 group-hover:rotate-3 transition-all duration-500">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1"/><rect x="9" y="3" width="13" height="13" rx="2"/></svg>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-sm font-black text-slate-800 mb-1">유사문항 추천</p>
+                                                        <p className="text-xs text-slate-400 leading-relaxed" style={{wordBreak:'keep-all'}}>담은 문제와 비슷한 유형을 자동으로 찾아서 추천해드려요</p>
+                                                        {/* Mini animated demo */}
+                                                        <div className="mt-3 flex items-center gap-1.5">
+                                                            <div className="flex -space-x-1">
+                                                                {[0,1,2].map(i => (
+                                                                    <div key={i} className="w-6 h-6 rounded bg-gradient-to-br from-cyan-100 to-teal-50 border-2 border-white flex items-center justify-center text-[8px] font-black text-cyan-600 group-hover:scale-110 transition-transform duration-300" style={{transitionDelay: `${i*50}ms`}}>
+                                                                        {i+1}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                                                            <div className="w-6 h-6 rounded bg-gradient-to-br from-emerald-100 to-emerald-50 border-2 border-white flex items-center justify-center group-hover:scale-110 transition-transform duration-300 delay-150">
+                                                                <span className="text-[8px] font-black text-emerald-600">AI</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                {/* STEP 3 */}
-                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
-                                                    <div className="relative">
-                                                        <div className="w-14 h-14 rounded-2xl bg-green-50 border-2 border-green-200 flex items-center justify-center shadow-sm">
-                                                            <span className="text-2xl">✅</span>
+                                                {/* Card 3: HML 시험지 */}
+                                                <div className="animate-entrance delay-400 relative group glass-card-light rounded-2xl p-4 sm:p-5 cursor-default" style={{perspective: '800px'}}>
+                                                    <div className="relative group-hover:-rotate-x-1 group-hover:rotate-y-1 transition-transform duration-500">
+                                                        <div className="relative mb-3">
+                                                            <div className="absolute inset-0 w-10 h-10 bg-violet-500/20 rounded-xl blur-xl group-hover:blur-2xl group-hover:bg-violet-500/30 transition-all duration-500"></div>
+                                                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200/50 group-hover:scale-110 group-hover:shadow-violet-300/70 group-hover:rotate-3 transition-all duration-500">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                                            </div>
                                                         </div>
-                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-black flex items-center justify-center">3</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-slate-700">문제 담기</p>
-                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">검색된 문제 카드를<br/>클릭해서 담으세요.<br/>담은 수가 상단에 표시돼요.</p>
-                                                    </div>
-                                                </div>
-
-                                                {/* STEP 4 */}
-                                                <div className="flex flex-col items-center gap-3 px-6 text-center">
-                                                    <div className="relative">
-                                                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center shadow-sm">
-                                                            <FileText size={26} className="text-indigo-500" />
+                                                        <p className="text-sm font-black text-slate-800 mb-1">HML 시험지</p>
+                                                        <p className="text-xs text-slate-400 leading-relaxed" style={{wordBreak:'keep-all'}}>한글 호환 HML 파일로 바로 출력 가능한 시험지를 생성해요</p>
+                                                        {/* Mini file preview */}
+                                                        <div className="mt-3">
+                                                            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg p-2 border border-violet-100/60 group-hover:border-violet-200 transition-all duration-300">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <div className="w-5 h-6 bg-violet-200 rounded flex items-center justify-center">
+                                                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="3"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/></svg>
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-[9px] font-bold text-violet-700 truncate">수학_중간고사.hml</div>
+                                                                        <div className="w-full h-0.5 bg-violet-100 rounded-full mt-0.5 overflow-hidden">
+                                                                            <div className="h-full bg-gradient-to-r from-violet-400 to-purple-400 rounded-full" style={{width: '75%'}}></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] font-black flex items-center justify-center">4</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-slate-700">시험지 생성</p>
-                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">상단 <span className="font-bold text-indigo-500">「시험지 생성」</span>을 눌러<br/>순서·난이도를 검토하고<br/>HML 파일로 저장하세요.</p>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* 하단 팁 */}
-                                            <div className="mx-6 mb-6 px-5 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                                                <div className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center shrink-0 mt-0.5">
-                                                    <span className="text-[10px] font-black">!</span>
-                                                </div>
-                                                <div className="text-xs text-amber-800 leading-relaxed" style={{wordBreak:'keep-all'}}>
-                                                    <span className="font-bold">TIP.</span> 왼쪽 <span className="font-bold text-purple-600">「만든 시험지」</span>로 저장된 시험지를 불러와 편집하거나, 상단 <span className="font-bold text-purple-600">「자동 생성」</span>으로 조건만 입력하면 문제를 자동으로 골라드려요.
+                                            {/* ══════════════════════════════════════
+                                                 스텝 인디케이터 — Interactive Timeline
+                                               ══════════════════════════════════════ */}
+                                            <div className="px-4 sm:px-6 pb-4 bg-white">
+                                                <div className="relative flex items-stretch gap-0 text-xs overflow-x-auto pb-1 pt-1">
+                                                    {/* Background connection line */}
+                                                    <div className="absolute top-1/2 left-6 right-6 h-[2px] -translate-y-1/2 hidden sm:block">
+                                                        <div className="h-full bg-gradient-to-r from-indigo-200/60 via-cyan-200/60 via-violet-200/60 to-emerald-200/60 rounded-full"></div>
+                                                        {/* Animated overlay */}
+                                                        <div className="absolute inset-0 h-full bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 rounded-full opacity-30 line-draw" style={{animationDelay: '0.5s', animationDuration: '2s'}}></div>
+                                                    </div>
+
+                                                    {[
+                                                        { num: '1', label: 'DB 선택', desc: '보유한 기출 DB를 선택', icon: '📦', gradient: 'from-indigo-500 to-indigo-600', bgLight: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200' },
+                                                        { num: '2', label: '조건 검색', desc: '단원·난이도로 필터링', icon: '🔍', gradient: 'from-cyan-500 to-teal-500', bgLight: 'bg-cyan-50', textColor: 'text-cyan-600', borderColor: 'border-cyan-200' },
+                                                        { num: '3', label: '문제 담기', desc: '원하는 문제를 장바구니에', icon: '🛒', gradient: 'from-violet-500 to-purple-500', bgLight: 'bg-violet-50', textColor: 'text-violet-600', borderColor: 'border-violet-200' },
+                                                        { num: '4', label: '시험지 저장', desc: 'HML로 자동 생성', icon: '✅', gradient: 'from-emerald-500 to-green-500', bgLight: 'bg-emerald-50', textColor: 'text-emerald-600', borderColor: 'border-emerald-200' },
+                                                    ].map((step, i) => (
+                                                        <div key={step.num} className="flex-1 relative animate-entrance" style={{ animationDelay: `${0.6 + i * 0.12}s` }}>
+                                                            <div className="group flex flex-col items-center text-center cursor-default px-1 py-2 rounded-xl hover:bg-slate-50/80 transition-all duration-300">
+                                                                {/* Step circle */}
+                                                                <div className={`relative w-8 h-8 rounded-lg bg-gradient-to-br ${step.gradient} flex items-center justify-center text-white font-black text-xs shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300 z-10`}>
+                                                                    <span className="group-hover:hidden">{step.num}</span>
+                                                                    <span className="hidden group-hover:block text-sm">{step.icon}</span>
+                                                                    {/* Pulse ring on hover */}
+                                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-40 group-hover:animate-pulse-ring transition-opacity duration-300" style={{background: `linear-gradient(135deg, var(--tw-gradient-stops))`}}></div>
+                                                                </div>
+                                                                {/* Label */}
+                                                                <span className={`mt-1.5 font-bold ${step.textColor} text-[11px] group-hover:font-black transition-all duration-300`}>{step.label}</span>
+                                                                {/* Expandable description */}
+                                                                <span className="text-[10px] text-slate-300 font-medium mt-0.5 max-h-0 overflow-hidden group-hover:max-h-8 transition-all duration-500 ease-out">{step.desc}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
@@ -1577,15 +1878,30 @@ export default function QuestionBankPage() {
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rotate-180"><path d="m9 18 6-6-6-6"/></svg>
                                 </button>
-                                {Array.from({ length: Math.ceil(totalQuestions / itemsPerPage) }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        onClick={() => handlePageChange(page)}
-                                        className={`w-8 h-8 rounded flex items-center justify-center font-bold transition-colors ${currentPage === page ? 'bg-brand-600 text-white' : 'border border-slate-300 hover:bg-slate-50 text-slate-600'}`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
+                                {(() => {
+                                    const totalPages = Math.ceil(totalQuestions / itemsPerPage);
+                                    const pages: (number | '...')[] = [];
+                                    if (totalPages <= 7) {
+                                        for (let i = 1; i <= totalPages; i++) pages.push(i);
+                                    } else {
+                                        pages.push(1);
+                                        if (currentPage > 3) pages.push('...');
+                                        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+                                        if (currentPage < totalPages - 2) pages.push('...');
+                                        pages.push(totalPages);
+                                    }
+                                    return pages.map((page, idx) => page === '...' ? (
+                                        <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-slate-400">…</span>
+                                    ) : (
+                                        <button
+                                            key={page}
+                                            onClick={() => handlePageChange(page as number)}
+                                            className={`w-8 h-8 rounded flex items-center justify-center font-bold transition-colors ${currentPage === page ? 'bg-brand-600 text-white' : 'border border-slate-300 hover:bg-slate-50 text-slate-600'}`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ));
+                                })()}
                                 <button
                                     onClick={() => handlePageChange(Math.min(Math.ceil(totalQuestions / itemsPerPage), currentPage + 1))}
                                     disabled={currentPage === Math.ceil(totalQuestions / itemsPerPage)}
@@ -1674,24 +1990,35 @@ export default function QuestionBankPage() {
                         setShowStorageModal(false);
                         setShowMobileSidebar(true);
                     }}
-                    onCheck={(blockedIds: string[], examName: string) => {
-                        const initialCount = selectedDbIds.length;
-                        const filteredIds = selectedDbIds.filter(id => !blockedIds.includes(id));
-                        const removedCount = initialCount - filteredIds.length;
-
-                        setSelectedDbIds(filteredIds);
+                    onCheck={(questionIds: string[], examName: string) => {
+                        setExcludedQuestionIds(prev => {
+                            const combined = new Set([...prev, ...questionIds]);
+                            return Array.from(combined);
+                        });
                         setShowDuplicateModal(false);
                         setShowStorageModal(false);
-                        setShowMobileSidebar(true); // 확인 및 제외 후에도 필터 창 열기
+                        setShowMobileSidebar(true);
 
-                        if (removedCount > 0) {
-                            alert(`"${examName}"에 사용된 소스 ${removedCount}개를 제외했습니다.`);
+                        if (questionIds.length > 0) {
+                            showToast(`"${examName}"에 사용된 문제 ${questionIds.length}개를 검색에서 제외합니다.`, 'success');
                         } else {
-                            alert('중복된 소스가 없습니다.');
+                            showToast('선택한 시험지에 문제 데이터가 없습니다.', 'info');
                         }
                     }}
                 />
             )}
         </div >
+
+        {/* Toast 알림 UI */}
+        {toastMessage && (
+            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-xl shadow-2xl font-bold text-sm max-w-[90vw] text-center ${
+                toastType === 'success' ? 'bg-emerald-600 text-white' :
+                toastType === 'error' ? 'bg-red-600 text-white' :
+                'bg-slate-800 text-white'
+            }`}>
+                {toastMessage}
+            </div>
+        )}
+        </>
     );
 }
