@@ -396,6 +396,42 @@ export function generateHmlFromTemplate(
         if (id >= nextImageId) nextImageId = id + 1;
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // [LAYOUT V3] 동적 단 레이아웃 — Pre-scan & Bin Packing
+    // ═══════════════════════════════════════════════════════════
+    const PIXELS_PER_LINE = 30;
+    const COLUMN_LINES_PAGE1 = 43;
+    const COLUMN_LINES_DEFAULT = 46;
+    const MIN_GUTTER_LINES = 3;
+    const DEFAULT_QUESTION_LINES = 15;
+
+    // Pre-scan: 각 문제의 MANUAL_Q_ 캡쳐 이미지에서 줄 수 계산
+    const questionLineHeights: number[] = [];
+    for (const qwi of questionsWithImages) {
+        let lines = DEFAULT_QUESTION_LINES;
+        const manualCapture = qwi.images.find(
+            (img: DbQuestionImage) => img.original_bin_id?.startsWith('MANUAL_Q_')
+        );
+        if (manualCapture && manualCapture.data) {
+            try {
+                const pixelHeight = getImagePixelHeight(manualCapture.data);
+                if (pixelHeight > 0) {
+                    lines = Math.ceil(pixelHeight / PIXELS_PER_LINE);
+                    console.log(`[LAYOUT V3] Q "${qwi.question.id}": ${pixelHeight}px → ${lines} lines`);
+                }
+            } catch (e) {
+                console.warn(`[LAYOUT V3] Failed to extract height for Q "${qwi.question.id}", using default ${DEFAULT_QUESTION_LINES}`, e);
+            }
+        } else {
+            console.log(`[LAYOUT V3] Q "${qwi.question.id}": No MANUAL_Q_ capture, using default ${DEFAULT_QUESTION_LINES} lines`);
+        }
+        questionLineHeights.push(lines);
+    }
+
+    // Bin Packing: 단 배치 계산
+    const layoutPlan = packColumns(questionLineHeights, COLUMN_LINES_PAGE1, COLUMN_LINES_DEFAULT, MIN_GUTTER_LINES);
+    console.log(`[LAYOUT V3] Packing result:`, layoutPlan.map((p, i) => `Q${i+1}: gutter=${p.gutterLines}, break=${p.colBreakAfter}`).join(' | '));
+
     let qIndex = 0;
     let currentColumnHeight = 5; // [V60] Title takes ~5 lines (Reduced from 15)
     const allEndnotes: Element[] = []; // [NEW] Collect all endnotes for final restoration
@@ -836,23 +872,18 @@ export function generateHmlFromTemplate(
 
             combinedContentXmlFull += questionXml;
 
-            // [LAYOUT V2] 단당 2문제 고정 레이아웃
-            // 각 문제 뒤에 빈 줄 8개(풀이 공간)를 삽입하고,
-            // 짝수 번째 문제(2, 4, 6...) 뒤에는 반드시 ColBreak를 넣어
-            // 한 단에 항상 정확히 2문제, 한 페이지에 정확히 4문제가 들어오게 함.
-            const isLastInColumn = (qIndex % 2 === 0); // qIndex는 1-based
+            // [LAYOUT V3] 동적 단 레이아웃 — 패킹 결과 적용
+            const plan = layoutPlan[qIndex - 1]; // qIndex는 1-based
+            if (plan) {
+                const gutterCount = Math.max(1, plan.gutterLines);
+                const emptyLine = `<P Style="0" ParaShape="0"><TEXT CharShape="0"></TEXT></P>`;
+                combinedContentXmlFull += '\n' + Array(gutterCount).fill(emptyLine).join('\n') + '\n';
+                console.log(`[LAYOUT V3] Q${qIndex}: gutter=${gutterCount}줄`);
 
-            // 풀이 공간: 빈 줄 8개
-            const emptyLine = `<P Style="0" ParaShape="0"><TEXT CharShape="0"></TEXT></P>`;
-            combinedContentXmlFull += '\n' + Array(8).fill(emptyLine).join('\n') + '\n';
-
-            if (isLastInColumn) {
-                // 짝수 번째 문제 → 단 강제 전환
-                console.log(`[HML-V2 LAYOUT] Q${qIndex}: 단 2번째 문제 → ColBreak 삽입`);
-                combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
-            } else {
-                // 홀수 번째 문제 → 같은 단에 다음 문제 이어짐
-                console.log(`[HML-V2 LAYOUT] Q${qIndex}: 단 1번째 문제 → 다음 문제 이어짐`);
+                if (plan.colBreakAfter) {
+                    console.log(`[LAYOUT V3] Q${qIndex}: ColBreak 삽입`);
+                    combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
+                }
             }
 
 
@@ -1591,4 +1622,144 @@ function removeTableByInstId(hml: string, instId: string): string {
     }
 
     return hml;
+}
+
+// ═══════════════════════════════════════════════════════════
+// [LAYOUT V3] 유틸리티 함수
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * base64 인코딩된 이미지 데이터에서 픽셀 높이를 추출한다.
+ * PNG: IHDR 청크의 height 필드 (bytes 20-23, big-endian)
+ * JPEG: SOF0/SOF2 마커의 height 필드
+ */
+function getImagePixelHeight(base64Data: string): number {
+    // data:image/png;base64, 접두사 제거
+    const cleanBase64 = base64Data.replace(/^data:image\/[^;]+;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+
+    if (buffer.length < 24) return 0;
+
+    // PNG 감지: 시그니처 137 80 78 71 (\x89PNG)
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+        // IHDR: offset 16 = width(4B), offset 20 = height(4B), big-endian
+        const height = buffer.readUInt32BE(20);
+        return height;
+    }
+
+    // JPEG 감지: SOI 마커 0xFF 0xD8
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8) {
+        let offset = 2;
+        while (offset < buffer.length - 10) {
+            if (buffer[offset] !== 0xFF) { offset++; continue; }
+            const marker = buffer[offset + 1];
+            // SOF0 (0xC0), SOF1 (0xC1), SOF2 (0xC2) — 이미지 프레임 마커
+            if (marker === 0xC0 || marker === 0xC1 || marker === 0xC2) {
+                // offset+2 = length(2B), offset+4 = precision(1B), offset+5 = height(2B)
+                const height = buffer.readUInt16BE(offset + 5);
+                return height;
+            }
+            // 다른 마커 → 길이 읽고 건너뛰기
+            if (offset + 3 < buffer.length) {
+                const segLen = buffer.readUInt16BE(offset + 2);
+                offset += 2 + segLen;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return 0; // 알 수 없는 포맷
+}
+
+/**
+ * 그리디 빈 패킹으로 문제들을 단(column)에 배치한다.
+ * @param questionLines 각 문제의 줄 수 배열
+ * @param page1Lines 첫 페이지 단 높이 (줄 수)
+ * @param defaultLines 2페이지 이후 단 높이 (줄 수)
+ * @param minGutter 문제 사이 최소 풀이 여백 (줄 수)
+ * @returns 각 문제에 대한 { gutterLines, colBreakAfter } 배열
+ */
+function packColumns(
+    questionLines: number[],
+    page1Lines: number,
+    defaultLines: number,
+    minGutter: number
+): { gutterLines: number; colBreakAfter: boolean }[] {
+    if (questionLines.length === 0) return [];
+
+    // 단(column) 구조: 각 단에 들어갈 문제 인덱스들
+    const columns: { questionIndices: number[]; capacity: number }[] = [];
+    let columnIndex = 0;
+
+    const getColumnCapacity = (colIdx: number) => {
+        // 첫 2개 단 (= 페이지 1)은 page1Lines, 이후는 defaultLines
+        return colIdx < 2 ? page1Lines : defaultLines;
+    };
+
+    // 현재 단 초기화
+    let currentColumn = {
+        questionIndices: [] as number[],
+        capacity: getColumnCapacity(0),
+        usedLines: 0
+    };
+
+    for (let i = 0; i < questionLines.length; i++) {
+        const qLines = questionLines[i];
+        const needed = qLines + minGutter;
+
+        // 현재 단에 들어갈 수 있는지 확인
+        if (currentColumn.questionIndices.length > 0 && currentColumn.usedLines + needed > currentColumn.capacity) {
+            // 현재 단 마감, 새 단 시작
+            columns.push({
+                questionIndices: [...currentColumn.questionIndices],
+                capacity: currentColumn.capacity
+            });
+            columnIndex++;
+            currentColumn = {
+                questionIndices: [],
+                capacity: getColumnCapacity(columnIndex),
+                usedLines: 0
+            };
+        }
+
+        currentColumn.questionIndices.push(i);
+        currentColumn.usedLines += needed;
+    }
+
+    // 마지막 단 마감
+    if (currentColumn.questionIndices.length > 0) {
+        columns.push({
+            questionIndices: [...currentColumn.questionIndices],
+            capacity: currentColumn.capacity
+        });
+    }
+
+    console.log(`[LAYOUT V3] Total columns: ${columns.length}, distribution: ${columns.map(c => c.questionIndices.length).join(', ')}`);
+
+    // 결과 배열 생성: 각 문제에 대한 gutter + colBreak 결정
+    const result: { gutterLines: number; colBreakAfter: boolean }[] = new Array(questionLines.length);
+
+    for (const col of columns) {
+        const indices = col.questionIndices;
+        const totalQuestionLines = indices.reduce((sum, idx) => sum + questionLines[idx], 0);
+        const remainingSpace = Math.max(0, col.capacity - totalQuestionLines);
+        const gutterPerQuestion = Math.floor(remainingSpace / indices.length);
+        const extraGutter = remainingSpace - gutterPerQuestion * indices.length; // 나머지 줄은 앞 문제에 1줄씩 추가
+
+        const isLastColumn = (col === columns[columns.length - 1]);
+
+        for (let j = 0; j < indices.length; j++) {
+            const qIdx = indices[j];
+            const isLastInColumn = (j === indices.length - 1);
+            const gutter = gutterPerQuestion + (j < extraGutter ? 1 : 0);
+
+            result[qIdx] = {
+                gutterLines: Math.max(minGutter, gutter),
+                colBreakAfter: isLastInColumn && !isLastColumn // 마지막 단의 마지막 문제는 ColBreak 불필요
+            };
+        }
+    }
+
+    return result;
 }
