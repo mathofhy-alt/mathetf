@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
         console.log('[SaveAPI] Request received');
         const body = await req.json();
-        const { ids, questions: rawQuestions, title, folderId, dbIds } = body;
+        const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
 
         // [V74] Limit: Max 50 questions per exam
         const MAX_QUESTIONS_PER_EXAM = 50;
@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
                     } else if (img.data && typeof img.data === 'string') {
                         try {
                             buffer = Buffer.from(img.data, 'base64');
-                            // Decompress if needed
+                            // Decompress if needed (but skip known image formats: PNG, JPEG, BMP, WebP/RIFF)
                             const headHex = buffer.subarray(0, 2).toString('hex');
-                            if (headHex !== '8950' && headHex !== 'ffd8' && buffer.subarray(0, 2).toString('ascii') !== 'BM') {
+                            if (headHex !== '8950' && headHex !== 'ffd8' && headHex !== '5249' && buffer.subarray(0, 2).toString('ascii') !== 'BM') {
                                 try { buffer = zlib.inflateRawSync(buffer); } catch (e) {
                                     try { buffer = zlib.inflateSync(buffer); } catch (e2) { }
                                 }
@@ -199,7 +199,8 @@ export async function POST(req: NextRequest) {
 
         const result = await generateHmlFromTemplate(templateXml, questionsWithImages, {
             title: titleStr,
-            date: dateStr
+            date: dateStr,
+            questionsPerColumn: questionsPerColumn || 2,
         });
 
         if (!result) throw new Error("Generator failed");

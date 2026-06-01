@@ -741,10 +741,12 @@ export default function QuestionBankPage() {
     };
 
     const [examTitle, setExamTitle] = useState('');
+    const [questionsPerColumn, setQuestionsPerColumn] = useState(2);
 
     // Config Confirmed -> Open Save Modal
-    const handleConfigConfirm = (title: string) => {
+    const handleConfigConfirm = (title: string, qpc: number) => {
         setExamTitle(title);
+        setQuestionsPerColumn(qpc);
         setShowConfigModal(false);
         setShowSaveModal(true);
     };
@@ -761,7 +763,8 @@ export default function QuestionBankPage() {
                     ids: cart.map(q => q.id),
                     title: examTitle,
                     folderId: folderId || 'root',
-                    dbIds: selectedDbIds  // 현재 선택된 DB UUID들 전달
+                    dbIds: selectedDbIds,  // 현재 선택된 DB UUID들 전달
+                    questionsPerColumn: questionsPerColumn,
                 }),
             });
 

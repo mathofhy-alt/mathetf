@@ -14,7 +14,7 @@ import type { GenerateResult, DbQuestionImage, QuestionWithImages } from './type
 export function generateHmlFromTemplate(
     templateContent: string,
     questionsWithImages: QuestionWithImages[],
-    options?: { title?: string; date?: string }
+    options?: { title?: string; date?: string; questionsPerColumn?: number }
 ): GenerateResult {
     console.log("DEBUG: GENERATOR FUNCTION START");
     console.log(`[HML-V2 Surgical Generator] Processing ${questionsWithImages.length} questions`);
@@ -409,27 +409,42 @@ export function generateHmlFromTemplate(
     const questionLineHeights: number[] = [];
     for (const qwi of questionsWithImages) {
         let lines = DEFAULT_QUESTION_LINES;
+        const imgCount = qwi.images?.length || 0;
+        const binIds = qwi.images?.map((img: DbQuestionImage) => img.original_bin_id).join(', ') || 'NONE';
+        console.log(`[LAYOUT V3 DEBUG] Q "${qwi.question.id}": ${imgCount} images, binIds=[${binIds}]`);
+
         const manualCapture = qwi.images.find(
             (img: DbQuestionImage) => img.original_bin_id?.startsWith('MANUAL_Q_')
         );
         if (manualCapture && manualCapture.data) {
+            const dataLen = manualCapture.data.length;
+            const dataPreview = manualCapture.data.substring(0, 30);
+            console.log(`[LAYOUT V3 DEBUG] Found MANUAL_Q_: binId="${manualCapture.original_bin_id}", dataLen=${dataLen}, preview="${dataPreview}..."`);
             try {
                 const pixelHeight = getImagePixelHeight(manualCapture.data);
+                console.log(`[LAYOUT V3 DEBUG] pixelHeight=${pixelHeight}`);
                 if (pixelHeight > 0) {
                     lines = Math.ceil(pixelHeight / PIXELS_PER_LINE);
                     console.log(`[LAYOUT V3] Q "${qwi.question.id}": ${pixelHeight}px → ${lines} lines`);
+                } else {
+                    console.warn(`[LAYOUT V3] pixelHeight=0 for Q "${qwi.question.id}", using default`);
                 }
             } catch (e) {
                 console.warn(`[LAYOUT V3] Failed to extract height for Q "${qwi.question.id}", using default ${DEFAULT_QUESTION_LINES}`, e);
             }
+        } else if (manualCapture && !manualCapture.data) {
+            console.log(`[LAYOUT V3 DEBUG] MANUAL_Q_ found but NO DATA for Q "${qwi.question.id}"`);
         } else {
             console.log(`[LAYOUT V3] Q "${qwi.question.id}": No MANUAL_Q_ capture, using default ${DEFAULT_QUESTION_LINES} lines`);
         }
         questionLineHeights.push(lines);
     }
 
-    // Bin Packing: 단 배치 계산
-    const layoutPlan = packColumns(questionLineHeights, COLUMN_LINES_PAGE1, COLUMN_LINES_DEFAULT, MIN_GUTTER_LINES);
+
+    // Bin Packing: 단 배치 계산 (고정 N개 배치)
+    const qpc = options?.questionsPerColumn || 2;
+    console.log(`[LAYOUT V3] questionsPerColumn=${qpc}`);
+    const layoutPlan = packColumns(questionLineHeights, COLUMN_LINES_PAGE1, COLUMN_LINES_DEFAULT, MIN_GUTTER_LINES, qpc);
     console.log(`[LAYOUT V3] Packing result:`, layoutPlan.map((p, i) => `Q${i+1}: gutter=${p.gutterLines}, break=${p.colBreakAfter}`).join(' | '));
 
     let qIndex = 0;
@@ -1632,6 +1647,7 @@ function removeTableByInstId(hml: string, instId: string): string {
  * base64 인코딩된 이미지 데이터에서 픽셀 높이를 추출한다.
  * PNG: IHDR 청크의 height 필드 (bytes 20-23, big-endian)
  * JPEG: SOF0/SOF2 마커의 height 필드
+ * WebP: RIFF 컨테이너 내 VP8/VP8L/VP8X 청크
  */
 function getImagePixelHeight(base64Data: string): number {
     // data:image/png;base64, 접두사 제거
@@ -1669,8 +1685,41 @@ function getImagePixelHeight(base64Data: string): number {
         }
     }
 
+    // WebP 감지: "RIFF" + size + "WEBP"
+    if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+        buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+        
+        const chunkType = buffer.toString('ascii', 12, 16);
+        
+        // VP8X (Extended): canvas size at offset 24-29
+        if (chunkType === 'VP8X' && buffer.length >= 30) {
+            const height = (buffer[27] | (buffer[28] << 8) | (buffer[29] << 16)) + 1;
+            return height;
+        }
+        
+        // VP8L (Lossless): dimensions at offset 21-24
+        if (chunkType === 'VP8L' && buffer.length >= 25) {
+            if (buffer[21] === 0x2F) {
+                const bits = buffer.readUInt32LE(22);
+                const height = ((bits >> 14) & 0x3FFF) + 1;
+                return height;
+            }
+        }
+        
+        // VP8 (Lossy): find start code 0x9D 0x01 0x2A
+        if (chunkType === 'VP8 ' && buffer.length >= 30) {
+            for (let i = 20; i < Math.min(buffer.length - 6, 40); i++) {
+                if (buffer[i] === 0x9D && buffer[i+1] === 0x01 && buffer[i+2] === 0x2A) {
+                    const height = buffer.readUInt16LE(i + 5) & 0x3FFF;
+                    return height;
+                }
+            }
+        }
+    }
+
     return 0; // 알 수 없는 포맷
 }
+
 
 /**
  * 그리디 빈 패킹으로 문제들을 단(column)에 배치한다.
@@ -1684,54 +1733,29 @@ function packColumns(
     questionLines: number[],
     page1Lines: number,
     defaultLines: number,
-    minGutter: number
+    minGutter: number,
+    questionsPerColumn: number = 2
 ): { gutterLines: number; colBreakAfter: boolean }[] {
     if (questionLines.length === 0) return [];
 
     // 단(column) 구조: 각 단에 들어갈 문제 인덱스들
     const columns: { questionIndices: number[]; capacity: number }[] = [];
-    let columnIndex = 0;
 
     const getColumnCapacity = (colIdx: number) => {
         // 첫 2개 단 (= 페이지 1)은 page1Lines, 이후는 defaultLines
         return colIdx < 2 ? page1Lines : defaultLines;
     };
 
-    // 현재 단 초기화
-    let currentColumn = {
-        questionIndices: [] as number[],
-        capacity: getColumnCapacity(0),
-        usedLines: 0
-    };
-
-    for (let i = 0; i < questionLines.length; i++) {
-        const qLines = questionLines[i];
-        const needed = qLines + minGutter;
-
-        // 현재 단에 들어갈 수 있는지 확인
-        if (currentColumn.questionIndices.length > 0 && currentColumn.usedLines + needed > currentColumn.capacity) {
-            // 현재 단 마감, 새 단 시작
-            columns.push({
-                questionIndices: [...currentColumn.questionIndices],
-                capacity: currentColumn.capacity
-            });
-            columnIndex++;
-            currentColumn = {
-                questionIndices: [],
-                capacity: getColumnCapacity(columnIndex),
-                usedLines: 0
-            };
+    // 고정 N개씩 배치
+    for (let i = 0; i < questionLines.length; i += questionsPerColumn) {
+        const colIdx = columns.length;
+        const indices: number[] = [];
+        for (let j = i; j < Math.min(i + questionsPerColumn, questionLines.length); j++) {
+            indices.push(j);
         }
-
-        currentColumn.questionIndices.push(i);
-        currentColumn.usedLines += needed;
-    }
-
-    // 마지막 단 마감
-    if (currentColumn.questionIndices.length > 0) {
         columns.push({
-            questionIndices: [...currentColumn.questionIndices],
-            capacity: currentColumn.capacity
+            questionIndices: indices,
+            capacity: getColumnCapacity(colIdx)
         });
     }
 

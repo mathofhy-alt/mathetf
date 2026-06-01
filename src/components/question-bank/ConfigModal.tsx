@@ -1,21 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, FileText } from 'lucide-react';
+import { X, FileText, LayoutGrid } from 'lucide-react';
 
 interface ConfigModalProps {
     onClose: () => void;
-    onConfirm: (title: string) => void;
+    onConfirm: (title: string, questionsPerColumn: number) => void;
     isGenerating: boolean;
 }
 
 export default function ConfigModal({ onClose, onConfirm, isGenerating }: ConfigModalProps) {
     const [title, setTitle] = useState('');
+    const [questionsPerColumn, setQuestionsPerColumn] = useState(2);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim()) return;
-        onConfirm(title);
+        onConfirm(title, questionsPerColumn);
     };
 
     return (
@@ -50,6 +51,32 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating }: Config
                         />
                         <p className="text-xs text-slate-500 mt-2">
                             * 설정한 제목은 파일명으로 사용됩니다.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                            <LayoutGrid size={16} className="text-indigo-500" />
+                            열당 문제 수
+                        </label>
+                        <div className="flex gap-2">
+                            {[1, 2, 3].map((n) => (
+                                <button
+                                    key={n}
+                                    type="button"
+                                    onClick={() => setQuestionsPerColumn(n)}
+                                    className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ${
+                                        questionsPerColumn === n
+                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                            : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {n}문제
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-2">
+                            한 열(단)에 배치할 문제 수를 선택하세요.
                         </p>
                     </div>
 
