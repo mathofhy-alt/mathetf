@@ -18,23 +18,55 @@ function parseYear(name: string): string {
     return m ? m[1] : '연도미상';
 }
 
-type GroupedItems = Record<string, Record<string, UserItem[]>>;
+// 파일명에서 시험 종류(1학기 중간/기말, 2학기 중간/기말) 추출
+function parseExamType(name: string): string {
+    const semM = name.match(/(\d)\s*학기/);
+    const sem = semM ? semM[1] : null;
+    const isMid = name.includes('중간');
+    const isFin = name.includes('기말');
+    if (sem) {
+        if (isMid) return `${sem}학기 중간`;
+        if (isFin) return `${sem}학기 기말`;
+        return `${sem}학기`;
+    }
+    if (isMid) return '중간';
+    if (isFin) return '기말';
+    return '기타';
+}
 
-function groupByGradeYear(items: UserItem[]): GroupedItems {
+// 시험 종류 표시 순서
+const EXAM_TYPE_ORDER = ['1학기 중간', '1학기 기말', '2학기 중간', '2학기 기말'];
+function examTypeRank(t: string): number {
+    const i = EXAM_TYPE_ORDER.indexOf(t);
+    return i === -1 ? 99 : i;
+}
+
+// 학년 → 년도 → 시험종류 → 항목
+type GroupedItems = Record<string, Record<string, Record<string, UserItem[]>>>;
+
+function groupByGradeYearType(items: UserItem[]): GroupedItems {
     const dbItems = items.filter(i => i.type === 'personal_db');
     const groups: GroupedItems = {};
     for (const item of dbItems) {
         const grade = parseGrade(item.name || '');
         const year  = parseYear(item.name || '');
+        const etype = parseExamType(item.name || '');
         if (!groups[grade]) groups[grade] = {};
-        if (!groups[grade][year]) groups[grade][year] = [];
-        groups[grade][year].push(item);
+        if (!groups[grade][year]) groups[grade][year] = {};
+        if (!groups[grade][year][etype]) groups[grade][year][etype] = [];
+        groups[grade][year][etype].push(item);
     }
     // 학년 정렬 (고1 → 고2 → 고3)
     return Object.fromEntries(
         Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
     );
 }
+
+// 헬퍼: 특정 학년/년도 하위의 모든 항목을 평탄화
+const flattenTypeMap = (typeMap: Record<string, UserItem[]>): UserItem[] =>
+    Object.values(typeMap).flat();
+const flattenYearMap = (yearMap: Record<string, Record<string, UserItem[]>>): UserItem[] =>
+    Object.values(yearMap).flatMap(flattenTypeMap);
 
 // ─────────────────────────────────────────────────────────────
 
@@ -79,9 +111,12 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
     const [openGrades, setOpenGrades] = useState<Record<string, boolean>>({});
     // 년도 아코디언 상태 (기본값: 접힘)
     const [openYears, setOpenYears] = useState<Record<string, boolean>>({});
+    // 시험종류 아코디언 상태 (기본값: 접힘)
+    const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
 
     const toggleGrade = (grade: string) => setOpenGrades(p => ({ ...p, [grade]: p[grade] ? false : true }));
     const toggleYear = (key: string) => setOpenYears(p => ({ ...p, [key]: p[key] ? false : true }));
+    const toggleType = (key: string) => setOpenTypes(p => ({ ...p, [key]: p[key] ? false : true }));
 
     const handleDragStart = (e: React.DragEvent, type: 'folder' | 'item', id: string) => {
         e.dataTransfer.setData('application/json', JSON.stringify({ type, id }));
@@ -111,7 +146,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
 
     const hasDbItems = items.some(i => i.type === 'personal_db');
     const nonDbItems = items.filter(i => i.type !== 'personal_db');
-    const grouped = hasDbItems ? groupByGradeYear(items) : {};
+    const grouped = hasDbItems ? groupByGradeYearType(items) : {};
 
     const renderItem = (item: UserItem) => {
         const isSelected = selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id));
@@ -200,13 +235,13 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                 {/* 개인DB: 학년 → 년도 아코디언 */}
                 {hasDbItems && Object.entries(grouped).map(([grade, yearMap]) => {
                     const gradeOpen = openGrades[grade] === true; // 기본 접힘
-                    const totalCount = Object.values(yearMap).flat().length;
+                    const totalCount = flattenYearMap(yearMap).length;
                     return (
                         <div key={grade}>
                             {/* 학년 헤더 */}
                             <button
                                 className={`w-full flex items-center gap-2 px-4 py-2 border-b transition-colors text-left ${
-                                    Object.values(yearMap).flat().some(item =>
+                                    flattenYearMap(yearMap).some(item =>
                                         selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
                                     )
                                         ? 'bg-[#E8F0FB] hover:bg-[#D4E4F7] border-[#B7D1EA]'
@@ -221,7 +256,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                 <span className="text-sm font-bold text-slate-700">📚 {grade}</span>
                                 <span className="ml-auto flex items-center gap-2">
                                     {(() => {
-                                        const allInGrade = Object.values(yearMap).flat();
+                                        const allInGrade = flattenYearMap(yearMap);
                                         const selCount = allInGrade.filter(item =>
                                             selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
                                         ).length;
@@ -255,15 +290,16 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
 
                             {gradeOpen && Object.entries(yearMap)
                                 .sort(([a], [b]) => b.localeCompare(a)) // 최신년도 위로
-                                .map(([year, yearItems]) => {
+                                .map(([year, typeMap]) => {
                                     const yearKey = `${grade}_${year}`;
                                     const yearOpen = openYears[yearKey] === true; // 기본 접힘
+                                    const allInYear = flattenTypeMap(typeMap);
                                     return (
                                         <div key={year}>
                                             {/* 년도 서브헤더 */}
                                             <button
                                                 className={`w-full flex items-center gap-2 pl-8 pr-4 py-1.5 border-b transition-colors text-left ${
-                                                    yearItems.some(item =>
+                                                    allInYear.some(item =>
                                                         selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
                                                     )
                                                         ? 'bg-[#EEF4FD] hover:bg-[#E0ECFB] border-[#C5D9F0]'
@@ -278,22 +314,22 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                                 <span className="text-xs font-semibold text-slate-600">📅 {year}년</span>
                                                 <span className="ml-auto flex items-center gap-2">
                                                     {(() => {
-                                                        const selCount = yearItems.filter(item =>
+                                                        const selCount = allInYear.filter(item =>
                                                             selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
                                                         ).length;
-                                                        const yearAllSel = selCount === yearItems.length && yearItems.length > 0;
+                                                        const yearAllSel = selCount === allInYear.length && allInYear.length > 0;
                                                         return (
                                                             <>
                                                                 {selCount > 0 ? (
                                                                     <span className="bg-[#5CC6C3] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                                                        {selCount}/{yearItems.length}
+                                                                        {selCount}/{allInYear.length}
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="text-xs text-slate-400 font-normal">{yearItems.length}개</span>
+                                                                    <span className="text-xs text-slate-400 font-normal">{allInYear.length}개</span>
                                                                 )}
                                                                 {onGroupSelect && (
                                                                     <button
-                                                                        onClick={(e) => { e.stopPropagation(); onGroupSelect(yearItems, !yearAllSel); }}
+                                                                        onClick={(e) => { e.stopPropagation(); onGroupSelect(allInYear, !yearAllSel); }}
                                                                         className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
                                                                             yearAllSel
                                                                                 ? 'bg-[#5CC6C3] text-white border-[#3AADA9]'
@@ -309,7 +345,67 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                                 </span>
                                             </button>
 
-                                            {yearOpen && [...yearItems].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })).map(item => renderItem(item))}
+                                            {/* 시험종류 서브헤더 (1학기 중간/기말, 2학기 중간/기말) */}
+                                            {yearOpen && Object.entries(typeMap)
+                                                .sort(([a], [b]) => examTypeRank(a) - examTypeRank(b))
+                                                .map(([etype, typeItems]) => {
+                                                    const typeKey = `${grade}_${year}_${etype}`;
+                                                    const typeOpen = openTypes[typeKey] === true; // 기본 접힘
+                                                    return (
+                                                        <div key={etype}>
+                                                            <button
+                                                                className={`w-full flex items-center gap-2 pl-12 pr-4 py-1.5 border-b transition-colors text-left ${
+                                                                    typeItems.some(item =>
+                                                                        selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
+                                                                    )
+                                                                        ? 'bg-[#F1ECFB] hover:bg-[#E7DEF9] border-[#D6C8F0]'
+                                                                        : 'bg-slate-50/60 hover:bg-violet-50 border-slate-100'
+                                                                }`}
+                                                                onClick={() => toggleType(typeKey)}
+                                                            >
+                                                                {typeOpen
+                                                                    ? <ChevronDown size={12} className="text-slate-400 flex-shrink-0" />
+                                                                    : <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />
+                                                                }
+                                                                <span className="text-xs font-semibold text-violet-700">📝 {etype}</span>
+                                                                <span className="ml-auto flex items-center gap-2">
+                                                                    {(() => {
+                                                                        const selCount = typeItems.filter(item =>
+                                                                            selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id))
+                                                                        ).length;
+                                                                        const typeAllSel = selCount === typeItems.length && typeItems.length > 0;
+                                                                        return (
+                                                                            <>
+                                                                                {selCount > 0 ? (
+                                                                                    <span className="bg-[#8B6FD0] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                                                                        {selCount}/{typeItems.length}
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-xs text-slate-400 font-normal">{typeItems.length}개</span>
+                                                                                )}
+                                                                                {onGroupSelect && (
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); onGroupSelect(typeItems, !typeAllSel); }}
+                                                                                        className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${
+                                                                                            typeAllSel
+                                                                                                ? 'bg-[#8B6FD0] text-white border-[#7257BC]'
+                                                                                                : 'bg-white text-[#8B6FD0] border-[#D6C8F0] hover:bg-[#F1ECFB]'
+                                                                                        }`}
+                                                                                    >
+                                                                                        {typeAllSel ? '해제' : '전체'}
+                                                                                    </button>
+                                                                                )}
+                                                                            </>
+                                                                        );
+                                                                    })()}
+                                                                </span>
+                                                            </button>
+
+                                                            {typeOpen && [...typeItems].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })).map(item => renderItem(item))}
+                                                        </div>
+                                                    );
+                                                })
+                                            }
                                         </div>
                                     );
                                 })

@@ -74,9 +74,9 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                 </div>
 
                 {/* Body - Split View */}
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                     {/* Left Panel - Fixed Original Question */}
-                    <div className="w-[450px] border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10 shrink-0">
+                    <div className="w-full md:w-[450px] max-h-[40vh] md:max-h-none border-b md:border-b-0 md:border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10 shrink-0">
                         <div className="p-4 border-b bg-indigo-50/30">
                             <h3 className="font-bold text-indigo-900 flex items-center gap-2">
                                 <span className="text-xl">🎯</span>

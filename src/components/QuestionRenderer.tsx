@@ -110,12 +110,12 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     // 2. Render Logic
     const renderedContent = useMemo(() => {
         // [STRATEGY] Filter Manual Captures by Display Mode
-        const manualCaps = externalImages.filter(img => {
+        const manualCaps = externalImages.filter((img: any) => {
             if (displayMode === 'solution') {
-                return img.original_bin_id?.startsWith('MANUAL_S_');
+                return img.original_bin_id?.startsWith('MANUAL_S_') || img.original_bin_id?.startsWith('AUTO_S_');
             } else {
-                // Question mode: Show MANUAL_Q_ or legacy MANUAL_ (excluding S)
-                return img.original_bin_id?.startsWith('MANUAL_Q_') ||
+                // Question mode: Show MANUAL_Q_, AUTO_Q_ or legacy MANUAL_ (excluding S)
+                return img.original_bin_id?.startsWith('MANUAL_Q_') || img.original_bin_id?.startsWith('AUTO_Q_') ||
                     (img.original_bin_id?.startsWith('MANUAL_') && !img.original_bin_id?.startsWith('MANUAL_S_'));
             }
         });

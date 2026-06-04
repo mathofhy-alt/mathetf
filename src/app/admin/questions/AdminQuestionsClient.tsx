@@ -2388,7 +2388,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                     <div className="p-4 flex-1 overflow-hidden" style={{ minHeight: '300px' }}>
                                                         {/* Prioritize Manual Capture (Question) */}
                                                         {(() => {
-                                                            const manualCapture = simQ.question_images?.find((img: any) => img.original_bin_id?.startsWith("MANUAL_Q_"));
+                                                            const manualCapture = simQ.question_images?.find((img: any) => img.original_bin_id?.startsWith("MANUAL_Q_") || img.original_bin_id?.startsWith("AUTO_Q_"));
                                                             if (manualCapture) {
                                                                 return (
                                                                     <div className="w-full flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden mb-3" style={{ height: '220px' }}>

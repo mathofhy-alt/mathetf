@@ -16,7 +16,7 @@ export function generateHmlFromTemplate(
     questionsWithImages: QuestionWithImages[],
     options?: { title?: string; date?: string; questionsPerColumn?: number }
 ): GenerateResult {
-    console.log("DEBUG: GENERATOR FUNCTION START");
+
     console.log(`[HML-V2 Surgical Generator] Processing ${questionsWithImages.length} questions`);
 
     // [METADATA INJECTION] Replace {{TITLE}} and {{DATE}}
@@ -328,7 +328,7 @@ export function generateHmlFromTemplate(
         }
 
         if (role) {
-            console.log(`[HML-V2 DEBUG] Extracted BOX pattern for role: ${role}`);
+
             // Store the pattern
             boxPatterns[role] = serializer.serializeToString(table);
 
@@ -409,20 +409,14 @@ export function generateHmlFromTemplate(
     const questionLineHeights: number[] = [];
     for (const qwi of questionsWithImages) {
         let lines = DEFAULT_QUESTION_LINES;
-        const imgCount = qwi.images?.length || 0;
-        const binIds = qwi.images?.map((img: DbQuestionImage) => img.original_bin_id).join(', ') || 'NONE';
-        console.log(`[LAYOUT V3 DEBUG] Q "${qwi.question.id}": ${imgCount} images, binIds=[${binIds}]`);
 
-        const manualCapture = qwi.images.find(
-            (img: DbQuestionImage) => img.original_bin_id?.startsWith('MANUAL_Q_')
+
+        const manualImage = qwi.question.question_images?.find(
+            (img: DbQuestionImage) => img.original_bin_id?.startsWith('MANUAL_Q_') || img.original_bin_id?.startsWith('AUTO_Q_')
         );
-        if (manualCapture && manualCapture.data) {
-            const dataLen = manualCapture.data.length;
-            const dataPreview = manualCapture.data.substring(0, 30);
-            console.log(`[LAYOUT V3 DEBUG] Found MANUAL_Q_: binId="${manualCapture.original_bin_id}", dataLen=${dataLen}, preview="${dataPreview}..."`);
+        if (manualImage && manualImage.data) {
             try {
-                const pixelHeight = getImagePixelHeight(manualCapture.data);
-                console.log(`[LAYOUT V3 DEBUG] pixelHeight=${pixelHeight}`);
+                const pixelHeight = getImagePixelHeight(manualImage.data);
                 if (pixelHeight > 0) {
                     lines = Math.ceil(pixelHeight / PIXELS_PER_LINE);
                     console.log(`[LAYOUT V3] Q "${qwi.question.id}": ${pixelHeight}px → ${lines} lines`);
@@ -433,7 +427,7 @@ export function generateHmlFromTemplate(
                 console.warn(`[LAYOUT V3] Failed to extract height for Q "${qwi.question.id}", using default ${DEFAULT_QUESTION_LINES}`, e);
             }
         } else if (manualCapture && !manualCapture.data) {
-            console.log(`[LAYOUT V3 DEBUG] MANUAL_Q_ found but NO DATA for Q "${qwi.question.id}"`);
+            console.warn(`[LAYOUT V3] MANUAL_Q_ found but NO DATA for Q "${qwi.question.id}"`);
         } else {
             console.log(`[LAYOUT V3] Q "${qwi.question.id}": No MANUAL_Q_ capture, using default ${DEFAULT_QUESTION_LINES} lines`);
         }
@@ -453,26 +447,13 @@ export function generateHmlFromTemplate(
 
     for (const qwi of questionsWithImages) {
         qIndex++;
-        // Remove Column Breaks (Ctrl+Shift+Enter) as requested
-        // Handles both Standalone Tags (<COLBREAK>, <hp:COLBREAK>) and Paragraph Attributes (ColumnBreak="true")
-        // Added robust spacing handle for attributes
         let cleanContent = qwi.question.content_xml
             .replace(/<(?:hp:)?COLBREAK[^>]*?>/gi, '')
             .replace(/ColumnBreak\s*=\s*"true"/gi, '')
             .replace(/ColumnBreak\s*=\s*"1"/gi, '')
             .replace(/PageBreak\s*=\s*"true"/gi, '')
-            // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 포함한 TEXT의 CharShape를 14(흰색+1pt)로 교체
-            // → 미주 번호(위첨자)가 출력 시 보이지 않음. 풀이 내용은 BOX_MIJU로 별도 처리됨
             .replace(/<TEXT\s+CharShape="[^"]*"(\s[^>]*)?>(<ENDNOTE>|<hp:ENDNOTE>)/gi,
                 (match: string) => match.replace(/CharShape="[^"]*"/, 'CharShape="14"'));
-
-        // Add ENDNOTE detection logging
-        // [FIX V20] Regex-based search for ANY version of endnote tag
-        if (/<[^>]*?ENDNOTE/i.test(cleanContent)) {
-            console.log(`[HML-V2 DEBUG] Question ${qwi.question.id} contains suspected ENDNOTE tag via Regex.`);
-        } else {
-            console.warn(`[HML-V2 DEBUG] Question ${qwi.question.id} has NO ENDNOTE tags via Regex! Content length: ${cleanContent.length}`);
-        }
 
         const qDoc = parser.parseFromString(`<WRAP>${cleanContent}</WRAP>`, 'text/xml');
         const root = qDoc.documentElement;
@@ -491,9 +472,7 @@ export function generateHmlFromTemplate(
         };
 
         const endnotesInQ = findEndnotes(root);
-        console.log(`[HML-V2 DEBUG] Question ${qwi.question.id} findEndnotes() count: ${endnotesInQ.length}`);
         if (endnotesInQ.length > 0) {
-            console.log(`[HML-V2 DEBUG] Question ${qwi.question.id}: Found ${endnotesInQ.length} endnotes. Accumulating clones.`);
             for (const en of endnotesInQ) {
                 allEndnotes.push(en.cloneNode(true) as Element);
             }
@@ -684,11 +663,11 @@ export function generateHmlFromTemplate(
             const imgData = img.data || '';
 
             // [FIX] Deduplication Re-Enabled
-            // We use the image data hash/content to detect duplicates.
+            // base64의 처음 100자 + 길이를 key로 사용하여 메모리 효율 최적화
             const isValidData = imgData.length > 100;
-            if (isValidData && imageHashMap.has(imgData)) {
-                newId = parseInt(imageHashMap.get(imgData)!, 10);
-                // console.log(`[HML-V2] Deduplicated Image (Size: ${imgData.length}) -> ID ${newId}`);
+            const dedupKey = isValidData ? imgData.substring(0, 100) + ':' + imgData.length : '';
+            if (isValidData && imageHashMap.has(dedupKey)) {
+                newId = parseInt(imageHashMap.get(dedupKey)!, 10);
             } else {
                 const listIndex = allImages.length + 1;
                 newId = listIndex;
@@ -696,7 +675,7 @@ export function generateHmlFromTemplate(
                 allImages.push({ originalId: img.original_bin_id, newId, image: img });
 
                 if (isValidData) {
-                    imageHashMap.set(imgData, String(newId));
+                    imageHashMap.set(dedupKey, String(newId));
                 }
             }
 
@@ -718,7 +697,7 @@ export function generateHmlFromTemplate(
             // ... Code removed for conciseness as it was conditioned 'false' ...
         } else {
             // --- MODE B: TEXT MODE (SAFE) ---
-            console.log(`[HML-V2 DUAL-MODE] Question ${qIndex}: Active TEXT MODE (Preserving original content)`);
+
 
             // Revert to Standard DOM Processing (Box Wrapping, etc.)
 
@@ -827,7 +806,6 @@ export function generateHmlFromTemplate(
             stripBreaks(root);
 
             const children = Array.from(root.childNodes);
-            console.log(`[HML-V2 DEBUG] Question ${qIndex} has ${children.length} root child nodes`);
             for (const child of children) {
                 // console.log(`[HML-V2 DEBUG]   - Node: ${child.nodeName}`);
                 if (child.nodeType !== 1) continue;
@@ -883,7 +861,6 @@ export function generateHmlFromTemplate(
 
             // [V47] Advanced Layout: Gutter Protection (150pt + KeepTogether)
             // We apply ParaShape 9998 (KeepTogether, 150pt margin) to the VERY LAST paragraph of the question block.
-            console.log(`[HML-V2 DEBUG] questionXml length: ${questionXml.length}`);
 
             combinedContentXmlFull += questionXml;
 
@@ -907,7 +884,7 @@ export function generateHmlFromTemplate(
 
     // [FIX V12] ENDNOTE RESTORATION (Miju Box)
     // If we accumulated endnotes and have a BOX_MIJU template pattern, inject it now.
-    console.log(`[HML-V2 DEBUG] Final Check: ${allEndnotes.length} endnotes accumulated. BOX_MIJU pattern exists: ${!!boxPatterns['BOX_MIJU']}`);
+
     if (allEndnotes.length > 0) {
         if (boxPatterns['BOX_MIJU']) {
             console.log(`[HML-V2 Generator] V19: Restoring ${allEndnotes.length} endnotes into BOX_MIJU pattern.`);
@@ -1778,8 +1755,13 @@ function packColumns(
             const isLastInColumn = (j === indices.length - 1);
             const gutter = gutterPerQuestion + (j < extraGutter ? 1 : 0);
 
+            // questionsPerColumn=1일 때 gutter가 과도하게 커지는 것을 방지 (최대 10줄)
+            const finalGutter = questionsPerColumn === 1
+                ? Math.min(10, Math.max(minGutter, gutter))
+                : Math.max(minGutter, gutter);
+
             result[qIdx] = {
-                gutterLines: Math.max(minGutter, gutter),
+                gutterLines: finalGutter,
                 colBreakAfter: isLastInColumn && !isLastColumn // 마지막 단의 마지막 문제는 ColBreak 불필요
             };
         }

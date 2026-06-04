@@ -6,7 +6,7 @@ import { Loader2, AlertTriangle, Check } from 'lucide-react';
 interface DuplicateCheckModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onCheck: (sourceDbIds: string[], examName: string) => void;
+    onCheck: (questionIds: string[], examName: string) => void;
 }
 
 export default function DuplicateCheckModal({ isOpen, onClose, onCheck }: DuplicateCheckModalProps) {
@@ -46,16 +46,16 @@ export default function DuplicateCheckModal({ isOpen, onClose, onCheck }: Duplic
         if (selectedExamIds.size === 0) return;
 
         const selectedExams = exams.filter(e => selectedExamIds.has(e.id));
-        const allUsedSources = new Set<string>();
+        const allUsedQuestionIds = new Set<string>();
 
-        // user_items.details에 source_db_ids가 이미 저장되어 있으므로 바로 사용
+        // user_items.details에 question_ids가 저장되어 있으므로 바로 사용
         selectedExams.forEach((exam) => {
-            const ids: string[] = exam.details?.source_db_ids || [];
-            ids.forEach((id: string) => allUsedSources.add(id));
+            const ids: string[] = exam.details?.question_ids || [];
+            ids.forEach((id: string) => allUsedQuestionIds.add(id));
         });
 
         const examNames = selectedExams.map(e => e.name).join(', ');
-        onCheck(Array.from(allUsedSources), examNames);
+        onCheck(Array.from(allUsedQuestionIds), examNames);
     };
 
     if (!isOpen) return null;
@@ -75,7 +75,7 @@ export default function DuplicateCheckModal({ isOpen, onClose, onCheck }: Duplic
                     <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
                     <span>
                         비교할 이전 시험지를 선택하세요. (다중 선택 가능)<br />
-                        선택한 시험지들에 사용된 소스(DB)는 현재 선택 목록에서 <b>자동으로 제외</b>됩니다.
+                        선택한 시험지들에 사용된 <b>문제</b>는 검색 결과에서 <b>자동으로 제외</b>됩니다.
                     </span>
                 </p>
 

@@ -44,6 +44,23 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
+        // 중복 이름 체크
+        if (title) {
+            const { count: nameCount } = await supabase
+                .from('user_items')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('type', 'saved_exam')
+                .eq('name', title);
+
+            if (nameCount && nameCount > 0) {
+                return NextResponse.json({
+                    success: false,
+                    error: `"${title}" 이름의 시험지가 이미 존재합니다. 다른 이름을 사용해주세요.`
+                }, { status: 409 });
+            }
+        }
+
         let questions: any[] = rawQuestions || [];
         let finalImagesByQuestion = new Map<string, any[]>();
 
@@ -107,7 +124,7 @@ export async function POST(req: NextRequest) {
                 if (resizeTasks.length > 0) {
                     console.log(`[SaveAPI] Sending ${resizeTasks.length} images to VPS for batch resize...`);
                     try {
-                        const vpsUrl = process.env.NEXT_PUBLIC_MATH_PROXY_URL || 'http://127.0.0.1:5001';
+                        const vpsUrl = process.env.MATH_PROXY_URL || process.env.NEXT_PUBLIC_MATH_PROXY_URL || 'http://127.0.0.1:5001';
                         const response = await fetch(`${vpsUrl}/batch-resize`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -194,7 +211,7 @@ export async function POST(req: NextRequest) {
             images: q.images || []
         }));
 
-        const titleStr = title || 'Exam_Paper';
+        const titleStr = (title || 'Exam_Paper').replace(/[\\/<>:"|\?\*]/g, '_').trim() || 'Exam_Paper';
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
 
         const result = await generateHmlFromTemplate(templateXml, questionsWithImages, {

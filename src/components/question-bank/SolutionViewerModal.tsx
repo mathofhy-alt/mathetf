@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { X, BookOpen } from 'lucide-react';
 import QuestionRenderer from '@/components/QuestionRenderer';
 
