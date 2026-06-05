@@ -74,6 +74,14 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
     const [selectedIds, setSelectedIds] = useState<Set<any>>(new Set());
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [expandedSolutions, setExpandedSolutions] = useState<Set<string>>(new Set());
+    // 추천 태그가 많을 때 카드가 길어지는 것을 막기 위해 기본은 일부만 표시(문항별 펼침 상태)
+    const [expandedRecs, setExpandedRecs] = useState<Set<string>>(new Set());
+    const REC_LIMIT = 12; // 기본 표시 추천 태그 수
+    const toggleRecs = (id: string) => setExpandedRecs(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        return next;
+    });
 
     // Similarity Search State
     const [similarQuestions, setSimilarQuestions] = useState<any[]>([]);
@@ -1627,10 +1635,13 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
 
                                                         if (filteredRecs.length === 0) return null;
 
+                                                        const isRecExpanded = expandedRecs.has(q.id);
+                                                        const shownRecs = isRecExpanded ? filteredRecs : filteredRecs.slice(0, REC_LIMIT);
+
                                                         return (
                                                             <div className="mt-1 flex flex-wrap gap-1">
                                                                 <span className="text-[9px] text-gray-400 font-bold mr-1">추천:</span>
-                                                                {filteredRecs.map(tag => (
+                                                                {shownRecs.map(tag => (
                                                                     <button
                                                                         key={tag}
                                                                         onClick={() => {
@@ -1647,6 +1658,14 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                         + {tag}
                                                                     </button>
                                                                 ))}
+                                                                {filteredRecs.length > REC_LIMIT && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); toggleRecs(q.id); }}
+                                                                        className="text-[9px] px-1.5 py-0.5 rounded border bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 transition-colors font-bold"
+                                                                    >
+                                                                        {isRecExpanded ? '접기' : `+${filteredRecs.length - REC_LIMIT}개 더`}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         );
                                                     })()}
@@ -1888,10 +1907,13 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
 
                                                         if (filteredRecs.length === 0) return null;
 
+                                                        const isRecExpanded = expandedRecs.has(q.id);
+                                                        const shownRecs = isRecExpanded ? filteredRecs : filteredRecs.slice(0, REC_LIMIT);
+
                                                         return (
                                                             <div className="flex flex-wrap gap-1 mt-1">
                                                                 <span className="text-[10px] text-gray-400 font-bold mr-0.5">추천:</span>
-                                                                {filteredRecs.map(tag => (
+                                                                {shownRecs.map(tag => (
                                                                     <button
                                                                         key={tag}
                                                                         onClick={() => {
@@ -1908,6 +1930,14 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                         + {tag}
                                                                     </button>
                                                                 ))}
+                                                                {filteredRecs.length > REC_LIMIT && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); toggleRecs(q.id); }}
+                                                                        className="text-[10px] px-1.5 py-0.5 rounded border bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 transition-colors font-bold"
+                                                                    >
+                                                                        {isRecExpanded ? '접기' : `+${filteredRecs.length - REC_LIMIT}개 더`}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         );
                                                     })()}
