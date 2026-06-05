@@ -68,7 +68,7 @@ export async function DELETE(req: NextRequest) {
         // 1. Get item info first to know the type and reference_id
         const { data: item, error: fetchError } = await supabase
             .from('user_items')
-            .select('type, reference_id')
+            .select('type, reference_id, name')
             .eq('id', id)
             .eq('user_id', user.id)
             .single();
@@ -103,6 +103,18 @@ export async function DELETE(req: NextRequest) {
             .eq('user_id', user.id);
 
         if (dbError) throw dbError;
+
+        // 삭제 감사 로그 (best-effort: 실패해도 삭제 처리는 정상)
+        try {
+            await supabase.from('deletion_audit').insert({
+                user_id: user.id,
+                item_type: item.type,
+                item_id: id,
+                item_name: (item as any).name ?? null,
+                reference_id: item.reference_id ?? null,
+                reason: 'user_delete_item'
+            });
+        } catch (e) { console.warn('[DeletionAudit] item log failed:', (e as any)?.message); }
 
         return NextResponse.json({ success: true });
 

@@ -80,9 +80,8 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm(`'${folder.name}' 폴더를 삭제하시겠습니까?`)) {
-                                onDelete('folder', folder.id);
-                            }
+                            // 확인창은 onDelete(handleDelete) 내부에서 시험지 포함 여부에 따라 띄움
+                            onDelete('folder', folder.id);
                         }}
                         className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="폴더 삭제"

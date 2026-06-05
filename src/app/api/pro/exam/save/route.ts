@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
 
     if (!user) return new NextResponse('Unauthorized', { status: 401 });
 
+    // 저장 도중 실패하면 되돌릴 수 있도록, 업로드한 스토리지 경로를 추적한다. (고아 파일 방지)
+    const uploadedPaths: string[] = [];
+
     try {
         // [V73] Limit: Max 20 exams per user
         const { count, error: countError } = await supabase
@@ -236,6 +239,7 @@ export async function POST(req: NextRequest) {
             });
 
         if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+        uploadedPaths.push(filePath);
 
         // 6. Metadata Sidecar
         const totalDifficulty = questions.reduce((sum: number, q: any) => sum + (Number(q.difficulty) || 0), 0);
@@ -258,6 +262,7 @@ export async function POST(req: NextRequest) {
                 contentType: 'application/json',
                 upsert: false
             });
+        uploadedPaths.push(`${user.id}/${fileId}.json`);
 
         // 7. DB Item
         const { data: itemData, error: itemError } = await supabase
@@ -279,6 +284,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, item: itemData });
 
     } catch (e: any) {
+        // 실패 시 이미 업로드된 .hml/.json 을 삭제해 '목록엔 없는데 파일만 남는' 고아를 방지한다.
+        if (uploadedPaths.length > 0) {
+            try {
+                await supabase.storage.from('exams').remove(uploadedPaths);
+                console.log(`[SaveAPI] Rolled back ${uploadedPaths.length} orphan file(s) after failure`);
+            } catch (cleanupErr) {
+                console.warn('[SaveAPI] Rollback cleanup failed:', cleanupErr);
+            }
+        }
         console.error('[SaveAPI] Fatal Error:', e);
         return NextResponse.json({ success: false, error: e.message }, { status: 500 });
     }

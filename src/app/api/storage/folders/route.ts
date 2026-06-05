@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+// 주어진 폴더 + 모든 하위 폴더(중첩 포함)의 id 목록을 반환
+async function getFolderSubtreeIds(supabase: any, userId: string, rootId: string): Promise<string[]> {
+    const { data: all } = await supabase
+        .from('folders')
+        .select('id, parent_id')
+        .eq('user_id', userId);
+    const childrenMap = new Map<string, string[]>();
+    for (const f of (all || [])) {
+        const p = f.parent_id || '__root__';
+        if (!childrenMap.has(p)) childrenMap.set(p, []);
+        childrenMap.get(p)!.push(f.id);
+    }
+    const result: string[] = [rootId];
+    const stack = [rootId];
+    while (stack.length) {
+        const cur = stack.pop()!;
+        for (const c of (childrenMap.get(cur) || [])) { result.push(c); stack.push(c); }
+    }
+    return result;
+}
+
 export async function GET(req: NextRequest) {
     try {
         const supabase = createClient();
@@ -11,6 +32,24 @@ export async function GET(req: NextRequest) {
 
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // 폴더 삭제 전 안내용: 폴더(및 하위 폴더)에 들어있는 시험지/전체 항목 수 반환
+        const countItems = searchParams.get('countItems');
+        if (countItems) {
+            const folderIds = await getFolderSubtreeIds(supabase, user.id, countItems);
+            const { count: examCount } = await supabase
+                .from('user_items')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('type', 'saved_exam')
+                .in('folder_id', folderIds);
+            const { count: totalCount } = await supabase
+                .from('user_items')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .in('folder_id', folderIds);
+            return NextResponse.json({ examCount: examCount || 0, totalCount: totalCount || 0 });
+        }
 
         // 0. Fetch Mock Exam IDs to globally exclude them from personal folders
         const { data: mockExamsGlobal } = await supabase
@@ -194,6 +233,37 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
+    // 폴더(및 하위 폴더) 안의 시험지 스토리지 파일을 먼저 정리한다.
+    // (DB 행은 folder_id CASCADE로 자동 삭제되지만 .hml/.json 파일은 안 지워져 고아가 쌓이는 문제 해결)
+    let deletedExams = 0;
+    let cascadedExams: any[] = [];
+    try {
+        const folderIds = await getFolderSubtreeIds(supabase, user.id, id);
+        const { data: exams } = await supabase
+            .from('user_items')
+            .select('id, name, reference_id')
+            .eq('user_id', user.id)
+            .eq('type', 'saved_exam')
+            .in('folder_id', folderIds);
+        if (exams && exams.length > 0) {
+            cascadedExams = exams;
+            deletedExams = exams.length;
+            const paths: string[] = [];
+            for (const e of exams) {
+                if (e.reference_id) {
+                    paths.push(`${user.id}/${e.reference_id}.hml`, `${user.id}/${e.reference_id}.json`);
+                }
+            }
+            if (paths.length > 0) {
+                const { error: stErr } = await supabase.storage.from('exams').remove(paths);
+                if (stErr) console.warn('[FolderDelete] storage cleanup warning:', stErr.message);
+            }
+        }
+    } catch (e: any) {
+        console.warn('[FolderDelete] storage cleanup skipped:', e?.message);
+    }
+
+    // 폴더 삭제 (DB CASCADE가 하위 폴더 + 항목 행을 함께 제거)
     const { error } = await supabase
         .from('folders')
         .delete()
@@ -201,5 +271,20 @@ export async function DELETE(req: NextRequest) {
         .eq('user_id', user.id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ success: true });
+
+    // 삭제 감사 로그: 폴더 삭제로 함께 사라진 시험지 기록 (best-effort)
+    try {
+        const rows: any[] = cascadedExams.map((e: any) => ({
+            user_id: user.id, item_type: 'saved_exam', item_id: e.id,
+            item_name: e.name ?? null, reference_id: e.reference_id ?? null,
+            reason: 'folder_delete_cascade', context: { folder_id: id }
+        }));
+        rows.push({
+            user_id: user.id, item_type: 'folder', item_id: id, item_name: null,
+            reference_id: null, reason: 'user_delete_folder', context: { exam_count: deletedExams }
+        });
+        await supabase.from('deletion_audit').insert(rows);
+    } catch (e: any) { console.warn('[DeletionAudit] folder log failed:', e?.message); }
+
+    return NextResponse.json({ success: true, deletedExams });
 }

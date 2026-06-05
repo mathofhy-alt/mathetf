@@ -170,13 +170,28 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
     };
 
     const handleDelete = async (type: 'folder' | 'item', id: string) => {
+        // 폴더 삭제: 안에 시험지가 있으면 "함께 삭제됨"을 안내하고 확인받는다. (비어있으면 단순 확인)
+        if (type === 'folder') {
+            let examCount = 0;
+            try {
+                const res = await fetch(`/api/storage/folders?countItems=${id}`);
+                if (res.ok) { const d = await res.json(); examCount = d.examCount || 0; }
+            } catch { }
+            const msg = examCount > 0
+                ? `이 폴더 안에 시험지 ${examCount}개가 들어 있습니다.\n폴더를 삭제하면 안의 시험지도 모두 함께 삭제됩니다.\n\n정말 삭제하시겠습니까?`
+                : `폴더를 삭제하시겠습니까?`;
+            if (!confirm(msg)) return;
+        }
         const endpoint = type === 'folder' ? `/api/storage/folders` : `/api/storage/items`;
         await fetch(`${endpoint}?id=${id}`, { method: 'DELETE' });
         setRefreshTrigger(p => p + 1);
     };
     const handleDeleteFromContext = () => {
         if (!contextMenu || contextMenu.type === 'background' || !contextMenu.id) return;
-        if (confirm('정말 삭제하시겠습니까?')) handleDelete(contextMenu.type, contextMenu.id);
+        const { type, id } = contextMenu;
+        // 폴더는 handleDelete 내부에서 (시험지 포함 여부에 따라) 확인창을 띄우므로 여기선 바로 위임
+        if (type === 'folder') { handleDelete('folder', id); return; }
+        if (confirm('정말 삭제하시겠습니까?')) handleDelete(type, id);
     };
     const handleCut = () => {
         if (!contextMenu || contextMenu.type === 'background' || !contextMenu.id) return;
