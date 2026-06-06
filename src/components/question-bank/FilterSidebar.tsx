@@ -111,9 +111,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 const selectedDbs = purchasedDbs.filter(d => selectedDbIds.includes(d.id));
 
                 if (selectedDbs.length > 0) {
-                    let query = supabase.from('questions').select('subject, unit, key_concepts').eq('work_status', 'sorted');
-
-                    const orConditions = selectedDbs.map(db => {
+                    // 필터 옵션(과목/단원/개념)은 서버(/api/questions/facets)에서 조회. (아래 fetch)
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const _unusedOrConditions = selectedDbs.map(db => {
                         let gradeVal = db.grade;
                         if (['1', '2', '3'].includes(String(db.grade))) {
                             gradeVal = `고${db.grade}`;
@@ -153,11 +153,13 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         return `and(${parts.join(',')})` ;
                     });
 
-                    if (orConditions.length > 0) {
-                        query = query.or(orConditions.join(','));
-                    }
-
-                    const { data } = await query;
+                    const facetRes = await fetch('/api/questions/facets', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ selectedDbs }),
+                    });
+                    const facetJson = await facetRes.json().catch(() => ({ data: [] }));
+                    const data = facetJson?.data;
                     if (data) {
                         data.forEach((q: any) => {
                             if (q.subject && q.unit) {

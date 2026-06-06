@@ -8,6 +8,7 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import HeroBanner from '@/components/HeroBanner';
+import SimilarDemo from '@/components/SimilarDemo';
 import RightSidebar from '@/components/RightSidebar';
 import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
@@ -477,6 +478,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
             />
 
             <HeroBanner user={user} earnedPoints={earnedPoints} />
+
+            <SimilarDemo />
 
             <main className="max-w-[1200px] mx-auto px-4 pb-20">
                 <div className="flex flex-col gap-6">

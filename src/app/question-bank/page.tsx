@@ -54,22 +54,24 @@ export default function QuestionBankPage() {
                 if (Array.isArray(parsedIds) && parsedIds.length > 0) {
                     // 먼저 스켈레톤으로 빠르게 표시
                     setCart(parsedIds.map(id => ({ id })));
-                    // DB에서 실제 데이터 복원
-                    const supabaseClient = createClient();
-                    supabaseClient
-                        .from('questions')
-                        .select('*, question_images(*)')
-                        .in('id', parsedIds)
+                    // 서버 경유로 실제 데이터 복원 (RLS 잠금으로 클라이언트 직접 조회 불가)
+                    fetch('/api/questions/by-ids', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: parsedIds }),
+                    })
+                        .then(res => res.json())
                         .then(({ data }) => {
                             if (data && data.length > 0) {
-                                const qMap = new Map(data.map(q => [q.id, q]));
+                                const qMap = new Map(data.map((q: any) => [q.id, q]));
                                 // 원래 순서 유지
                                 const restored = parsedIds
-                                    .map(id => qMap.get(id))
+                                    .map((id: string) => qMap.get(id))
                                     .filter(Boolean);
                                 setCart(restored);
                             }
-                        });
+                        })
+                        .catch(e => console.error('cart restore failed', e));
                 }
             } catch (e) {
                 console.error("Failed to load cart", e);
@@ -183,20 +185,14 @@ export default function QuestionBankPage() {
     useEffect(() => {
         (async () => {
             try {
-                const { count } = await supabase
-                    .from('questions')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('work_status', 'sorted');
-                const { data: schools } = await supabase
-                    .from('questions')
-                    .select('school')
-                    .eq('work_status', 'sorted')
-                    .not('school', 'is', null);
-                const uniqueSchools = new Set(schools?.map(s => s.school).filter(Boolean));
-                setHeroStats({
-                    questionCount: count ?? 0,
-                    schoolCount: uniqueSchools.size,
-                });
+                const res = await fetch('/api/questions/facets');
+                const data = await res.json();
+                if (data.success) {
+                    setHeroStats({
+                        questionCount: data.count ?? 0,
+                        schoolCount: data.schoolCount ?? 0,
+                    });
+                }
             } catch (e) {
                 console.error('Hero stats fetch error:', e);
             }
@@ -322,127 +318,33 @@ export default function QuestionBankPage() {
         setLoading(true);
         if (targetPage === 1) setCurrentPage(1);
 
-        const from = (targetPage - 1) * itemsPerPage;
-        const to = from + itemsPerPage - 1;
-
-        let query = supabase
-            .from('questions')
-            .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)', { count: 'exact' })
-            .eq('work_status', 'sorted')
-            .order('question_number', { ascending: true })
-            .range(from, to);
-
-        // 중복출제 방지: 이전 시험지에 사용된 문제 제외
-        if (excludedQuestionIds.length > 0) {
-            // Supabase는 .not('id', 'in', '(...)') 형태 — 최대 100개씩 분할
-            const chunk = excludedQuestionIds.slice(0, 100);
-            query = query.not('id', 'in', `(${chunk.join(',')})`);
-        }
-
-        if (dbFilter.length > 0) {
-            const selectedDbs = purchasedDbs.filter(d => dbFilter.includes(d.id));
-
-            if (selectedDbs.length > 0) {
-                // 전체 DB가 선택된 경우 DB 필터 생략 (단원/과목 필터만으로 검색)
-                const isAllSelected = selectedDbs.length >= purchasedDbs.length;
-
-                if (!isAllSelected) {
-                    if (selectedDbs.length > 20) {
-                        // 20개 초과 시 school IN(...)으로 단순화 (쿼리 성능)
-                        const schools = [...new Set(selectedDbs.map(db => db.school))];
-                        query = query.in('school', schools);
-                    } else {
-                        // 20개 이하: 정확한 메타데이터 매칭
-                        const orConditions = selectedDbs.map(db => {
-                            let gradeVal = db.grade;
-                            if (db.grade && ['1', '2', '3'].includes(String(db.grade).replace('고', ''))) {
-                                gradeVal = `고${String(db.grade).replace('고', '')}`;
-                            }
-                            const titleYear = db.title?.match(/20\d{2}/)?.[0];
-                            const yearVal = titleYear ? titleYear : (db.exam_year || db.year);
-
-                            let parts = [`school.eq.${db.school}`];
-                            if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
-                            if (yearVal) parts.push(`year.eq.${yearVal}`);
-
-                            if (db.exam_type === '모의고사' || db.exam_type === '수능') {
-                                parts.push(`semester.in.("${db.semester}월","${db.semester}월 모의고사")`);
-                            } else if (db.semester && db.exam_type) {
-                                const semNum = String(db.semester).replace('학기', '');
-                                const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
-                                if (typeShort) parts.push(`semester.eq.${semNum}학기${typeShort}`);
-                            } else if (db.semester) {
-                                const semNum = String(db.semester).replace('학기', '');
-                                parts.push(`semester.ilike.${semNum}학기%`);
-                            }
-                            if (db.subject && db.subject !== '전과정') {
-                                // 모의고사/수능 선택과목 DB: 공통(1~22번, 대수+미적분I) + 선택과목(23~30번) 함께 조회
-                                const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '확률과통계', '확률과 통계'];
-                                const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
-                                    && MOCK_SELECT_SUBJECTS.includes(db.subject);
-                                if (isMockSelect) {
-                                    parts.push(`subject.in.("대수","미적분I","${db.subject}")`);
-                                } else {
-                                    parts.push(`subject.eq.${db.subject}`);
-                                }
-                            }
-                            return `and(${parts.join(',')})`;
-                        });
-                        if (orConditions.length > 0) query = query.or(orConditions.join(','));
-                    }
-                }
-                // isAllSelected이면 DB 필터 생략 → 단원/과목 필터만 적용
-            } else {
-                // 매칭 DB 없으면 결과 0건 보장
-                query = query.eq('id', '00000000-0000-0000-0000-000000000000');
-            }
-        }
-
-        // Apply Advanced Filters
-        if (advancedFilters) {
-            if (advancedFilters.units && advancedFilters.units.length > 0) {
-                query = query.in('unit', advancedFilters.units);
-            }
-            if (advancedFilters.concepts && advancedFilters.concepts.length > 0) {
-                // Use PostgREST array 'overlaps' operator for text[] column to implement OR logic
-                query = query.overlaps('key_concepts', advancedFilters.concepts);
-            }
-            if (advancedFilters.difficulty && advancedFilters.difficulty.length > 0) {
-                query = query.in('difficulty', advancedFilters.difficulty);
-            }
-            if (advancedFilters.subjects && advancedFilters.subjects.length > 0) {
-                query = query.in('subject', advancedFilters.subjects);
-            }
-            if (advancedFilters.keywords && advancedFilters.keywords.length > 0) {
-                // Apply AND logic for each keyword
-                // We search in 'plain_text' which should contain extracted text from HML
-                advancedFilters.keywords.forEach((keyword: string) => {
-                    const term = keyword.trim();
-                    if (term) {
-                        // Use ilike for case-insensitive partial match
-                        // Since Supabase .ilike() adds AND clauses by default when chained, this works perfectly.
-                        query = query.ilike('plain_text', `%${term}%`);
-                    }
-                });
-            }
-        }
+        // [보안] 문제 콘텐츠는 더 이상 클라이언트가 DB를 직접 조회하지 않는다.
+        // RLS를 잠그고, 오직 서버 라우트(/api/questions/search)를 통해서만 콘텐츠가 나간다.
+        // (서버에서 페이지 상한 + IP 속도제한으로 대량 스크래핑 방지)
+        const selectedDbs = dbFilter.length > 0 ? purchasedDbs.filter(d => dbFilter.includes(d.id)) : [];
 
         try {
-            const { data, error, count } = await query;
-            if (error) {
-                console.error("Query Error:", error);
-                throw new Error("데이터베이스 검색 중 오류가 발생했습니다. (검색 조건이 너무 많을 수 있습니다)");
+            const res = await fetch('/api/questions/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    selectedDbs,
+                    purchasedDbsCount: purchasedDbs.length,
+                    excludedQuestionIds,
+                    advancedFilters,
+                    page: targetPage,
+                }),
+            });
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.error || '데이터베이스 검색 중 오류가 발생했습니다.');
             }
-            if (data) {
-                // questions + question_images를 한 번에 가져옴 (DB 왕복 2회 → 1회)
-                setQuestions(data);
-                setLoading(false);
-                if (count !== null) setTotalQuestions(count);
-                if (targetPage === 1) setHasSearched(true);
-                if (data.length === 0 && targetPage === 1) {
-                    showToast('해당 조건에 일치하는 문항이 없습니다. (0건)', 'info');
-                    return;
-                }
+            const data = result.data || [];
+            setQuestions(data);
+            if (result.count !== null && result.count !== undefined) setTotalQuestions(result.count);
+            if (targetPage === 1) setHasSearched(true);
+            if (data.length === 0 && targetPage === 1) {
+                showToast('해당 조건에 일치하는 문항이 없습니다. (0건)', 'info');
             }
         } catch (err: any) {
             console.error("fetchQuestions error:", err);
@@ -524,15 +426,17 @@ export default function QuestionBankPage() {
                 return showToast('이 시험지는 재편집 기능을 지원하지 않는 이전 버전입니다. 새록게 생성한 시험지부터 재편집이 가능합니다.', 'info');
             }
 
-            const { data, error } = await supabase
-                .from('questions')
-                .select('*, question_images(*)')
-                .in('id', qIds);
-
-            if (error) throw error;
+            const res = await fetch('/api/questions/by-ids', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: qIds }),
+            });
+            const result = await res.json();
+            if (!res.ok || !result.success) throw new Error(result.error || '문항 데이터를 불러올 수 없습니다.');
+            const data = result.data;
             if (!data || data.length === 0) throw new Error('문항 데이터를 불러올 수 없습니다.');
 
-            const sortedData = qIds.map(id => data.find(q => q.id === id)).filter(Boolean);
+            const sortedData = qIds.map((id: string) => data.find((q: any) => q.id === id)).filter(Boolean);
             setCart(sortedData);
             setViewMode('review');
             setShowStorageModal(false);
@@ -639,6 +543,7 @@ export default function QuestionBankPage() {
     // [유사문항 자동추가] Promise.allSettled로 병렬 호출 (기존 직렬: 최대 100초 → 병렬: 1~2초)
     const handleAutoAddSimilar = async () => {
         if (cart.length === 0) return;
+        if (!user) { setShowLoginGate(true); return; } // 유사문항 자동추가는 로그인 필요
         setIsAutoAdding(true);
 
         const targetQuestions = selectedReviewIds.size > 0
@@ -753,11 +658,8 @@ export default function QuestionBankPage() {
 
     const handleGenerate = () => {
         if (cart.length === 0) return;
-        if (!user) {
-            // 비로그인 유저: 로그인 유도 모달 표시
-            setShowLoginGate(true);
-            return;
-        }
+        // 비로그인 유저도 조립된 시험지(검토 화면)를 '맛보기'로 볼 수 있게 허용.
+        // 로그인 벽은 저장/다운로드 시점으로 이동 (아래 '최종 생성' 버튼).
         setViewMode('review');
     };
 
@@ -938,8 +840,8 @@ export default function QuestionBankPage() {
                             {/* 상단 그라데이션 배너 */}
                             <div className="bg-gradient-to-br from-[#497AB7] to-[#5CC6C3] px-6 py-8 text-center">
                                 <div className="text-4xl mb-3">📄</div>
-                                <h2 className="text-xl font-black text-white">시험지 생성을 위해</h2>
-                                <h2 className="text-xl font-black text-white">회원가입이 필요해요</h2>
+                                <h2 className="text-xl font-black text-white">방금 만든 시험지,</h2>
+                                <h2 className="text-xl font-black text-white">저장하려면 회원가입!</h2>
                                 <p className="text-white/80 text-sm mt-2">가입은 무료이며 30초면 충분해요!</p>
                             </div>
                             <div className="px-6 py-5 space-y-3">
@@ -1298,7 +1200,7 @@ export default function QuestionBankPage() {
                                         ← <span className="hidden sm:inline">검색으로 </span>돌아가기
                                     </button>
                                     <button
-                                        onClick={() => setShowConfigModal(true)}
+                                        onClick={() => { if (!user) { setShowLoginGate(true); return; } setShowConfigModal(true); }}
                                         className="px-3 sm:px-8 py-2 sm:py-2.5 bg-[#497AB7] text-white rounded-xl font-bold hover:bg-[#3A6599] shadow-lg shadow-[#497AB7]/20 transition-all text-xs sm:text-sm whitespace-nowrap"
                                     >
                                         최종 생성 ({cart.length})
@@ -1467,7 +1369,7 @@ export default function QuestionBankPage() {
                                             <div className="flex items-center gap-2">
                                                 {viewMode === 'review' && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); setSimilarTarget(q); }}
+                                                        onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate(true); return; } setSimilarTarget(q); }}
                                                         className="p-1 hover:bg-brand-50 text-slate-300 hover:text-brand-600 rounded-md transition-all flex items-center gap-1 whitespace-nowrap"
                                                         title="유사문항 찾기"
                                                     >
