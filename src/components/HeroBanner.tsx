@@ -2,7 +2,7 @@
 import React from 'react';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Layers, Sparkles } from 'lucide-react';
+import { ArrowRight, Layers, Sparkles } from 'lucide-react';
 
 export default function HeroBanner({ user, earnedPoints }: { user: User | null, earnedPoints: number }) {
     return (
@@ -23,18 +23,18 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
 
                         {/* Headline */}
                         <h1 className="text-2xl md:text-4xl lg:text-[2.75rem] font-extrabold text-[#1E2D4F] leading-tight mb-2 md:mb-3 break-keep">
-                            전국 내신 기출문제를{' '}
-                            <span className="text-[#497AB7]">한 곳에서</span>
+                            기출 기반 <span className="text-[#497AB7]">유사문제</span>로,<br className="hidden md:block" />{' '}
+                            나만의 시험지를 1분 만에
                         </h1>
 
                         {/* Subtitle - 모바일에서 숨김 */}
                         <p className="hidden md:block text-slate-500 text-sm md:text-base mb-7 break-keep leading-relaxed max-w-md mx-auto md:mx-0">
-                            전국 고등학교 내신 기출 자료를 즉시 다운로드하고,<br className="hidden md:block" />
-                            나만의 시험지를 1분 만에 만드세요.
+                            기출문제와 같은 유형의 유사 문항을 자동으로 찾아 시험지에 넣어드립니다.<br className="hidden md:block" />
+                            <strong className="text-[#1E2D4F] font-bold">검증된 실제 기출 문항</strong>으로 매번 새로운 시험지를 만드세요.
                         </p>
                         {/* 모바일 전용 짧은 서브타이틀 */}
                         <p className="md:hidden text-slate-500 text-xs mb-4 break-keep leading-relaxed">
-                            내신 기출 즉시 다운로드 · 나만의 시험지 제작
+                            기출 유사문제 자동 매칭 · 나만의 시험지 1분 완성
                         </p>
 
                         {/* CTA Buttons */}
@@ -67,11 +67,11 @@ export default function HeroBanner({ user, earnedPoints }: { user: User | null, 
                         <div className="bg-[#F2F3F0] rounded-2xl p-4 border border-[#B7D1EA]/40">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-[#497AB7]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <BookOpen size={20} className="text-[#497AB7]" />
+                                    <Sparkles size={20} className="text-[#497AB7]" />
                                 </div>
                                 <div>
-                                    <p className="text-[11px] text-[#AAAAC4] font-medium">기출자료</p>
-                                    <p className="text-sm font-extrabold text-[#1E2D4F]">전국 고등학교</p>
+                                    <p className="text-[11px] text-[#AAAAC4] font-medium">유사문제</p>
+                                    <p className="text-sm font-extrabold text-[#1E2D4F]">같은 유형 자동 매칭</p>
                                 </div>
                             </div>
                         </div>
