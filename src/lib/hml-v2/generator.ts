@@ -426,7 +426,7 @@ export function generateHmlFromTemplate(
             } catch (e) {
                 console.warn(`[LAYOUT V3] Failed to extract height for Q "${qwi.question.id}", using default ${DEFAULT_QUESTION_LINES}`, e);
             }
-        } else if (manualCapture && !manualCapture.data) {
+        } else if (manualImage && !manualImage.data) {
             console.warn(`[LAYOUT V3] MANUAL_Q_ found but NO DATA for Q "${qwi.question.id}"`);
         } else {
             console.log(`[LAYOUT V3] Q "${qwi.question.id}": No MANUAL_Q_ capture, using default ${DEFAULT_QUESTION_LINES} lines`);
