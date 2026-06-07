@@ -72,9 +72,12 @@ export async function POST(req: NextRequest) {
     // [성능] 카드 표시는 캡쳐 이미지(question_images)로만 함 (sorted 문제 100% 캡쳐 보유).
     // content_xml/plain_text/equation_scripts 는 표시에 불필요 → 전송 제외 (payload ~74% 감소, 클라 XML 파싱 0).
     // plain_text 는 키워드 검색 '조건'으로만 쓰이며 SELECT 하지 않아도 WHERE 에서 동작함.
+    // [성능] 전체 개수(count)는 1페이지에서만 계산 → 페이지 이동마다 풀카운트 재계산 방지.
+    const wantCount = targetPage === 1;
+    const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)';
     let query = supabase
         .from('questions')
-        .select('id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)', { count: 'exact' })
+        .select(SELECT_COLS, wantCount ? { count: 'exact' } : undefined)
         .eq('work_status', 'sorted')
         .order('question_number', { ascending: true })
         .range(from, to);
@@ -166,7 +169,8 @@ export async function POST(req: NextRequest) {
                 { status: 500 }
             );
         }
-        return NextResponse.json({ success: true, data: data || [], count: count ?? 0 });
+        // count 는 1페이지에서만 계산. 그 외 페이지는 null → 클라이언트가 기존 총개수 유지.
+        return NextResponse.json({ success: true, data: data || [], count: wantCount ? (count ?? 0) : null });
     } catch (e: any) {
         console.error('[questions/search] error:', e);
         return NextResponse.json({ success: false, error: e.message || '검색 실패' }, { status: 500 });

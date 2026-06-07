@@ -4,7 +4,7 @@ import React, { useMemo, useEffect, useState, useRef } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { convertHwpEqToLatex } from '@/lib/hwp-to-latex';
-import html2canvas from 'html2canvas';
+// html2canvas 는 다운로드(캡쳐) 시에만 동적 import → 초기 번들에서 제외 (~180KB)
 
 interface QuestionRendererProps {
     xmlContent: string;
@@ -287,6 +287,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     const handleDownload = async () => {
         if (!containerRef.current) return;
         try {
+            const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(containerRef.current, {
                 useCORS: true,
                 scale: 2,
