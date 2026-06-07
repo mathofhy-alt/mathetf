@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(req: NextRequest) {
     try {
-        const { paymentId, amount, originalTotalAmount, usedPoints, userId, items } = await req.json();
+        const { paymentId, amount, originalTotalAmount, usedPoints, items } = await req.json();
 
-        if (!paymentId || amount === undefined || !userId || !items || !Array.isArray(items)) {
+        if (!paymentId || amount === undefined || !items || !Array.isArray(items)) {
             return NextResponse.json({ success: false, message: 'Invalid Data' }, { status: 400 });
         }
+
+        // [보안] 사용자 식별은 서버 세션에서만. body의 userId 는 신뢰하지 않음
+        // (이전엔 타인 userId로 남의 포인트 차감/임의 계정에 구매권한 부여가 가능했음).
+        const supabaseAuth = createClient();
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ success: false, message: '로그인이 필요합니다.' }, { status: 401 });
+        }
+        const userId = user.id;
 
         const safeUsedPoints = usedPoints || 0;
         const safeOriginalAmount = originalTotalAmount || amount;
@@ -22,6 +32,16 @@ export async function POST(req: NextRequest) {
         }
 
         const supabase = createAdminClient();
+
+        // [보안] 멱등성: 동일 paymentId 가 이미 처리됐으면 중복 처리 금지 (replay 방지)
+        const { data: existingPayment } = await supabase
+            .from('payment_history')
+            .select('id')
+            .eq('payment_id', paymentId)
+            .maybeSingle();
+        if (existingPayment) {
+            return NextResponse.json({ success: true, message: 'Already processed' });
+        }
 
         // 1. Verify Payment with PortOne V2 API (Only if amount > 0)
         if (amount > 0) {

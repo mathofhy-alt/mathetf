@@ -2,9 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient as createClient } from '@/utils/supabase/server-admin';
 import { HwpxMerger } from '@/lib/hwpx/merger';
+import { requireAdmin } from '@/utils/admin-auth';
 import path from 'path';
 
 export async function POST(req: NextRequest) {
+    // [보안] service-role 로 임의 문제의 콘텐츠를 병합·다운로드하는 엔드포인트 → 관리자만.
+    // (현재 클라이언트 미사용. 인증 없이 열려 있어 콘텐츠 유출/유료벽 우회 가능했음)
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
     try {
         const { questionIds } = await req.json();
 

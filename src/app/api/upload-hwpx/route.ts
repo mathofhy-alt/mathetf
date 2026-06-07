@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient as createClient } from '@/utils/supabase/server-admin';
 import { parseQuestionsFromHwpx } from '@/lib/hwpx/parser';
+import { requireAdmin } from '@/utils/admin-auth';
 
 const STORAGE_BUCKET = 'hwpx';
 
 export async function POST(req: NextRequest) {
+    // [보안] service-role 로 파일 업로드 + DB insert 하는 인제스트 엔드포인트 → 관리자만.
+    // (현재 클라이언트 미사용. 인증 없이 열려 있어 누구나 스토리지/DB 오염 가능했음)
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
     try {
         const formData = await req.formData();
         const file = formData.get('file') as File;

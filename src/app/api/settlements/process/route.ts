@@ -1,22 +1,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin'; // Admin Client Required
+import { requireAdmin } from '@/utils/admin-auth';
 
 export async function POST(req: NextRequest) {
-    // Admin Check using secret or session? 
-    // Usually admin APIs are protected. For this demo, assuming some protection or local use.
-    // Or we check if the caller is an admin user.
-
-    // For now, let's use the Admin Client but we should verify the requestor.
-    // Assuming simple protection header or checking user role if roles exist.
-    // Simplified: Check for a shared secret header ? Or just assume it attaches to an admin panel.
-
-    // Let's rely on standard Auth + Admin Role check if possible.
-    // But since I don't know the admin role setup, I'll assume valid auth and check for 'admin' metadata or similar?
-    // User instructions didn't specify admin auth mech. I will just check if user is logged in and maybe has admin flag?
-
-    // However, to safely execute the RPC which updates status, we should use the service role client (server-admin) inside, 
-    // but trigger it only if authorized.
+    // [보안] 출금(정산) 승인/거부는 관리자만. (이전엔 인증이 전혀 없어 누구나 호출 가능했음)
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
 
     const supabaseAdmin = createAdminClient();
 

@@ -14,6 +14,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = createClient();
 
+    // [보안] 로그인 필수 (콘텐츠 생성). 익명은 RLS로 이미 빈 결과지만 명시적으로 차단.
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    }
+
     // Fetch actual question content
     const { data: questions, error } = await supabase
       .from('questions')
