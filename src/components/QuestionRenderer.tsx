@@ -131,6 +131,8 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                                     <img
                                         src={img.data}
                                         alt={`${displayMode} capture`}
+                                        loading="lazy"
+                                        decoding="async"
                                         className={`w-full h-auto object-contain rounded-xl ${displayMode === 'solution' ? '' : 'ring-4 ring-blue-500/5'}`}
                                     />
                                 ) : (

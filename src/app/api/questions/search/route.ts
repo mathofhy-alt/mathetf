@@ -69,9 +69,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
+    // [성능] 카드 표시는 캡쳐 이미지(question_images)로만 함 (sorted 문제 100% 캡쳐 보유).
+    // content_xml/plain_text/equation_scripts 는 표시에 불필요 → 전송 제외 (payload ~74% 감소, 클라 XML 파싱 0).
+    // plain_text 는 키워드 검색 '조건'으로만 쓰이며 SELECT 하지 않아도 WHERE 에서 동작함.
     let query = supabase
         .from('questions')
-        .select('id, question_number, content_xml, plain_text, equation_scripts, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)', { count: 'exact' })
+        .select('id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)', { count: 'exact' })
         .eq('work_status', 'sorted')
         .order('question_number', { ascending: true })
         .range(from, to);
