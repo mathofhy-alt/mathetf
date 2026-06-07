@@ -49,7 +49,6 @@ export async function GET(req: NextRequest) {
             unit,
             key_concepts,
             difficulty,
-            embedding,
             source_db_id,
             created_at,
             question_images (

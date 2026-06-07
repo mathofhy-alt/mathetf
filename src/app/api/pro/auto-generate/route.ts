@@ -15,9 +15,11 @@ export async function POST(req: NextRequest) {
         // ✅ 파라미터명 클라이언트와 일치 (기존: difficulty 단일값 → minDifficulty/maxDifficulty 범위)
         const { subject, unit, minDifficulty, maxDifficulty, count } = await req.json();
 
+        // [성능] content_xml/embedding 대신 표시에 필요한 메타데이터 + 캡쳐 이미지만 조회.
+        // (카드는 이미지로 표시, 저장은 ID로 서버 재조회 → content_xml 불필요. 풀 150행이 훨씬 가벼워짐)
         let query = supabase
             .from('questions')
-            .select('*')
+            .select('id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)')
             .eq('work_status', 'sorted'); // ✅ 검수 완료 문제만 (기존: 필터 없음)
 
         if (subject) query = query.eq('subject', subject);

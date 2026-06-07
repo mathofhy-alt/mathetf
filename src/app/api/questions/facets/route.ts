@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { buildDbOrConditions } from '@/lib/questions/dbFilter';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,44 +49,9 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
     let query = supabase.from('questions').select('subject, unit, key_concepts').eq('work_status', 'sorted');
 
-    const orConditions = selectedDbs.map((db: any) => {
-        let gradeVal = db.grade;
-        if (['1', '2', '3'].includes(String(db.grade))) {
-            gradeVal = `고${db.grade}`;
-        } else if (typeof db.grade === 'string' && !db.grade.startsWith('고') && !isNaN(Number(db.grade))) {
-            gradeVal = `고${db.grade}`;
-        }
-
-        const titleYear = db.title?.match(/20\d{2}/)?.[0];
-        let yearVal = titleYear ? titleYear : (db.exam_year || db.year);
-
-        let parts = [`school.eq.${db.school}`];
-        if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
-        if (yearVal) parts.push(`year.eq.${yearVal}`);
-
-        if (db.semester && db.exam_type) {
-            const semNum = String(db.semester).replace('학기', '');
-            const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
-            if (typeShort) parts.push(`semester.eq.${semNum}학기${typeShort}`);
-        } else if (db.semester) {
-            const semNum = String(db.semester).replace('학기', '');
-            parts.push(`semester.ilike.${semNum}학기%`);
-        }
-
-        if (db.subject && db.subject !== '전과정') {
-            const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '확률과통계', '확률과 통계'];
-            const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
-                && MOCK_SELECT_SUBJECTS.includes(db.subject);
-            if (isMockSelect) {
-                parts.push(`subject.in.("대수","미적분I","${db.subject}")`);
-            } else {
-                parts.push(`subject.eq.${db.subject}`);
-            }
-        }
-
-        return `and(${parts.join(',')})`;
-    });
-
+    // [버그수정] 이전엔 facets가 search와 다른(모의고사 분기 누락 등) orConditions를 써서
+    // 사이드바 필터 옵션이 검색결과와 어긋났음. 이제 search와 동일한 공용 헬퍼 사용.
+    const orConditions = buildDbOrConditions(selectedDbs);
     if (orConditions.length > 0) query = query.or(orConditions.join(','));
 
     const { data, error } = await query;

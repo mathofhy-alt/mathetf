@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { buildDbOrConditions } from '@/lib/questions/dbFilter';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,40 +97,7 @@ export async function POST(req: NextRequest) {
                 const schools = [...new Set(selectedDbs.map((db: any) => db.school))];
                 query = query.in('school', schools);
             } else {
-                const orConditions = selectedDbs.map((db: any) => {
-                    let gradeVal = db.grade;
-                    if (db.grade && ['1', '2', '3'].includes(String(db.grade).replace('고', ''))) {
-                        gradeVal = `고${String(db.grade).replace('고', '')}`;
-                    }
-                    const titleYear = db.title?.match(/20\d{2}/)?.[0];
-                    const yearVal = titleYear ? titleYear : (db.exam_year || db.year);
-
-                    let parts = [`school.eq.${db.school}`];
-                    if (gradeVal) parts.push(`grade.eq.${gradeVal}`);
-                    if (yearVal) parts.push(`year.eq.${yearVal}`);
-
-                    if (db.exam_type === '모의고사' || db.exam_type === '수능') {
-                        parts.push(`semester.in.("${db.semester}월","${db.semester}월 모의고사")`);
-                    } else if (db.semester && db.exam_type) {
-                        const semNum = String(db.semester).replace('학기', '');
-                        const typeShort = db.exam_type.includes('중간') ? '중간' : (db.exam_type.includes('기말') ? '기말' : '');
-                        if (typeShort) parts.push(`semester.eq.${semNum}학기${typeShort}`);
-                    } else if (db.semester) {
-                        const semNum = String(db.semester).replace('학기', '');
-                        parts.push(`semester.ilike.${semNum}학기%`);
-                    }
-                    if (db.subject && db.subject !== '전과정') {
-                        const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '확률과통계', '확률과 통계'];
-                        const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
-                            && MOCK_SELECT_SUBJECTS.includes(db.subject);
-                        if (isMockSelect) {
-                            parts.push(`subject.in.("대수","미적분I","${db.subject}")`);
-                        } else {
-                            parts.push(`subject.eq.${db.subject}`);
-                        }
-                    }
-                    return `and(${parts.join(',')})`;
-                });
+                const orConditions = buildDbOrConditions(selectedDbs);
                 if (orConditions.length > 0) query = query.or(orConditions.join(','));
             }
         }

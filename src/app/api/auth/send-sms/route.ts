@@ -13,8 +13,29 @@ const solapiApiSecret = process.env.SOLAPI_API_SECRET || 'dummy_api_secret';
 const senderNumber = process.env.SOLAPI_SENDER_NUMBER || '07079544146';
 const messageService = new SolapiMessageService(solapiApiKey, solapiApiSecret);
 
+// [보안] IP 속도제한 (문자 도배/비용 폭탄 방지). best-effort(인스턴스 단위).
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 5; // 분당 발송 요청
+const ipHits: Map<string, { count: number; resetAt: number }> = (globalThis as any).__sms_ip_hits || new Map();
+(globalThis as any).__sms_ip_hits = ipHits;
+function ipRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const rec = ipHits.get(ip);
+    if (!rec || now > rec.resetAt) { ipHits.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS }); return false; }
+    rec.count++;
+    return rec.count > RATE_MAX;
+}
+
+const OTP_TTL_MS = 3 * 60 * 1000;   // 3분
+const RESEND_COOLDOWN_MS = 60 * 1000; // 같은 번호 재발송 60초 쿨다운
+
 export async function POST(req: Request) {
     try {
+        const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+        if (ipRateLimited(ip)) {
+            return NextResponse.json({ success: false, message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 });
+        }
+
         const body = await req.json();
         let { phone } = body;
 
@@ -27,6 +48,20 @@ export async function POST(req: Request) {
 
         if (phone.length < 10) {
             return NextResponse.json({ success: false, message: '올바른 휴대폰 번호를 입력해주세요.' }, { status: 400 });
+        }
+
+        // [보안] 같은 번호 재발송 쿨다운(60초) — 특정 번호로의 문자 폭탄 방지.
+        // expires_at = 발송시각 + 3분 이므로 발송시각을 역산해 판단.
+        const { data: prev } = await supabaseAdmin
+            .from('phone_verifications')
+            .select('expires_at')
+            .eq('phone_number', phone)
+            .maybeSingle();
+        if (prev?.expires_at) {
+            const sentAt = new Date(prev.expires_at).getTime() - OTP_TTL_MS;
+            if (Date.now() - sentAt < RESEND_COOLDOWN_MS) {
+                return NextResponse.json({ success: false, message: '인증번호는 잠시 후(약 1분) 다시 요청할 수 있어요.' }, { status: 429 });
+            }
         }
 
         // 6자리 난수 생성
@@ -45,6 +80,7 @@ export async function POST(req: Request) {
                     otp_code: otpCode,
                     expires_at: expiresAt.toISOString(),
                     is_verified: false,
+                    attempts: 0, // 재발송 시 시도횟수 초기화
                 },
                 { onConflict: 'phone_number' }
             );

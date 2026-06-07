@@ -411,7 +411,9 @@ export function generateHmlFromTemplate(
         let lines = DEFAULT_QUESTION_LINES;
 
 
-        const manualImage = qwi.question.question_images?.find(
+        // [버그수정] 이미지는 qwi.images 에 들어있음 (qwi.question.question_images 는 항상 undefined였음).
+        // 이전엔 이 사전스캔이 늘 폴백(기본 15줄)으로 떨어져 '열당 문제 수/여백' 레이아웃이 무력화됐음.
+        const manualImage = qwi.images?.find(
             (img: DbQuestionImage) => img.original_bin_id?.startsWith('MANUAL_Q_') || img.original_bin_id?.startsWith('AUTO_Q_')
         );
         if (manualImage && manualImage.data) {

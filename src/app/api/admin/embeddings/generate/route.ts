@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { generateEmbedding, generateTags } from '@/lib/embeddings';
-import * as fs from 'fs';
-import * as path from 'path';
 
 export const dynamic = 'force-dynamic';
 
-const LOG_FILE = path.join(process.cwd(), 'ai-timing.log');
+// [정리] 매 호출마다 디스크(ai-timing.log)에 쓰던 것 제거. (Vercel은 읽기전용이라 무의미 + 로컬 파일만 비대)
 const tlog = (msg: string) => {
-    const line = `[${new Date().toISOString()}] ${msg}`;
-    console.log(line);
-    try { fs.appendFileSync(LOG_FILE, line + '\n'); } catch {}
+    console.log(`[${new Date().toISOString()}] ${msg}`);
 };
 
 

@@ -459,20 +459,22 @@ export default function QuestionBankPage() {
         let successCount = 0;
         let failCount = 0;
         try {
-            for (const id of selectedExamIds) {
-                try {
-                    const res = await fetch(`/api/storage/items?id=${id}`, { method: 'DELETE' });
-                    if (res.ok) {
-                        successCount++;
-                    } else {
-                        const errData = await res.json().catch(() => ({}));
-                        console.error(`[DeleteExam] Failed to delete id=${id}, status=${res.status}`, errData);
-                        failCount++;
-                    }
-                } catch (fetchErr) {
-                    console.error(`[DeleteExam] Network error for id=${id}`, fetchErr);
-                    failCount++;
-                }
+            // [성능] 순차 N회 요청 → 병렬 처리 (20개 삭제 시 20번 대기 → 동시)
+            const results = await Promise.allSettled(
+                selectedExamIds.map(id =>
+                    fetch(`/api/storage/items?id=${id}`, { method: 'DELETE' }).then(async (res) => {
+                        if (!res.ok) {
+                            const errData = await res.json().catch(() => ({}));
+                            console.error(`[DeleteExam] Failed to delete id=${id}, status=${res.status}`, errData);
+                            throw new Error(`status ${res.status}`);
+                        }
+                        return true;
+                    })
+                )
+            );
+            for (const r of results) {
+                if (r.status === 'fulfilled') successCount++;
+                else failCount++;
             }
             setSelectedExamIds([]);
             setStorageRefreshKey(prev => prev + 1);
@@ -569,12 +571,17 @@ export default function QuestionBankPage() {
         );
 
         // baseId → similar 맵 구성 (중복/기존 제외)
+        // [버그수정] 이전엔 insertMap(키=baseId)에 대해 insertMap.has(similar.id)로 검사해
+        // 중복 가드가 전혀 작동하지 않아 같은 유사문항이 두 번 삽입될 수 있었음.
+        // → 삽입된 similar.id 를 별도 Set 으로 추적해 검사.
         const insertMap = new Map<string, any>();
+        const usedSimilarIds = new Set<string>();
         for (const result of apiResults) {
             if (result.status === 'fulfilled' && result.value?.similar) {
                 const { baseId, similar } = result.value;
-                if (!existingIds.has(similar.id) && !insertMap.has(similar.id)) {
+                if (!existingIds.has(similar.id) && !usedSimilarIds.has(similar.id)) {
                     insertMap.set(baseId, similar);
+                    usedSimilarIds.add(similar.id);
                 }
             }
         }

@@ -42,8 +42,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, message: '인증 시간이 초과되었습니다. 인증 번호를 다시 발송해주세요.' }, { status: 400 });
         }
 
+        // [보안] brute-force 방지: 5회 초과 시도 시 잠금 (재발송 필요)
+        const MAX_ATTEMPTS = 5;
+        if ((data.attempts ?? 0) >= MAX_ATTEMPTS) {
+            return NextResponse.json({ success: false, message: '인증 시도 횟수를 초과했습니다. 인증 번호를 다시 발송해주세요.' }, { status: 429 });
+        }
+
         // 3. 인증 번호 불일치 체크
         if (data.otp_code !== code) {
+            // 실패 횟수 증가
+            await supabaseAdmin
+                .from('phone_verifications')
+                .update({ attempts: (data.attempts ?? 0) + 1 })
+                .eq('id', data.id);
             return NextResponse.json({ success: false, message: '인증 번호가 일치하지 않습니다.' }, { status: 400 });
         }
 
