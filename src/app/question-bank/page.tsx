@@ -7,8 +7,24 @@ import SaveLocationModal from '@/components/storage/SaveLocationModal';
 import AutoGenModal from '@/components/question-bank/AutoGenModal';
 import FolderExplorer from '@/components/storage/FolderExplorer';
 import FilterSidebar from '@/components/question-bank/FilterSidebar';
+import GuidedTour, { TourStep } from '@/components/GuidedTour';
 
 import QuestionRenderer from '@/components/QuestionRenderer';
+
+// 선생님·강사 시험지 만들기 투어
+const TEACHER_TOUR_STEPS: TourStep[] = [
+    {
+        target: '[data-tour="qb-filter"]',
+        title: '① 문제 범위 선택',
+        body: PERSONAL_DB_FREE_MODE
+            ? '원래는 시험지에 쓸 DB(학교 기출)를 직접 골라야 하지만, 런칭 기념 무료라 전체 DB가 이미 선택돼 있어요. 여기서 과목·단원·난이도로 원하는 문제만 좁히면 돼요.'
+            : '시험지에 쓸 DB(학교 기출)를 고르고, 과목·단원·난이도로 원하는 문제만 좁혀요.',
+        placement: 'right',
+    },
+    { target: '[data-tour="qb-search"]', title: '② 조건 검색', body: '고른 조건에 맞는 기출 문제를 불러와요. 결과에서 원하는 문제를 담으면 돼요.', placement: 'right' },
+    { target: '[data-tour="qb-auto"]', title: '③ 유사문제 자동생성', body: '단원·난이도만 정하면 유사 유형 문제를 자동으로 골라 시험지를 채워줘요.', placement: 'bottom' },
+    { target: '[data-tour="qb-generate"]', title: '④ 시험지 만들기', body: '담은 문제로 나만의 시험지를 만들어요. 완성본은 HWP·개인DB로 받아 편집·인쇄할 수 있어요.', placement: 'bottom' },
+];
 import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 
 import ConfigModal from '@/components/question-bank/ConfigModal';
@@ -25,6 +41,16 @@ const MAX_CART_SIZE = 50;
 export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [runTeacherTour, setRunTeacherTour] = useState(false);
+
+    // 역할 모달에서 '선생님·강사' 선택 시 ?tour=1 로 진입 → 투어 시작
+    useEffect(() => {
+        if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tour') === '1') {
+            // DOM/요소 준비 후 시작
+            const t = setTimeout(() => setRunTeacherTour(true), 600);
+            return () => clearTimeout(t);
+        }
+    }, []);
     const [cart, setCart] = useState<any[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -830,6 +856,7 @@ export default function QuestionBankPage() {
 
     return (
         <>
+        <GuidedTour steps={TEACHER_TOUR_STEPS} run={runTeacherTour} onClose={() => setRunTeacherTour(false)} />
         <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden">
             <Header
                 user={user}
@@ -1125,7 +1152,7 @@ export default function QuestionBankPage() {
                                 상세 필터
                             </h3>
                         </div>
-                        <div className="flex-1 overflow-y-auto">
+                        <div data-tour="qb-filter" className="flex-1 overflow-y-auto">
                             <FilterSidebar
                                 dbFilter={null}
                                 selectedDbIds={selectedDbIds}
@@ -1137,6 +1164,7 @@ export default function QuestionBankPage() {
                         </div>
                         <div className="p-4 border-t bg-[#F2F3F0]">
                             <button
+                                data-tour="qb-search"
                                 onClick={() => {
                                     handleSearch();
                                     setShowMobileSidebar(false);
@@ -1176,6 +1204,7 @@ export default function QuestionBankPage() {
                                     </button>
                                 )}
                                 <button
+                                    data-tour="qb-generate"
                                     onClick={handleGenerate}
                                     disabled={cart.length === 0 || isGenerating}
                                     className="bg-[#497AB7] disabled:bg-slate-300 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#3A6599] shadow-sm transition font-bold flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm"
@@ -1184,6 +1213,7 @@ export default function QuestionBankPage() {
                                     <span className="sm:hidden">생성 ({cart.length})</span>
                                 </button>
                                 <button
+                                    data-tour="qb-auto"
                                     onClick={() => setShowAutoModal(true)}
                                     className="bg-[#5CC6C3] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-[#3AADA9] shadow-sm transition font-bold whitespace-nowrap text-xs sm:text-sm"
                                 >

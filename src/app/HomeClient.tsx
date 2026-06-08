@@ -9,6 +9,33 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import HeroBanner from '@/components/HeroBanner';
 import SimilarDemo from '@/components/SimilarDemo';
+import RoleOnboardingModal from '@/components/RoleOnboardingModal';
+import GuidedTour, { TourStep } from '@/components/GuidedTour';
+
+// 학생·학부모 홈 투어 단계
+const STUDENT_TOUR_STEPS: TourStep[] = [
+    {
+        target: '[data-tour="search-filter"]',
+        title: '① 기출 검색',
+        body: '시/도·학교·학년·시험으로 원하는 기출 시험지를 찾을 수 있어요. 시/도부터 선택해 보세요.',
+        advanceOn: 'click',
+        placement: 'bottom',
+    },
+    {
+        target: '[data-tour="exam-card"]',
+        title: '② 자료 고르기',
+        body: '검색 결과(또는 아래 목록)에서 원하는 학교·시험의 자료를 고르세요.',
+        advanceOn: 'click',
+        placement: 'top',
+    },
+    {
+        target: '[data-tour="pdf-download"]',
+        title: '③ PDF 받기',
+        body: '문제와 해설이 담긴 PDF는 여기서 받아요. (로그인 후 이용)',
+        advanceOn: 'click',
+        placement: 'left',
+    },
+];
 import RightSidebar from '@/components/RightSidebar';
 import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
@@ -49,6 +76,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     }
 
     const [groupedFiles, setGroupedFiles] = useState<GroupedExam[]>([]);
+    const [runStudentTour, setRunStudentTour] = useState(false);
 
     const [files, setFiles] = useState<FileItem[]>([]);
     const [selectedRegion, setSelectedRegion] = useState('');
@@ -477,6 +505,15 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 onUploadClick={handleUploadClick}
             />
 
+            <RoleOnboardingModal onSelect={(role) => {
+                if (role === 'student') {
+                    setRunStudentTour(true);
+                } else {
+                    router.push('/question-bank?tour=1');
+                }
+            }} />
+            <GuidedTour steps={STUDENT_TOUR_STEPS} run={runStudentTour} onClose={() => setRunStudentTour(false)} />
+
             <HeroBanner user={user} earnedPoints={earnedPoints} />
 
             <SimilarDemo />
@@ -485,7 +522,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 <div className="flex flex-col gap-6">
                     <div className="space-y-6">
                         {/* 검색 필터 박스 */}
-                        <div className="bg-white rounded-2xl border border-[#B7D1EA] shadow-sm p-5">
+                        <div data-tour="search-filter" className="bg-white rounded-2xl border border-[#B7D1EA] shadow-sm p-5">
                             <p className="text-xs font-bold text-[#497AB7] mb-3 flex items-center gap-1.5">
                                 <Search size={12} /> 기출 자료 검색
                             </p>
@@ -547,8 +584,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
                         {/* 기출 자료 카드 목록 */}
                         <div id="main-list" className="space-y-2">
-                            {currentItems.length > 0 ? currentItems.map(group => (
-                                <div key={group.key} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-l-4 ${group.isVerified ? 'border-l-[#5CC6C3]' : 'border-l-[#497AB7]'}`}>
+                            {currentItems.length > 0 ? currentItems.map((group, idx) => (
+                                <div key={group.key} data-tour={idx === 0 ? 'exam-card' : undefined} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-l-4 ${group.isVerified ? 'border-l-[#5CC6C3]' : 'border-l-[#497AB7]'}`}>
                                     <div className="p-3 md:p-4">
                                         <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
                                             {/* Title + meta */}
@@ -586,6 +623,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                 {/* PDF */}
                                                 {group.files.pdfSol ? (
                                                     <button
+                                                        data-tour={idx === 0 ? 'pdf-download' : undefined}
                                                         onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)}
                                                         className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
                                                             checkAccess(group.files.pdfSol.id)

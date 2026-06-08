@@ -27,6 +27,7 @@
     "react": "^18",
     "react-daum-postcode": "^4.0.0",
     "react-dom": "^18",
+    "react-joyride": "^2.9.3",
     "solapi": "^5.5.4",
     "swiper": "^12.1.2",
     "tailwind-merge": "^2.3.0",
