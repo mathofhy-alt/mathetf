@@ -82,31 +82,20 @@ export async function generateTags(text: string, subject: string, imageUrls: str
         const ALL_SUBJECTS = Object.keys(SUBJECT_UNITS);
         const isSubjectUnknown = !subject || subject === '수학' || subject === '전과목' || !ALL_SUBJECTS.includes(subject);
 
-        let mapStr = "";
-        
-        if (isSubjectUnknown) {
-            mapStr += "다음은 각 과목(subject)별 허용된 단원(unit) 및 핵심 태그(tags) 목록입니다:\n";
-            for (const [sub, units] of Object.entries(SUBJECT_UNITS)) {
-                mapStr += `\n[과목: ${sub}]\n`;
-                const tagMapForSub = FULL_TAG_MAP[sub];
-                if (tagMapForSub) {
-                    for (const [u, tArray] of Object.entries(tagMapForSub)) {
-                        mapStr += `- 단원: ${u} | 관련 태그: ${tArray.join(', ')}\n`;
-                    }
-                } else {
-                    mapStr += `- 허용 단원 리스트: ${units.join(', ')}\n`;
-                }
-            }
-        } else {
-            const currentUnits = SUBJECT_UNITS[subject] || [];
-            const currentTagMap = FULL_TAG_MAP[subject];
-            if (currentTagMap) {
-                for (const [u, tArray] of Object.entries(currentTagMap)) {
-                    mapStr += `단원: ${u} | 관련 태그: ${tArray.join(', ')}\n`;
+        // [수정] 주어진 과목이 틀렸을 수 있으므로, '항상 전 과목'의 단원/태그를 후보로 제공한다.
+        // (이전엔 주어진 과목의 단원만 줘서, 과목이 잘못 저장된 문제는 단원도 영영 못 고쳤음.
+        //  예: 공통수학2 '원의방정식' 문제가 공통수학1로 저장돼 있으면 '여러가지부등식'으로 오분류)
+        void isSubjectUnknown;
+        let mapStr = "다음은 각 과목(subject)별 허용된 단원(unit) 및 핵심 태그(tags) 목록입니다:\n";
+        for (const [sub, units] of Object.entries(SUBJECT_UNITS)) {
+            mapStr += `\n[과목: ${sub}]\n`;
+            const tagMapForSub = FULL_TAG_MAP[sub];
+            if (tagMapForSub) {
+                for (const [u, tArray] of Object.entries(tagMapForSub)) {
+                    mapStr += `- 단원: ${u} | 관련 태그: ${tArray.join(', ')}\n`;
                 }
             } else {
-                mapStr += `허용 단원 리스트: ${currentUnits.join(', ')}\n`;
-                mapStr += `(태그는 쉼표로 구분하여 핵심적인 수학 개념이나 유형명으로 자유롭게 2~3개 추출할 것)`;
+                mapStr += `- 허용 단원 리스트: ${units.join(', ')}\n`;
             }
         }
 
@@ -119,6 +108,11 @@ export async function generateTags(text: string, subject: string, imageUrls: str
   "tags": ["태그1", "태그2"],
   "difficulty": 5
 }
+
+[중요 - 과목/단원 정정] 입력으로 주어지는 '현재주어진과목'은 참고용일 뿐이며 잘못 저장돼 있을 수 있습니다.
+문제의 실제 내용(이미지 포함)을 기준으로, 아래 전체 목록에서 가장 정확한 과목과 단원을 선택하세요.
+주어진 과목과 달라도, 내용이 명백히 다른 과목이면 반드시 올바른 과목으로 '정정'해야 합니다.
+(예: 원·직선의 방정식, 두 점 사이 거리 등 좌표평면 도형 문제는 공통수학2의 '원의방정식/평면좌표/직선의방정식' 단원입니다.)
 
 [난이도(difficulty) 산정 가이드라인 - 1부터 10사이의 정수]
 1~3: 기본 공식 및 계산 위주의 쉬운 예제/유제 수준
