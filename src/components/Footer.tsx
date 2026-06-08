@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import dynamic from "next/dynamic"
+import Link from "next/link"
 
 const TermsModal = dynamic(() => import("./TermsModal"), { ssr: false })
 const PrivacyModal = dynamic(() => import("./PrivacyModal"), { ssr: false })
@@ -25,7 +26,13 @@ export default function Footer() {
                             이메일 문의: <a href="mailto:mathetf.team@gmail.com" className="hover:text-blue-600 transition-colors">mathetf.team@gmail.com</a>
                         </p>
                     </div>
-                    <div className="flex gap-6 text-xs font-medium">
+                    <div className="flex gap-6 text-xs font-medium items-center">
+                        <Link
+                            href="/schools"
+                            className="hover:text-slate-800 transition-colors"
+                        >
+                            학교별 기출 자료
+                        </Link>
                         <button
                             onClick={() => setIsTermsOpen(true)}
                             className="hover:text-slate-800 transition-colors"
