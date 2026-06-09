@@ -165,7 +165,9 @@ export async function POST(req: NextRequest) {
 
 
         // 8개씩 병렬 처리
-        const CONCURRENCY = 8;
+        // [성능] 동시 처리 개수. Tier 3 한도(4,000+ RPM / 4M+ TPM) 대비 충분히 안전한 16.
+        // (호출당 ~12k 토큰 가정 시 16 → 약 2.3M TPM, 192 RPM 수준 — 한도 미달. 정확도는 그대로)
+        const CONCURRENCY = 16;
         for (let i = 0; i < questionsToProcess.length; i += CONCURRENCY) {
             const batch = questionsToProcess.slice(i, i + CONCURRENCY);
             const batchResults = await Promise.allSettled(batch.map(q => processQuestion(q)));

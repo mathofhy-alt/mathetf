@@ -1,6 +1,9 @@
 {
   "regions": ["icn1"],
   "functions": {
+    "src/app/api/admin/embeddings/generate/route.ts": {
+      "maxDuration": 60
+    },
     "src/app/api/pro/exam/save/route.ts": {
       "maxDuration": 60
     },

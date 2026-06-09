@@ -709,9 +709,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
 
         try {
             if (hasSelection) {
-                // Process selected IDs in chunks of 10
+                // Process selected IDs in chunks (서버 동시성 16에 맞춤 → 한 요청당 16개 병렬 처리)
                 const idsArray = Array.from(selectedIds);
-                const chunkSize = 10;
+                const chunkSize = 16;
 
                 for (let i = 0; i < idsArray.length; i += chunkSize) {
                     const chunk = idsArray.slice(i, i + chunkSize);
