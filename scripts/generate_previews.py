@@ -57,19 +57,22 @@ def make_watermark_tile(font):
     d.text((10, 40), 'mathetf.com', font=font, fill=(120, 130, 150, 60))
     return tile.rotate(30, expand=1)
 
-def render_watermarked(pdf_bytes, page_idx, wm_tile):
+def render_page(pdf_bytes, page_idx, wm_tile=None):
     doc = fitz.open(stream=pdf_bytes, filetype='pdf')
     if page_idx >= len(doc):
         return None
     pix = doc[page_idx].get_pixmap(matrix=fitz.Matrix(RENDER_SCALE, RENDER_SCALE))
-    img = Image.frombytes('RGB', (pix.width, pix.height), pix.samples).convert('RGBA')
-    W, Hh = img.size
-    overlay = Image.new('RGBA', (W, Hh), (0, 0, 0, 0))
-    tw, th = wm_tile.size
-    for y in range(-th, Hh + th, int(th * 0.9)):
-        for x in range(-tw, W + tw, int(tw * 0.95)):
-            overlay.alpha_composite(wm_tile, (x, y))
-    out = Image.alpha_composite(img, overlay).convert('RGB')
+    img = Image.frombytes('RGB', (pix.width, pix.height), pix.samples)
+    if wm_tile is not None:
+        img = img.convert('RGBA')
+        W, Hh = img.size
+        overlay = Image.new('RGBA', (W, Hh), (0, 0, 0, 0))
+        tw, th = wm_tile.size
+        for y in range(-th, Hh + th, int(th * 0.9)):
+            for x in range(-tw, W + tw, int(tw * 0.95)):
+                overlay.alpha_composite(wm_tile, (x, y))
+        img = Image.alpha_composite(img, overlay)
+    out = img.convert('RGB')
     buf = io.BytesIO()
     out.save(buf, 'WEBP', quality=WEBP_QUALITY)
     return buf.getvalue()
@@ -120,11 +123,14 @@ def main():
     if '--limit' in sys.argv:
         limit = int(sys.argv[sys.argv.index('--limit') + 1])
 
-    try:
-        font = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 34)
-    except Exception:
-        font = ImageFont.load_default()
-    wm_tile = make_watermark_tile(font)
+    # 워터마크는 기본 OFF. --watermark 줄 때만 적용.
+    wm_tile = None
+    if '--watermark' in sys.argv:
+        try:
+            font = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 34)
+        except Exception:
+            font = ImageFont.load_default()
+        wm_tile = make_watermark_tile(font)
 
     ensure_bucket()
     targets = fetch_targets(limit, force_all, no_db)
@@ -137,7 +143,7 @@ def main():
             pdf = download_pdf(row['file_path'])
             urls = []
             for p in range(PREVIEW_PAGES):
-                data = render_watermarked(pdf, p, wm_tile)
+                data = render_page(pdf, p, wm_tile)
                 if data is None:
                     break
                 url = upload_preview(f"{row['id']}_p{p+1}.webp", data)
