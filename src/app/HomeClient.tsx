@@ -593,7 +593,13 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                 <div className="font-bold text-base break-keep leading-snug mb-1.5">
                                                     {group.title.includes(']') ? (
                                                         <>
-                                                            <span className="text-[#497AB7]">{group.title.split(']')[0]}]</span>{' '}
+                                                            <Link
+                                                                href={`/school/${encodeURIComponent(group.school)}`}
+                                                                className="text-[#497AB7] hover:underline"
+                                                                title={`${group.school} 전체 기출 보기`}
+                                                            >
+                                                                {group.title.split(']')[0]}]
+                                                            </Link>{' '}
                                                             <span className="text-[#1E2D4F]">{group.title.split(']')[1].trim()}</span>
                                                         </>
                                                     ) : <span className="text-[#1E2D4F]">{group.title}</span>}
