@@ -150,6 +150,15 @@ export default async function SchoolPage({ params }: Props) {
                         const hasPdf = group.files.some((f: any) => f.file_type === 'PDF');
                         const hasHwp = group.files.some((f: any) => f.file_type === 'HWP');
                         const hasDb = group.files.some((f: any) => f.file_type === 'DB');
+                        // 상세페이지(/exam/[id]) 앵커 = 해설 PDF 행
+                        const detailFile = group.files.find((f: any) => f.file_type === 'PDF' && f.content_type === '해설') || group.files.find((f: any) => f.file_type === 'PDF');
+
+                        const titleNode = (
+                            <>
+                                {group.year}년 {group.grade}학년 {semLabel} {group.examType}
+                                {group.subject && <span className="ml-1 text-brand-600">{group.subject}</span>}
+                            </>
+                        );
 
                         return (
                             <div
@@ -157,10 +166,13 @@ export default async function SchoolPage({ params }: Props) {
                                 className="flex items-center justify-between px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors"
                             >
                                 <div>
-                                    <p className="font-bold text-slate-800">
-                                        {group.year}년 {group.grade}학년 {semLabel} {group.examType}
-                                        {group.subject && <span className="ml-1 text-brand-600">{group.subject}</span>}
-                                    </p>
+                                    {detailFile ? (
+                                        <Link href={`/exam/${detailFile.id}`} className="font-bold text-slate-800 hover:text-brand-600 hover:underline">
+                                            {titleNode}
+                                        </Link>
+                                    ) : (
+                                        <p className="font-bold text-slate-800">{titleNode}</p>
+                                    )}
                                     <div className="flex gap-2 mt-1">
                                         {hasPdf && (
                                             <span className="text-[11px] bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded">PDF</span>

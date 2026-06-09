@@ -41,7 +41,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         }));
 
-        return [...staticPages, ...schoolPages];
+        // 시험지별 상세페이지 (해설 PDF 1행 = 시험 1개)
+        const { data: examRows } = await supabase
+            .from('exam_materials')
+            .select('id, created_at')
+            .eq('file_type', 'PDF')
+            .eq('content_type', '해설')
+            .neq('school', 'DELETED');
+
+        const examPages: MetadataRoute.Sitemap = (examRows || []).map((r: any) => ({
+            url: `${baseUrl}/exam/${r.id}`,
+            lastModified: new Date(r.created_at),
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        }));
+
+        return [...staticPages, ...schoolPages, ...examPages];
     } catch {
         return staticPages;
     }
