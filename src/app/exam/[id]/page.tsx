@@ -38,7 +38,23 @@ async function getExam(id: string) {
         .eq('exam_type', row.exam_type)
         .eq('subject', row.subject || '')
         .neq('school', 'DELETED');
-    return { row, siblings: siblings || [] };
+
+    // 같은 학교·같은 시험(학년·학기·시험·과목)의 다른 연도 → 상세페이지 링크
+    const { data: otherYears } = await supabase
+        .from('exam_materials')
+        .select('id, exam_year')
+        .eq('school', row.school)
+        .eq('grade', row.grade)
+        .eq('semester', row.semester)
+        .eq('exam_type', row.exam_type)
+        .eq('subject', row.subject || '')
+        .eq('file_type', 'PDF')
+        .eq('content_type', '해설')
+        .neq('id', row.id)
+        .neq('school', 'DELETED')
+        .order('exam_year', { ascending: false });
+
+    return { row, siblings: siblings || [], otherYears: otherYears || [] };
 }
 
 // 빌드 시 실제 해설 PDF 시험만 미리 생성
@@ -75,8 +91,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExamDetailPage({ params }: Props) {
     const ex = await getExam(params.id);
     if (!ex) notFound();
-    const { row, siblings } = ex;
+    const { row, siblings, otherYears } = ex;
     const label = buildLabel(row);
+    const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
+    const examShort = `${row.grade ? row.grade + '학년 ' : ''}${isMock ? row.semester + '월' : row.semester + '학기'} ${row.exam_type || ''}`.trim();
     const previews: string[] = Array.isArray(row.preview_urls) ? row.preview_urls : [];
 
     const hasPdf = siblings.some((f: any) => f.file_type === 'PDF');
@@ -144,6 +162,26 @@ export default async function ExamDetailPage({ params }: Props) {
                         다운로드 하러 가기
                     </Link>
                 </div>
+
+                {/* 같은 시험 · 다른 연도 */}
+                {otherYears.length > 0 && (
+                    <div className="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <p className="text-sm font-bold text-slate-700 mb-3">
+                            📚 {row.school} {examShort} · 다른 연도
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {otherYears.map((r: any) => (
+                                <Link
+                                    key={r.id}
+                                    href={`/exam/${r.id}`}
+                                    className="text-sm font-bold text-[#497AB7] bg-[#EEF4FB] hover:bg-[#DCE9F8] px-3.5 py-2 rounded-lg transition-colors"
+                                >
+                                    {r.exam_year}년 기출
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* 하단 링크 */}
                 <div className="mt-8 text-center">
