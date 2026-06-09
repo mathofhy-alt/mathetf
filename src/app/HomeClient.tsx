@@ -594,9 +594,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                     {group.title.includes(']') ? (
                                                         <>
                                                             <Link
-                                                                href={`/school/${encodeURIComponent(group.school)}`}
+                                                                href={group.files.pdfSol ? `/exam/${group.files.pdfSol.id}` : `/school/${encodeURIComponent(group.school)}`}
                                                                 className="text-[#497AB7] hover:underline"
-                                                                title={`${group.school} 전체 기출 보기`}
+                                                                title="문제 미리보기 보기"
                                                             >
                                                                 {group.title.split(']')[0]}]
                                                             </Link>{' '}
