@@ -2,6 +2,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
 
@@ -131,18 +132,7 @@ export default async function ExamDetailPage({ params }: Props) {
                 {previews.length > 0 ? (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 mb-6">
                         <p className="text-sm font-bold text-slate-700 mb-3">📄 문제 미리보기 <span className="text-slate-400 font-normal">(앞 {previews.length}페이지 · 해설 제외)</span></p>
-                        <div className="space-y-4">
-                            {previews.map((url, i) => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    key={i}
-                                    src={url}
-                                    alt={`${label} 수학 기출문제 미리보기 ${i + 1}페이지`}
-                                    className="w-full rounded-lg border border-slate-100 shadow-sm"
-                                    loading="lazy"
-                                />
-                            ))}
-                        </div>
+                        <ExamPreviewCarousel images={previews} label={label} />
                         <p className="text-xs text-slate-400 mt-3 text-center">전체 문제와 해설은 다운로드로 제공됩니다.</p>
                     </div>
                 ) : (
