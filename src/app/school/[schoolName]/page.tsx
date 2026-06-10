@@ -186,10 +186,10 @@ export default async function SchoolPage({ params }: Props) {
                                     </div>
                                 </div>
                                 <Link
-                                    href={`/?school=${encodeURIComponent(schoolName)}`}
-                                    className="text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
+                                    href={detailFile ? `/exam/${detailFile.id}` : `/?school=${encodeURIComponent(schoolName)}`}
+                                    className="text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
                                 >
-                                    다운로드
+                                    {detailFile ? '보기' : '다운로드'}
                                 </Link>
                             </div>
                         );
