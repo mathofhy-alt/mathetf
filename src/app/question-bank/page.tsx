@@ -479,16 +479,24 @@ export default function QuestionBankPage() {
             .sort((a: any, b: any) =>
                 (a.school || '').localeCompare(b.school || '', 'ko')
                 || (Number(b.exam_year) || 0) - (Number(a.exam_year) || 0))
-            .map((db: any) => ({
-                id: db.id,
-                folder_id: 'root',
-                user_id: 'guest',
-                type: 'personal_db' as const,
-                reference_id: db.id,
-                name: db.title || `${db.school} ${db.exam_year ? db.exam_year + '년 ' : ''}${db.grade ? db.grade + '학년 ' : ''}${db.semester ? db.semester + '학기 ' : ''}${db.exam_type || ''} ${db.subject || ''}`.trim(),
-                created_at: '',
-                details: db,
-            }));
+            .map((db: any) => {
+                // FileGrid 그룹핑 규칙(고N / N학기 중간·기말 / 연도)에 맞춰 이름 구성
+                const isMock = db.exam_type === '모의고사' || db.exam_type === '수능';
+                const gradePart = db.grade ? `고${String(db.grade).replace('고', '')}` : '';
+                const examPart = isMock
+                    ? `${db.semester ? db.semester + '월 ' : ''}${db.exam_type}`
+                    : `${db.semester ? db.semester + '학기 ' : ''}${db.exam_type?.includes('중간') ? '중간' : db.exam_type?.includes('기말') ? '기말' : (db.exam_type || '')}`;
+                return {
+                    id: db.id,
+                    folder_id: 'root',
+                    user_id: 'guest',
+                    type: 'personal_db' as const,
+                    reference_id: db.id,
+                    name: `${db.school} ${gradePart} ${db.exam_year ? db.exam_year + '년' : ''} ${examPart} ${db.subject || ''} [개인DB]`.replace(/\s+/g, ' ').trim(),
+                    created_at: '',
+                    details: db,
+                };
+            });
         return { folders: [], items, isUnified: true };
     }, [user, purchasedDbs]);
 
