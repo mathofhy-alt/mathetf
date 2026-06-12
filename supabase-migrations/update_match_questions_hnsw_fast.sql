@@ -69,3 +69,10 @@ begin
   limit match_count;
 end;
 $$;
+
+-- [중요] 소유자 권한 실행 (RLS 우회) — 일반 유저 권한으로 돌면 RLS 평가가 겹쳐 statement timeout 발생.
+-- 단, definer 는 RLS 를 우회하므로 익명(anon) 직접 호출을 반드시 차단한다 (스크래핑 방지 유지).
+alter function match_questions(vector, double precision, integer, text, text, uuid, uuid[])
+  security definer set search_path = public;
+revoke execute on function match_questions(vector, double precision, integer, text, text, uuid, uuid[]) from public, anon;
+grant execute on function match_questions(vector, double precision, integer, text, text, uuid, uuid[]) to authenticated, service_role;
