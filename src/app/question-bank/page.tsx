@@ -990,7 +990,15 @@ export default function QuestionBankPage() {
                                 <X />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-hidden p-4 bg-slate-100">
+                        <div className="flex-1 overflow-hidden p-4 bg-slate-100 flex flex-col">
+                            {!user && (
+                                /* 비로그인: 보관함은 로그인 후 채워짐 — 막지 않고 안내만 */
+                                <div className="mb-3 px-4 py-3 bg-[#EEF4FB] border border-[#B7D1EA] rounded-xl text-sm text-[#3A5A82] break-keep shrink-0">
+                                    지금은 <strong>전체 DB가 자동 선택</strong>되어 있어 바로 검색할 수 있어요.
+                                    로그인하면 구매·저장한 DB와 만든 시험지가 이곳 보관함에 모이고, 원하는 것만 골라 쓸 수 있어요.
+                                </div>
+                            )}
+                            <div className="flex-1 min-h-0">
                             <FolderExplorer
                                 key={storageModalMode}
                                 onItemSelect={handleStorageItemSelect}
@@ -1031,6 +1039,7 @@ export default function QuestionBankPage() {
                                 refreshKey={storageRefreshKey}
                                 onGetViewItems={(items) => setCurrentExamItems(items)}
                             />
+                            </div>
                         </div>
                         <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
                             <div className="flex gap-2">
@@ -1150,10 +1159,9 @@ export default function QuestionBankPage() {
                         <h2 className="font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
                         {/* ... existing DB selectors ... */}
                         <div className="flex gap-2 mb-2">
-                            {/* 비로그인에게도 버튼 노출 (기능 발견용) — 클릭 시 로그인 안내 */}
+                            {/* 비로그인도 열람 가능 (맛보기 — 게이트는 시험지 저장에서만) */}
                             <button
                                 onClick={() => {
-                                    if (!user) { setShowLoginGate(true); return; }
                                     setStorageModalMode('db');
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
@@ -1165,7 +1173,6 @@ export default function QuestionBankPage() {
                             </button>
                             <button
                                 onClick={() => {
-                                    if (!user) { setShowLoginGate(true); return; }
                                     setStorageModalMode('exam');
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
