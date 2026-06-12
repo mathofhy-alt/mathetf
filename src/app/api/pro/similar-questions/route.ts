@@ -11,13 +11,6 @@ import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
  */
 export async function GET(req: NextRequest) {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-        return new NextResponse('Unauthorized', { status: 401 });
-    }
-
-    const isAdmin = user.email === 'mathofhy@naver.com';
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -29,13 +22,20 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // 1. Get the embedding of the source question
-        const { data: source, error: sourceError } = await supabase
-            .from('questions')
-            .select('embedding, plain_text, unit')
-            .eq('id', id)
-            .single();
+        // [성능] 인증 확인과 원본 문제 조회는 서로 독립 → 병렬 실행 (왕복 1회 절약).
+        // 인증 실패면 조회 결과는 그냥 버려짐.
+        const [authRes, sourceRes] = await Promise.all([
+            supabase.auth.getUser(),
+            supabase.from('questions').select('embedding, plain_text, unit').eq('id', id).single(),
+        ]);
 
+        const user = authRes.data?.user;
+        if (authRes.error || !user) {
+            return new NextResponse('Unauthorized', { status: 401 });
+        }
+        const isAdmin = user.email === 'mathofhy@naver.com';
+
+        const { data: source, error: sourceError } = sourceRes;
         if (sourceError || !source) {
             return NextResponse.json({ success: false, error: 'Source question not found' }, { status: 404 });
         }
@@ -47,24 +47,11 @@ export async function GET(req: NextRequest) {
             }, { status: 400 });
         }
 
-        // 2. Fetch User's Purchased DBs (original_bin_id 목록)
-        // [FREE MODE] 무료 기간 중에는 구매 여부 무관하게 전체 개인DB 허용
+        // 2. 구매 DB 목록 — metadataFilter(유료모드 전용)에만 쓰임.
+        // [성능] 무료모드/어드민은 필터를 안 거치므로 조회 자체를 생략 (왕복 1회 절약).
         let purchasedDbs: any[] = [];
 
-        if (isAdmin || PERSONAL_DB_FREE_MODE) {
-            // 전체 개인DB를 허용 (모의고사 제외)
-            const { data: allDbs, error: allDbError } = await supabase
-                .from('exam_materials')
-                .select('id, title, school, grade, semester, exam_type, subject, file_type, content_type')
-                .eq('file_type', 'DB')
-                .neq('exam_type', '모의고사');
-
-            if (allDbError) {
-                console.error("All DB Fetch Error:", allDbError);
-                return NextResponse.json({ success: false, error: 'Failed to fetch databases' }, { status: 500 });
-            }
-            purchasedDbs = allDbs || [];
-        } else {
+        if (!isAdmin && !PERSONAL_DB_FREE_MODE) {
             // [PAID MODE] 구매한 DB만 허용
             const { data: purchases, error: purchaseError } = await supabase
                 .from('purchases')
