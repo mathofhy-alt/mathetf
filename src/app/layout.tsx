@@ -89,8 +89,11 @@ export default function RootLayout({
                         window.dataLayer = window.dataLayer || [];
                         function gtag(){dataLayer.push(arguments);}
                         gtag('js', new Date());
-                        gtag('config', 'G-FC6EZWV58Q');
-                        gtag('config', 'AW-17263917467');
+                        // 실서비스 도메인에서만 측정 (localhost·Vercel 프리뷰가 통계를 오염시키는 것 방지)
+                        if (location.hostname === 'mathetf.com' || location.hostname === 'www.mathetf.com') {
+                            gtag('config', 'G-FC6EZWV58Q');
+                            gtag('config', 'AW-17263917467');
+                        }
                     `}
                 </Script>
             </body>
