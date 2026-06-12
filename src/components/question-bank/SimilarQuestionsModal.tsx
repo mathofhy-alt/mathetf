@@ -18,6 +18,23 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // [2단계 로딩 대응] 검색 직후엔 question_images 가 아직 안 와서(null) 원본이 비어 보일 수 있음
+    // → 모달이 직접 이미지를 받아온다.
+    const [baseImages, setBaseImages] = useState<any[] | null>(baseQuestion?.question_images ?? null);
+
+    useEffect(() => {
+        setBaseImages(baseQuestion?.question_images ?? null);
+        if (baseQuestion?.id && baseQuestion.question_images == null) {
+            fetch('/api/questions/images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: [baseQuestion.id] }),
+            })
+                .then(r => r.json())
+                .then(j => { if (j.success) setBaseImages(j.images?.[baseQuestion.id] || []); })
+                .catch(() => setBaseImages([]));
+        }
+    }, [baseQuestion]);
 
     useEffect(() => {
         if (!baseQuestion?.id) return;
@@ -83,11 +100,11 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                 원본 문제
                             </h3>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                        <div data-modal-scroll className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                             <div className="bg-white rounded-xl shadow-sm border border-indigo-100 p-1">
                                 <QuestionRenderer
                                     xmlContent={baseQuestion.content_xml}
-                                    externalImages={baseQuestion.question_images}
+                                    externalImages={baseImages}
                                     showDownloadAction={false}
                                     className="border-none shadow-none p-0"
                                 />
@@ -96,7 +113,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                     </div>
 
                     {/* Right Panel - Scrollable Similar Questions */}
-                    <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+                    <div data-modal-scroll className="flex-1 overflow-y-auto bg-slate-50 p-6">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
                                 <Loader2 size={40} className="animate-spin text-indigo-500" />
