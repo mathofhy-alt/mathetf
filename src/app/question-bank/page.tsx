@@ -332,6 +332,36 @@ export default function QuestionBankPage() {
 
     };
 
+    // [성능] 이미지 지연 로딩: 검색 직후 카드는 스켈레톤으로 즉시 뜨고,
+    // 이미지는 20개씩 청크로 받아 도착하는 대로 채운다. (보이는 위쪽 카드부터 자연히 먼저 채워짐)
+    // 토큰: 새 검색/페이지 이동 시 이전 검색의 늦은 응답이 화면을 덮어쓰지 않게 차단.
+    const imageLoadToken = useRef(0);
+    const loadImagesProgressively = async (ids: string[]) => {
+        const token = ++imageLoadToken.current;
+        const CHUNK = 20;
+        for (let i = 0; i < ids.length; i += CHUNK) {
+            if (imageLoadToken.current !== token) return; // 새 검색 시작됨 → 중단
+            const chunk = ids.slice(i, i + CHUNK);
+            let imagesMap: Record<string, any[]> | null = null;
+            try {
+                const res = await fetch('/api/questions/images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: chunk }),
+                });
+                const json = await res.json();
+                if (res.ok && json.success) imagesMap = json.images || {};
+            } catch { /* 아래에서 빈 배열 처리 */ }
+            if (imageLoadToken.current !== token) return;
+            // 실패한 청크는 빈 배열로 채워 스켈레톤이 영원히 남지 않게 함
+            setQuestions(prev => prev.map(q =>
+                chunk.includes(q.id)
+                    ? { ...q, question_images: (imagesMap && imagesMap[q.id]) || [] }
+                    : q
+            ));
+        }
+    };
+
     const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1) => {
         // Security: Do not fetch ANY questions if no specific DB filter is provided
         // This prevents leaking 'sorted' questions that the user hasn't purchased.
@@ -366,7 +396,10 @@ export default function QuestionBankPage() {
                 throw new Error(result.error || '데이터베이스 검색 중 오류가 발생했습니다.');
             }
             const data = result.data || [];
-            setQuestions(data);
+            // [성능] 검색 응답엔 이미지가 없음 → 카드 골격(스켈레톤)을 즉시 띄우고,
+            // 이미지는 /api/questions/images 에서 청크 단위로 뒤따라 채운다.
+            setQuestions(data.map((q: any) => ({ ...q, question_images: null })));
+            loadImagesProgressively(data.map((q: any) => q.id));
             if (result.count !== null && result.count !== undefined) setTotalQuestions(result.count);
             if (targetPage === 1) setHasSearched(true);
             if (data.length === 0 && targetPage === 1) {

@@ -75,7 +75,10 @@ export async function POST(req: NextRequest) {
     // plain_text 는 키워드 검색 '조건'으로만 쓰이며 SELECT 하지 않아도 WHERE 에서 동작함.
     // [성능] 전체 개수(count)는 1페이지에서만 계산 → 페이지 이동마다 풀카운트 재계산 방지.
     const wantCount = targetPage === 1;
-    const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)';
+    // [성능] 이미지(question_images)는 더 이상 검색 응답에 싣지 않는다.
+    // BMP 등 무거운 base64가 섞이면 응답이 수 MB로 커져 검색 체감속도가 들쭉날쭉하던 원인.
+    // 카드 골격은 이 메타데이터로 즉시 뜨고, 이미지는 /api/questions/images 가 청크로 따라간다.
+    const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type';
     let query = supabase
         .from('questions')
         .select(SELECT_COLS, wantCount ? { count: 'exact' } : undefined)
