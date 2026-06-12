@@ -1463,10 +1463,10 @@ export default function QuestionBankPage() {
                                                 {viewMode === 'review' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate(true); return; } setSimilarTarget(q); }}
-                                                        className="p-1 hover:bg-brand-50 text-slate-300 hover:text-brand-600 rounded-md transition-all flex items-center gap-1 whitespace-nowrap"
+                                                        className="px-2 py-1 bg-[#A47864] hover:bg-[#8A6553] text-white rounded-md shadow-sm transition-all flex items-center gap-1 whitespace-nowrap"
                                                         title="유사문항 찾기"
                                                     >
-                                                        <Search size={14} />
+                                                        <Search size={13} />
                                                         <span className="text-[10px] font-bold">유사</span>
                                                     </button>
                                                 )}
