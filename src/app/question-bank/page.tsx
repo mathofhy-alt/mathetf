@@ -471,6 +471,27 @@ export default function QuestionBankPage() {
 
 
 
+    // [비로그인 카탈로그] 전체 DB(purchasedDbs)를 보관함 아이템(UserItem) 모양으로 매핑해
+    // 기존 FolderExplorer 디자인 그대로 보여준다. (선택은 reference_id 기반 기존 로직 그대로 작동)
+    const guestDbInitialData = useMemo(() => {
+        if (user || purchasedDbs.length === 0) return undefined;
+        const items = [...purchasedDbs]
+            .sort((a: any, b: any) =>
+                (a.school || '').localeCompare(b.school || '', 'ko')
+                || (Number(b.exam_year) || 0) - (Number(a.exam_year) || 0))
+            .map((db: any) => ({
+                id: db.id,
+                folder_id: 'root',
+                user_id: 'guest',
+                type: 'personal_db' as const,
+                reference_id: db.id,
+                name: db.title || `${db.school} ${db.exam_year ? db.exam_year + '년 ' : ''}${db.grade ? db.grade + '학년 ' : ''}${db.semester ? db.semester + '학기 ' : ''}${db.exam_type || ''} ${db.subject || ''}`.trim(),
+                created_at: '',
+                details: db,
+            }));
+        return { folders: [], items, isUnified: true };
+    }, [user, purchasedDbs]);
+
     const handleStorageItemSelect = async (item: UserItem) => {
         if (item.type === 'personal_db') {
             handleDbToggle(item.reference_id);
@@ -991,54 +1012,7 @@ export default function QuestionBankPage() {
                             </button>
                         </div>
                         <div className="flex-1 overflow-hidden p-4 bg-slate-100 flex flex-col">
-                            {!user && storageModalMode === 'db' ? (
-                                /* 비로그인: 전체 DB 카탈로그 — 어떤 시험지 DB가 있는지 보여주고 선택까지 가능 */
-                                <div className="flex-1 min-h-0 flex flex-col">
-                                    <div className="flex items-center justify-between mb-3 shrink-0">
-                                        <p className="text-sm font-bold text-slate-600">
-                                            전체 <strong>{purchasedDbs.length}</strong>개 DB 중{' '}
-                                            <span className="text-[#497AB7]">{selectedDbIds.length}개</span> 선택됨
-                                        </p>
-                                        <button
-                                            onClick={() => setSelectedDbIds(
-                                                selectedDbIds.length === purchasedDbs.length ? [] : purchasedDbs.map((d: any) => d.id)
-                                            )}
-                                            className="text-xs font-bold text-[#497AB7] bg-[#E8F0FB] hover:bg-[#D4E4F7] px-3 py-1.5 rounded-lg transition-colors"
-                                        >
-                                            {selectedDbIds.length === purchasedDbs.length ? '전체 해제' : '전체 선택'}
-                                        </button>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
-                                        {[...purchasedDbs]
-                                            .sort((a: any, b: any) =>
-                                                (a.school || '').localeCompare(b.school || '', 'ko')
-                                                || (Number(b.exam_year) || 0) - (Number(a.exam_year) || 0))
-                                            .map((db: any) => {
-                                                const checked = selectedDbIds.includes(db.id);
-                                                return (
-                                                    <button
-                                                        key={db.id}
-                                                        onClick={() => setSelectedDbIds(prev =>
-                                                            checked ? prev.filter(id => id !== db.id) : [...prev, db.id])}
-                                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors ${checked ? '' : 'opacity-50'}`}
-                                                    >
-                                                        <span className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center ${checked ? 'bg-[#497AB7] border-[#497AB7]' : 'border-slate-300 bg-white'}`}>
-                                                            {checked && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
-                                                        </span>
-                                                        <span className="text-sm text-slate-700 truncate">
-                                                            <strong className="text-slate-800">{db.school}</strong>
-                                                            {' '}{db.exam_year ? `${db.exam_year}년` : ''} {db.grade ? `${db.grade}학년` : ''} {db.semester ? `${db.semester}학기` : ''} {db.exam_type || ''}{' '}
-                                                            <span className="text-[#497AB7] font-bold">{db.subject || ''}</span>
-                                                        </span>
-                                                    </button>
-                                                );
-                                            })}
-                                    </div>
-                                    <p className="text-[11px] text-slate-400 mt-2 shrink-0">로그인하면 구매·저장한 DB가 보관함 폴더로 정리돼요.</p>
-                                </div>
-                            ) : (
-                            <>
-                            {!user && (
+                            {!user && storageModalMode === 'exam' && (
                                 /* 비로그인 '만든 시험지': 아직 만든 게 없음 — 안내 */
                                 <div className="mb-3 px-4 py-3 bg-[#EEF4FB] border border-[#B7D1EA] rounded-xl text-sm text-[#3A5A82] break-keep shrink-0">
                                     시험지를 만들어 <strong>저장하면 이곳에 모여요.</strong> 저장에는 로그인이 필요해요.
@@ -1046,6 +1020,8 @@ export default function QuestionBankPage() {
                             )}
                             <div className="flex-1 min-h-0">
                             <FolderExplorer
+                                // [비로그인] 전체 DB 카탈로그를 기존 보관함 디자인 그대로 주입
+                                initialData={!user && storageModalMode === 'db' ? guestDbInitialData : undefined}
                                 key={storageModalMode}
                                 onItemSelect={handleStorageItemSelect}
                                 onSelectAll={(items) => {
@@ -1086,13 +1062,11 @@ export default function QuestionBankPage() {
                                 onGetViewItems={(items) => setCurrentExamItems(items)}
                             />
                             </div>
-                            </>
-                            )}
                         </div>
                         <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
                             <div className="flex gap-2">
-                                {/* Actions for DBs - 전체 선택 (보관함 기준 — 비로그인은 카탈로그 자체 버튼 사용) */}
-                                {user && storageModalMode === 'db' && (() => {
+                                {/* Actions for DBs - 전체 선택 */}
+                                {storageModalMode === 'db' && (() => {
                                         const allDbIds = currentExamItems
                                             .filter(i => i.type === 'personal_db')
                                             .map(i => i.reference_id || i.id);
