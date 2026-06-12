@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import HeroBanner from '@/components/HeroBanner';
 import SimilarDemo from '@/components/SimilarDemo';
 import RoleOnboardingModal from '@/components/RoleOnboardingModal';
+import LaunchPromoModal from '@/components/LaunchPromoModal';
 import GuidedTour, { TourStep } from '@/components/GuidedTour';
 
 // 학생·학부모 홈 투어 단계
@@ -513,6 +514,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 }
             }} />
             <GuidedTour steps={STUDENT_TOUR_STEPS} run={runStudentTour} onClose={() => setRunStudentTour(false)} />
+            <LaunchPromoModal />
 
             <HeroBanner user={user} earnedPoints={earnedPoints} />
 

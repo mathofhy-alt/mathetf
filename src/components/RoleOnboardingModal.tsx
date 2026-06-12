@@ -49,6 +49,9 @@ export default function RoleOnboardingModal({ onSelect }: { onSelect?: (role: Us
                     </button>
                     <h2 className="text-2xl font-black text-white">환영합니다</h2>
                     <p className="text-white/85 text-sm mt-1.5">어떤 목적으로 오셨나요? 맞춤 안내를 보여드릴게요.</p>
+                    <p className="inline-block mt-3 text-xs font-extrabold text-[#1E2D4F] bg-yellow-300 px-3 py-1.5 rounded-full">
+                        🎉 런칭 기념 — 회원가입만 하면 기출 DB 전부 무료
+                    </p>
                 </div>
 
                 {/* 두 갈래 선택 */}
