@@ -1150,39 +1150,39 @@ export default function QuestionBankPage() {
                         <h2 className="font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
                         {/* ... existing DB selectors ... */}
                         <div className="flex gap-2 mb-2">
-                            {!user ? (
-                                /* 비로그인: 전체 DB 자동 선택 안내 */
-                                <div className="flex-1 py-3 px-3 bg-green-50 border border-green-200 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-green-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                    전체 DB 자동 선택됨 ({purchasedDbs.length}개)
-                                </div>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={() => {
-                                            setStorageModalMode('db');
-                                            setShowStorageModal(true);
-                                            setShowMobileSidebar(false);
-                                        }}
-                                        className="flex-1 py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
-                                    >
-                                        <Database size={16} />
-                                        DB 문제
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setStorageModalMode('exam');
-                                            setShowStorageModal(true);
-                                            setShowMobileSidebar(false);
-                                        }}
-                                        className="flex-1 py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
-                                    >
-                                        <FolderIcon size={16} />
-                                        만든 시험지
-                                    </button>
-                                </>
-                            )}
+                            {/* 비로그인에게도 버튼 노출 (기능 발견용) — 클릭 시 로그인 안내 */}
+                            <button
+                                onClick={() => {
+                                    if (!user) { setShowLoginGate(true); return; }
+                                    setStorageModalMode('db');
+                                    setShowStorageModal(true);
+                                    setShowMobileSidebar(false);
+                                }}
+                                className="flex-1 py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                            >
+                                <Database size={16} />
+                                DB 문제
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!user) { setShowLoginGate(true); return; }
+                                    setStorageModalMode('exam');
+                                    setShowStorageModal(true);
+                                    setShowMobileSidebar(false);
+                                }}
+                                className="flex-1 py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                            >
+                                <FolderIcon size={16} />
+                                만든 시험지
+                            </button>
                         </div>
+                        {!user && (
+                            /* 비로그인: 전체 DB 자동 선택 안내 (한 줄) */
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                전체 DB 자동 선택됨 ({purchasedDbs.length}개)
+                            </div>
+                        )}
                         {/* 관리자 전체 DB 선택 버튼 */}
                         {isAdmin && purchasedDbs.length > 0 && (
                             <button
