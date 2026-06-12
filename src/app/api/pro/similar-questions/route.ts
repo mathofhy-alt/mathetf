@@ -152,8 +152,13 @@ export async function GET(req: NextRequest) {
 
         let results = similarQuestions || [];
 
-        // DB 레벨에서 이미 구매 필터가 적용됐으므로 JS 후처리 불필요
-        // (admin은 allowed_bin_ids=null로 전체 검색)
+        // [버그수정] 구매 필터는 JS(metadataFilter)에서 적용한다.
+        // questions 테이블엔 exam_materials 와 연결되는 컬럼이 없어 DB 레벨 필터(allowed_bin_ids)가
+        // 불가능했고(존재하지 않는 컬럼 참조로 유료모드에서 RPC가 터지는 잠복 버그),
+        // match_questions 는 인덱스 경로로 단일화 + 필터는 여기서 수행.
+        if (!isAdmin && !PERSONAL_DB_FREE_MODE) {
+            results = results.filter(metadataFilter);
+        }
 
         // Filter by Unit (Strict matching as requested previously)
         if (source.unit) {
