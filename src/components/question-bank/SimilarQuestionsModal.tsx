@@ -43,22 +43,38 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
             setLoading(true);
             setError(null);
             try {
-                // Fetch hardcoded top 10 for now
-                const res = await fetch(`/api/pro/similar-questions?id=${baseQuestion.id}&limit=10`);
+                // [성능] meta=1: 이미지 없이 결과만 먼저 → 카드 즉시 표시, 스피너 최소화
+                const res = await fetch(`/api/pro/similar-questions?id=${baseQuestion.id}&limit=10&meta=1`);
                 if (!res.ok) {
                     const errorData = await res.json();
                     throw new Error(errorData.error || 'Failed to fetch similar questions');
                 }
                 const data = await res.json();
                 if (data.success) {
-                    setQuestions(data.data);
+                    setQuestions(data.data);          // question_images: null → 카드는 스켈레톤으로 즉시
+                    setLoading(false);
+                    // 이미지는 한 번에 뒤따라 로드 (10개 ≤ API 상한 20)
+                    const ids = (data.data || []).map((q: any) => q.id);
+                    if (ids.length > 0) {
+                        try {
+                            const ir = await fetch('/api/questions/images', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ids }),
+                            });
+                            const ij = await ir.json();
+                            const imgs = (ir.ok && ij.success) ? (ij.images || {}) : {};
+                            setQuestions(prev => prev.map(q => ({ ...q, question_images: imgs[q.id] || [] })));
+                        } catch {
+                            setQuestions(prev => prev.map(q => ({ ...q, question_images: q.question_images ?? [] })));
+                        }
+                    }
                 } else {
                     throw new Error(data.error);
                 }
             } catch (e: any) {
                 console.error(e);
                 setError(e.message);
-            } finally {
                 setLoading(false);
             }
         };
@@ -180,12 +196,20 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
 
                                             {/* Question Content */}
                                             <div className="p-4 bg-white flex-1 overflow-hidden">
-                                                <QuestionRenderer
-                                                    xmlContent={q.content_xml}
-                                                    externalImages={q.question_images}
-                                                    showDownloadAction={false}
-                                                    className="border-none shadow-none p-0 !text-sm"
-                                                />
+                                                {q.question_images === null ? (
+                                                    <div className="space-y-2 animate-pulse">
+                                                        <div className="h-4 bg-gray-200 rounded w-3/4" />
+                                                        <div className="h-4 bg-gray-200 rounded w-full" />
+                                                        <div className="h-16 bg-gray-200 rounded w-full mt-3" />
+                                                    </div>
+                                                ) : (
+                                                    <QuestionRenderer
+                                                        xmlContent={q.content_xml}
+                                                        externalImages={q.question_images}
+                                                        showDownloadAction={false}
+                                                        className="border-none shadow-none p-0 !text-sm"
+                                                    />
+                                                )}
                                             </div>
 
                                             {/* Card Footer - 해설보기 */}

@@ -332,6 +332,29 @@ export default function QuestionBankPage() {
 
     };
 
+    // [2단계 로딩 대응] 이미지 도착 전에 담긴 장바구니 항목의 이미지 보충
+    // (검색/유사문제 카드를 스켈레톤 상태에서 담으면 question_images 가 null 인 채 들어옴)
+    useEffect(() => {
+        const missing = (cart || []).filter(c => c && c.id && c.question_images == null).map(c => c.id);
+        if (missing.length === 0) return;
+        const ids = missing.slice(0, 20);
+        fetch('/api/questions/images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids }),
+        })
+            .then(r => r.json())
+            .then(j => {
+                if (!j?.success) return;
+                setCart(prev => prev.map(c =>
+                    c && ids.includes(c.id) && c.question_images == null
+                        ? { ...c, question_images: j.images?.[c.id] || [] }
+                        : c
+                ));
+            })
+            .catch(() => { });
+    }, [cart]);
+
     // [성능] 이미지 지연 로딩: 검색 직후 카드는 스켈레톤으로 즉시 뜨고,
     // 이미지는 20개씩 청크로 받아 도착하는 대로 채운다. (보이는 위쪽 카드부터 자연히 먼저 채워짐)
     // 토큰: 새 검색/페이지 이동 시 이전 검색의 늦은 응답이 화면을 덮어쓰지 않게 차단.

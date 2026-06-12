@@ -167,6 +167,14 @@ export async function GET(req: NextRequest) {
 
         results = results.slice(0, limit);
 
+        // [성능] meta=1 이면 이미지를 싣지 않고 즉시 반환 (모달이 카드 먼저 띄우고
+        // 이미지는 /api/questions/images 로 따로 받음 → 스피너 시간 단축)
+        const metaOnly = searchParams.get('meta') === '1';
+        if (metaOnly) {
+            results = results.map((q: any) => ({ ...q, question_images: null }));
+            return NextResponse.json({ success: true, data: results });
+        }
+
         // 5. RPC 결과를 그대로 사용, question_images만 별도 조회 후 merge
         //    (기존: questions 전체 재조회 + question_images JOIN → DB 왕복 2회)
         //    (개선: question_images만 조회 → DB 왕복 1회 감소, 전송 데이터 대폭 감소)
