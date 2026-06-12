@@ -54,11 +54,19 @@ export default async function AdminQuestionsPage() {
             .order('question_number', { ascending: true })
             .range(0, 29),
 
-        // Initial Regions
-        supabase
-            .from('schools')
-            .select('region')
-            .limit(1000),
+        // Initial Regions — 학교가 2,000개 이상이라 1000행 제한이면 전북 등 일부 시/도 누락 → 전체 페이지네이션
+        (async () => {
+            let all: { region: string }[] = [];
+            let from = 0;
+            while (true) {
+                const { data } = await supabase.from('schools').select('region').range(from, from + 999);
+                if (!data || data.length === 0) break;
+                all = all.concat(data);
+                if (data.length < 1000) break;
+                from += 1000;
+            }
+            return { data: all };
+        })(),
 
         // Initial Concept Suggestions
         supabase
