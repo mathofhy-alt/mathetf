@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { generateEmbedding, generateTags } from '@/lib/embeddings';
+import { CONCEPT_MAP } from '@/lib/concept-map';
+
+const VALID_SUBJECTS = Object.keys(CONCEPT_MAP);
+
+/**
+ * source_db_id (예: "충암고등학교_2025_1학기기말_공통수학1")의 마지막 토막에서
+ * 실제 시험 과목을 뽑는다. CONCEPT_MAP에 있는 과목이면 그걸로 '고정'(신뢰),
+ * 아니면(전과목/전과정 등) null → 과목 자동 추론.
+ */
+function subjectFromSourceDbId(sourceDbId: string | null | undefined): string | null {
+    if (!sourceDbId) return null;
+    const last = sourceDbId.split('_').pop()?.trim() || '';
+    return VALID_SUBJECTS.includes(last) ? last : null;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +48,7 @@ export async function POST(req: NextRequest) {
             // Processing specific IDs
             const { data, error } = await supabase
                 .from('questions')
-                .select('id, content_xml, plain_text, equation_scripts, subject, grade, school, difficulty, key_concepts, unit')
+                .select('id, content_xml, plain_text, equation_scripts, subject, grade, school, difficulty, key_concepts, unit, source_db_id')
                 .in('id', forceIds);
 
             if (error) throw error;
@@ -44,7 +58,7 @@ export async function POST(req: NextRequest) {
             // 30개씩 처리 (병렬화로 속도 개선)
             const { data, error } = await supabase
                 .from('questions')
-                .select('id, content_xml, plain_text, equation_scripts, subject, grade, school, difficulty, key_concepts, unit')
+                .select('id, content_xml, plain_text, equation_scripts, subject, grade, school, difficulty, key_concepts, unit, source_db_id')
                 .or('embedding.is.null,unit.is.null')
                 .limit(30);
 
@@ -107,7 +121,9 @@ export async function POST(req: NextRequest) {
                         const imageUrls: string[] = imgData ? imgData.map((row: any) => row.data) : [];
 
                         const tGemini0 = Date.now();
-                        const tagData = await generateTags(textToEmbed, q.subject || '수학', imageUrls);
+                        // 실제 시험 과목(source_db_id)으로 과목 고정 — 풀이방법 보고 엉뚱한 과목으로 오분류 방지
+                        const lockedSubject = subjectFromSourceDbId(q.source_db_id);
+                        const tagData = await generateTags(textToEmbed, q.subject || '수학', imageUrls, lockedSubject);
                         tlog(`[TIMING] ${q.id} | Gemini: ${Date.now() - tGemini0}ms | tags:${tagData.tags.length} unit:${tagData.unit}`);
                         const extracted = tagData.tags;
                         totalTagTokens += tagData.tokens || 0;

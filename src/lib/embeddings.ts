@@ -46,7 +46,7 @@ import * as path from 'path';
 /**
  * Generates tags and unit using Gemini, explicitly supporting prediction of subjects when missing/unknown.
  */
-export async function generateTags(text: string, subject: string, imageUrls: string[] = []): Promise<{ subject: string | null, unit: string | null, tags: string[], difficulty: number | null, tokens: number }> {
+export async function generateTags(text: string, subject: string, imageUrls: string[] = [], lockedSubject: string | null = null): Promise<{ subject: string | null, unit: string | null, tags: string[], difficulty: number | null, tokens: number }> {
     let apiKey = (process.env.GEMINI_API_KEY || '').trim();
     if (!apiKey) {
         try {
@@ -82,12 +82,16 @@ export async function generateTags(text: string, subject: string, imageUrls: str
         const ALL_SUBJECTS = Object.keys(SUBJECT_UNITS);
         const isSubjectUnknown = !subject || subject === '수학' || subject === '전과목' || !ALL_SUBJECTS.includes(subject);
 
-        // [수정] 주어진 과목이 틀렸을 수 있으므로, '항상 전 과목'의 단원/태그를 후보로 제공한다.
-        // (이전엔 주어진 과목의 단원만 줘서, 과목이 잘못 저장된 문제는 단원도 영영 못 고쳤음.
-        //  예: 공통수학2 '원의방정식' 문제가 공통수학1로 저장돼 있으면 '여러가지부등식'으로 오분류)
+        // [과목 고정] source_db_id 등에서 온 '실제 시험 과목'이 신뢰 가능하면 그 과목으로 잠근다.
+        // (시험이 공통수학1이면 그 안의 모든 문제는 공통수학1 — 풀이에 중복조합 같은 확통 기법이 보여도
+        //  과목은 공통수학1, 단원은 '순열조합'. Gemini가 풀이방법 보고 확통으로 오분류하는 것을 막음.)
+        const isLocked = !!(lockedSubject && ALL_SUBJECTS.includes(lockedSubject));
+        const offerSubjects = isLocked ? [lockedSubject as string] : ALL_SUBJECTS;
+
+        // 잠기지 않은 경우엔 전 과목 후보를 제공해 잘못 저장된 과목도 정정 가능하게 함.
         void isSubjectUnknown;
         let mapStr = "다음은 각 과목(subject)별 허용된 단원(unit) 및 핵심 태그(tags) 목록입니다:\n";
-        for (const [sub, units] of Object.entries(SUBJECT_UNITS)) {
+        for (const sub of offerSubjects) {
             mapStr += `\n[과목: ${sub}]\n`;
             const tagMapForSub = FULL_TAG_MAP[sub];
             if (tagMapForSub) {
@@ -95,7 +99,7 @@ export async function generateTags(text: string, subject: string, imageUrls: str
                     mapStr += `- 단원: ${u} | 관련 태그: ${tArray.join(', ')}\n`;
                 }
             } else {
-                mapStr += `- 허용 단원 리스트: ${units.join(', ')}\n`;
+                mapStr += `- 허용 단원 리스트: ${(SUBJECT_UNITS[sub] || []).join(', ')}\n`;
             }
         }
 
@@ -109,10 +113,13 @@ export async function generateTags(text: string, subject: string, imageUrls: str
   "difficulty": 5
 }
 
-[중요 - 과목/단원 정정] 입력으로 주어지는 '현재주어진과목'은 참고용일 뿐이며 잘못 저장돼 있을 수 있습니다.
+${isLocked
+            ? `[과목 고정 — 매우 중요] 이 문제는 실제 '${lockedSubject}' 과목 시험에서 출제되었습니다. 따라서 subject 는 반드시 "${lockedSubject}" 로 출력하세요 (절대 다른 과목으로 바꾸지 마세요).
+풀이에 다른 과목의 기법(예: 중복조합 등)이 보여도, 이 문제의 과목은 "${lockedSubject}" 입니다. 위 '${lockedSubject}' 단원 목록 안에서만 가장 가까운 unit 을 고르세요.`
+            : `[중요 - 과목/단원 정정] 입력으로 주어지는 '현재주어진과목'은 참고용일 뿐이며 잘못 저장돼 있을 수 있습니다.
 문제의 실제 내용(이미지 포함)을 기준으로, 아래 전체 목록에서 가장 정확한 과목과 단원을 선택하세요.
 주어진 과목과 달라도, 내용이 명백히 다른 과목이면 반드시 올바른 과목으로 '정정'해야 합니다.
-(예: 원·직선의 방정식, 두 점 사이 거리 등 좌표평면 도형 문제는 공통수학2의 '원의방정식/평면좌표/직선의방정식' 단원입니다.)
+(예: 원·직선의 방정식, 두 점 사이 거리 등 좌표평면 도형 문제는 공통수학2의 '원의방정식/평면좌표/직선의방정식' 단원입니다.)`}
 
 [난이도(difficulty) 산정 가이드라인 - 1부터 10사이의 정수]
 1~3: 기본 공식 및 계산 위주의 쉬운 예제/유제 수준
@@ -195,10 +202,15 @@ ${mapStr}`;
         }
         
         // 1. Validate Subject
-        if (inferredSubject && !ALL_SUBJECTS.includes(inferredSubject)) {
-             inferredSubject = (isSubjectUnknown ? null : subject);
+        if (isLocked) {
+            // 시험 과목으로 강제 고정 (Gemini가 뭐라 하든 무시)
+            inferredSubject = lockedSubject as string;
+        } else {
+            if (inferredSubject && !ALL_SUBJECTS.includes(inferredSubject)) {
+                inferredSubject = (isSubjectUnknown ? null : subject);
+            }
+            if (!inferredSubject) inferredSubject = isSubjectUnknown ? null : subject;
         }
-        if (!inferredSubject) inferredSubject = isSubjectUnknown ? null : subject;
 
         // 2. Validate Unit
         const allowedUnits = inferredSubject ? SUBJECT_UNITS[inferredSubject] || [] : [];
