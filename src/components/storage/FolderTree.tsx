@@ -116,14 +116,12 @@ export default function FolderTree({ folders, currentFolderId, onFolderSelect, o
     // Root level folders (parent_id is null)
     let rootFolders = folders.filter(f => f.parent_id === null);
 
-    // Enforce custom sort order: 1. Mock Exams, 2. Purchased DB, 3. Alphabetical
-    rootFolders.sort((a, b) => {
-        if (a.id === 'mock-exam-root') return -1;
-        if (b.id === 'mock-exam-root') return 1;
-        if (a.name === '구매한 학교 기출') return -1;
-        if (b.name === '구매한 학교 기출') return 1;
-        return a.name.localeCompare(b.name);
-    });
+    // 순서 고정: 모의고사 → 사관학교·경찰대 → 구매한 학교 기출 → 기타(이름순)
+    const rank = (f: any) =>
+        f.id === 'mock-exam-root' ? 0
+        : (f.id === 'exam-school-root' || f.name === '사관학교·경찰대') ? 1
+        : f.name === '구매한 학교 기출' ? 2 : 3;
+    rootFolders.sort((a, b) => rank(a) - rank(b) || (a.name || '').localeCompare(b.name || ''));
 
     const [isRootOpen, setIsRootOpen] = useState(true);
 
