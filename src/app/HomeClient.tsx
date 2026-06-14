@@ -230,7 +230,13 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
             if (data) {
                 const groups: { [key: string]: GroupedExam } = {};
 
-                const isMockExam = (item: any) => item.exam_type === '모의고사' || item.school === '전국연합' || item.title?.includes('모의고사');
+                // 무료 시험(모의고사·수능·사관학교/경찰대 입학시험·전국연합)은 홈 카탈로그에 노출하지 않음
+                // (이들은 시험지 출제 탭에서 무료 DB로만 제공)
+                const FREE_EXAM_SCHOOLS = ['전국연합', '사관학교', '경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
+                const isMockExam = (item: any) =>
+                    item.exam_type === '모의고사' || item.exam_type === '수능' || item.exam_type === '입학시험'
+                    || FREE_EXAM_SCHOOLS.includes(item.school)
+                    || item.title?.includes('모의고사');
                 
                 const filteredData = isAdmin 
                     ? data.filter((item: any) => !isMockExam(item)) 
