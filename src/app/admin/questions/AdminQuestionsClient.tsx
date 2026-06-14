@@ -821,7 +821,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
             let apiExamType = '';
             if (examScope) {
                 const [sem, type] = examScope.split('-');
-                if (type === '모의고사') {
+                if (type === '입학시험') {
+                    apiSemester = '입학시험'; // 사관학교·경찰대
+                } else if (type === '모의고사') {
                     apiSemester = `${sem}월 모의고사`;
                 } else if (type === '수능') {
                     apiSemester = `수능`;
