@@ -155,6 +155,15 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
     const nonDbItems = items.filter(i => i.type !== 'personal_db');
     const grouped = hasDbItems ? groupByGradeYearType(items) : {};
 
+    // 모의고사·사관학교·경찰대(입학시험)는 시험종류 단계 없이 연도 밑에 바로 펼침 (클릭 1번 절약).
+    // 내신(구매 학교 기출)은 학기·중간/기말 구분이 필요하므로 3단계 유지.
+    const isFreeExamName = (n?: string) => {
+        const e = parseExamType(n || '');
+        return e.includes('모의') || e === '수능' || e === '입학시험';
+    };
+    const dbItemsAll = items.filter(i => i.type === 'personal_db');
+    const flattenTypes = dbItemsAll.length > 0 && dbItemsAll.every(i => isFreeExamName(i.name || ''));
+
     const renderItem = (item: UserItem) => {
         const isSelected = selectedIds.includes(item.id) || (item.reference_id && selectedIds.includes(item.reference_id));
         return (
@@ -352,8 +361,13 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                                 </span>
                                             </button>
 
-                                            {/* 시험종류 서브헤더 (1학기 중간/기말, 2학기 중간/기말) */}
-                                            {yearOpen && Object.entries(typeMap)
+                                            {/* 평탄화(모의고사/사관학교/경찰대): 연도 밑에 항목 바로 */}
+                                            {yearOpen && flattenTypes &&
+                                                [...allInYear].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true })).map(item => renderItem(item))
+                                            }
+
+                                            {/* 시험종류 서브헤더 (내신: 1학기 중간/기말, 2학기 중간/기말) */}
+                                            {yearOpen && !flattenTypes && Object.entries(typeMap)
                                                 .sort(([a], [b]) => examTypeRank(a) - examTypeRank(b))
                                                 .map(([etype, typeItems]) => {
                                                     const typeKey = `${grade}_${year}_${etype}`;
