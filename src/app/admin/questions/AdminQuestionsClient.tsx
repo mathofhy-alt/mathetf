@@ -1589,10 +1589,10 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 <div>
                                                     <div className="w-full border rounded px-1.5 py-1 text-sm bg-white focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500 min-h-[38px] flex flex-wrap gap-1 items-center">
                                                         {/* Display current tags as pills */}
-                                                        {((Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
+                                                        {((Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
                                                             <span key={`${tag}-${idx}`} className="bg-blue-50 text-blue-600 text-[11px] px-1.5 py-0.5 rounded-md border border-blue-100 flex items-center gap-1 group cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                                                                 onClick={() => {
-                                                                    const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                                    const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                                     const newTags = currentTags.filter((_: string, i: number) => i !== idx);
                                                                     setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
                                                                     fetch('/api/admin/questions', {
@@ -1612,9 +1612,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' || e.key === ',') {
                                                                     e.preventDefault();
-                                                                    const val = e.currentTarget.value.trim().replace(/[,×x]/g, '');
+                                                                    const val = e.currentTarget.value.trim().replace(/,/g, '');
                                                                     if (val) {
-                                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                                         if (!currentTags.includes(val)) {
                                                                             const newTags = [...currentTags, val];
                                                                             setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
@@ -1634,7 +1634,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                     {(() => {
                                                         const unitKey = (q.unit || '').trim();
                                                         const recs = conceptSuggestions[unitKey] || [];
-                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                         const filteredRecs = recs.filter(tag => !currentTags.includes(tag));
 
                                                         if (filteredRecs.length === 0) return null;
@@ -1860,10 +1860,10 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                             {q.unit || '단원 미분류'}
                                                         </span>
                                                         <div className="flex-1 border border-blue-100 rounded px-1 py-0.5 text-[10px] bg-blue-50/30 flex flex-wrap gap-0.5 items-center min-h-[22px] focus-within:bg-white focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-                                                            {((Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
+                                                            {((Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
                                                                 <span key={`${tag}-${idx}`} className="bg-white text-blue-600 px-1 py-0 rounded border border-blue-100 flex items-center gap-0.5 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                                                                     onClick={() => {
-                                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                                         const newTags = currentTags.filter((_: string, i: number) => i !== idx);
                                                                         setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
                                                                         fetch('/api/admin/questions', {
@@ -1883,9 +1883,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                 onKeyDown={(e) => {
                                                                     if (e.key === 'Enter' || e.key === ',') {
                                                                         e.preventDefault();
-                                                                        const val = e.currentTarget.value.trim().replace(/[,×x]/g, '');
+                                                                        const val = e.currentTarget.value.trim().replace(/,/g, '');
                                                                         if (val) {
-                                                                            const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                                            const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                                             if (!currentTags.includes(val)) {
                                                                                 const newTags = [...currentTags, val];
                                                                                 setQuestions(prev => prev.map(item => item.id === q.id ? { ...item, key_concepts: newTags } : item));
@@ -1906,7 +1906,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                     {(() => {
                                                         const unitKey = (q.unit || '').trim();
                                                         const recs = conceptSuggestions[unitKey] || [];
-                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts.join('×') : (q.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                        const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                         const filteredRecs = recs.filter(tag => !currentTags.includes(tag));
 
                                                         if (filteredRecs.length === 0) return null;
@@ -2199,7 +2199,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                             {(() => {
                                                 const unitKey = (selectedQuestion.unit || '').trim();
                                                 const recs = conceptSuggestions[unitKey] || [];
-                                                const currentTags = (Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts.join('×') : (selectedQuestion.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                const currentTags = (Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : String(selectedQuestion.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                 const filteredRecs = recs.filter(tag => !currentTags.includes(tag));
 
                                                 if (filteredRecs.length === 0) return null;
@@ -2224,10 +2224,10 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                             })()}
                                         </div>
                                         <div className="w-full border p-2 rounded text-sm bg-blue-50/20 border-blue-100 flex flex-wrap gap-1.5 items-center min-h-[42px] focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all">
-                                            {((Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts.join('×') : (selectedQuestion.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
+                                            {((Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : String(selectedQuestion.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
                                                 <span key={`${tag}-${idx}`} className="bg-white text-blue-600 px-2 py-0.5 rounded border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                                                     onClick={() => {
-                                                        const currentTags = (Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts.join('×') : (selectedQuestion.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                        const currentTags = (Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : String(selectedQuestion.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                         const newTags = currentTags.filter((_: string, i: number) => i !== idx);
                                                         setSelectedQuestion({ ...selectedQuestion, key_concepts: newTags });
                                                     }}
@@ -2244,7 +2244,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                         e.preventDefault();
                                                         const val = e.currentTarget.value.trim().replace(/,/g, '');
                                                         if (val) {
-                                                            const currentTags = (Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts.join('×') : (selectedQuestion.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean);
+                                                            const currentTags = (Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : String(selectedQuestion.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                             if (!currentTags.includes(val)) {
                                                                 setSelectedQuestion({ ...selectedQuestion, key_concepts: [...currentTags, val] });
                                                             }
@@ -2449,7 +2449,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
 
                                                         {/* Tags Section */}
                                                         <div className="flex flex-wrap gap-1 mb-3">
-                                                            {((Array.isArray(simQ.key_concepts) ? simQ.key_concepts.join('×') : (simQ.key_concepts || '')).split(/[,×x]/).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, tidx: number) => (
+                                                            {((Array.isArray(simQ.key_concepts) ? simQ.key_concepts : String(simQ.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, tidx: number) => (
                                                                 <span key={`${simQ.id}-tag-${tidx}`} className="bg-blue-50 text-blue-600 text-[10px] px-1.5 py-0.5 rounded border border-blue-100 font-bold">
                                                                     #{tag}
                                                                 </span>
