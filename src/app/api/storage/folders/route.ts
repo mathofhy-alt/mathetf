@@ -121,6 +121,12 @@ export async function GET(req: NextRequest) {
                 } as any);
             }
 
+            // 폴더 표시 순서 고정: 모의고사 → 사관학교·경찰대 → 구매한 학교 기출 → 기타
+            const folderRank = (n: string) =>
+                n === '모의고사' ? 0 : n === '사관학교·경찰대' ? 1 : n === '구매한 학교 기출' ? 2 : 3;
+            treeFolders = [...treeFolders].sort((a: any, b: any) =>
+                folderRank(a.name) - folderRank(b.name) || (a.name || '').localeCompare(b.name || ''));
+
             return NextResponse.json({
                 folders: treeFolders, // Tree folders
                 items: allItems, // Root items
