@@ -19,14 +19,15 @@ export async function POST(req: NextRequest) {
         }
 
         // 무료 시험 판별: 전국연합 모의고사/수능, 경찰대, 사관학교
-        const FREE_SCHOOLS = ['경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
-        const isFreeExam = exam_type === '모의고사' || exam_type === '수능' || FREE_SCHOOLS.includes(school);
+        const FREE_SCHOOLS = ['경찰대학교', '사관학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
+        const isExamSchool = exam_type === '입학시험'; // 사관학교·경찰대 입학시험
+        const isFreeExam = exam_type === '모의고사' || exam_type === '수능' || isExamSchool || FREE_SCHOOLS.includes(school);
 
         // Construct Title: [School] [Year] [Grade] [Semester] [ExamType] [Subject] [개인DB]
         const titleSubjectPart = subject ? `${subject} ` : '';
-        const isMockMode = exam_type === '모의고사' || exam_type === '수능' || FREE_SCHOOLS.includes(school);
-        const semLabel = isMockMode ? `${semester}월` : `${semester}학기`;
-        const title = `${school} ${year} ${grade}학년 ${semLabel} ${exam_type} ${titleSubjectPart}[개인DB]`;
+        const isMockMode = exam_type === '모의고사' || exam_type === '수능';
+        const semLabel = isExamSchool ? '' : (isMockMode ? `${semester}월` : `${semester}학기`);
+        const title = `${school} ${year} ${grade}학년 ${semLabel} ${exam_type} ${titleSubjectPart}[개인DB]`.replace(/\s+/g, ' ').trim();
         const dummyPath = `db_access/${user?.id || 'admin'}/${Date.now()}`;
 
         // 1. Calculate price based on question difficulties
@@ -39,7 +40,9 @@ export async function POST(req: NextRequest) {
         const semNum = String(semester).replace(/[^0-9]/g, '');
         // Handle Mock Exams/Suneung which use Month-based semester values
         let semesterVal = '';
-        if (exam_type === '모의고사' || exam_type === '수능') {
+        if (isExamSchool) {
+            semesterVal = '입학시험'; // 사관학교·경찰대: questions.semester 가 '입학시험'
+        } else if (exam_type === '모의고사' || exam_type === '수능') {
             semesterVal = `${semNum}월`;
         } else {
             // Normalize Semester: 1 -> "1학기중간" or "1학기기말"

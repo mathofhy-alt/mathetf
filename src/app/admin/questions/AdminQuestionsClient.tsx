@@ -874,11 +874,12 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
         }
 
         const [semStr, typeStr] = examScope.split('-');
+        const isExamSchool = typeStr === '입학시험'; // 사관학교·경찰대 입학시험
         // Display nice semester string
-        const displaySem = `${semStr}학기 ${typeStr}`;
+        const displaySem = isExamSchool ? '입학시험' : `${semStr}학기 ${typeStr}`;
         const displayGrade = `고${grade}학년`;
 
-        if (!confirm(`${selectedSchool} ${year} ${displayGrade} ${displaySem} ${subject}\n\n이 조건으로 '개인 DB'(가격: 10,000P)를 판매 활성화하시겠습니까?`)) return;
+        if (!confirm(`${selectedSchool} ${year} ${displayGrade} ${displaySem} ${subject}\n\n이 조건으로 '개인 DB'를 판매 활성화하시겠습니까?`)) return;
 
         setIsActivating(true);
         try {
@@ -889,7 +890,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                     school: selectedSchool,
                     year,
                     grade: `고${grade}`,
-                    semester: Number(semStr),
+                    semester: isExamSchool ? '입학시험' : Number(semStr),
                     exam_type: typeStr,
                     subject
                 })
@@ -1067,6 +1068,8 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                         >
                             <option value="">학교 전체</option>
                             <option value="전국연합">전국연합 (모의고사)</option>
+                            <option value="사관학교">사관학교 (입학시험)</option>
+                            <option value="경찰대학교">경찰대학교</option>
                             {schools.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
@@ -1106,6 +1109,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <option value="10-모의고사">10월 모의고사</option>
                             <option value="11-모의고사">11월 모의고사</option>
                             <option value="12-수능">수능</option>
+                            <option value="입학시험-입학시험">입학시험 (사관/경찰대)</option>
                         </select>
 
                         <select
