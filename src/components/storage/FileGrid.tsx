@@ -18,8 +18,15 @@ function parseYear(name: string): string {
     return m ? m[1] : '연도미상';
 }
 
-// 파일명에서 시험 종류(1학기 중간/기말, 2학기 중간/기말) 추출
+// 파일명에서 시험 종류(1학기 중간/기말, 입학시험, 모의고사, 수능 등) 추출
 function parseExamType(name: string): string {
+    // 사관학교·경찰대
+    if (name.includes('입학시험')) return '입학시험';
+    if (name.includes('수능')) return '수능';
+    if (name.includes('모의')) {
+        const mo = name.match(/(\d+)\s*월/);
+        return mo ? `${mo[1]}월 모의고사` : '모의고사';
+    }
     const semM = name.match(/(\d)\s*학기/);
     const sem = semM ? semM[1] : null;
     const isMid = name.includes('중간');
