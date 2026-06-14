@@ -46,7 +46,10 @@ export function buildDbOrConditions(selectedDbs: DbDescriptor[]): string[] {
         if (gradeVal) parts.push(`grade.eq.${quoteVal(gradeVal)}`);
         if (yearVal) parts.push(`year.eq.${quoteVal(yearVal)}`);
 
-        if (db.exam_type === '모의고사' || db.exam_type === '수능') {
+        if (db.exam_type === '입학시험') {
+            // 사관학교·경찰대 입학시험: semester 가 '입학시험' (월/학기 아님)
+            parts.push(`semester.eq.${quoteVal('입학시험')}`);
+        } else if (db.exam_type === '모의고사' || db.exam_type === '수능') {
             // 모의고사/수능: semester 가 '월' 단위
             parts.push(`semester.in.(${quoteVal(`${db.semester}월`)},${quoteVal(`${db.semester}월 모의고사`)})`);
         } else if (db.semester && db.exam_type) {
@@ -59,10 +62,11 @@ export function buildDbOrConditions(selectedDbs: DbDescriptor[]): string[] {
         }
 
         if (db.subject && db.subject !== '전과정') {
-            const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
+            // 모의고사·수능·입학시험(사관/경찰대) 의 선택과목 DB는 공통(대수/미적분I)을 함께 끌어온다.
+            const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능' || db.exam_type === '입학시험')
                 && MOCK_SELECT_SUBJECTS.includes(db.subject);
             if (isMockSelect) {
-                // 모의고사 선택과목 DB: 공통(대수/미적분I) + 선택과목 함께 조회
+                // 선택과목 DB: 공통(대수/미적분I) + 선택과목 함께 조회 (1~22 공통 + 23~30 선택)
                 parts.push(`subject.in.(${quoteVal('대수')},${quoteVal('미적분I')},${quoteVal(db.subject)})`);
             } else {
                 parts.push(`subject.eq.${quoteVal(db.subject)}`);
