@@ -105,13 +105,19 @@ export async function GET(req: NextRequest) {
             let treeFolders = treeRes.data || [];
             let allItems = (rootItemsRes.data || []).filter(item => !mockExamIds.has(item.reference_id));
 
-            // Inject Virtual Folder for Mock Exams
+            // Inject Virtual Folders for free exams (Mock + 사관학교/경찰대 입학시험)
             if (!folderType || folderType === 'all' || folderType === 'db') {
                 treeFolders.push({
                     id: 'mock-exam-root',
                     name: '모의고사',
                     parent_id: null,
                     folder_type: 'db' // Shows up natively as a DB folder
+                } as any);
+                treeFolders.push({
+                    id: 'exam-school-root',
+                    name: '사관학교·경찰대',
+                    parent_id: null,
+                    folder_type: 'db'
                 } as any);
             }
 
@@ -142,6 +148,27 @@ export async function GET(req: NextRequest) {
                  return NextResponse.json({ folders: [], items: mockItems });
              }
              return NextResponse.json({ folders: [], items: [] });
+        }
+
+        // 사관학교·경찰대 입학시험 (무료) 가상 폴더 내용
+        if (parentId === 'exam-school-root') {
+            const { data: examSchool } = await supabase.from('exam_materials')
+                .select('id, title, created_at')
+                .eq('exam_type', '입학시험')
+                .eq('file_type', 'DB');
+            if (examSchool) {
+                const items = examSchool.map(m => ({
+                    id: m.id,
+                    folder_id: 'exam-school-root',
+                    type: 'personal_db',
+                    name: m.title,
+                    reference_id: m.id,
+                    details: { is_free: true },
+                    created_at: m.created_at
+                }));
+                return NextResponse.json({ folders: [], items });
+            }
+            return NextResponse.json({ folders: [], items: [] });
         }
 
         if (parentId === 'root' || !parentId) {
