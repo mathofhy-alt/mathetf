@@ -35,7 +35,8 @@ export default function AdminIngestPage() {
     // Metadata state for Military Academy Exams
     const [militaryYear, setMilitaryYear] = useState('2025');
     const [militarySubject, setMilitarySubject] = useState('수학');
-    const [militaryType, setMilitaryType] = useState('육군사관학교');
+    // 사관학교 1차 필기는 육·해·공·간호 4개교 공동출제(동일 시험지) → '사관학교' 하나로 통합
+    const [militaryType, setMilitaryType] = useState('사관학교');
 
     const supabase = createClient();
 
@@ -375,13 +376,10 @@ export default function AdminIngestPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1">사관학교 구분</label>
-                                <select className="w-full border p-2 rounded" value={militaryType} onChange={e => setMilitaryType(e.target.value)}>
-                                    <option value="육군사관학교">육군사관학교</option>
-                                    <option value="해군사관학교">해군사관학교</option>
-                                    <option value="공군사관학교">공군사관학교</option>
-                                    <option value="국군간호사관학교">국군간호사관학교</option>
-                                </select>
+                                <label className="block text-sm font-medium mb-1">구분</label>
+                                <div className="w-full border p-2 rounded bg-gray-50 text-gray-700 text-sm">
+                                    사관학교 <span className="text-gray-400 text-xs">(육·해·공·간호 1차 공통)</span>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">실시 연도</label>
