@@ -43,17 +43,17 @@ WATERMARK_ALPHA = 38           # 워터마크 농도(0~255). 38=아주 흐림
 SOLUTION_KEYWORDS = ['따라서 정답', '정답 및 풀이', '정답과 해설', '[정답]', '정답]', '해설]', '풀이]', '빠른 정답', '정답표', '채점기준']
 
 def detect_question_page_count(doc) -> int:
-    """문제 페이지 수를 반환. 해설 시작 페이지를 찾으면 그 앞까지, 못 찾으면 FALLBACK_PAGES."""
+    """문제 페이지 수 반환. 해설 시작(정확 키워드 OR 정답/해설/풀이 밀도≥3) 중 가장 이른 페이지
+    앞까지를 문제로 본다 (이른 신호 채택 = 해설 누출 방지). 못 찾으면 FALLBACK_PAGES."""
     n = len(doc)
     for i in range(n):
         try:
             txt = doc[i].get_text()
         except Exception:
             txt = ''
-        if any(kw in txt for kw in SOLUTION_KEYWORDS):
-            qp = i  # 0-based: i페이지가 해설 시작 → 0..i-1 이 문제 → 개수 i
-            return max(1, min(qp, MAX_QUESTION_PAGES))
-    # 검출 실패(이미지PDF 등) → 안전하게 앞 FALLBACK_PAGES 만
+        density = txt.count('정답') + txt.count('해설') + txt.count('풀이')
+        if any(kw in txt for kw in SOLUTION_KEYWORDS) or density >= 3:
+            return max(1, min(i, MAX_QUESTION_PAGES))  # 0..i-1 이 문제 → 개수 i
     return min(FALLBACK_PAGES, n)
 
 # ---- 공개 버킷 보장 ----
