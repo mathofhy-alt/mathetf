@@ -13,15 +13,17 @@ export default function ExamPreviewCarousel({ images, label }: { images: string[
 
     return (
         <div>
-            <div className="relative bg-slate-50 rounded-lg overflow-hidden">
+            {/* A4 세로비율(210:297)로 영역 고정 → 페이지 넘길 때/로딩 중에도 높이가 안 변해 본문 출렁임 없음.
+                모든 이미지를 미리 로드(eager) + 겹쳐두고(absolute) 현재 장만 보이게 → 전환 즉시, 레이아웃 시프트 0. */}
+            <div className="relative w-full aspect-[210/297] bg-slate-50 rounded-lg overflow-hidden border border-slate-100">
                 {images.map((url, idx) => (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                         key={idx}
                         src={url}
                         alt={`${label} 수학 기출문제 미리보기 ${idx + 1}페이지`}
-                        className={`w-full border border-slate-100 ${idx === i ? 'block' : 'hidden'}`}
-                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-150 ${idx === i ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        loading="eager"
                     />
                 ))}
 
