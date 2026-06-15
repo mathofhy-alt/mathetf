@@ -34,9 +34,27 @@ H = {'apikey': KEY, 'Authorization': f'Bearer {KEY}'}
 
 SRC_BUCKET = 'exam-materials'   # 원본 PDF (비공개)
 DST_BUCKET = 'exam-previews'    # 미리보기 (공개)
-PREVIEW_PAGES = 2               # 앞 N페이지(문제)
-RENDER_SCALE = 1.4
+FALLBACK_PAGES = 2              # [안전] 해설 경계 검출 실패 시 앞 N페이지만 공개 (해설 유출 방지)
+MAX_QUESTION_PAGES = 15         # 문제 페이지 상한 (이상 동작 방지)
+RENDER_SCALE = 1.5
 WEBP_QUALITY = 80
+WATERMARK_ALPHA = 38           # 워터마크 농도(0~255). 38=아주 흐림
+# 해설 시작 페이지 판별 키워드 (이 중 하나라도 그 페이지에 나오면 해설로 간주)
+SOLUTION_KEYWORDS = ['따라서 정답', '정답 및 풀이', '정답과 해설', '[정답]', '정답]', '해설]', '풀이]', '빠른 정답', '정답표', '채점기준']
+
+def detect_question_page_count(doc) -> int:
+    """문제 페이지 수를 반환. 해설 시작 페이지를 찾으면 그 앞까지, 못 찾으면 FALLBACK_PAGES."""
+    n = len(doc)
+    for i in range(n):
+        try:
+            txt = doc[i].get_text()
+        except Exception:
+            txt = ''
+        if any(kw in txt for kw in SOLUTION_KEYWORDS):
+            qp = i  # 0-based: i페이지가 해설 시작 → 0..i-1 이 문제 → 개수 i
+            return max(1, min(qp, MAX_QUESTION_PAGES))
+    # 검출 실패(이미지PDF 등) → 안전하게 앞 FALLBACK_PAGES 만
+    return min(FALLBACK_PAGES, n)
 
 # ---- 공개 버킷 보장 ----
 def ensure_bucket():
@@ -52,13 +70,12 @@ def ensure_bucket():
 
 # ---- 워터마크 ----
 def make_watermark_tile(font):
-    tile = Image.new('RGBA', (360, 120), (0, 0, 0, 0))
+    tile = Image.new('RGBA', (340, 120), (0, 0, 0, 0))
     d = ImageDraw.Draw(tile)
-    d.text((10, 40), 'mathetf.com', font=font, fill=(120, 130, 150, 60))
+    d.text((8, 40), 'mathetf.com', font=font, fill=(135, 145, 160, WATERMARK_ALPHA))
     return tile.rotate(30, expand=1)
 
-def render_page(pdf_bytes, page_idx, wm_tile=None):
-    doc = fitz.open(stream=pdf_bytes, filetype='pdf')
+def render_page(doc, page_idx, wm_tile=None):
     if page_idx >= len(doc):
         return None
     pix = doc[page_idx].get_pixmap(matrix=fitz.Matrix(RENDER_SCALE, RENDER_SCALE))
@@ -123,37 +140,41 @@ def main():
     if '--limit' in sys.argv:
         limit = int(sys.argv[sys.argv.index('--limit') + 1])
 
-    # 워터마크는 기본 OFF. --watermark 줄 때만 적용.
+    # 워터마크 기본 ON (아주 흐림). --no-watermark 로 끌 수 있음.
     wm_tile = None
-    if '--watermark' in sys.argv:
+    if '--no-watermark' not in sys.argv:
         try:
-            font = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 34)
+            font = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 30)
         except Exception:
             font = ImageFont.load_default()
         wm_tile = make_watermark_tile(font)
 
     ensure_bucket()
     targets = fetch_targets(limit, force_all, no_db)
-    print(f'[대상] {len(targets)}개\n')
+    print(f'[대상] {len(targets)}개  (문제 전체 공개 / 해설 자동 제외 / 워터마크 {"ON" if wm_tile else "OFF"})\n')
 
     ok = fail = 0
     for i, row in enumerate(targets, 1):
         label = f"{row.get('school')} {row.get('exam_year')} {row.get('grade')} {row.get('semester')} {row.get('exam_type')} {row.get('subject')}"
         try:
             pdf = download_pdf(row['file_path'])
+            doc = fitz.open(stream=pdf, filetype='pdf')
+            total = len(doc)
+            qcount = detect_question_page_count(doc)   # 해설 앞까지 (못 찾으면 안전 폴백)
             urls = []
-            for p in range(PREVIEW_PAGES):
-                data = render_page(pdf, p, wm_tile)
+            for p in range(qcount):
+                data = render_page(doc, p, wm_tile)
                 if data is None:
                     break
                 url = upload_preview(f"{row['id']}_p{p+1}.webp", data)
                 urls.append(url)
+            doc.close()
             if not urls:
                 raise RuntimeError('렌더 페이지 없음')
             if not no_db:
                 save_urls(row['id'], urls)
             ok += 1
-            print(f'[{i}/{len(targets)}] OK ({len(urls)}p) {label}')
+            print(f'[{i}/{len(targets)}] OK ({len(urls)}p / 총{total}p) {label}')
         except Exception as e:
             fail += 1
             print(f'[{i}/{len(targets)}] FAIL {label} :: {e}')
