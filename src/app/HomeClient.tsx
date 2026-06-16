@@ -298,7 +298,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                         examType: item.exam_type,
                         filePath: item.file_path, // Added
                         contentType: item.content_type, // Added
-                        subject: item.subject || '' // Add subject here
+                        subject: item.subject || '', // Add subject here
+                        freePdfUrl: item.free_pdf_url || undefined // 무료 문제 PDF (해설 행)
                     };
 
                     groups[key].sales += (item.sales_count || 0);
@@ -488,7 +489,32 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
         }
     };
 
-
+    // 회원가입 시 무료 '문제만 PDF' 다운로드 (공개버킷, 결제 불필요 / 로그인만 필요)
+    const handleFreeDownload = async (file: FileItem) => {
+        if (!user) {
+            setShowLoginPrompt(true); // 비로그인 → 회원가입 유도
+            return;
+        }
+        const url = file.freePdfUrl;
+        if (!url) return;
+        try {
+            const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_문제.pdf`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`파일을 준비 중입니다 (${response.status})`);
+            const blob = await response.blob();
+            const objUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objUrl;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(objUrl);
+        } catch (error: any) {
+            console.error('Free download error:', error);
+            alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
+        }
+    };
 
 
 
@@ -660,6 +686,18 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                     <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
                                                         <PdfFileIcon size={13} grayscale /> PDF
                                                     </div>
+                                                )}
+
+                                                {/* 문제만 PDF (회원가입 시 무료) */}
+                                                {group.files.pdfSol?.freePdfUrl && (
+                                                    <button
+                                                        onClick={() => handleFreeDownload(group.files.pdfSol!)}
+                                                        title={user ? '문제만 PDF 무료 다운로드' : '회원가입하면 문제만 PDF 무료'}
+                                                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
+                                                    >
+                                                        <Download size={13} />
+                                                        <span>문제 무료</span>
+                                                    </button>
                                                 )}
 
                                                 {/* HWP */}
