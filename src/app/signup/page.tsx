@@ -186,23 +186,28 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            const { error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: nickname,
-                        marketing_agreed: marketingAgreed,
-                        phone: phone,
-                        postcode: postcode,
-                        address: address,
-                        address_detail: addressDetail,
-                    },
-                    // 이메일 인증 제거로 인한 리다이렉트 제외
-                },
+            // 서버 라우트에서 휴대폰 인증을 검증한 뒤에만 계정 생성 (클라이언트 우회 방지)
+            const res = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    phone,
+                    full_name: nickname,
+                    marketing_agreed: marketingAgreed,
+                    postcode,
+                    address,
+                    address_detail: addressDetail,
+                }),
             });
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || '회원가입에 실패했습니다.');
+            }
 
-            if (error) throw error;
+            // 가입 직후 자동 로그인 (UX)
+            await supabase.auth.signInWithPassword({ email, password });
 
             setSuccessMsg('회원가입이 성공적으로 완료되었습니다!');
         } catch (error: any) {

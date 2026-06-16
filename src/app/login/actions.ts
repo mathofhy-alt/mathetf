@@ -29,21 +29,4 @@ export async function login(formData: FormData) {
     redirect('/')
 }
 
-export async function signup(formData: FormData) {
-    const supabase = createClient()
-
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    const { error } = await supabase.auth.signUp({
-        email,
-        password,
-    })
-
-    if (error) {
-        redirect(`/login?message=${encodeURIComponent(error.message)}`)
-    }
-
-    revalidatePath('/', 'layout')
-    redirect('/')
-}
+// [보안] 전화인증 없는 직접 가입(취약)은 제거됨. 회원가입은 /api/auth/signup 서버 라우트(휴대폰 인증 강제)로만.
