@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
+import FreeProblemCTA from '@/components/FreeProblemCTA';
 import { buildSourceDbId } from '@/lib/examKey';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
@@ -157,14 +158,23 @@ export default async function ExamDetailPage({ params }: Props) {
                 {/* 문제 미리보기 */}
                 {previews.length > 0 ? (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 mb-6">
-                        <p className="text-sm font-bold text-slate-700 mb-3">📄 문제 미리보기 <span className="text-slate-400 font-normal">(앞 {previews.length}페이지 · 해설 제외)</span></p>
+                        <p className="text-sm font-bold text-slate-700 mb-3">📄 문제 미리보기 <span className="text-slate-400 font-normal">(문제 전체 {previews.length}페이지 · 해설 제외)</span></p>
                         <ExamPreviewCarousel images={previews} label={label} />
-                        <p className="text-xs text-slate-400 mt-3 text-center">전체 문제와 해설은 다운로드로 제공됩니다.</p>
+                        <p className="text-xs text-slate-400 mt-3 text-center">해설은 다운로드로 제공됩니다.</p>
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6 text-center text-slate-400 text-sm">
                         미리보기 준비 중입니다.
                     </div>
+                )}
+
+                {/* 무료 문제 PDF CTA (회원가입 유도 / 로그인 시 즉시 다운로드) */}
+                {row.free_pdf_url && (
+                    <FreeProblemCTA
+                        freePdfUrl={row.free_pdf_url}
+                        filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`}
+                        pageCount={previews.length}
+                    />
                 )}
 
                 {/* 시험 구성 (단원별·난이도별 문항수) */}
