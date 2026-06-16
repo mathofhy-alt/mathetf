@@ -82,20 +82,25 @@ export default function RootLayout({
                 
                 <Analytics />
 
-                {/* Google tag (gtag.js) - GA4 + Google Ads */}
-                <Script src="https://www.googletagmanager.com/gtag/js?id=G-FC6EZWV58Q" strategy="afterInteractive" />
-                <Script id="google-analytics" strategy="afterInteractive">
-                    {`
-                        window.dataLayer = window.dataLayer || [];
-                        function gtag(){dataLayer.push(arguments);}
-                        gtag('js', new Date());
-                        // 실서비스 도메인에서만 측정 (localhost·Vercel 프리뷰가 통계를 오염시키는 것 방지)
-                        if (location.hostname === 'mathetf.com' || location.hostname === 'www.mathetf.com') {
-                            gtag('config', 'G-FC6EZWV58Q');
-                            gtag('config', 'AW-17263917467');
-                        }
-                    `}
-                </Script>
+                {/* Google tag (gtag.js) - GA4 + Google Ads.
+                    프로덕션 배포에서만 렌더(로컬·Vercel 프리뷰 오염 방지) → 클라이언트 hostname 가드 불필요.
+                    next/script 인라인이 App Router에서 실행 안 되던 문제 → 평범한 <script>(SSR 실행 보장)로 변경. */}
+                {process.env.VERCEL_ENV === 'production' && (
+                    <>
+                        <script async src="https://www.googletagmanager.com/gtag/js?id=G-FC6EZWV58Q" />
+                        <script
+                            dangerouslySetInnerHTML={{
+                                __html: `
+                                    window.dataLayer = window.dataLayer || [];
+                                    function gtag(){dataLayer.push(arguments);}
+                                    gtag('js', new Date());
+                                    gtag('config', 'G-FC6EZWV58Q');
+                                    gtag('config', 'AW-17263917467');
+                                `,
+                            }}
+                        />
+                    </>
+                )}
             </body>
         </html>
     );
