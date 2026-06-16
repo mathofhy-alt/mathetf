@@ -18,7 +18,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        let { email, password, phone, full_name, marketing_agreed, postcode, address, address_detail } = body;
+        let { email, password, phone, full_name, marketing_agreed } = body;
 
         // 1. 입력 검증
         if (!email || !password || !phone || !full_name) {
@@ -26,9 +26,6 @@ export async function POST(req: Request) {
         }
         if (typeof password !== 'string' || password.length < 6) {
             return NextResponse.json({ success: false, message: '비밀번호는 6자리 이상이어야 합니다.' }, { status: 400 });
-        }
-        if (!postcode || !address || !address_detail) {
-            return NextResponse.json({ success: false, message: '주소를 정확히 입력해주세요.' }, { status: 400 });
         }
         phone = String(phone).replace(/[^0-9]/g, '');
 
@@ -53,9 +50,6 @@ export async function POST(req: Request) {
                 marketing_agreed: !!marketing_agreed,
                 phone,
                 phone_verified: true,
-                postcode,
-                address,
-                address_detail,
             },
         });
 
