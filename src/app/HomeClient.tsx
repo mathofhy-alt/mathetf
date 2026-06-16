@@ -666,6 +666,18 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
                                             {/* Download chips */}
                                             <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+                                                {/* 문제만 PDF (회원가입 시 무료) — 맨 앞 강조 */}
+                                                {group.files.pdfSol?.freePdfUrl && (
+                                                    <button
+                                                        onClick={() => handleFreeDownload(group.files.pdfSol!)}
+                                                        title={user ? '문제만 PDF 무료 다운로드' : '회원가입하면 문제만 PDF 무료'}
+                                                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
+                                                    >
+                                                        <Download size={13} />
+                                                        <span>문제 무료</span>
+                                                    </button>
+                                                )}
+
                                                 {/* PDF */}
                                                 {group.files.pdfSol ? (
                                                     <button
@@ -686,18 +698,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                                                     <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
                                                         <PdfFileIcon size={13} grayscale /> PDF
                                                     </div>
-                                                )}
-
-                                                {/* 문제만 PDF (회원가입 시 무료) */}
-                                                {group.files.pdfSol?.freePdfUrl && (
-                                                    <button
-                                                        onClick={() => handleFreeDownload(group.files.pdfSol!)}
-                                                        title={user ? '문제만 PDF 무료 다운로드' : '회원가입하면 문제만 PDF 무료'}
-                                                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
-                                                    >
-                                                        <Download size={13} />
-                                                        <span>문제 무료</span>
-                                                    </button>
                                                 )}
 
                                                 {/* HWP */}
