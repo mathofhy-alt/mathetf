@@ -147,6 +147,15 @@ export default async function ExamDetailPage({ params }: Props) {
                     </div>
                 </div>
 
+                {/* 무료 문제 PDF CTA (회원가입 유도 / 로그인 시 즉시 다운로드) — 페이지 상단 강조 */}
+                {row.free_pdf_url && (
+                    <FreeProblemCTA
+                        freePdfUrl={row.free_pdf_url}
+                        filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`}
+                        pageCount={previews.length}
+                    />
+                )}
+
                 {/* 설명 텍스트 (SEO + 사용자) */}
                 <p className="text-slate-600 leading-relaxed break-keep mb-6">
                     <strong className="text-slate-800">{row.school}</strong>의 {row.exam_year}년
@@ -166,15 +175,6 @@ export default async function ExamDetailPage({ params }: Props) {
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6 text-center text-slate-400 text-sm">
                         미리보기 준비 중입니다.
                     </div>
-                )}
-
-                {/* 무료 문제 PDF CTA (회원가입 유도 / 로그인 시 즉시 다운로드) */}
-                {row.free_pdf_url && (
-                    <FreeProblemCTA
-                        freePdfUrl={row.free_pdf_url}
-                        filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`}
-                        pageCount={previews.length}
-                    />
                 )}
 
                 {/* 시험 구성 (단원별·난이도별 문항수) */}
