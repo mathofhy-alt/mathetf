@@ -79,6 +79,12 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     const [groupedFiles, setGroupedFiles] = useState<GroupedExam[]>([]);
     const [runStudentTour, setRunStudentTour] = useState(false);
 
+    // URL ?tour=1 (또는 ?tour=student) 로 홈 튜토리얼 강제 시작 — 역할선택 한 뒤에도 다시 보기/검증 가능.
+    useEffect(() => {
+        const t = new URLSearchParams(window.location.search).get('tour');
+        if (t === '1' || t === 'student') setRunStudentTour(true);
+    }, []);
+
     const [files, setFiles] = useState<FileItem[]>([]);
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedDistrict, setSelectedDistrict] = useState('');
