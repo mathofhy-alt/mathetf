@@ -4,6 +4,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 import FreeProblemCTA from '@/components/FreeProblemCTA';
+import Header from '@/components/Header';
 import { buildSourceDbId } from '@/lib/examKey';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
@@ -130,8 +131,9 @@ export default async function ExamDetailPage({ params }: Props) {
     const hasDb = siblings.some((f: any) => f.file_type === 'DB');
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6]">
-            <div className="max-w-3xl mx-auto px-4 py-10">
+        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+            <Header />
+            <div className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 {/* 헤더 */}
                 <div className="mb-6">
                     <Link href={`/school/${encodeURIComponent(row.school)}`} className="text-sm text-brand-600 hover:underline mb-3 inline-block">
@@ -140,10 +142,11 @@ export default async function ExamDetailPage({ params }: Props) {
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 break-keep">
                         {label} 수학 기출문제 및 해설
                     </h1>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                        {hasPdf && <span className="text-xs bg-red-50 text-red-600 font-bold px-2.5 py-1 rounded">PDF (문제+해설)</span>}
-                        {hasHwp && <span className="text-xs bg-blue-50 text-blue-600 font-bold px-2.5 py-1 rounded">HWP</span>}
-                        {hasDb && <span className="text-xs bg-indigo-50 text-indigo-600 font-bold px-2.5 py-1 rounded">개인DB</span>}
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                        <span className="text-[11px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2.5 py-1 rounded-full">문제 PDF 무료</span>
+                        {hasPdf && <span className="text-[11px] bg-red-50 text-red-500 border border-red-100 font-bold px-2.5 py-1 rounded-full">PDF (문제+해설)</span>}
+                        {hasHwp && <span className="text-[11px] bg-[#E0F7F6] text-[#3AADA9] border border-teal-100 font-bold px-2.5 py-1 rounded-full">HWP</span>}
+                        {hasDb && <span className="text-[11px] bg-[#E8F0FB] text-[#497AB7] border border-blue-100 font-bold px-2.5 py-1 rounded-full">개인DB</span>}
                     </div>
                 </div>
 

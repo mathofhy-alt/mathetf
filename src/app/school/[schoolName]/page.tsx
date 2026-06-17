@@ -2,6 +2,8 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Header from '@/components/Header';
+import { ChevronRight } from 'lucide-react';
 
 // 1시간마다 자동 재검증 (새 시험지 추가 반영)
 export const revalidate = 3600;
@@ -132,23 +134,26 @@ export default async function SchoolPage({ params }: Props) {
     const examList = Object.values(groups).sort((a: any, b: any) => b.year - a.year);
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6]">
-            <div className="max-w-4xl mx-auto px-4 py-12">
-                {/* 헤더 */}
-                <div className="mb-8">
-                    <Link href="/" className="text-sm text-brand-600 hover:underline mb-4 inline-block">
-                        ← 전체 목록으로
-                    </Link>
-                    <h1 className="text-3xl font-black text-slate-900 mt-2">
-                        {schoolName} 기출문제
+        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+            <Header />
+            <main className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
+                {/* 브레드크럼 */}
+                <Link href="/" className="text-sm text-[#497AB7] hover:underline mb-4 inline-flex items-center gap-1">
+                    ← 전체 기출 목록
+                </Link>
+
+                {/* 제목 */}
+                <div className="mb-6">
+                    <h1 className="text-2xl sm:text-3xl font-black break-keep">
+                        {schoolName} 수학 기출문제
                     </h1>
-                    <p className="text-slate-500 mt-2">
-                        총 <span className="font-bold text-brand-600">{examList.length}개</span>의 시험 자료가 있습니다.
+                    <p className="text-slate-500 mt-2 text-sm">
+                        총 <span className="font-bold text-[#497AB7]">{examList.length}개</span>의 시험 자료 · 문제 미리보기 무료
                     </p>
                 </div>
 
-                {/* 시험 목록 */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                {/* 시험 목록 (홈 카드 스타일) */}
+                <div className="space-y-2">
                     {examList.map((group: any, idx: number) => {
                         const isMock = group.examType === '모의고사' || group.examType === '수능';
                         const semLabel = isMock ? `${group.semester}월` : `${group.semester}학기`;
@@ -157,62 +162,46 @@ export default async function SchoolPage({ params }: Props) {
                         const hasDb = group.files.some((f: any) => f.file_type === 'DB');
                         // 상세페이지(/exam/[id]) 앵커 = 해설 PDF 행
                         const detailFile = group.files.find((f: any) => f.file_type === 'PDF' && f.content_type === '해설') || group.files.find((f: any) => f.file_type === 'PDF');
-
-                        const titleNode = (
-                            <>
-                                {group.year}년 {group.grade}학년 {semLabel} {group.examType}
-                                {group.subject && <span className="ml-1 text-brand-600">{group.subject}</span>}
-                            </>
-                        );
+                        const href = detailFile ? `/exam/${detailFile.id}` : `/?school=${encodeURIComponent(schoolName)}`;
 
                         return (
-                            <div
+                            <Link
                                 key={idx}
-                                className="flex items-center justify-between px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors"
+                                href={href}
+                                className="group flex items-center justify-between gap-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-[#497AB7] border border-slate-100 px-4 sm:px-5 py-4"
                             >
-                                <div>
-                                    {detailFile ? (
-                                        <Link href={`/exam/${detailFile.id}`} className="font-bold text-slate-800 hover:text-brand-600 hover:underline">
-                                            {titleNode}
-                                        </Link>
-                                    ) : (
-                                        <p className="font-bold text-slate-800">{titleNode}</p>
-                                    )}
-                                    <div className="flex gap-2 mt-1">
-                                        {hasPdf && (
-                                            <span className="text-[11px] bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded">PDF</span>
-                                        )}
-                                        {hasHwp && (
-                                            <span className="text-[11px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded">HWP</span>
-                                        )}
-                                        {hasDb && (
-                                            <span className="text-[11px] bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded">개인DB</span>
-                                        )}
+                                <div className="min-w-0">
+                                    <p className="font-bold text-base text-[#1E2D4F] group-hover:text-[#497AB7] transition-colors break-keep leading-snug">
+                                        {group.year}년 {group.grade}학년 {semLabel} {group.examType}
+                                        {group.subject && <span className="ml-1 text-[#497AB7]">{group.subject}</span>}
+                                    </p>
+                                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                        {hasPdf && <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2 py-0.5 rounded-full">문제 무료</span>}
+                                        {hasPdf && <span className="text-[10px] bg-red-50 text-red-500 border border-red-100 font-bold px-2 py-0.5 rounded-full">PDF</span>}
+                                        {hasHwp && <span className="text-[10px] bg-[#E0F7F6] text-[#3AADA9] border border-teal-100 font-bold px-2 py-0.5 rounded-full">HWP</span>}
+                                        {hasDb && <span className="text-[10px] bg-[#E8F0FB] text-[#497AB7] border border-blue-100 font-bold px-2 py-0.5 rounded-full">개인DB</span>}
                                     </div>
                                 </div>
-                                <Link
-                                    href={detailFile ? `/exam/${detailFile.id}` : `/?school=${encodeURIComponent(schoolName)}`}
-                                    className="text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
-                                >
-                                    {detailFile ? '보기' : '다운로드'}
-                                </Link>
-                            </div>
+                                <span className="flex-shrink-0 text-[#497AB7] group-hover:translate-x-0.5 transition-transform">
+                                    <ChevronRight size={20} />
+                                </span>
+                            </Link>
                         );
                     })}
                 </div>
 
-                {/* CTA */}
-                <div className="mt-8 bg-indigo-50 rounded-xl p-6 text-center border border-indigo-100">
-                    <p className="text-indigo-800 font-bold text-lg mb-2">더 많은 학교 기출문제 보기</p>
-                    <p className="text-indigo-600 text-sm mb-4">전국 중고등학교 내신 기출문제를 한 곳에서</p>
+                {/* CTA (브랜드 그라데이션) */}
+                <div className="mt-8 bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-6 text-center text-white shadow-md">
+                    <p className="font-bold text-lg mb-1">다른 학교 기출도 찾아보세요</p>
+                    <p className="text-white/85 text-sm mb-4 break-keep">전국 중·고등학교 수학 내신 기출을 한 곳에서</p>
                     <Link
                         href="/"
-                        className="inline-block bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+                        className="inline-block bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
                     >
-                        수학ETF 홈으로
+                        전체 기출 보러가기
                     </Link>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
