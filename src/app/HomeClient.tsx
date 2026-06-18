@@ -79,10 +79,20 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     const [groupedFiles, setGroupedFiles] = useState<GroupedExam[]>([]);
     const [runStudentTour, setRunStudentTour] = useState(false);
 
-    // URL ?tour=1 (또는 ?tour=student) 로 홈 튜토리얼 강제 시작 — 역할선택 한 뒤에도 다시 보기/검증 가능.
+    // 홈 튜토리얼: 이 탭 첫 방문이면 1회 자동. (역할선택과 무관 / 데스크탑·모바일 동일)
+    const startHomeTourIfUnseen = () => {
+        if (typeof window === 'undefined') return;
+        if (localStorage.getItem('mathetf_home_tour_seen')) return;
+        setTimeout(() => setRunStudentTour(true), 400);
+    };
     useEffect(() => {
+        if (typeof window === 'undefined') return;
         const t = new URLSearchParams(window.location.search).get('tour');
-        if (t === '1' || t === 'student') setRunStudentTour(true);
+        if (t === '1' || t === 'student') { setRunStudentTour(true); return; }  // 강제
+        // 역할 모달이 뜰 첫 방문이면 그 모달이 닫힐 때(onClose) 시작 → 여기선 건너뜀
+        const roleUnresolved = !localStorage.getItem('mathetf_role') && !localStorage.getItem('mathetf_role_dismissed');
+        if (roleUnresolved) return;
+        startHomeTourIfUnseen();
     }, []);
 
     const [files, setFiles] = useState<FileItem[]>([]);
@@ -544,14 +554,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 onUploadClick={handleUploadClick}
             />
 
-            <RoleOnboardingModal onSelect={(role) => {
-                if (role === 'student') {
-                    setRunStudentTour(true);
-                } else {
-                    router.push('/question-bank?tour=1');
-                }
-            }} />
-            <GuidedTour steps={STUDENT_TOUR_STEPS} run={runStudentTour} onClose={() => setRunStudentTour(false)} />
+            <RoleOnboardingModal onClose={() => startHomeTourIfUnseen()} />
+            <GuidedTour steps={STUDENT_TOUR_STEPS} run={runStudentTour} onClose={() => { setRunStudentTour(false); try { localStorage.setItem('mathetf_home_tour_seen', '1'); } catch {} }} />
             <LaunchPromoModal />
 
             <HeroBanner user={user} earnedPoints={earnedPoints} />

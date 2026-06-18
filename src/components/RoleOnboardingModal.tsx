@@ -17,7 +17,7 @@ export function getStoredRole(): UserRole | null {
  * - 학생·학부모 / 선생님·강사 를 골라 localStorage 에 저장 (다음 방문엔 안 뜸).
  * - onSelect 로 선택 역할을 넘겨, 이후 역할별 튜토리얼/기본화면 분기에 사용.
  */
-export default function RoleOnboardingModal({ onSelect }: { onSelect?: (role: UserRole) => void }) {
+export default function RoleOnboardingModal({ onSelect, onClose }: { onSelect?: (role: UserRole) => void; onClose?: () => void }) {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
@@ -30,11 +30,13 @@ export default function RoleOnboardingModal({ onSelect }: { onSelect?: (role: Us
         localStorage.setItem(STORAGE_KEY, role);
         setOpen(false);
         onSelect?.(role);
+        onClose?.();
     };
 
     const dismiss = () => {
         localStorage.setItem(STORAGE_KEY + '_dismissed', '1');
         setOpen(false);
+        onClose?.();
     };
 
     if (!open) return null;
