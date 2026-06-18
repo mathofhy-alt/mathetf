@@ -80,6 +80,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             openGraph: {
                 title: special.title,
                 description: special.description,
+                url: `https://mathetf.com/school/${encodeURIComponent(schoolName)}`,
+                images: ['/og-image.png'],
             },
             alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
         };
@@ -92,6 +94,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         openGraph: {
             title: `${schoolName} 수학 기출문제 - 수학ETF`,
             description: `${schoolName} 수학 내신 기출문제를 즉시 다운로드하세요.`,
+            url: `https://mathetf.com/school/${encodeURIComponent(schoolName)}`,
+            images: ['/og-image.png'],
         },
         alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
     };

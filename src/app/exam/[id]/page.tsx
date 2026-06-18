@@ -113,7 +113,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             '수학 내신 기출문제', '수학 시험지',
         ].filter(Boolean),
         alternates: { canonical: `/exam/${params.id}` },
-        openGraph: { title, description, url: `https://mathetf.com/exam/${params.id}`, type: 'article' },
+        openGraph: {
+            title, description, url: `https://mathetf.com/exam/${params.id}`, type: 'article',
+            images: [(Array.isArray(ex.row.preview_urls) && ex.row.preview_urls[0]) ? ex.row.preview_urls[0] : '/og-image.png'],
+        },
     };
 }
 

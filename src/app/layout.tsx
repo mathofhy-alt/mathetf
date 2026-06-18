@@ -45,11 +45,10 @@ export const metadata: Metadata = {
             },
         ],
     },
+    // 카드 타입만 전역 지정. title/description/image는 각 페이지의 openGraph를 따라가게 둠
+    // (여기에 홈 값을 박으면 모든 페이지의 트위터 카드가 홈으로 고정됨)
     twitter: {
         card: "summary_large_image",
-        title: "수학ETF - 기출 유사문제로 만드는 수학 시험지",
-        description: "기출과 같은 유형의 유사 문항을 자동으로 찾아 나만의 수학 시험지를 1분 만에. 전국 내신·모의고사 기출 기반 문제은행.",
-        images: ["/og-image.png"],
     },
     robots: {
         index: true,
