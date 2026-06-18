@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // react-joyride 는 SSR 불가 → 클라이언트에서만 로드. (v2: 모듈 자체가 컴포넌트/ default)
-const Joyride = dynamic(() => import('react-joyride').then((m: any) => m.default || m), { ssr: false });
+const Joyride: any = dynamic(() => import('react-joyride').then((m: any) => m.default || m), { ssr: false });
 
 export interface TourStep {
     target: string;
