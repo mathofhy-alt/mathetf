@@ -14,16 +14,17 @@ import QuestionRenderer from '@/components/QuestionRenderer';
 // 선생님·강사 시험지 만들기 투어
 const TEACHER_TOUR_STEPS: TourStep[] = [
     {
-        target: '[data-tour="qb-filter"]',
+        target: '[data-tour="qb-pool"]',
         title: '① 문제 범위 선택',
         body: PERSONAL_DB_FREE_MODE
-            ? '원래는 시험지에 쓸 DB(학교 기출)를 직접 골라야 하지만, 런칭 기념 무료라 전체 DB가 이미 선택돼 있어요. 여기서 과목·단원·난이도로 원하는 문제만 좁히면 돼요.'
-            : '시험지에 쓸 DB(학교 기출)를 고르고, 과목·단원·난이도로 원하는 문제만 좁혀요.',
+            ? '시험지에 쓸 문제 풀이에요. 런칭 기념 무료라 전국 기출 전체 DB가 이미 선택돼 있어요. (직접 고르려면 "DB 문제"·"만든 시험지" 버튼)'
+            : '"DB 문제"에서 시험지에 쓸 학교 기출을, "만든 시험지"에서 기존 시험지를 불러와요.',
         placement: 'right',
     },
-    { target: '[data-tour="qb-search"]', title: '② 조건 검색', body: '고른 조건에 맞는 기출 문제를 불러와요. 결과에서 원하는 문제를 담으면 돼요.', placement: 'right' },
-    { target: '[data-tour="qb-auto"]', title: '③ 유사문제 자동생성', body: '단원·난이도만 정하면 유사 유형 문제를 자동으로 골라 시험지를 채워줘요.', placement: 'bottom' },
-    { target: '[data-tour="qb-generate"]', title: '④ 시험지 만들기', body: '담은 문제로 나만의 시험지를 만들어요. 완성본은 HWP·개인DB로 받아 편집·인쇄할 수 있어요.', placement: 'bottom' },
+    { target: '[data-tour="qb-filter"]', title: '② 조건으로 좁히기', body: '과목·단원·난이도·키워드로 원하는 문제만 골라낼 수 있어요.', placement: 'right' },
+    { target: '[data-tour="qb-search"]', title: '③ 조건 검색', body: '고른 조건에 맞는 기출 문제를 불러와요. 결과에서 원하는 문제를 담으면 돼요.', placement: 'right' },
+    { target: '[data-tour="qb-auto"]', title: '④ 유사문제 자동생성', body: '단원·난이도만 정하면 유사 유형 문제를 자동으로 골라 시험지를 채워줘요.', placement: 'bottom' },
+    { target: '[data-tour="qb-generate"]', title: '⑤ 시험지 만들기', body: '담은 문제로 나만의 시험지를 만들어요. 완성본은 HWP·개인DB로 받아 편집·인쇄할 수 있어요.', placement: 'bottom' },
 ];
 import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 
@@ -944,7 +945,17 @@ export default function QuestionBankPage() {
 
     return (
         <>
-        <GuidedTour steps={TEACHER_TOUR_STEPS} run={runTeacherTour} onClose={() => { setRunTeacherTour(false); try { localStorage.setItem('mathetf_qb_tour_seen', '1'); } catch {} }} />
+        <GuidedTour
+            steps={TEACHER_TOUR_STEPS}
+            run={runTeacherTour}
+            onStepChange={(i) => {
+                // 모바일: 사이드바 단계(0~2)면 바텀시트 열고, 헤더 단계(3~4)면 닫아서 스포트라이트가 보이게
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    setShowMobileSidebar(i <= 2);
+                }
+            }}
+            onClose={() => { setRunTeacherTour(false); setShowMobileSidebar(false); try { localStorage.setItem('mathetf_qb_tour_seen', '1'); } catch {} }}
+        />
         <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden">
             <Header
                 user={user}
@@ -1188,7 +1199,7 @@ export default function QuestionBankPage() {
                             className="absolute right-4 top-3 text-slate-400 hover:text-slate-600 text-xl font-bold"
                         >×</button>
                     </div>
-                    <div className="p-4 border-b space-y-2">
+                    <div data-tour="qb-pool" className="p-4 border-b space-y-2">
                         <h2 className="font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
                         {/* ... existing DB selectors ... */}
                         <div className="flex gap-2 mb-2">
