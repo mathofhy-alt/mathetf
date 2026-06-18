@@ -84,10 +84,57 @@ function TourTooltip(props: any) {
 
 export default function GuidedTour({ steps, run, onClose }: Props) {
     const [index, setIndex] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         if (run) setIndex(0);
     }, [run]);
+
+    useEffect(() => {
+        setIsMobile(typeof window !== 'undefined' && window.innerWidth < 768);
+    }, []);
+
+    // 모바일: 스포트라이트(요소 위치 어긋남) 대신 중앙 단계 카드로 안내
+    if (run && isMobile && steps.length > 0) {
+        const i = Math.min(index, steps.length - 1);
+        const step = steps[i];
+        const isLast = i >= steps.length - 1;
+        return (
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-5" role="dialog" aria-modal="true">
+                <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="h-1.5 w-full bg-gradient-to-r from-[#497AB7] via-[#5CC6C3] to-[#B7D1EA]" />
+                    <div className="p-5">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#3AADA9] bg-[#5CC6C3]/12 border border-[#5CC6C3]/30 px-2.5 py-1 rounded-full">
+                                STEP {i + 1} / {steps.length}
+                            </span>
+                            <button onClick={onClose} aria-label="닫기" className="text-slate-300 hover:text-slate-500 -mt-1 -mr-1 p-1 rounded-full hover:bg-slate-100">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                            </button>
+                        </div>
+                        {step.title && <h3 className="text-base font-extrabold text-[#1E2D4F] mb-1.5 break-keep">{step.title}</h3>}
+                        <p className="text-[13px] text-slate-500 leading-relaxed break-keep">{step.body}</p>
+                        <div className="flex items-center gap-1.5 mt-4 mb-3">
+                            {steps.map((_, k) => (
+                                <span key={k} className={`h-1.5 rounded-full transition-all ${k === i ? 'w-5 bg-[#497AB7]' : 'w-1.5 bg-slate-200'}`} />
+                            ))}
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <button onClick={onClose} className="text-xs text-slate-400 hover:text-slate-600">그만보기</button>
+                            <div className="flex items-center gap-2">
+                                {i > 0 && (
+                                    <button onClick={() => setIndex(i - 1)} className="px-3 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">이전</button>
+                                )}
+                                <button onClick={() => (isLast ? onClose() : setIndex(i + 1))} className="px-5 py-2 rounded-xl text-sm font-extrabold text-white bg-gradient-to-r from-[#497AB7] to-[#3AADA9] hover:opacity-90 shadow-md shadow-[#497AB7]/20">
+                                    {isLast ? '완료' : '다음'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const joyrideSteps = steps.map((s) => ({
         target: s.target,
