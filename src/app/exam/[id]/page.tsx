@@ -58,16 +58,18 @@ async function getExam(id: string) {
         .neq('school', 'DELETED')
         .order('exam_year', { ascending: false });
 
-    // 시험 구성(단원별·난이도별 문항수) — source_db_id 로 questions 조회 (DB 변경 없이 즉석 매칭)
+    // 시험 구성(단원별·난이도별 문항수) + 출제 개념/유형(key_concepts) — source_db_id 로 questions 조회
     let composition: null | { total: number; byUnit: { unit: string; count: number }[]; avg: number; easy: number; mid: number; hard: number } = null;
+    let concepts: string[] = [];  // 유형/개념 태그 (문제 본문은 노출 안 함 — 롱테일 키워드용)
     const sourceKey = buildSourceDbId(row);
     if (sourceKey) {
         const { data: qs } = await supabase
             .from('questions')
-            .select('unit, difficulty')
+            .select('unit, difficulty, key_concepts')
             .eq('source_db_id', sourceKey);
         if (qs && qs.length > 0) {
             const unitMap: Record<string, number> = {};
+            const conceptSet = new Set<string>();
             let diffSum = 0, easy = 0, mid = 0, hard = 0;
             for (const q of qs) {
                 const unit = (q.unit || '기타').toString();
@@ -75,15 +77,19 @@ async function getExam(id: string) {
                 const d = Number(q.difficulty) || 0;
                 diffSum += d;
                 if (d <= 3) easy++; else if (d <= 6) mid++; else hard++;
+                const kc = q.key_concepts;
+                const arr = Array.isArray(kc) ? kc : (typeof kc === 'string' ? [kc] : []);
+                arr.forEach((c: any) => { const t = String(c).replace(/^#/, '').trim(); if (t) conceptSet.add(t); });
             }
             const byUnit = Object.entries(unitMap)
                 .map(([unit, count]) => ({ unit, count }))
                 .sort((a, b) => b.count - a.count);
             composition = { total: qs.length, byUnit, avg: diffSum / qs.length, easy, mid, hard };
+            concepts = Array.from(conceptSet);
         }
     }
 
-    return { row, siblings: siblings || [], otherYears: otherYears || [], composition };
+    return { row, siblings: siblings || [], otherYears: otherYears || [], composition, concepts };
 }
 
 // 빌드 시 실제 해설 PDF 시험만 미리 생성
@@ -123,7 +129,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExamDetailPage({ params }: Props) {
     const ex = await getExam(params.id);
     if (!ex) notFound();
-    const { row, siblings, otherYears, composition } = ex;
+    const { row, siblings, otherYears, composition, concepts } = ex;
     const label = buildLabel(row);
     const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
     const examShort = `${row.grade ? row.grade + '학년 ' : ''}${isMock ? row.semester + '월' : row.semester + '학기'} ${row.exam_type || ''}`.trim();
@@ -221,6 +227,23 @@ export default async function ExamDetailPage({ params }: Props) {
                             <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 font-bold">쉬움 {composition.easy}</span>
                             <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 font-bold">보통 {composition.mid}</span>
                             <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 font-bold">어려움 {composition.hard}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* 출제 개념·유형 (롱테일 키워드 — 문제 본문은 비공개) */}
+                {concepts && concepts.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
+                        <p className="text-sm font-bold text-slate-700 mb-1">🧩 출제 개념·유형</p>
+                        <p className="text-xs text-slate-400 mb-3 break-keep">
+                            {label} 시험지에서 다루는 주요 개념·문제 유형입니다.
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {concepts.map((c: string) => (
+                                <span key={c} className="text-[12px] bg-[#EEF4FB] text-[#1E2D4F] border border-[#B7D1EA]/60 px-2.5 py-1 rounded-full">
+                                    {c}
+                                </span>
+                            ))}
                         </div>
                     </div>
                 )}
