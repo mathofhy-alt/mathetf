@@ -1,7 +1,13 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { unstable_cache } from 'next/cache';
+import type { Metadata } from 'next';
 import HomeClient from './HomeClient';
+
+// 홈은 자기 자신을 canonical로 (루트 layout에서 canonical "/" 제거했기 때문에 여기서 명시)
+export const metadata: Metadata = {
+    alternates: { canonical: '/' },
+};
 
 // Schools data cached for 1 hour (rarely changes)
 const getCachedSchools = unstable_cache(

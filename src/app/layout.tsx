@@ -28,9 +28,7 @@ export const metadata: Metadata = {
     ],
     authors: [{ name: "수학ETF" }],
     metadataBase: new URL("https://mathetf.com"),
-    alternates: {
-        canonical: "/",
-    },
+    // canonical은 페이지별로 지정 (여기에 "/"를 두면 모든 하위 페이지가 홈으로 canonical 상속됨 → 제거)
     openGraph: {
         title: "수학ETF - 기출 유사문제로 만드는 수학 시험지",
         description: "기출과 같은 유형의 유사 문항을 자동으로 찾아 나만의 수학 시험지를 1분 만에. 전국 내신·모의고사 기출 기반 문제은행.",

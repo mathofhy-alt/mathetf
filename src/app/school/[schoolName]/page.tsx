@@ -133,6 +133,33 @@ export default async function SchoolPage({ params }: Props) {
 
     const examList = Object.values(groups).sort((a: any, b: any) => b.year - a.year);
 
+    // [SEO] 학교 지역 + 단원 분포 (얇은 콘텐츠 방지용 고유 텍스트)
+    let region = '';
+    try {
+        const { data: sc } = await supabase.from('schools').select('region, district').eq('name', schoolName).maybeSingle();
+        if (sc) region = [sc.region, sc.district].filter(Boolean).join(' ');
+    } catch { }
+    // 단원 분포는 '과목별'로 분리 (학년·과목 다른 시험을 한 표로 합치면 의미 없음)
+    let subjUnits: { subject: string; total: number; units: { unit: string; count: number }[] }[] = [];
+    try {
+        const { data: qs } = await supabase.from('questions').select('subject, unit').eq('school', schoolName);
+        if (qs && qs.length) {
+            const bySubj: Record<string, Record<string, number>> = {};
+            qs.forEach((q: any) => {
+                const s = (q.subject || '기타').toString();
+                const un = (q.unit || '기타').toString();
+                (bySubj[s] = bySubj[s] || {})[un] = (bySubj[s][un] || 0) + 1;
+            });
+            subjUnits = Object.entries(bySubj).map(([subject, m]) => ({
+                subject,
+                total: Object.values(m).reduce((a, b) => a + b, 0),
+                units: Object.entries(m).map(([unit, count]) => ({ unit, count })).sort((a, b) => b.count - a.count).slice(0, 6),
+            })).sort((a, b) => b.total - a.total);
+        }
+    } catch { }
+    const subjects = Array.from(new Set(examList.map((g: any) => g.subject).filter(Boolean)));
+    const years = Array.from(new Set(examList.map((g: any) => g.year))).sort((a: number, b: number) => b - a);
+
     return (
         <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
             <Header />
@@ -150,6 +177,36 @@ export default async function SchoolPage({ params }: Props) {
                     <p className="text-slate-500 mt-2 text-sm">
                         총 <span className="font-bold text-[#497AB7]">{examList.length}개</span>의 시험 자료 · 문제 미리보기 무료
                     </p>
+                </div>
+
+                {/* 학교 소개 (SEO 고유 텍스트) */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
+                    <p className="text-slate-600 leading-relaxed break-keep text-sm">
+                        <strong className="text-[#1E2D4F]">{schoolName}</strong>
+                        {region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다.
+                        {years.length > 0 && <> {years[0]}{years.length > 1 ? `~${years[years.length - 1]}` : ''}년 </>}
+                        {subjects.length > 0 && <>{subjects.join('·')} 등 </>}
+                        총 <strong className="text-[#497AB7]">{examList.length}개</strong> 시험지의 문제와 해설을 제공하며,
+                        문제 미리보기와 워터마크 없는 문제 PDF는 회원가입 시 무료로 받을 수 있습니다.
+                    </p>
+
+                    {subjUnits.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                            <p className="text-xs font-bold text-slate-700">📊 과목별 출제 단원</p>
+                            {subjUnits.map((s) => (
+                                <div key={s.subject}>
+                                    <p className="text-xs font-bold text-[#497AB7] mb-1.5">{s.subject} <span className="text-slate-400 font-normal">({s.total}문항)</span></p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {s.units.map((u) => (
+                                            <span key={u.unit} className="text-[11px] bg-[#EEF4FB] text-[#1E2D4F] border border-[#B7D1EA]/60 px-2 py-0.5 rounded-full">
+                                                {u.unit} <span className="text-[#497AB7] font-bold">{u.count}</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* 시험 목록 (홈 카드 스타일) */}
