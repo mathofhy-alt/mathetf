@@ -15,6 +15,8 @@ export default function LaunchPromoModal() {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
+        // 투어 강제실행(?tour=) 중엔 띄우지 않음 (투어 말풍선과 겹침 방지)
+        if (new URLSearchParams(window.location.search).get('tour')) return;
         // 역할 선택 모달이 우선인 첫 방문엔 띄우지 않음 (팝업 2개 중첩 방지)
         const roleSeen = localStorage.getItem('mathetf_role') || localStorage.getItem('mathetf_role_dismissed');
         if (!roleSeen) return;
