@@ -76,7 +76,8 @@ async function getExam(id: string) {
                 unitMap[unit] = (unitMap[unit] || 0) + 1;
                 const d = Number(q.difficulty) || 0;
                 diffSum += d;
-                if (d <= 3) easy++; else if (d <= 6) mid++; else hard++;
+                // 분류기가 1~3에 몰리는 하향 편향 → 실제 분포(≤2 41%/3-4 35%/≥5 24%) 기준으로 구간 보정
+                if (d <= 2) easy++; else if (d <= 4) mid++; else hard++;
                 const kc = q.key_concepts;
                 const arr = Array.isArray(kc) ? kc : (typeof kc === 'string' ? [kc] : []);
                 arr.forEach((c: any) => { const t = String(c).replace(/^#/, '').trim(); if (t) conceptSet.add(t); });
