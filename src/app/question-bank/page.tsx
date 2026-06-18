@@ -43,9 +43,12 @@ export default function QuestionBankPage() {
     const [loading, setLoading] = useState(true);
     const [runTeacherTour, setRunTeacherTour] = useState(false);
 
-    // 역할 모달에서 '선생님·강사' 선택 시 ?tour=1 로 진입 → 투어 시작
+    // ?tour=1 강제 진입 또는 이 페이지 첫 방문이면 투어 시작 (1회)
     useEffect(() => {
-        if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tour') === '1') {
+        if (typeof window === 'undefined') return;
+        const forced = new URLSearchParams(window.location.search).get('tour') === '1';
+        const seen = localStorage.getItem('mathetf_qb_tour_seen');
+        if (forced || !seen) {
             // DOM/요소 준비 후 시작
             const t = setTimeout(() => setRunTeacherTour(true), 600);
             return () => clearTimeout(t);
@@ -941,7 +944,7 @@ export default function QuestionBankPage() {
 
     return (
         <>
-        <GuidedTour steps={TEACHER_TOUR_STEPS} run={runTeacherTour} onClose={() => setRunTeacherTour(false)} />
+        <GuidedTour steps={TEACHER_TOUR_STEPS} run={runTeacherTour} onClose={() => { setRunTeacherTour(false); try { localStorage.setItem('mathetf_qb_tour_seen', '1'); } catch {} }} />
         <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden">
             <Header
                 user={user}
