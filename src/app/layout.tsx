@@ -84,14 +84,14 @@ export default function RootLayout({
                     next/script 인라인이 App Router에서 실행 안 되던 문제 → 평범한 <script>(SSR 실행 보장)로 변경. */}
                 {process.env.VERCEL_ENV === 'production' && (
                     <>
-                        <script async src="https://www.googletagmanager.com/gtag/js?id=G-FC6EZWV58Q" />
+                        <script async src="https://www.googletagmanager.com/gtag/js?id=G-WT6Y809441" />
                         <script
                             dangerouslySetInnerHTML={{
                                 __html: `
                                     window.dataLayer = window.dataLayer || [];
                                     function gtag(){dataLayer.push(arguments);}
                                     gtag('js', new Date());
-                                    gtag('config', 'G-FC6EZWV58Q');
+                                    gtag('config', 'G-WT6Y809441');
                                     gtag('config', 'AW-17263917467');
                                 `,
                             }}
