@@ -16,6 +16,17 @@ import requests
 import fitz  # PyMuPDF
 from PIL import Image, ImageDraw, ImageFont
 
+# --- 로컬 SSL 가로채기(Avast 백신 등) 우회 ---
+# 이 스크립트는 로컬 PC에서만 수동 실행되고 자체 Supabase에만 접속한다.
+# Avast HTTPS 검사가 인증서를 가로채 requests 가 실패하므로 검증을 끈다.
+import urllib3 as _urllib3
+_urllib3.disable_warnings()
+_req_orig = requests.Session.request
+def _req_noverify(self, *a, **k):
+    k['verify'] = False
+    return _req_orig(self, *a, **k)
+requests.Session.request = _req_noverify
+
 # ---- 환경변수 (.env.local) ----
 def load_env():
     env = {}
