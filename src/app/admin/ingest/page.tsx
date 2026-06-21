@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import SchoolAutocomplete from '@/components/SchoolAutocomplete';
 import { KOREA_REGIONS } from '@/data/korean-admin-divisions';
+import { CURRICULA } from '@/lib/curriculum';
 
 export default function AdminIngestPage() {
     const [activeTab, setActiveTab] = useState<'regular' | 'mock' | 'police' | 'military'>('regular');
@@ -238,13 +239,11 @@ export default function AdminIngestPage() {
                             <div>
                                 <label className="block text-sm font-medium mb-1">과목</label>
                                 <select className="w-full border p-2 rounded" value={subject} onChange={e => setSubject(e.target.value)}>
-                                    <option value="공통수학1">공통수학1</option>
-                                    <option value="공통수학2">공통수학2</option>
-                                    <option value="대수">대수</option>
-                                    <option value="미적분I">미적분I</option>
-                                    <option value="미적분II">미적분II</option>
-                                    <option value="기하와벡터">기하와벡터</option>
-                                    <option value="확률과통계">확률과통계</option>
+                                    {CURRICULA.map(c => (
+                                        <optgroup key={c.id} label={c.label}>
+                                            {c.subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </optgroup>
+                                    ))}
                                 </select>
                             </div>
                             <div>

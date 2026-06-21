@@ -77,27 +77,32 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
         }
     };
 
-    const navLinks = [
+    const navLinks: { href: string; label: string; badge?: string }[] = [
         { href: '/', label: '내신기출' },
         { href: '/question-bank', label: '시험지출제' },
+        { href: '/predict', label: '예상문제 뽑기' },
+        { href: '/print-transform', label: '학교프린트 변형', badge: 'NEW' },
         { href: '/notice', label: '공지사항' },
         { href: '/suggestion', label: '건의사항' },
     ];
 
     return (
         <>
-            <header className="bg-white border-b border-slate-200 relative z-40">
+            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
                 <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between">
                     {/* Logo */}
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="flex items-center gap-2">
+                    <div className="flex items-center gap-6 min-w-0">
+                        <Link href="/" className="flex items-center gap-2 shrink-0">
                             <div className="w-8 h-8 bg-brand-600 rounded flex items-center justify-center text-white font-bold text-xl">∑</div>
-                            <span className="text-2xl font-bold text-brand-600 tracking-tight">수학ETF</span>
+                            <span className="text-2xl font-bold text-brand-600 tracking-tight whitespace-nowrap">수학ETF</span>
                         </Link>
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex gap-6 text-sm font-bold text-slate-600">
+                        <nav className="hidden lg:flex gap-4 text-sm font-bold text-slate-600">
                             {navLinks.map(link => (
-                                <Link key={link.href} href={link.href} className="hover:text-brand-600 transition-colors">{link.label}</Link>
+                                <Link key={link.href} href={link.href} className="hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
+                                    {link.label}
+                                    {link.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{link.badge}</span>}
+                                </Link>
                             ))}
                             {user?.email === 'mathofhy@naver.com' && (
                                 <Link href="/admin/inventory" className="text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
@@ -109,7 +114,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                     <div className="flex items-center gap-2 md:gap-4">
                         {/* Upload button - show only if logged in, desktop only */}
                         {user && !hideUploadButton && (
-                            <button onClick={handleDefaultUploadClick} className="hidden sm:flex px-4 py-1.5 bg-brand-600 text-white rounded text-sm font-medium hover:bg-brand-700 items-center gap-2">
+                            <button onClick={handleDefaultUploadClick} className="hidden lg:flex px-4 py-1.5 bg-brand-600 text-white rounded text-sm font-medium hover:bg-brand-700 items-center gap-2 whitespace-nowrap">
                                 <Upload size={14} /> 자료등록
                             </button>
                         )}
@@ -128,11 +133,11 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* Desktop: User Info or Login */}
                         {user ? (
-                            <div className="hidden sm:flex items-center text-sm font-medium text-slate-600 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors cursor-pointer overflow-hidden">
+                            <div className="hidden lg:flex items-center text-sm font-medium text-slate-600 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors cursor-pointer overflow-hidden whitespace-nowrap">
                                 <Link href="/mypage" className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-200 transition-colors">
                                     <Coins size={14} className="text-yellow-500" />
-                                    <span className="hidden lg:inline">{earnedPoints.toLocaleString()} P (수익)</span>
-                                    <span className="w-px h-3 bg-slate-300 mx-1 hidden lg:block"></span>
+                                    <span className="hidden xl:inline">{earnedPoints.toLocaleString()} P (수익)</span>
+                                    <span className="w-px h-3 bg-slate-300 mx-1 hidden xl:block"></span>
                                     <UserIcon size={14} />
                                     <span>마이페이지</span>
                                 </Link>
@@ -147,7 +152,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             </div>
                         ) : (
                             !mobileMenuOpen && !['/login', '/signup'].includes(pathname) && (
-                                <div className="hidden sm:flex items-center gap-2">
+                                <div className="hidden lg:flex items-center gap-2">
                                     <Link href="/login" className="px-4 py-1.5 text-slate-600 font-bold text-sm hover:bg-slate-50 border border-slate-200 rounded">로그인</Link>
                                     <Link href="/signup" className="px-4 py-1.5 bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 rounded">회원가입</Link>
                                 </div>
@@ -158,7 +163,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {!user && !mobileMenuOpen && !['login', 'signup'].some(p => pathname.includes(p)) && (
                             <Link
                                 href="/signup"
-                                className="md:hidden px-3 py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg hover:bg-brand-700 transition-colors"
+                                className="lg:hidden px-3 py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg hover:bg-brand-700 transition-colors whitespace-nowrap"
                             >
                                 무료 시작 →
                             </Link>
@@ -166,7 +171,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* Hamburger Button - Mobile Only */}
                         <button
-                            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
                             onClick={() => setMobileMenuOpen(prev => !prev)}
                             aria-label="메뉴 열기"
                         >
@@ -176,16 +181,17 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                 </div>
 
                 {/* Mobile Menu Dropdown */}
-                <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="bg-white border-t border-slate-100 px-4 py-3 space-y-1 shadow-lg">
                         {/* Nav Links */}
                         {navLinks.map(link => (
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className={`block py-3 px-4 rounded-xl text-sm font-bold transition-colors ${pathname === link.href ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}
+                                className={`flex items-center gap-1.5 py-3 px-4 rounded-xl text-sm font-bold transition-colors ${pathname === link.href ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}
                             >
                                 {link.label}
+                                {link.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{link.badge}</span>}
                             </Link>
                         ))}
                         {user?.email === 'mathofhy@naver.com' && (

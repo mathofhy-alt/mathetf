@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { X, Upload, FileText, Trash2, CheckCircle2, AlertCircle, FileDown, Database } from 'lucide-react';
 import { PdfFileIcon, HwpFileIcon } from './FileIcons';
+import { CURRICULA } from '@/lib/curriculum';
 
 interface FileUploadSlotProps {
     id: string;
@@ -124,8 +125,6 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
     // Validations & Loading
     const [isUploading, setIsUploading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
-
-    const subjects = ['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '기하와벡터', '확률과통계'];
 
     if (!isOpen) return null;
 
@@ -434,7 +433,11 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                             </select>
                             <select value={subject} onChange={e => { setSubject(e.target.value); if (title) generateTitle(); }} className="w-full rounded border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500" required>
                                 <option value="">과목 선택</option>
-                                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                                {CURRICULA.map(c => (
+                                    <optgroup key={c.id} label={c.label}>
+                                        {c.subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </optgroup>
+                                ))}
                             </select>
                         </div>
 

@@ -7,7 +7,8 @@ import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import HeroBanner from '@/components/HeroBanner';
+import PromoCarousel from '@/components/PromoCarousel';
+import FeatureCards from '@/components/FeatureCards';
 import SimilarDemo from '@/components/SimilarDemo';
 import RoleOnboardingModal from '@/components/RoleOnboardingModal';
 import LaunchPromoModal from '@/components/LaunchPromoModal';
@@ -558,7 +559,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
             <GuidedTour steps={STUDENT_TOUR_STEPS} run={runStudentTour} onClose={() => { setRunStudentTour(false); try { localStorage.setItem('mathetf_home_tour_seen', '1'); } catch {} }} />
             <LaunchPromoModal />
 
-            <HeroBanner user={user} earnedPoints={earnedPoints} />
+            <PromoCarousel user={user} />
+
+            <FeatureCards user={user} />
 
             <SimilarDemo />
 

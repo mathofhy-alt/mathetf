@@ -15,8 +15,7 @@ html {
 html,
 body {
   font-family: 'Pretendard', sans-serif;
-  overflow-y: scroll;
-  /* Prevent layout shift */
+  /* overflow-y 는 html 에만 (body 에 두면 sticky 헤더가 깨짐). html 의 scroll 로 레이아웃 시프트 방지. */
 }
 
 @layer base {
@@ -308,4 +307,7 @@ body {
 .delay-500 { animation-delay: 0.5s; }
 .delay-600 { animation-delay: 0.6s; }
 .delay-700 { animation-delay: 0.7s; }
-.delay-800 { animation-delay: 0.8s; }
+.delay-800 { animation-delay: 0.8s; }
+/* 전광판 배너 진행바 */
+@keyframes promoProgress { from { width: 0%; } to { width: 100%; } }
+.promo-bar { animation: promoProgress 4s linear forwards; }
