@@ -555,8 +555,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 onUploadClick={handleUploadClick}
             />
 
-            <RoleOnboardingModal onClose={() => startHomeTourIfUnseen()} />
-            <GuidedTour steps={STUDENT_TOUR_STEPS} run={runStudentTour} onClose={() => { setRunStudentTour(false); try { localStorage.setItem('mathetf_home_tour_seen', '1'); } catch {} }} />
+            <RoleOnboardingModal onClose={() => { }} />
+            {/* 홈(내신기출) 튜토리얼 제거 — 시험지출제 탭 튜토리얼만 유지 */}
             <LaunchPromoModal />
 
             <PromoCarousel user={user} />

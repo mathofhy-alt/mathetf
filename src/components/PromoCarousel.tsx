@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
-interface Slide { badge: string; emoji: string; glyph: string; title: string; sub: string; cta: string; href: string; grad: string; }
+interface Slide { badge: string; glyph: string; title: string; sub: string; cta: string; href: string; grad: string; }
 
 const SLIDES: Slide[] = [
-    { badge: 'EVENT', emoji: '🎉', glyph: '∑', title: '런칭 기념 — 전 기출 DB 무료', sub: '지금 가입하면 문제·해설까지 모두 무료로 이용하세요', cta: '무료로 시작', href: '/signup', grad: 'from-[#3A6CAE] via-[#3E8FB0] to-[#3AADA9]' },
-    { badge: 'AI', emoji: '✨', glyph: '∫', title: '예상문제 뽑아보기', sub: '우리 학교 출제 스타일로 변형문제를 1분 만에', cta: '예상문제 만들기', href: '/predict', grad: 'from-[#463F86] via-[#5A4FA6] to-[#6E5FB5]' },
-    { badge: 'NEW', emoji: '✂️', glyph: 'π', title: '학교프린트 변형만들기', sub: '받은 프린트를 올리고 잘라내면 같은 유형 변형문제 자동 생성', cta: '써보기', href: '/print-transform', grad: 'from-[#1F7A47] via-[#269457] to-[#33AC63]' },
-    { badge: '기출', emoji: '📚', glyph: '√', title: '전국 내신 기출 + 유사문제', sub: '검증된 실제 기출로 나만의 시험지를 1분에 완성', cta: '기출 보기', href: '#main-list', grad: 'from-[#2C7FB5] via-[#3597BE] to-[#46B0C7]' },
+    { badge: 'EVENT', glyph: '∑', title: '런칭 기념 — 전 기출 DB 무료', sub: '지금 가입하면 문제·해설까지 모두 무료로 이용하세요', cta: '무료로 시작', href: '/signup', grad: 'from-[#3A6CAE] via-[#3E8FB0] to-[#3AADA9]' },
+    { badge: 'HOT', glyph: '∫', title: '예상문제 뽑아보기', sub: '우리 학교 출제 스타일로 같은 유형 기출을 한 세트로', cta: '예상문제 만들기', href: '/predict', grad: 'from-[#463F86] via-[#5A4FA6] to-[#6E5FB5]' },
+    { badge: 'NEW', glyph: 'π', title: '학교프린트 변형만들기', sub: '받은 프린트를 올리고 잘라내면 같은 유형 기출을 모아드려요', cta: '써보기', href: '/print-transform', grad: 'from-[#1F7A47] via-[#269457] to-[#33AC63]' },
+    { badge: '기출', glyph: '√', title: '전국 내신 기출 + 유사문제', sub: '검증된 실제 기출로 나만의 시험지를 1분에 완성', cta: '기출 보기', href: '#main-list', grad: 'from-[#2C7FB5] via-[#3597BE] to-[#46B0C7]' },
 ];
 
 export default function PromoCarousel({ user }: { user: User | null }) {
@@ -64,10 +64,6 @@ export default function PromoCarousel({ user }: { user: User | null }) {
                                     <Link href={s.href} className="inline-flex items-center gap-1.5 mt-4 bg-white text-[#1E2D4F] font-extrabold px-5 py-2.5 rounded-full text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
                                         {s.cta} <ArrowRight size={15} />
                                     </Link>
-                                </div>
-                                {/* 글래스 아이콘 */}
-                                <div className="hidden sm:flex flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-3xl bg-white/15 border border-white/25 backdrop-blur-sm items-center justify-center text-4xl md:text-5xl shadow-inner">
-                                    {s.emoji}
                                 </div>
                             </div>
                         </div>
