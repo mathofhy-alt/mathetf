@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
 import DepositModal from './payments/DepositModal';
@@ -77,11 +77,24 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
         }
     };
 
-    const navLinks: { href: string; label: string; badge?: string }[] = [
+    type NavChild = { href: string; label: string; badge?: string };
+    type NavItem = { href: string; label: string; badge?: string; children?: NavChild[] };
+    const navItems: NavItem[] = [
         { href: '/', label: '내신기출' },
-        { href: '/question-bank', label: '시험지출제' },
-        { href: '/predict', label: '예상문제 뽑기' },
-        { href: '/print-transform', label: '학교프린트 변형', badge: 'NEW' },
+        {
+            href: '/question-bank', label: '10초 시험지제작', children: [
+                { href: '/question-bank', label: '시험지 출제' },
+                { href: '/predict', label: '예상문제 뽑기' },
+                { href: '/print-transform', label: '학교프린트 변형', badge: 'NEW' },
+            ]
+        },
+        {
+            href: '/모의고사', label: '모의고사', badge: 'NEW', children: [
+                { href: '/모의고사/전국연합', label: '전국연합학력평가' },
+                { href: '/모의고사/경찰대', label: '경찰대' },
+                { href: '/모의고사/사관학교', label: '사관학교' },
+            ]
+        },
         { href: '/notice', label: '공지사항' },
         { href: '/suggestion', label: '건의사항' },
     ];
@@ -97,15 +110,34 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             <span className="text-2xl font-bold text-brand-600 tracking-tight whitespace-nowrap">수학ETF</span>
                         </Link>
                         {/* Desktop Nav */}
-                        <nav className="hidden lg:flex gap-4 text-sm font-bold text-slate-600">
-                            {navLinks.map(link => (
-                                <Link key={link.href} href={link.href} className="hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
-                                    {link.label}
-                                    {link.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{link.badge}</span>}
+                        <nav className="hidden lg:flex items-center gap-1 text-sm font-bold text-slate-600">
+                            {navItems.map(item => item.children ? (
+                                <div key={item.href} className="relative group">
+                                    <Link href={item.href} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
+                                        {item.label}
+                                        {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
+                                        <ChevronDown size={13} className="text-slate-400 transition-transform duration-200 group-hover:rotate-180" />
+                                    </Link>
+                                    {/* 드롭다운 (호버) — pt-1 로 트리거와 패널 사이 틈 없이 연결 */}
+                                    <div className="absolute left-0 top-full pt-2 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
+                                        <div className="min-w-[180px] bg-white border border-slate-200 rounded-xl shadow-xl ring-1 ring-black/5 py-1.5">
+                                            {item.children.map(c => (
+                                                <Link key={c.href} href={c.href} className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors whitespace-nowrap">
+                                                    {c.label}
+                                                    {c.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{c.badge}</span>}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Link key={item.href} href={item.href} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
+                                    {item.label}
+                                    {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
                                 </Link>
                             ))}
                             {user?.email === 'mathofhy@naver.com' && (
-                                <Link href="/admin/inventory" className="text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
+                                <Link href="/admin/inventory" className="px-2 py-2 text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
                             )}
                         </nav>
                     </div>
@@ -184,15 +216,30 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                 <div className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="bg-white border-t border-slate-100 px-4 py-3 space-y-1 shadow-lg">
                         {/* Nav Links */}
-                        {navLinks.map(link => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={`flex items-center gap-1.5 py-3 px-4 rounded-xl text-sm font-bold transition-colors ${pathname === link.href ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}
-                            >
-                                {link.label}
-                                {link.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{link.badge}</span>}
-                            </Link>
+                        {navItems.map(item => (
+                            <div key={item.href}>
+                                <Link
+                                    href={item.href}
+                                    className={`flex items-center gap-1.5 py-3 px-4 rounded-xl text-sm font-bold transition-colors ${pathname === item.href ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}
+                                >
+                                    {item.label}
+                                    {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
+                                </Link>
+                                {item.children && (
+                                    <div className="ml-3 pl-3 border-l border-slate-100 space-y-0.5">
+                                        {item.children.map(c => (
+                                            <Link
+                                                key={c.href}
+                                                href={c.href}
+                                                className={`flex items-center gap-1.5 py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors ${pathname === c.href ? 'bg-brand-50 text-brand-600' : 'text-slate-500 hover:bg-slate-50'}`}
+                                            >
+                                                {c.label}
+                                                {c.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{c.badge}</span>}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         ))}
                         {user?.email === 'mathofhy@naver.com' && (
                             <Link href="/admin/inventory" className="block py-3 px-4 rounded-xl text-sm font-bold text-purple-600 hover:bg-purple-50">

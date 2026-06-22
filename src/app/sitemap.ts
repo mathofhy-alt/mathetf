@@ -56,7 +56,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.7,
         }));
 
-        return [...staticPages, ...schoolPages, ...examPages];
+        // 모의고사: 미리보기 생성된 회차만 색인 (+ 허브·분류 페이지)
+        const enc = (s: string) => encodeURIComponent(s);
+        const mockStatic: MetadataRoute.Sitemap = ['모의고사'].map((p) => ({
+            url: `${baseUrl}/${enc(p)}`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.8,
+        }));
+        const mockCategoryPages: MetadataRoute.Sitemap = ['전국연합', '평가원', '수능', '경찰대', '사관학교'].map((c) => ({
+            url: `${baseUrl}/${enc('모의고사')}/${enc(c)}`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7,
+        }));
+        const { data: mockRows } = await supabase
+            .from('mock_exams')
+            .select('slug, created_at, preview_urls')
+            .not('preview_urls', 'is', null);
+        const mockExamPages: MetadataRoute.Sitemap = (mockRows || [])
+            .filter((r: any) => Array.isArray(r.preview_urls) && r.preview_urls.length > 0)
+            .map((r: any) => ({
+                url: `${baseUrl}/${enc('모의고사')}/${enc(r.slug)}`,
+                lastModified: new Date(r.created_at),
+                changeFrequency: 'monthly' as const,
+                priority: 0.7,
+            }));
+
+        return [...staticPages, ...schoolPages, ...examPages, ...mockStatic, ...mockCategoryPages, ...mockExamPages];
     } catch {
         return staticPages;
     }

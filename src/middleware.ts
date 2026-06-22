@@ -12,6 +12,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url, 308)
     }
 
+    // 한글 URL(/모의고사…)은 next start에서 리터럴 한글 라우트 매칭이 깨지므로
+    // 브라우저 URL은 한글로 유지하되 내부적으로 영문 라우트(/mock…)로 리라이트한다.
+    let decoded = request.nextUrl.pathname
+    try { decoded = decodeURIComponent(request.nextUrl.pathname) } catch { }
+    if (decoded === '/모의고사' || decoded.startsWith('/모의고사/')) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/mock' + decoded.slice('/모의고사'.length)
+        return NextResponse.rewrite(url)
+    }
+
     return await updateSession(request)
 }
 

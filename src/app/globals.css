@@ -56,6 +56,13 @@ body {
     background-size: 1.5em 1.5em;
   }
 
+  .form-input {
+    @apply w-full bg-white border border-[#B7D1EA] rounded-lg px-3 py-2 text-sm text-slate-700 outline-none transition-all
+           focus:ring-2 focus:ring-[#497AB7]/20 focus:border-[#497AB7]
+           hover:border-[#497AB7]/50
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
   .btn-primary {
     @apply bg-brand-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-brand-700 transition-all shadow-sm;
   }
