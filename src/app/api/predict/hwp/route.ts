@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
 import { buildPredictHml } from '@/lib/predict-hml';
 
 export const dynamic = 'force-dynamic';
@@ -21,9 +22,21 @@ export async function POST(req: NextRequest) {
         const body = await req.json().catch(() => ({}));
         const ids: string[] = (Array.isArray(body?.ids) ? body.ids : []).filter((x: any) => typeof x === 'string' && UUID_RE.test(x)).slice(0, 50);
         const title = (body?.title || '예상문제').toString();
+        const source = body?.source === 'print' ? 'print' : 'predict';
         if (ids.length === 0) return NextResponse.json({ error: '문항이 없습니다.' }, { status: 400 });
 
         const hmlContent = await buildPredictHml(ids, title);
+
+        // 사용 로그 (실패해도 다운로드엔 영향 없음)
+        try {
+            await createAdminClient().from('feature_usage').insert({
+                user_id: user.id,
+                user_email: user.email ?? null,
+                feature: source,
+                title,
+                question_count: ids.length,
+            });
+        } catch { /* 로깅 실패 무시 */ }
 
         const titleStr = title.replace(/[\\/<>:"|?*]/g, '_').trim() || '예상문제';
         const filenameAscii = 'yesang_munje.hml';

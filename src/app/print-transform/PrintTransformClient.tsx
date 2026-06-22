@@ -118,7 +118,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
         if (ids.length === 0) { alert('채택한 변형문제가 없어요.'); return; }
         setMaking(true);
         try {
-            const r = await fetch('/api/predict/hwp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, title: '학교프린트 변형문제' }) });
+            const r = await fetch('/api/predict/hwp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, title: '학교프린트 변형문제', source: 'print' }) });
             if (!r.ok) { let m = 'HWP 생성 실패'; try { const j = await r.json(); if (j.error) m = j.error; } catch { } alert(m); setMaking(false); return; }
             const blob = await r.blob();
             const url = URL.createObjectURL(blob);
