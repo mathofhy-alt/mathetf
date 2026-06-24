@@ -42,6 +42,7 @@ ENV = load_env()
 URL = ENV['NEXT_PUBLIC_SUPABASE_URL'].rstrip('/')
 KEY = ENV['SUPABASE_SERVICE_ROLE_KEY']
 H = {'apikey': KEY, 'Authorization': f'Bearer {KEY}'}
+SITE = (ENV.get('NEXT_PUBLIC_SITE_URL') or 'https://mathetf.com').rstrip('/')
 
 SRC_BUCKET = 'exam-materials'   # 원본 PDF (비공개)
 DST_BUCKET = 'exam-previews'    # 미리보기 (공개)
@@ -143,6 +144,22 @@ def save_urls(row_id, urls):
     if r.status_code not in (200, 204):
         raise RuntimeError(f'db patch {r.status_code}: {r.text[:200]}')
 
+def revalidate_exam_pages(ids):
+    """생성한 시험지 상세페이지(/exam/{id})만 즉시 갱신 (ISR 1시간 안 기다림)."""
+    if not ids:
+        return
+    paths = [f'/exam/{i}' for i in ids]
+    try:
+        r = requests.post(f'{SITE}/api/revalidate',
+                          headers={'x-revalidate-key': KEY, 'Content-Type': 'application/json'},
+                          json={'paths': paths}, timeout=30)
+        if r.status_code == 200:
+            print(f'[즉시갱신] {len(paths)}개 시험지 페이지 갱신 완료 ({SITE})')
+        else:
+            print(f'[즉시갱신] 실패 {r.status_code}: {r.text[:150]} (배포 안됐거나 키 불일치 — 최대 1시간 뒤 자동 반영됨)')
+    except Exception as e:
+        print(f'[즉시갱신] 호출 실패: {e} (최대 1시간 뒤 자동 반영됨)')
+
 # ---- 메인 ----
 def main():
     limit = None
@@ -165,6 +182,7 @@ def main():
     print(f'[대상] {len(targets)}개  (문제 전체 공개 / 해설 자동 제외 / 워터마크 {"ON" if wm_tile else "OFF"})\n')
 
     ok = fail = 0
+    done_ids = []
     for i, row in enumerate(targets, 1):
         label = f"{row.get('school')} {row.get('exam_year')} {row.get('grade')} {row.get('semester')} {row.get('exam_type')} {row.get('subject')}"
         try:
@@ -184,6 +202,7 @@ def main():
                 raise RuntimeError('렌더 페이지 없음')
             if not no_db:
                 save_urls(row['id'], urls)
+                done_ids.append(row['id'])
             ok += 1
             print(f'[{i}/{len(targets)}] OK ({len(urls)}p / 총{total}p) {label}')
         except Exception as e:
@@ -194,6 +213,8 @@ def main():
     print(f'\n완료: 성공 {ok} / 실패 {fail}')
     if no_db:
         print('(--no-db: DB 미저장. 마이그레이션 후 다시 실행하면 preview_urls 채워짐)')
+    else:
+        revalidate_exam_pages(done_ids)   # 생성된 시험지 페이지만 즉시 갱신
 
 if __name__ == '__main__':
     main()
