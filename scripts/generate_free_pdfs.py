@@ -20,7 +20,7 @@ import fitz  # PyMuPDF
 # 미리보기 생성기와 동일한 환경/검출 로직 재사용 (경계 검출 일원화)
 sys.path.insert(0, os.path.dirname(__file__))
 from generate_previews import (
-    URL, KEY, H, SRC_BUCKET, download_pdf, detect_question_page_count,
+    URL, KEY, H, SRC_BUCKET, download_pdf, detect_question_page_count, revalidate_exam_pages,
 )
 
 DST_BUCKET = 'exam-free-problems'   # 무료 문제 PDF (공개)
@@ -85,6 +85,7 @@ def main():
     print(f'[대상] {len(targets)}개  (문제만 PDF / 해설 제외 / 워터마크 없음)\n')
 
     ok = fail = 0
+    done_ids = []
     for i, row in enumerate(targets, 1):
         label = f"{row.get('school')} {row.get('exam_year')} {row.get('grade')} {row.get('semester')} {row.get('exam_type')} {row.get('subject')}"
         try:
@@ -96,6 +97,7 @@ def main():
             doc.close()
             url = upload_pdf(f"{row['id']}_q.pdf", data)   # 스토리지 키는 ASCII만 (한글 불가)
             save_url(row['id'], url)
+            done_ids.append(row['id'])
             ok += 1
             print(f'[{i}/{len(targets)}] OK ({qcount}p / 총{total}p) {label}')
         except Exception as e:
@@ -104,6 +106,7 @@ def main():
         time.sleep(0.05)
 
     print(f'\n완료: 성공 {ok} / 실패 {fail}')
+    revalidate_exam_pages(done_ids)   # 생성된 시험지 페이지만 즉시 갱신
 
 if __name__ == '__main__':
     main()
