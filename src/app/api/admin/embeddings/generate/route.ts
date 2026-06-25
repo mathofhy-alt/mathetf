@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { generateEmbedding, generateTags } from '@/lib/embeddings';
 import { CONCEPT_MAP } from '@/lib/concept-map';
+import { canonicalUnit } from '@/lib/curriculum';
 
 const VALID_SUBJECTS = Object.keys(CONCEPT_MAP);
 
@@ -136,7 +137,8 @@ export async function POST(req: NextRequest) {
                                 ? updatedConcepts.map((t: string) => t.replace(/^#/, '')).join(', ')
                                 : (typeof updatedConcepts === 'string' ? updatedConcepts.replace(/^#/, '') : '');
                         }
-                        if (needsUnit && tagData.unit) updatedUnit = tagData.unit;
+                        // AI가 옛 표기(삼각함수의활용 등)를 뱉어도 표준명으로 정규화 → DB 단원 통일 유지
+                        if (needsUnit && tagData.unit) updatedUnit = canonicalUnit(tagData.unit) || tagData.unit;
                         if (needsSubject && tagData.subject) updatedSubject = tagData.subject;
                         if (needsDifficulty && tagData.difficulty != null) updatedDifficulty = tagData.difficulty.toString();
                     } catch (e) {

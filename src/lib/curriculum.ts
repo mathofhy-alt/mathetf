@@ -77,3 +77,18 @@ export const UNIT_SYNONYMS: Record<string, string[]> = {
 export function unitVariants(canonical: string): string[] {
     return UNIT_SYNONYMS[canonical] || [canonical];
 }
+
+// 표기 변형 → 표준(canonical) 단원명. (역방향 조회)
+// AI 데이터 생성/파싱이 옛 이름을 뱉어도 이걸로 정규화해 저장 → DB 단원명 통일 유지.
+const _VARIANT_TO_CANONICAL: Record<string, string> = (() => {
+    const m: Record<string, string> = {};
+    for (const [canon, variants] of Object.entries(UNIT_SYNONYMS)) {
+        for (const v of variants) m[v] = canon;
+    }
+    return m;
+})();
+export function canonicalUnit(name: string | null | undefined): string | null {
+    if (!name) return name ?? null;
+    const trimmed = name.trim();
+    return _VARIANT_TO_CANONICAL[trimmed] || trimmed;
+}
