@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Filter, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { CONCEPT_MAP } from '@/lib/concept-map';
+import { SUBJECT_UNITS, CURRICULA } from '@/lib/curriculum';
 
 export interface FilterState {
     units: string[];
@@ -15,21 +16,12 @@ export interface FilterState {
 }
 
 const SUBJECT_ORDER = [
-    '공통수학1', '공통수학2', 
-    '수학(상)', '수학(하)', '수학I', '수학II', 
-    '대수', '미적분I', '미적분II', 
-    '기하와벡터', '확률과통계'
+    '공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하와벡터',
+    '수학(상)', '수학(하)', '수학I', '수학II', '미적분'
 ];
 
-const UNIT_PRESETS: Record<string, string[]> = {
-    '공통수학1': ['다항식', '항등식', '복소수', '이차방정식', '이차함수', '여러가지방정식', '여러가지부등식', '순열조합', '행렬'],
-    '공통수학2': ['평면좌표', '직선의방정식', '원의방정식', '도형의이동', '집합', '명제', '절대부등식', '함수', '합성함수와역함수', '유리함수', '무리함수'],
-    '대수': ['지수', '로그', '지수로그함수', '지수로그함수활용', '삼각함수정의', '삼각함수그래프', '사인코사인법칙', '등차등비수열', '수열의합', '귀납법'],
-    '미적분I': ['함수의극한', '함수의연속', '미분계수와도함수', '도함수의활용(1)', '도함수의활용(2)', '도함수의활용(3)', '부정적분', '정적분', '정적분의활용'],
-    '미적분II': ['수열의극한', '급수', '지수함수와로그함수의미분', '삼각함수의미분', '여러가지미분법', '도함수의활용(1)', '도함수의활용(2)', '여러가지적분법', '정적분', '정적분의활용'],
-    '기하와벡터': ['이차곡선-포물선', '이차곡선-타원', '이차곡선-쌍곡선', '평면벡터-벡터연산', '평면벡터-성분과내적', '공간도형', '공간좌표'],
-    '확률과통계': ['순열과조합-여러가지순열', '순열과조합-중복조합', '순열과조합-이항정리', '확률의뜻과활용-확률의뜻', '확률의뜻과활용-확률의덧셈정리', '확률의뜻과활용-조건부확률', '확률의뜻과활용-독립종속', '확률분포-확률변수와확률분포', '확률분포-이산확률변수', '확률분포-이항분포', '확률분포-정규분포', '확률분포-모집단과표본', '확률분포-모평균추정']
-};
+// 단원 목록 = curriculum.ts 단일 소스 (DB 단원명과 일치). 하드코딩 옛 이름 제거.
+const UNIT_PRESETS: Record<string, string[]> = SUBJECT_UNITS;
 
 interface UnitNode {
     name: string;
@@ -50,13 +42,12 @@ interface FilterSidebarProps {
     onFilterChange: (filters: FilterState) => void;
 }
 
-// CONCEPT_MAP으로 초기 트리 즉시 생성 (로딩 없음)
+// 초기 트리 = curriculum.ts 단원 목록(단일 소스) + CONCEPT_MAP 개념태그(있으면)
 const buildDefaultTree = (): TreeNode[] => {
-    return SUBJECT_ORDER.filter(sub => CONCEPT_MAP[sub]).map(sub => {
-        const unitMap = CONCEPT_MAP[sub] as Record<string, string[]>;
-        const unitNodes: UnitNode[] = Object.entries(unitMap).map(([uName, tags]) => ({
+    return SUBJECT_ORDER.filter(sub => (UNIT_PRESETS[sub] || []).length > 0).map(sub => {
+        const unitNodes: UnitNode[] = (UNIT_PRESETS[sub] || []).map((uName) => ({
             name: uName,
-            concepts: tags,
+            concepts: (CONCEPT_MAP[sub] as Record<string, string[]> | undefined)?.[uName] || [],
             isExpanded: false
         }));
         return { subject: sub, unitNodes, isExpanded: false };
@@ -76,6 +67,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     const [keywordInput, setKeywordInput] = useState('');
     const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
     // selectedTypes removed
+    // 교육과정 선택 (기본: 현 교육과정 2022). 선택한 과정 과목만 표시.
+    const [curriculum, setCurriculum] = useState<string>('2022');
+    const curSubjects = (CURRICULA.find(c => c.id === curriculum)?.subjects || []) as readonly string[];
 
     const supabase = createClient();
 
@@ -88,7 +82,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
         }
 
         const fetchTree = async () => {
-            // 쮨시 키: 선택된 DB ID 조합 (안정적 문자열)
+            // DB목록(purchasedDbs) 로드 전이면 대기 — 빈 트리 캐시 오염 방지 (로드되면 deps로 재호출)
+            if (!purchasedDbs || purchasedDbs.length === 0) return;
+            // 캐시 키: 선택된 DB ID 조합 (안정적 문자열)
             const cacheKey = [...selectedDbIds].sort().join(',');
 
             // 쮨시 히트 → DB 조회 없이 즉시 반환
@@ -100,10 +96,13 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
             setLoadingUnits(true);
 
             const skeleton: Record<string, Record<string, Set<string>>> = {};
+            const unitTotal: Record<string, Record<string, number>> = {};        // 단원별 문항수
+            const conceptCount: Record<string, Record<string, Record<string, number>>> = {}; // 단원별 개념 등장횟수
             SUBJECT_ORDER.forEach(sub => {
-                skeleton[sub] = {};
+                skeleton[sub] = {}; unitTotal[sub] = {}; conceptCount[sub] = {};
                 (UNIT_PRESETS[sub] || []).forEach(u => {
                     skeleton[sub][u] = new Set<string>();
+                    unitTotal[sub][u] = 0; conceptCount[sub][u] = {};
                 });
             });
 
@@ -156,17 +155,25 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     const facetRes = await fetch('/api/questions/facets', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ selectedDbs }),
+                        body: JSON.stringify({ selectedDbs, purchasedDbsCount: purchasedDbs?.length || 0 }),
                     });
                     const facetJson = await facetRes.json().catch(() => ({ data: [] }));
                     const data = facetJson?.data;
                     if (data) {
                         data.forEach((q: any) => {
                             if (q.subject && q.unit) {
-                                if (!skeleton[q.subject]) skeleton[q.subject] = {};
-                                if (!skeleton[q.subject][q.unit]) skeleton[q.subject][q.unit] = new Set<string>();
-                                const presetTags = CONCEPT_MAP[q.subject]?.[q.unit] || [];
-                                presetTags.forEach((tag: string) => skeleton[q.subject][q.unit].add(tag));
+                                if (!skeleton[q.subject]) { skeleton[q.subject] = {}; unitTotal[q.subject] = {}; conceptCount[q.subject] = {}; }
+                                if (!skeleton[q.subject][q.unit]) { skeleton[q.subject][q.unit] = new Set<string>(); unitTotal[q.subject][q.unit] = 0; conceptCount[q.subject][q.unit] = {}; }
+                                unitTotal[q.subject][q.unit] += 1;
+                                // 개념태그는 DB 실제 key_concepts 기준 + 등장횟수 집계 (빈도 필터로 교차개념 제거)
+                                if (Array.isArray(q.key_concepts)) {
+                                    q.key_concepts.forEach((tag: string) => {
+                                        if (tag) {
+                                            skeleton[q.subject][q.unit].add(tag);
+                                            conceptCount[q.subject][q.unit][tag] = (conceptCount[q.subject][q.unit][tag] || 0) + 1;
+                                        }
+                                    });
+                                }
                             }
                         });
                     }
@@ -188,11 +195,17 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     return a.localeCompare(b);
                 });
 
-                const unitNodes: UnitNode[] = unitNames.map(uName => ({
-                    name: uName,
-                    concepts: Array.from(unitMap[uName]).sort(),
-                    isExpanded: false
-                }));
+                const unitNodes: UnitNode[] = unitNames.map(uName => {
+                    const total = unitTotal[sub]?.[uName] || 0;
+                    const counts = conceptCount[sub]?.[uName] || {};
+                    // 그 단원에서 충분히(≥5%, 최소 2회) 나오는 개념만 → 융합문제의 교차개념 노이즈 제거
+                    const threshold = Math.max(2, Math.ceil(total * 0.05));
+                    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                    let concepts = entries.filter(([, n]) => n >= threshold).map(([c]) => c);
+                    // 임계 넘는 게 없으면(소수 문항 단원) 빈도 상위 일부라도 노출
+                    if (concepts.length === 0 && entries.length > 0) concepts = entries.slice(0, 8).map(([c]) => c);
+                    return { name: uName, concepts, isExpanded: false };
+                });
 
                 return {
                     subject: sub,
@@ -208,7 +221,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
         };
 
         fetchTree();
-    }, [selectedDbIds?.join(',')]); // 안정적 의존성 (purchasedDbs 객체 참조 제거)
+        // purchasedDbs?.length 도 의존: DB목록이 늦게 로드돼도 facets 재호출(경쟁조건 수정)
+    }, [selectedDbIds?.join(','), purchasedDbs?.length]);
 
 
     // Emit changes
@@ -243,12 +257,24 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 {/* 0. Subject / Unit Tree */}
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">과목 및 단원</h3>
+                    {/* 교육과정 선택 — 선택한 과정의 과목만 표시 (기본: 현 교육과정 2022) */}
+                    <div className="flex gap-1 mb-3 bg-slate-100 p-0.5 rounded-lg">
+                        {CURRICULA.map((c) => (
+                            <button
+                                key={c.id}
+                                onClick={() => setCurriculum(c.id)}
+                                className={`flex-1 text-[11px] font-bold py-1.5 rounded-md transition-colors ${curriculum === c.id ? 'bg-white text-[#497AB7] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                {c.label.replace(' 교육과정', '')}
+                            </button>
+                        ))}
+                    </div>
                     <div className="space-y-4">
                         {loadingUnits && <div className="text-xs text-slate-400">로딩중...</div>}
-                        {!loadingUnits && treeData.length === 0 && (
+                        {!loadingUnits && treeData.filter((n) => curSubjects.includes(n.subject)).length === 0 && (
                             <div className="text-xs text-slate-400">표시할 과목이 없습니다.</div>
                         )}
-                        {treeData.map((node) => {
+                        {curSubjects.map((subj) => treeData.find((n) => n.subject === subj)).filter((node): node is TreeNode => !!node).map((node) => {
                             // Subject selection logic
                             const allUnitsInNode = node.unitNodes.map(un => un.name);
                             const allUnitsSelected = allUnitsInNode.length > 0 && allUnitsInNode.every(u => selectedUnits.includes(u));

@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
     // 고급 필터
     if (advancedFilters) {
         if (advancedFilters.units && advancedFilters.units.length > 0) {
+            // 시험지출제는 facets(DB 실제 단원명)로 드롭다운을 만들므로 exact 매칭이 맞다.
             query = query.in('unit', advancedFilters.units);
         }
         if (advancedFilters.concepts && advancedFilters.concepts.length > 0) {

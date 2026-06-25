@@ -5,12 +5,12 @@
 
 // 2022 개정 교육과정 과목 — DB subject 문자열과 일치
 export const SUBJECTS_2022 = ['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하와벡터'] as const;
-// 2015 개정 교육과정 과목
-export const SUBJECTS_2015 = ['수학(상)', '수학(하)', '수학I', '수학II', '미적분'] as const;
+// 2015 개정 교육과정 과목 (확률과통계·기하와벡터는 2022와 공유 — 둘 다에 표시)
+export const SUBJECTS_2015 = ['수학(상)', '수학(하)', '수학I', '수학II', '미적분', '확률과통계', '기하와벡터'] as const;
 // (구 이름 호환)
 export const SUBJECTS_NEW = SUBJECTS_2022;
 export const SUBJECTS_OLD = SUBJECTS_2015;
-export const ALL_SUBJECTS = [...SUBJECTS_2022, ...SUBJECTS_2015] as string[];
+export const ALL_SUBJECTS = Array.from(new Set([...SUBJECTS_2022, ...SUBJECTS_2015])) as string[];
 export const SUBJECTS = SUBJECTS_2022;
 
 // 교육과정 정식명

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createClient as createServiceRoleClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/utils/admin-auth';
+import { unitVariants } from '@/lib/curriculum';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -81,7 +82,8 @@ export async function GET(req: NextRequest) {
         queryBuilder = queryBuilder.eq('subject', subject);
     }
     if (unit && unit.trim() !== '') {
-        queryBuilder = queryBuilder.eq('unit', unit);
+        // 단원명 표기 변형(예: 삼각함수활용 ↔ 삼각함수의활용) 흡수
+        queryBuilder = queryBuilder.in('unit', unitVariants(unit.trim()));
     }
 
     // New Filters
