@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { generateEmbedding, generateTags } from '@/lib/embeddings';
 import { CONCEPT_MAP } from '@/lib/concept-map';
-import { canonicalUnit } from '@/lib/curriculum';
+import { canonicalUnit, ALL_SUBJECTS } from '@/lib/curriculum';
 
-const VALID_SUBJECTS = Object.keys(CONCEPT_MAP);
+// 유효 과목 = 2022(CONCEPT_MAP) + 2015 과목 전부 (source_db_id 과목 인식용)
+const VALID_SUBJECTS = Array.from(new Set([...Object.keys(CONCEPT_MAP), ...ALL_SUBJECTS]));
+// 2015 과목 → 2022 등가(단원 동일). AI 단원분류는 CONCEPT_MAP(2022)으로 하되 과목은 원래 2015 이름으로 저장.
+const SUBJECT_2015_TO_2022: Record<string, string> = {
+    '수학(상)': '공통수학1', '수학(하)': '공통수학2', '수학I': '대수', '수학II': '미적분I', '미적분': '미적분II',
+};
 
 /**
  * source_db_id (예: "충암고등학교_2025_1학기기말_공통수학1")의 마지막 토막에서
@@ -98,7 +103,9 @@ export async function POST(req: NextRequest) {
 
                 let updatedConcepts = q.key_concepts;
                 let updatedUnit = q.unit;
-                let updatedSubject = q.subject;
+                // source_db_id에 명시된 과목이 있으면 그걸로 고정 (2015 과목 포함) — AI가 못 바꾸게
+                const sourceSubject = subjectFromSourceDbId(q.source_db_id);
+                let updatedSubject = sourceSubject || q.subject;
                 let updatedDifficulty = q.difficulty;
                 let extractedTagsForEmbedding = '';
 
@@ -122,9 +129,9 @@ export async function POST(req: NextRequest) {
                         const imageUrls: string[] = imgData ? imgData.map((row: any) => row.data) : [];
 
                         const tGemini0 = Date.now();
-                        // 실제 시험 과목(source_db_id)으로 과목 고정 — 풀이방법 보고 엉뚱한 과목으로 오분류 방지
-                        const lockedSubject = subjectFromSourceDbId(q.source_db_id);
-                        const tagData = await generateTags(textToEmbed, q.subject || '수학', imageUrls, lockedSubject);
+                        // AI 단원 분류는 CONCEPT_MAP(2022) 기준 → 2015 과목은 등가 2022 과목으로 잠가서 분류
+                        const aiLockSubject = sourceSubject ? (SUBJECT_2015_TO_2022[sourceSubject] || sourceSubject) : null;
+                        const tagData = await generateTags(textToEmbed, aiLockSubject || q.subject || '수학', imageUrls, aiLockSubject);
                         tlog(`[TIMING] ${q.id} | Gemini: ${Date.now() - tGemini0}ms | tags:${tagData.tags.length} unit:${tagData.unit}`);
                         const extracted = tagData.tags;
                         totalTagTokens += tagData.tokens || 0;
@@ -139,7 +146,8 @@ export async function POST(req: NextRequest) {
                         }
                         // AI가 옛 표기(삼각함수의활용 등)를 뱉어도 표준명으로 정규화 → DB 단원 통일 유지
                         if (needsUnit && tagData.unit) updatedUnit = canonicalUnit(tagData.unit) || tagData.unit;
-                        if (needsSubject && tagData.subject) updatedSubject = tagData.subject;
+                        // source 과목이 있으면 절대 AI로 안 바꿈 (2015↔2022 혼동 방지)
+                        if (needsSubject && !sourceSubject && tagData.subject) updatedSubject = tagData.subject;
                         if (needsDifficulty && tagData.difficulty != null) updatedDifficulty = tagData.difficulty.toString();
                     } catch (e) {
                         console.error(`Tag generation failed for ${q.id}:`, e);
