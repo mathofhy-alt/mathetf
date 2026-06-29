@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Wand2, Lock, Loader2, Download } from 'lucide-react';
 import QuestionRenderer from '@/components/QuestionRenderer';
+import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 import { CURRICULA, subjectFor, SUBJECT_UNITS, unitVariants } from '@/lib/curriculum';
 
 interface Props { richSchools: string[]; isLoggedIn: boolean; }
@@ -97,6 +98,7 @@ export default function PredictClient({ richSchools, isLoggedIn }: Props) {
     };
 
     const [hwpLoading, setHwpLoading] = useState(false);
+    const [showPromo, setShowPromo] = useState(false);
     const downloadHwp = async () => {
         if (!results || results.length === 0) return;
         setHwpLoading(true);
@@ -115,6 +117,7 @@ export default function PredictClient({ richSchools, isLoggedIn }: Props) {
             a.href = url; a.download = `${title}.hml`;
             document.body.appendChild(a); a.click(); a.remove();
             URL.revokeObjectURL(url);
+            if (!isExamPromoHidden()) setShowPromo(true);
         } catch { alert('다운로드 중 오류가 발생했습니다.'); }
         setHwpLoading(false);
     };
@@ -313,6 +316,8 @@ export default function PredictClient({ richSchools, isLoggedIn }: Props) {
                     )}
                 </div>
             )}
+
+            {showPromo && <ExamPromoModal onClose={() => setShowPromo(false)} />}
         </main>
     );
 }

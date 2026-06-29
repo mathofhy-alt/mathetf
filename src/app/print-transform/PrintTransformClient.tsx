@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Crop, Loader2, Upload, Wand2, Check, Download, Trash2 } from 'lucide-react';
 import QuestionRenderer from '@/components/QuestionRenderer';
+import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 
 interface CropItem {
     id: string;
@@ -23,6 +24,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
     const [loadingPdf, setLoadingPdf] = useState(false);
     const [crops, setCrops] = useState<CropItem[]>([]);
     const [making, setMaking] = useState(false);
+    const [showPromo, setShowPromo] = useState(false);
     const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
     const pdfRef = useRef<any>(null);
 
@@ -124,6 +126,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = '학교프린트_변형문제.hml';
             document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            if (!isExamPromoHidden()) setShowPromo(true);
         } catch { alert('다운로드 오류'); }
         setMaking(false);
     };
@@ -217,6 +220,8 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                     )}
                 </div>
             </div>
+
+            {showPromo && <ExamPromoModal onClose={() => setShowPromo(false)} />}
         </main>
     );
 }
