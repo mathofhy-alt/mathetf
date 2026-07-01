@@ -140,8 +140,9 @@ export default async function SchoolPage({ params }: Props) {
     // [SEO] 학교 지역 + 단원 분포 (얇은 콘텐츠 방지용 고유 텍스트)
     let region = '';
     try {
-        const { data: sc } = await supabase.from('schools').select('region, district').eq('name', schoolName).maybeSingle();
-        if (sc) region = [sc.region, sc.district].filter(Boolean).join(' ');
+        // 동명 학교로 중복행이 있으면 maybeSingle()이 에러 → 첫 행 사용으로 지역 항상 표시
+        const { data: sc } = await supabase.from('schools').select('region, district').eq('name', schoolName).limit(1);
+        if (sc && sc[0]) region = [sc[0].region, sc[0].district].filter(Boolean).join(' ');
     } catch { }
     // 단원 분포는 '과목별'로 분리 (학년·과목 다른 시험을 한 표로 합치면 의미 없음)
     let subjUnits: { subject: string; total: number; units: { unit: string; count: number }[] }[] = [];

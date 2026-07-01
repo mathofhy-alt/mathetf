@@ -49,11 +49,16 @@ async function CategoryView({ category }: { category: MockCategory }) {
                 <Link href="/모의고사" className="inline-flex items-center gap-1 text-sm text-[#497AB7] font-bold hover:underline mb-4">
                     <ArrowLeft size={15} /> 모의고사 전체
                 </Link>
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-3 mb-3">
                     <span className={`w-2 h-7 rounded-full bg-gradient-to-b ${cat.bar}`} />
                     <h1 className="text-2xl sm:text-3xl font-black">{category}</h1>
                     <span className="text-sm font-bold text-slate-400 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">{items.length}</span>
                 </div>
+                <p className="text-sm text-slate-600 leading-relaxed break-keep mb-6 max-w-3xl">
+                    {CATEGORY_DESC[category] ? `${CATEGORY_DESC[category]} ` : ''}
+                    {category} 수학 기출문제와 같은 유형의 변형문제를 학년·연도·월별로 모았습니다.
+                    원본과 변형 모두 PDF·한글(HWP)로 무료 다운로드할 수 있어요.
+                </p>
                 {items.length === 0 ? (
                     <div className="py-20 text-center bg-white rounded-2xl border border-slate-200 text-slate-400 font-semibold">
                         아직 {category} 자료가 없어요.
