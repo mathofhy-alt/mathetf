@@ -46,7 +46,7 @@ import * as path from 'path';
 /**
  * Generates tags and unit using Gemini, explicitly supporting prediction of subjects when missing/unknown.
  */
-export async function generateTags(text: string, subject: string, imageUrls: string[] = [], lockedSubject: string | null = null): Promise<{ subject: string | null, unit: string | null, tags: string[], difficulty: number | null, tokens: number }> {
+export async function generateTags(text: string, subject: string, imageUrls: string[] = [], lockedSubject: string | null = null, allowedSubjects: string[] | null = null): Promise<{ subject: string | null, unit: string | null, tags: string[], difficulty: number | null, tokens: number }> {
     let apiKey = (process.env.GEMINI_API_KEY || '').trim();
     if (!apiKey) {
         try {
@@ -86,7 +86,12 @@ export async function generateTags(text: string, subject: string, imageUrls: str
         // (시험이 공통수학1이면 그 안의 모든 문제는 공통수학1 — 풀이에 중복조합 같은 확통 기법이 보여도
         //  과목은 공통수학1, 단원은 '순열조합'. Gemini가 풀이방법 보고 확통으로 오분류하는 것을 막음.)
         const isLocked = !!(lockedSubject && ALL_SUBJECTS.includes(lockedSubject));
-        const offerSubjects = isLocked ? [lockedSubject as string] : ALL_SUBJECTS;
+        // [학년 밴드] 잠금이 없어도 학년으로 후보 과목을 제한 → 상위학년 과목 환각 방지
+        // (예: 고1 문제를 '대수'로 찍는 것 차단. 모의고사는 하위학년 범위도 출제하므로 누적 허용.)
+        const gradeFiltered = (allowedSubjects && allowedSubjects.length)
+            ? ALL_SUBJECTS.filter((s) => allowedSubjects.includes(s))
+            : ALL_SUBJECTS;
+        const offerSubjects = isLocked ? [lockedSubject as string] : (gradeFiltered.length ? gradeFiltered : ALL_SUBJECTS);
 
         // 잠기지 않은 경우엔 전 과목 후보를 제공해 잘못 저장된 과목도 정정 가능하게 함.
         void isSubjectUnknown;

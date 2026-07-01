@@ -11,6 +11,18 @@ const SUBJECT_2015_TO_2022: Record<string, string> = {
     '수학(상)': '공통수학1', '수학(하)': '공통수학2', '수학I': '대수', '수학II': '미적분I', '미적분': '미적분II',
 };
 
+// [학년 밴드] 과목 잠금이 없을 때(전과목 모의고사 등) AI 후보 과목을 학년으로 제한한다.
+// 모의고사는 하위학년 범위도 출제하므로 '누적' 허용하되 상위학년 과목만 배제 → 고1 문제가 대수/미적분으로 찍히는 것 차단.
+const GRADE_ALLOWED_SUBJECTS: Record<string, string[]> = {
+    '고1': ['공통수학1', '공통수학2'],
+    '고2': ['공통수학1', '공통수학2', '대수', '미적분I', '확률과통계'],
+    // 고3: 제한 없음(null)
+};
+function allowedSubjectsForGrade(grade: string | null | undefined): string[] | null {
+    const g = String(grade || '').match(/[123]/)?.[0];
+    return g ? (GRADE_ALLOWED_SUBJECTS[`고${g}`] || null) : null;
+}
+
 /**
  * source_db_id (예: "충암고등학교_2025_1학기기말_공통수학1")의 마지막 토막에서
  * 실제 시험 과목을 뽑는다. CONCEPT_MAP에 있는 과목이면 그걸로 '고정'(신뢰),
@@ -131,7 +143,9 @@ export async function POST(req: NextRequest) {
                         const tGemini0 = Date.now();
                         // AI 단원 분류는 CONCEPT_MAP(2022) 기준 → 2015 과목은 등가 2022 과목으로 잠가서 분류
                         const aiLockSubject = sourceSubject ? (SUBJECT_2015_TO_2022[sourceSubject] || sourceSubject) : null;
-                        const tagData = await generateTags(textToEmbed, aiLockSubject || q.subject || '수학', imageUrls, aiLockSubject);
+                        // 잠금이 없으면 학년 밴드로 후보 과목 제한 (상위학년 과목 환각 방지)
+                        const gradeAllowed = aiLockSubject ? null : allowedSubjectsForGrade(q.grade);
+                        const tagData = await generateTags(textToEmbed, aiLockSubject || q.subject || '수학', imageUrls, aiLockSubject, gradeAllowed);
                         tlog(`[TIMING] ${q.id} | Gemini: ${Date.now() - tGemini0}ms | tags:${tagData.tags.length} unit:${tagData.unit}`);
                         const extracted = tagData.tags;
                         totalTagTokens += tagData.tokens || 0;
