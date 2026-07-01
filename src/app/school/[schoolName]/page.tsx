@@ -101,8 +101,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
+// 특수 페이지(사관학교·경찰대·전국연합 등)는 '내신'이 아니므로 전용 소개문 사용 (검색의도 일치 + CTR)
+const SPECIAL_INTRO: Record<string, string> = {
+    '사관학교': '사관학교(육군·해군·공군·국군간호) 1차 필기시험 수학 영역 기출문제 모음입니다. 일반 수능·모의고사보다 까다로운 고난도 문항으로 상위권 실전 대비에 활용됩니다. 연도별 원본 문제와 해설을 PDF·한글(HWP)로 무료로 받을 수 있어요.',
+    '육군사관학교': '육군사관학교 1차시험 수학 기출문제 모음입니다. 수능보다 변별력이 높은 고난도 문항으로 상위권 실전 대비에 좋습니다. 연도별 문제와 해설을 PDF·한글(HWP)로 무료 제공합니다.',
+    '해군사관학교': '해군사관학교 1차시험 수학 기출문제 모음입니다. 수능보다 변별력이 높은 고난도 문항으로 상위권 실전 대비에 좋습니다. 연도별 문제와 해설을 PDF·한글(HWP)로 무료 제공합니다.',
+    '공군사관학교': '공군사관학교 1차시험 수학 기출문제 모음입니다. 수능보다 변별력이 높은 고난도 문항으로 상위권 실전 대비에 좋습니다. 연도별 문제와 해설을 PDF·한글(HWP)로 무료 제공합니다.',
+    '국군간호사관학교': '국군간호사관학교 1차시험 수학 기출문제 모음입니다. 연도별 문제와 해설을 PDF·한글(HWP)로 무료 제공합니다.',
+    '경찰대학교': '경찰대학교 1차시험 수학 기출문제 모음입니다. 수능보다 변별력이 높은 고난도 문항으로 상위권 학생의 실전 감각 훈련에 좋습니다. 연도별 문제와 해설을 PDF·한글(HWP)로 무료 제공합니다.',
+    '전국연합': '전국연합학력평가(시·도 교육청 주관) 수학 기출문제 모음입니다. 3월·6월·9월·11월 학력평가 문제와 해설을 학년·연도별로 정리했어요. 원본과 변형문제를 PDF·한글(HWP)로 무료로 받을 수 있습니다.',
+};
+
 export default async function SchoolPage({ params }: Props) {
     const schoolName = decodeURIComponent(params.schoolName);
+    const specialIntro = SPECIAL_INTRO[schoolName];
     const supabase = createAdminClient();
 
     const { data: exams } = await supabase
@@ -186,14 +198,21 @@ export default async function SchoolPage({ params }: Props) {
 
                 {/* 학교 소개 (SEO 고유 텍스트) */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-                    <p className="text-slate-600 leading-relaxed break-keep text-sm">
-                        <strong className="text-[#1E2D4F]">{schoolName}</strong>
-                        {region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다.
-                        {years.length > 0 && <> {years[0]}{years.length > 1 ? `~${years[years.length - 1]}` : ''}년 </>}
-                        {subjects.length > 0 && <>{subjects.join('·')} 등 </>}
-                        총 <strong className="text-[#497AB7]">{examList.length}개</strong> 시험지의 문제와 해설을 제공하며,
-                        문제 미리보기와 워터마크 없는 문제 PDF는 회원가입 시 무료로 받을 수 있습니다.
-                    </p>
+                    {specialIntro ? (
+                        <p className="text-slate-600 leading-relaxed break-keep text-sm">
+                            {specialIntro} 현재 <strong className="text-[#497AB7]">{examList.length}개</strong> 회차의 문제와 해설을 제공하며,
+                            문제 미리보기와 워터마크 없는 PDF·한글(HWP)은 회원가입 시 무료로 받을 수 있습니다.
+                        </p>
+                    ) : (
+                        <p className="text-slate-600 leading-relaxed break-keep text-sm">
+                            <strong className="text-[#1E2D4F]">{schoolName}</strong>
+                            {region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다.
+                            {years.length > 0 && <> {years[0]}{years.length > 1 ? `~${years[years.length - 1]}` : ''}년 </>}
+                            {subjects.length > 0 && <>{subjects.join('·')} 등 </>}
+                            총 <strong className="text-[#497AB7]">{examList.length}개</strong> 시험지의 문제와 해설을 제공하며,
+                            문제 미리보기와 워터마크 없는 문제 PDF는 회원가입 시 무료로 받을 수 있습니다.
+                        </p>
+                    )}
 
                     {subjUnits.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
