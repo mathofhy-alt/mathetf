@@ -5,9 +5,16 @@ import type { Metadata } from 'next';
 import HomeClient from './HomeClient';
 
 // 홈은 자기 자신을 canonical로 (루트 layout에서 canonical "/" 제거했기 때문에 여기서 명시)
-export const metadata: Metadata = {
-    alternates: { canonical: '/' },
-};
+// 파라미터가 붙은 홈 URL(/?school=, /?gad_source= 등)은 색인 제외 → 홈 제목·설명 중복 방지
+export async function generateMetadata(
+    { searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }
+): Promise<Metadata> {
+    const hasQuery = Object.keys(searchParams || {}).length > 0;
+    return {
+        alternates: { canonical: '/' },
+        ...(hasQuery ? { robots: { index: false, follow: true } } : {}),
+    };
+}
 
 // Schools data cached for 1 hour (rarely changes)
 const getCachedSchools = unstable_cache(
