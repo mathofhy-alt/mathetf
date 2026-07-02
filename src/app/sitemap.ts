@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { url: `${baseUrl}/schools`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
         { url: `${baseUrl}/predict`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
         { url: `${baseUrl}/print-transform`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+        { url: `${baseUrl}/study/common-math-2`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     ];
 
     // DB에서 실제 시험지 있는 학교 목록 가져오기
