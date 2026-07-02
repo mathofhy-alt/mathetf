@@ -907,9 +907,15 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
 
                         <div className="p-5 max-h-[75vh] overflow-y-auto">
                             {isLoadingDetails ? (
-                                <div className="py-20 flex flex-col items-center gap-3">
-                                    <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                                    <p className="text-slate-500 font-medium">데이터를 분석 중입니다...</p>
+                                /* 문항 구성 스켈레톤 (스피너보다 체감 빠름) */
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 animate-pulse" aria-label="문항 구성 분석 중">
+                                    {Array.from({ length: 8 }).map((_, i) => (
+                                        <div key={i} className="bg-white border border-slate-100 rounded-lg p-3 space-y-2">
+                                            <div className="h-3 w-16 bg-slate-200 rounded" />
+                                            <div className="h-3.5 w-11/12 bg-slate-200 rounded" />
+                                            <div className="h-3 w-2/3 bg-slate-100 rounded" />
+                                        </div>
+                                    ))}
                                 </div>
                             ) : dbDetails.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">

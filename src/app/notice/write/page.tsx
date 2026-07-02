@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
@@ -13,6 +13,17 @@ export default function NoticeWritePage() {
 
     const router = useRouter();
     const supabase = createClient();
+
+    // 진입 가드: 관리자가 아니면 폼 작성 전에 돌려보냄 (제출 후 튕기며 입력 소실되던 것 방지)
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (!user || user.email !== 'mathofhy@naver.com') {
+                alert('관리자만 작성할 수 있습니다.');
+                router.replace('/notice');
+            }
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

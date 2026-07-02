@@ -31,27 +31,31 @@ async function getExam(id: string) {
         .neq('school', 'DELETED')
         .single();
     if (!row) return null;
+    // subject가 null인 행은 .eq('subject','')로 매칭이 안 됨 → null은 is()로 매칭
+    const matchSubject = (q: any) => (row.subject ? q.eq('subject', row.subject) : q.is('subject', null));
+
     // 같은 시험의 다른 형식(HWP/개인DB) 확인
-    const { data: siblings } = await supabase
-        .from('exam_materials')
-        .select('file_type, content_type')
-        .eq('school', row.school)
-        .eq('exam_year', row.exam_year)
-        .eq('grade', row.grade)
-        .eq('semester', row.semester)
-        .eq('exam_type', row.exam_type)
-        .eq('subject', row.subject || '')
-        .neq('school', 'DELETED');
+    const { data: siblings } = await matchSubject(
+        supabase
+            .from('exam_materials')
+            .select('file_type, content_type')
+            .eq('school', row.school)
+            .eq('exam_year', row.exam_year)
+            .eq('grade', row.grade)
+            .eq('semester', row.semester)
+            .eq('exam_type', row.exam_type)
+    ).neq('school', 'DELETED');
 
     // 같은 학교·같은 시험(학년·학기·시험·과목)의 다른 연도 → 상세페이지 링크
-    const { data: otherYears } = await supabase
-        .from('exam_materials')
-        .select('id, exam_year')
-        .eq('school', row.school)
-        .eq('grade', row.grade)
-        .eq('semester', row.semester)
-        .eq('exam_type', row.exam_type)
-        .eq('subject', row.subject || '')
+    const { data: otherYears } = await matchSubject(
+        supabase
+            .from('exam_materials')
+            .select('id, exam_year')
+            .eq('school', row.school)
+            .eq('grade', row.grade)
+            .eq('semester', row.semester)
+            .eq('exam_type', row.exam_type)
+    )
         .eq('file_type', 'PDF')
         .eq('content_type', '해설')
         .neq('id', row.id)

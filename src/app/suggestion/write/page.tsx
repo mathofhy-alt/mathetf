@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
@@ -14,6 +14,17 @@ export default function SuggestionWritePage() {
 
     const router = useRouter();
     const supabase = createClient();
+
+    // 진입 가드: 비로그인 사용자는 폼 작성 전에 로그인으로 (제출 후 튕기며 입력 소실되던 것 방지)
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (!user) {
+                alert('로그인이 필요합니다.');
+                router.replace('/login');
+            }
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

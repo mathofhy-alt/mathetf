@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { login } from "./actions"
-import LoginAlert from "@/components/LoginAlert"
 
 export default function Login({
     searchParams,
@@ -157,12 +156,9 @@ export default function Login({
 
                     {/* 에러 메시지 */}
                     {searchParams?.message && (
-                        <>
-                            <LoginAlert message={searchParams.message} />
-                            <p className="mt-4 p-4 bg-red-50 text-red-600 font-bold text-sm text-center rounded-xl border border-red-100">
-                                {searchParams.message}
-                            </p>
-                        </>
+                        <p className="mt-4 p-4 bg-red-50 text-red-600 font-bold text-sm text-center rounded-xl border border-red-100">
+                            {searchParams.message}
+                        </p>
                     )}
 
                     {/* 뒤로가기 */}

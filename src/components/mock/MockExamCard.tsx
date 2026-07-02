@@ -30,6 +30,10 @@ export interface MockExam {
     month: number;
     subject?: string;
     hasVariant?: boolean;
+    original_pdf_path?: string | null;
+    original_hwp_path?: string | null;
+    variant_pdf_path?: string | null;
+    variant_hwp_path?: string | null;
 }
 
 export default function MockExamCard({ exam }: { exam: MockExam }) {
@@ -69,13 +73,24 @@ export default function MockExamCard({ exam }: { exam: MockExam }) {
                 {/* 하단: 포맷 배지 + 화살표 */}
                 <div className="mt-4 flex items-center justify-between">
                     <div className="flex flex-wrap items-center gap-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
-                            <FileText size={10} /> 원본
-                        </span>
+                        {/* 배지는 실제 보유 파일 기준 (없는 포맷 어필 방지) */}
+                        {(exam.original_pdf_path || exam.original_hwp_path) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
+                                <FileText size={10} /> 원본
+                            </span>
+                        )}
                         {exam.hasVariant !== false && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#497AB7]/10 text-[#497AB7]">변형</span>
                         )}
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">PDF·HWP</span>
+                        {(() => {
+                            const fmts = [
+                                (exam.original_pdf_path || exam.variant_pdf_path) ? 'PDF' : null,
+                                (exam.original_hwp_path || exam.variant_hwp_path) ? 'HWP' : null,
+                            ].filter(Boolean).join('·');
+                            return fmts ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">{fmts}</span>
+                            ) : null;
+                        })()}
                     </div>
                     <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${cat.soft} ${cat.text} ${cat.solid} group-hover:text-white transition-all duration-300`}>
                         <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />

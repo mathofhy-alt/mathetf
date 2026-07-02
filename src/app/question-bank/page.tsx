@@ -1622,9 +1622,16 @@ export default function QuestionBankPage() {
                                             <p className="text-sm text-slate-400">단원, 난이도, 키워드를 조합해 원하는 문제를 찾을 수 있어요.</p>
                                         </div>
                                     ) : !isDbInitialized ? (
-                                        /* DB 초기 로딩 중 - 가이드 깜빡임 방지 */
-                                        <div className="flex justify-center py-20">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                        /* DB 초기 로딩 중 - 가이드 깜빡임 방지 (스켈레톤) */
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pt-6 pb-10 animate-pulse" aria-label="문제 풀 준비 중">
+                                            {Array.from({ length: 4 }).map((_, i) => (
+                                                <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2.5">
+                                                    <div className="h-3 w-16 bg-slate-200 rounded" />
+                                                    <div className="h-3.5 bg-slate-200 rounded w-11/12" />
+                                                    <div className="h-3.5 bg-slate-200 rounded w-4/5" />
+                                                    <div className="h-4 bg-slate-100 rounded w-1/2 mx-auto my-2" />
+                                                </div>
+                                            ))}
                                         </div>
                                     ) : (
                                         /* 초기 상태 — 전체 사용법 안내 */
