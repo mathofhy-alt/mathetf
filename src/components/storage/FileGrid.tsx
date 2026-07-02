@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Folder as FolderIcon, FileText, CheckCircle2, DownloadCloud, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Folder as FolderType, UserItem } from '@/types/storage';
 import { DbFileIcon } from '@/components/FileIcons';
@@ -125,6 +125,27 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
     const toggleYear = (key: string) => setOpenYears(p => ({ ...p, [key]: p[key] ? false : true }));
     const toggleType = (key: string) => setOpenTypes(p => ({ ...p, [key]: p[key] ? false : true }));
 
+    // 첫 진입 시 '전부 접힘'이라 빈 화면처럼 보이던 것 개선 —
+    // 첫 학년 → 최신 연도 → 첫 시험종류를 자동으로 펼쳐 내용이 바로 보이게 (1회만)
+    const [autoExpanded, setAutoExpanded] = useState(false);
+    useEffect(() => {
+        if (autoExpanded) return;
+        const dbItems = items.filter(i => i.type === 'personal_db');
+        if (dbItems.length === 0) return;
+        const g = groupByGradeYearType(items);
+        const firstGrade = Object.keys(g)[0];
+        if (!firstGrade) return;
+        const years = Object.keys(g[firstGrade]).sort((a, b) => b.localeCompare(a));
+        const firstYear = years[0];
+        setOpenGrades({ [firstGrade]: true });
+        if (firstYear) {
+            setOpenYears({ [`${firstGrade}_${firstYear}`]: true });
+            const types = Object.keys(g[firstGrade][firstYear]).sort((a, b) => examTypeRank(a) - examTypeRank(b));
+            if (types[0]) setOpenTypes({ [`${firstGrade}_${firstYear}_${types[0]}`]: true });
+        }
+        setAutoExpanded(true);
+    }, [items, autoExpanded]);
+
     const handleDragStart = (e: React.DragEvent, type: 'folder' | 'item', id: string) => {
         e.dataTransfer.setData('application/json', JSON.stringify({ type, id }));
         e.dataTransfer.effectAllowed = 'move';
@@ -184,12 +205,12 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                 {isSelected && (
                     <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-indigo-500"></div>
                 )}
-                {/* 이름: 모바일=전체너비, 데스크탑=8칸 */}
-                <div className="col-span-12 sm:col-span-8 flex items-center min-w-0 pr-2 pl-6 sm:pl-10">
+                {/* 이름: 모바일=전체너비, 데스크탑=10칸 */}
+                <div className="col-span-12 sm:col-span-10 flex items-center min-w-0 pr-2 pl-6 sm:pl-10">
                     {item.type === 'personal_db' ? (
                         <DbFileIcon size={18} className="drop-shadow-sm flex-shrink-0 mr-2" />
                     ) : (
-                        <FileText size={18} className="text-blue-500 flex-shrink-0 mr-2" />
+                        <FileText size={18} className="text-[#497AB7] flex-shrink-0 mr-2" />
                     )}
                     <span className={`text-sm truncate min-w-0 flex-1 ${isSelected ? 'font-semibold text-indigo-900' : 'text-slate-700'}`}>
                         {shortenName(item.name || '이름 없음', item.type)}
@@ -200,12 +221,9 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                         </div>
                     )}
                 </div>
-                {/* 날짜·유형: 모바일에서 숨김 */}
-                <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
+                {/* 날짜: 모바일에서 숨김 */}
+                <div className="hidden sm:block col-span-2 text-xs text-slate-400 text-center truncate">
                     {formatDate(item.created_at)}
-                </div>
-                <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate">
-                    {item.type === 'personal_db' ? '개인DB' : '시험지'}
                 </div>
             </div>
         );
@@ -215,9 +233,8 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
         <div className="flex flex-col w-full bg-white select-none">
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-1 sm:gap-4 px-2 sm:px-4 py-2 border-b border-slate-200 text-xs font-bold text-slate-500 bg-slate-50 sticky top-0 z-10">
-                <div className="col-span-12 sm:col-span-8">이름</div>
-                <div className="hidden sm:block col-span-2 text-center text-slate-400 font-medium">수정한 날짜</div>
-                <div className="hidden sm:block col-span-2 text-center text-slate-400 font-medium">유형</div>
+                <div className="col-span-12 sm:col-span-10">이름</div>
+                <div className="hidden sm:block col-span-2 text-center text-slate-400 font-medium">날짜</div>
             </div>
 
             <div className="flex flex-col">
@@ -235,16 +252,15 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnFolder(e, folder.id)}
                     >
-                        <div className="col-span-12 sm:col-span-8 flex items-center min-w-0 pr-2">
-                            <FolderIcon size={18} className="text-yellow-400 fill-yellow-100 flex-shrink-0 mr-2" />
+                        <div className="col-span-12 sm:col-span-10 flex items-center min-w-0 pr-2">
+                            <FolderIcon size={18} className="text-[#497AB7] fill-[#EEF4FB] flex-shrink-0 mr-2" />
                             <span className="text-sm text-slate-700 truncate min-w-0 flex-1">
                                 {folder.name}
                             </span>
                         </div>
-                        <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate font-mono tracking-tight">
+                        <div className="hidden sm:block col-span-2 text-xs text-slate-400 text-center truncate">
                             {formatDate(folder.created_at)}
                         </div>
-                        <div className="hidden sm:block col-span-2 text-xs text-slate-500 text-center truncate">파일 폴더</div>
                     </div>
                 ))}
 
@@ -269,7 +285,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                     ? <ChevronDown size={15} className="text-slate-500 flex-shrink-0" />
                                     : <ChevronRight size={15} className="text-slate-500 flex-shrink-0" />
                                 }
-                                <span className="text-sm font-bold text-slate-700">📚 {grade}</span>
+                                <span className="w-1.5 h-4 rounded-full bg-[#497AB7] flex-shrink-0" /><span className="text-sm font-bold text-slate-700">{grade}</span>
                                 <span className="ml-auto flex items-center gap-2">
                                     {(() => {
                                         const allInGrade = flattenYearMap(yearMap);
@@ -327,7 +343,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                                     ? <ChevronDown size={13} className="text-slate-400 flex-shrink-0" />
                                                     : <ChevronRight size={13} className="text-slate-400 flex-shrink-0" />
                                                 }
-                                                <span className="text-xs font-semibold text-slate-600">📅 {year}년</span>
+                                                <span className="w-1.5 h-3.5 rounded-full bg-[#5CC6C3] flex-shrink-0" /><span className="text-xs font-semibold text-slate-600">{year}년</span>
                                                 <span className="ml-auto flex items-center gap-2">
                                                     {(() => {
                                                         const selCount = allInYear.filter(item =>
@@ -388,7 +404,7 @@ export default function FileGrid({ folders, items, onFolderClick, onItemClick, o
                                                                     ? <ChevronDown size={12} className="text-slate-400 flex-shrink-0" />
                                                                     : <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />
                                                                 }
-                                                                <span className="text-xs font-semibold text-violet-700">📝 {etype}</span>
+                                                                <span className="w-1.5 h-3 rounded-full bg-[#8B6FD0] flex-shrink-0" /><span className="text-xs font-semibold text-slate-600">{etype}</span>
                                                                 <span className="ml-auto flex items-center gap-2">
                                                                     {(() => {
                                                                         const selCount = typeItems.filter(item =>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { FolderPlus, RefreshCw, Loader2, DownloadCloud, Search, X, ChevronRight, Folder as FolderIcon } from 'lucide-react';
+import { FolderPlus, RefreshCw, DownloadCloud, Search, X, ChevronRight, Folder as FolderIcon } from 'lucide-react';
 import FolderTree from './FolderTree';
 import FileGrid from './FileGrid';
 import StorageContextMenu from './StorageContextMenu';
@@ -316,7 +316,18 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
 
                 {/* 파일 그리드 */}
                 <div className="flex-1 overflow-y-auto bg-slate-50/30 relative" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'background', id: null }); }}>
-                    {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" /></div>}
+                    {/* 내용이 아직 없을 때만 스켈레톤 — 내용이 있으면 조용히 백그라운드 갱신 (오버레이로 가리지 않음) */}
+                    {loading && viewFolders.length === 0 && filteredItems.length === 0 ? (
+                        <div className="p-3 space-y-2 animate-pulse" aria-label="불러오는 중">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-3 bg-white border border-slate-100 rounded-lg px-3 py-2.5">
+                                    <div className="w-5 h-5 rounded bg-slate-200 shrink-0" />
+                                    <div className="h-3.5 rounded bg-slate-200" style={{ width: `${55 - (i % 4) * 8}%` }} />
+                                    <div className="ml-auto h-3 w-16 rounded bg-slate-100 hidden sm:block" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
                     <FileGrid
                         folders={searchQuery ? [] : viewFolders}
                         items={filteredItems}
@@ -330,6 +341,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
                         selectedIds={selectedIds}
                         onGroupSelect={onGroupSelect}
                     />
+                    )}
                 </div>
             </div>
 

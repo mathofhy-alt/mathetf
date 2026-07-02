@@ -166,7 +166,8 @@ export default function QuestionBankPage() {
     // Storage Explorer State
     const [showStorageModal, setShowStorageModal] = useState(false);
     const [storageModalMode, setStorageModalMode] = useState<'all' | 'db' | 'exam'>('all');
-    const [storageInitialData, setStorageInitialData] = useState<any>(null);
+    // DB/시험지 모달용 프리페치 — 버튼 누르기 전에 미리 받아둬서 열자마자 목록 표시
+    const [storagePrefetch, setStoragePrefetch] = useState<{ db?: any; exam?: any }>({});
     const [storageRefreshKey, setStorageRefreshKey] = useState(0);
     const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
     const [currentExamItems, setCurrentExamItems] = useState<any[]>([]); // tracks viewItems from FolderExplorer
@@ -188,18 +189,19 @@ export default function QuestionBankPage() {
         return () => document.removeEventListener('keydown', handleEsc);
     }, [solutionTarget, similarTarget, showConfigModal, showSaveModal, showAutoModal, showStorageModal]);
 
-    // Pre-fetch Storage Data for Instant Feel
+    // Pre-fetch Storage Data for Instant Feel — DB/시험지 모달 데이터를 미리 받아 열자마자 표시
+    // (storageRefreshKey 변경 시 재프리페치 → 저장 직후에도 최신 유지)
     useEffect(() => {
-        if (user) {
-            // Fetch root level for 'all' mode to prime the cache
-            fetch('/api/storage/folders?mode=all')
+        if (!user) return;
+        (['db', 'exam'] as const).forEach((t) => {
+            fetch(`/api/storage/folders?mode=all&folderType=${t}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (data && !data.error) setStorageInitialData(data);
+                    if (data && !data.error) setStoragePrefetch(prev => ({ ...prev, [t]: data }));
                 })
-                .catch(err => console.error("Storage Pre-fetch Error:", err));
-        }
-    }, [user]);
+                .catch(err => console.error(`Storage Pre-fetch Error(${t}):`, err));
+        });
+    }, [user, storageRefreshKey]);
 
 
 
@@ -906,12 +908,8 @@ export default function QuestionBankPage() {
             setViewMode('search');
 
             // [V72] Refresh storage data & Invalidate cache
+            // (storageRefreshKey 변경 → 프리페치 effect가 db/exam 데이터 자동 재로드)
             setStorageRefreshKey(prev => prev + 1);
-            fetch('/api/storage/folders?mode=all')
-                .then(res => res.json())
-                .then(data => {
-                    if (data && !data.error) setStorageInitialData(data);
-                });
 
             // Optional: Open Storage Modal to show the result?
             // setShowStorageModal(true);
@@ -1016,20 +1014,20 @@ export default function QuestionBankPage() {
                     </div>
                 )}
 
-                {/* Storage Modal - Persistent Rendering for 0s Loading */}
-                <div className={`fixed inset-0 z-50 items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm ${showStorageModal ? 'flex' : 'hidden'}`}>
-                    <div className="bg-white w-full sm:max-w-5xl sm:mx-4 max-h-[90dvh] sm:h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-                        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-                            <h3 className="font-bold text-lg flex items-center gap-2">
+                {/* Storage Modal - Persistent Rendering for 0s Loading (visibility 전환으로 열림 애니메이션) */}
+                <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-150 ${showStorageModal ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'}`} aria-hidden={!showStorageModal}>
+                    <div className={`bg-white w-full sm:max-w-5xl sm:mx-4 max-h-[90dvh] sm:h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-transform duration-200 ${showStorageModal ? 'translate-y-0 sm:scale-100' : 'translate-y-4 sm:scale-[0.98]'}`}>
+                        <div className="px-4 py-3 border-b flex justify-between items-center bg-white">
+                            <h3 className="font-extrabold text-lg flex items-center gap-2.5 text-[#1E2D4F]">
                                 {storageModalMode === 'db' ? (
-                                    <><Database className="text-blue-600" /> DB 문제 선택</>
+                                    <><span className="w-9 h-9 rounded-xl bg-[#EEF4FB] border border-[#B7D1EA]/60 flex items-center justify-center"><Database size={18} className="text-[#497AB7]" /></span> DB 문제 선택</>
                                 ) : storageModalMode === 'exam' ? (
-                                    <><FolderIcon className="text-purple-600" /> 만든 시험지 선택</>
+                                    <><span className="w-9 h-9 rounded-xl bg-[#E0F7F6] border border-[#5CC6C3]/40 flex items-center justify-center"><FolderIcon size={18} className="text-[#3AADA9]" /></span> 만든 시험지 선택</>
                                 ) : (
-                                    <><FolderIcon className="text-gray-600" /> 내 보관함</>
+                                    <><span className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center"><FolderIcon size={18} className="text-slate-500" /></span> 내 보관함</>
                                 )}
                             </h3>
-                            <button onClick={() => setShowStorageModal(false)} className="p-2 hover:bg-slate-200 rounded-full">
+                            <button onClick={() => setShowStorageModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                                 <X />
                             </button>
                         </div>
@@ -1042,8 +1040,10 @@ export default function QuestionBankPage() {
                             )}
                             <div className="flex-1 min-h-0">
                             <FolderExplorer
-                                // [비로그인] 전체 DB 카탈로그를 기존 보관함 디자인 그대로 주입
-                                initialData={!user && storageModalMode === 'db' ? guestDbInitialData : undefined}
+                                // [비로그인] 전체 DB 카탈로그 주입 / [로그인] 프리페치 주입 → 열자마자 목록 표시
+                                initialData={!user
+                                    ? (storageModalMode === 'db' ? guestDbInitialData : undefined)
+                                    : (storageModalMode === 'db' ? storagePrefetch.db : storageModalMode === 'exam' ? storagePrefetch.exam : undefined)}
                                 key={storageModalMode}
                                 onItemSelect={handleStorageItemSelect}
                                 onSelectAll={(items) => {
