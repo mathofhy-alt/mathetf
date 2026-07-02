@@ -63,7 +63,7 @@ export default function MockExamCard({ exam }: { exam: MockExam }) {
 
                 {/* 메타 */}
                 <p className="mt-1 text-xs text-slate-400 font-medium">
-                    {exam.grade} · {exam.month}월{exam.subject ? ` · ${exam.subject}` : ''}
+                    {exam.grade}{exam.month ? ` · ${exam.month}월` : ''}{exam.subject ? ` · ${exam.subject}` : ''}
                 </p>
 
                 {/* 하단: 포맷 배지 + 화살표 */}

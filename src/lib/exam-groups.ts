@@ -15,7 +15,7 @@ export interface ExamGroupSource {
 // 연도: 제목의 20xx 우선, 없으면 exam_year (school 상세 페이지와 동일 규칙)
 export function examYearOf(item: ExamGroupSource): number {
     const titleYear = item.title?.match(/20\d{2}/)?.[0];
-    return titleYear ? parseInt(titleYear) : Number(item.exam_year || 2024);
+    return titleYear ? parseInt(titleYear) : Number(item.exam_year || new Date().getFullYear());
 }
 
 export function examGroupKey(item: ExamGroupSource): string {

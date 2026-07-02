@@ -1429,8 +1429,24 @@ export default function QuestionBankPage() {
                     )}
 
                     {loading && viewMode === 'search' ? (
-                        <div className="flex justify-center py-20">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        /* 검색 로딩: 문제 카드 모양 스켈레톤 (스피너보다 체감 빠름) */
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pt-6 pb-10 animate-pulse" aria-label="문제 검색 중">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2.5">
+                                    <div className="flex justify-between">
+                                        <div className="h-3 w-16 bg-slate-200 rounded" />
+                                        <div className="h-3 w-10 bg-slate-100 rounded" />
+                                    </div>
+                                    <div className="h-3.5 bg-slate-200 rounded w-11/12" />
+                                    <div className="h-3.5 bg-slate-200 rounded w-4/5" />
+                                    <div className="h-4 bg-slate-100 rounded w-1/2 mx-auto my-2" />
+                                    <div className="flex gap-3 pt-1">
+                                        <div className="h-3 bg-slate-100 rounded w-10" />
+                                        <div className="h-3 bg-slate-100 rounded w-10" />
+                                        <div className="h-3 bg-slate-100 rounded w-10" />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <>

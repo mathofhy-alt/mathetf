@@ -38,7 +38,6 @@ const STUDENT_TOUR_STEPS: TourStep[] = [
         placement: 'left',
     },
 ];
-import RightSidebar from '@/components/RightSidebar';
 import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
 import { useCart } from '@/components/providers/CartProvider';
@@ -274,7 +273,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                     const subjectKey = item.subject || 'Unknown';
                     // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
                     const titleYear = item.title?.match(/20\d{2}/)?.[0];
-                    const yearDerived = titleYear ? parseInt(titleYear) : (item.exam_year || 2024);
+                    const yearDerived = titleYear ? parseInt(titleYear) : (item.exam_year || new Date().getFullYear());
 
                     const key = `${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
 
@@ -314,7 +313,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                         sales: item.sales_count,
                         region: item.region,
                         district: item.district,
-                        year: titleYear ? parseInt(titleYear) : (item.exam_year || 2024),
+                        year: titleYear ? parseInt(titleYear) : (item.exam_year || new Date().getFullYear()),
                         semester: item.semester,
                         examType: item.exam_type,
                         filePath: item.file_path, // Added

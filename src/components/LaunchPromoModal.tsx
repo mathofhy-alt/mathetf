@@ -62,7 +62,7 @@ export default function LaunchPromoModal() {
 
                     <div className="space-y-2.5">
                         <Link
-                            href="/login"
+                            href="/signup"
                             className="block w-full py-3.5 bg-gradient-to-r from-[#497AB7] to-[#3AADA9] text-white rounded-2xl font-black text-base text-center hover:opacity-90 transition-opacity shadow-lg shadow-[#497AB7]/25"
                         >
                             무료 회원가입 하고 시작하기 →

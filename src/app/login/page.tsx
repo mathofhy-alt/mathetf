@@ -74,7 +74,7 @@ export default function Login({
 
                 {/* 하단 문구 */}
                 <div className="relative z-10">
-                    <p className="text-white/40 text-xs">© 2025 수학ETF. All rights reserved.</p>
+                    <p className="text-white/40 text-xs">© 2026 수학ETF. All rights reserved.</p>
                 </div>
             </div>
 

@@ -54,7 +54,7 @@ export default function Footer() {
                     </div>
                 </div>
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
-                    <p>© 2025 수학이티에프. All rights reserved.</p>
+                    <p>© 2026 수학이티에프. All rights reserved.</p>
                     <p>본 사이트의 모든 콘텐츠는 저작권법의 보호를 받습니다.</p>
                 </div>
             </div>

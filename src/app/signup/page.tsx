@@ -557,8 +557,8 @@ export default function SignupPage() {
                             </form>
                         )}
                         <div className="text-center mt-6">
-                            <Link href="/" className="text-sm text-slate-500 underline">
-                                이미 계정이 있으신가요? 홈으로 이동
+                            <Link href="/login" className="text-sm text-slate-500 underline">
+                                이미 계정이 있으신가요? 로그인
                             </Link>
                         </div>
                     </>

@@ -295,12 +295,20 @@ export default async function SchoolPage({ params }: Props) {
                 <div className="mt-8 bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-6 text-center text-white shadow-md">
                     <p className="font-bold text-lg mb-1">다른 학교 기출도 찾아보세요</p>
                     <p className="text-white/85 text-sm mb-4 break-keep">전국 중·고등학교 수학 내신 기출을 한 곳에서</p>
-                    <Link
-                        href="/"
-                        className="inline-block bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
-                    >
-                        전체 기출 보러가기
-                    </Link>
+                    <div className="flex flex-col sm:flex-row justify-center gap-2.5">
+                        <Link
+                            href="/schools"
+                            className="inline-block bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
+                        >
+                            학교별 기출 목록
+                        </Link>
+                        <Link
+                            href="/"
+                            className="inline-block border-2 border-white/70 text-white font-extrabold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors"
+                        >
+                            전체 기출 보러가기
+                        </Link>
+                    </div>
                 </div>
             </main>
         </div>

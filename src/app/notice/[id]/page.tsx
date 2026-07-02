@@ -6,13 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { ArrowLeft, Clock, Eye } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Header from '@/components/Header';
-import { User } from '@supabase/supabase-js'; // Import User type if needed, though NoticeDetail didn't use 'user' state before, but Header needs it.
-
-// Wait, NoticeDetailPage didn't have user state.
-// I need adding user fetching to NoticeDetailPage if I want Header to show login state from props, OR just let Header fetch it.
-// Default Header fetches it. So I just need to pass user={null} (or undefined) and let it fetch?
-// Or better, add user fetching to Notice as well to avoid flicker if possible, but Header handles it.
-// Let's just import Header.
+import { User } from '@supabase/supabase-js';
 
 interface Notice {
     id: string;

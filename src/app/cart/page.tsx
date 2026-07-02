@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '@/components/providers/CartProvider';
 import { ShoppingCart, Trash2, CreditCard } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import Header from '@/components/Header';
 import type { User } from '@supabase/supabase-js';
 
 export default function CartPage() {
@@ -146,6 +147,8 @@ export default function CartPage() {
     }
 
     return (
+        <div className="min-h-screen bg-[#F8FAFD]">
+            <Header />
         <div className="max-w-[1000px] mx-auto p-6 md:p-12 w-full">
             <h1 className="text-3xl font-bold flex items-center gap-3 mb-8 text-slate-800">
                 <ShoppingCart size={32} className="text-brand-600" />
@@ -265,6 +268,7 @@ export default function CartPage() {
                     </div>
                 </div>
             )}
+        </div>
         </div>
     );
 }

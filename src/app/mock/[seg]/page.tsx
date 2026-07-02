@@ -17,19 +17,30 @@ const isCategory = (s: string): s is MockCategory => (CATEGORIES as string[]).in
 export async function generateMetadata({ params }: { params: { seg: string } }): Promise<Metadata> {
     const seg = decodeURIComponent(params.seg);
     if (isCategory(seg)) {
+        const title = `${seg} 수학 기출·변형문제 모음 | 수학ETF`;
+        const description = `${seg} 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.`;
         return {
-            title: `${seg} 수학 기출·변형문제 모음 | 수학ETF`,
-            description: `${seg} 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.`,
+            title,
+            description,
             alternates: { canonical: `/모의고사/${seg}` },
+            // openGraph 미지정 시 홈 og(title/url)를 상속해 공유 카드가 홈으로 뜨는 것 방지
+            openGraph: { title, description, url: `https://mathetf.com/모의고사/${encodeURIComponent(seg)}` },
         };
     }
     const exam = await fetchMockExamBySlug(seg);
     if (!exam) return { title: '모의고사 | 수학ETF' };
+    const title = `${exam.title} 문제·해설·변형문제 | 수학ETF`;
+    const description = `${exam.title} 원본 문제와 변형문제를 PDF·HWP로 무료 다운로드하세요.`;
     return {
-        title: `${exam.title} 문제·해설·변형문제 | 수학ETF`,
-        description: `${exam.title} 원본 문제와 변형문제를 PDF·HWP로 무료 다운로드하세요.`,
+        title,
+        description,
         alternates: { canonical: `/모의고사/${exam.slug}` },
-        openGraph: { images: exam.preview_urls?.length ? [exam.preview_urls[0]] : undefined },
+        openGraph: {
+            title,
+            description,
+            url: `https://mathetf.com/모의고사/${encodeURIComponent(exam.slug)}`,
+            images: exam.preview_urls?.length ? [exam.preview_urls[0]] : undefined,
+        },
     };
 }
 

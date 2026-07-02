@@ -100,20 +100,6 @@ export default function SuggestionDetailPage() {
     if (loading) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">로딩중...</div>;
     if (!data) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">글을 찾을 수 없습니다.</div>;
 
-    // ... (Locked View omitted for brevity if unchanged, but context requires me to be careful. I will use the whole file content if needed, but here I can target the specific function and state if I place it right.)
-    // Actually, I need to insert the state `deleteConfirm` inside the component.
-    // And update the button text.
-
-    // Let's do this in two chunks or one bigger chunk if I can capture the component start.
-    // I'll update the function `handleDelete` and the button in the render.
-
-    // This tool call is for handleDelete and state. I need to find where to put state.
-    // The previous view shows `setPasswordError` around line 22. I can add state there.
-
-
-    if (loading) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">로딩중...</div>;
-    if (!data) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">글을 찾을 수 없습니다.</div>;
-
     // Locked View
     if (!isUnlocked) {
         return (
