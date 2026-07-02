@@ -100,6 +100,16 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedDistrict, setSelectedDistrict] = useState('');
     const [selectedSchool, setSelectedSchool] = useState('');
+    // URL ?school= 파라미터 → 해당 학교로 필터 + 자료 목록으로 스크롤
+    // (exam 상세의 '다운로드 하러 가기'가 홈 최상단이 아니라 실제 다운로드 목록에 착지하도록)
+    useEffect(() => {
+        const s = new URLSearchParams(window.location.search).get('school');
+        if (s) {
+            setSelectedSchool(decodeURIComponent(s));
+            setTimeout(() => document.getElementById('main-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const [selectedGrade, setSelectedGrade] = useState('');
     const [selectedExamScope, setSelectedExamScope] = useState(''); // Combined Semester + ExamType
     const [selectedYear, setSelectedYear] = useState('');
