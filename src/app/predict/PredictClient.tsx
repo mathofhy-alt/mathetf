@@ -56,24 +56,28 @@ export default function PredictClient({ richSchools, isLoggedIn }: Props) {
 
     const fetchPreview = async (ids: string[]) => {
         if (ids.length === 0) return;
-        for (let c = 0; c < ids.length; c += 20) {
-            const chunk = ids.slice(c, c + 20);
-            try {
-                const cr = await fetch('/api/predict/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk }) });
-                const cj = await cr.json();
-                const cmap: Record<string, string> = {};
-                for (const id of chunk) cmap[id] = (cj.content && cj.content[id]) || '';
-                setContents((prev) => ({ ...prev, ...cmap }));
-            } catch { }
-            try {
-                const ir = await fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk }) });
-                const ij = await ir.json();
-                const obj = ij.images || {};
-                const imap: Record<string, any[]> = {};
-                for (const id of chunk) imap[id] = obj[id] || [];
-                setImages((prev) => ({ ...prev, ...imap }));
-            } catch { }
-        }
+        // 청크 간·청크 내(content/images) 모두 병렬 — 직렬이던 것을 병렬화해 뒷번호 문항도 빨리 뜨게
+        const chunks: string[][] = [];
+        for (let c = 0; c < ids.length; c += 20) chunks.push(ids.slice(c, c + 20));
+        await Promise.all(chunks.flatMap((chunk) => [
+            fetch('/api/predict/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk }) })
+                .then((r) => r.json())
+                .then((cj) => {
+                    const cmap: Record<string, string> = {};
+                    for (const id of chunk) cmap[id] = (cj.content && cj.content[id]) || '';
+                    setContents((prev) => ({ ...prev, ...cmap }));
+                })
+                .catch(() => { }),
+            fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk }) })
+                .then((r) => r.json())
+                .then((ij) => {
+                    const obj = ij.images || {};
+                    const imap: Record<string, any[]> = {};
+                    for (const id of chunk) imap[id] = obj[id] || [];
+                    setImages((prev) => ({ ...prev, ...imap }));
+                })
+                .catch(() => { }),
+        ]));
     };
 
     const generate = async () => {
@@ -279,7 +283,17 @@ export default function PredictClient({ richSchools, isLoggedIn }: Props) {
                                                         <p className="text-xs text-slate-400">가입하면 전체 문제와 PDF·HWP를 무료로 받아요</p>
                                                     </div>
                                                 ) : !ready ? (
-                                                    <Loader2 size={18} className="animate-spin text-slate-300 my-10" />
+                                                    /* 문제 모양 스켈레톤 — 지문·수식·보기 자리 (스피너보다 체감 빠름) */
+                                                    <div className="w-full px-2 py-4 space-y-2.5 animate-pulse" aria-label="문항 불러오는 중">
+                                                        <div className="h-3.5 bg-slate-200 rounded w-11/12" />
+                                                        <div className="h-3.5 bg-slate-200 rounded w-4/5" />
+                                                        <div className="h-4 bg-slate-100 rounded w-1/2 mx-auto my-3" />
+                                                        <div className="flex gap-4 pt-1">
+                                                            <div className="h-3 bg-slate-100 rounded w-12" />
+                                                            <div className="h-3 bg-slate-100 rounded w-12" />
+                                                            <div className="h-3 bg-slate-100 rounded w-12" />
+                                                        </div>
+                                                    </div>
                                                 ) : xml ? (
                                                     <QuestionRenderer xmlContent={xml} externalImages={imgs} displayMode="question" showDownloadAction={false} className="border-none shadow-none p-0 w-full !text-sm" />
                                                 ) : (
