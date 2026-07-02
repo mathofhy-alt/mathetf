@@ -29,9 +29,29 @@ export async function generateStaticParams() {
     }));
 }
 
+// 학교 대표 og:image — 그 학교 시험지 미리보기 첫 장 (없으면 공통 로고)
+async function schoolOgImage(schoolName: string): Promise<string> {
+    try {
+        const supabase = createAdminClient();
+        const { data } = await supabase
+            .from('exam_materials')
+            .select('preview_urls')
+            .eq('school', schoolName)
+            .not('preview_urls', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(5);
+        const first = (data || [])
+            .flatMap((r: any) => (Array.isArray(r.preview_urls) ? r.preview_urls : []))
+            .find(Boolean);
+        if (first) return first;
+    } catch { }
+    return '/og-image.png';
+}
+
 // 동적 메타 태그 - 학교명 포함
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const schoolName = decodeURIComponent(params.schoolName);
+    const ogImage = await schoolOgImage(schoolName);
 
     // 경찰대·사관학교·전국연합 특화 키워드
     const SPECIAL_SCHOOLS: Record<string, { title: string; description: string; keywords: string[] }> = {
@@ -82,7 +102,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 title: special.title,
                 description: special.description,
                 url: `https://mathetf.com/school/${encodeURIComponent(schoolName)}`,
-                images: ['/og-image.png'],
+                images: [ogImage],
             },
             alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
         };
@@ -96,7 +116,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title: `${schoolName} 수학 기출문제 - 수학ETF`,
             description: `${schoolName} 수학 내신 기출문제를 즉시 다운로드하세요.`,
             url: `https://mathetf.com/school/${encodeURIComponent(schoolName)}`,
-            images: ['/og-image.png'],
+            images: [ogImage],
         },
         alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
     };
