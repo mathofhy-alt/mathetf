@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import Header from '@/components/Header';
 import { ChevronRight } from 'lucide-react';
+import { countExamGroupsBySchool } from '@/lib/exam-groups';
 
 export const revalidate = 3600; // 1시간마다 갱신
 
@@ -23,13 +24,17 @@ export default async function SchoolsIndexPage() {
     let rows: SchoolRow[] = [];
     try {
         const supabase = createAdminClient();
-        // 1) 학교별 시험지 수 (해설 PDF 기준)
+        // 1) 학교별 시험지 수 — 상세 페이지와 동일한 '시험(회차) 그룹' 기준으로 통일
+        //    (기존: 해설 PDF 행수 기준 → 업로드 시차 등으로 상세 카운트와 어긋날 수 있었음)
         const { data: exams } = await supabase
             .from('exam_materials')
-            .select('school')
-            .eq('file_type', 'PDF').eq('content_type', '해설').neq('school', 'DELETED');
-        const counts: Record<string, number> = {};
-        (exams || []).forEach((r: any) => { if (r.school) counts[r.school] = (counts[r.school] || 0) + 1; });
+            .select('school, title, exam_year, grade, semester, exam_type, subject, file_type, content_type')
+            .neq('school', 'DELETED');
+        // 내신 학교 목록이므로 해설 PDF가 하나도 없는 유사 학교(전국연합·사관학교 등 DB 전용)는 기존처럼 제외
+        const hasSolutionPdf = new Set(
+            (exams || []).filter((r: any) => r.file_type === 'PDF' && r.content_type === '해설').map((r: any) => r.school)
+        );
+        const counts = countExamGroupsBySchool((exams || []).filter((r: any) => hasSolutionPdf.has(r.school)));
 
         // 2) 학교 → 지역(구/군) 매핑 (schools 테이블, 페이지네이션)
         const regionMap: Record<string, string> = {};

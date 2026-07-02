@@ -4,6 +4,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import { ChevronRight } from 'lucide-react';
+import { examYearOf, examGroupKey } from '@/lib/exam-groups';
 
 // 1시간마다 자동 재검증 (새 시험지 추가 반영)
 export const revalidate = 3600;
@@ -128,12 +129,11 @@ export default async function SchoolPage({ params }: Props) {
         notFound();
     }
 
-    // 시험 단위로 그룹핑
+    // 시험 단위로 그룹핑 (/schools 목록 카운트와 동일 기준 — lib/exam-groups)
     const groups: Record<string, any> = {};
     exams.forEach((item: any) => {
-        const titleYear = item.title?.match(/20\d{2}/)?.[0];
-        const year = titleYear ? parseInt(titleYear) : (item.exam_year || 2024);
-        const key = `${year}-${item.grade}-${item.semester}-${item.exam_type}-${item.subject || ''}`;
+        const year = examYearOf(item);
+        const key = examGroupKey(item);
         if (!groups[key]) {
             groups[key] = {
                 year,
