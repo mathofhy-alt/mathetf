@@ -29,6 +29,7 @@ async function uploadFiles(admin: any, id: string, fd: FormData) {
         const buf = Buffer.from(await file.arrayBuffer());
         const { error } = await admin.storage.from(BUCKET).upload(key, buf, {
             contentType: file.type || 'application/octet-stream', upsert: true,
+            cacheControl: '2592000', // 30일 — CDN 캐시 활성화 (기본 no-cache 방지)
         });
         if (error) throw new Error(`파일 업로드 실패(${f.field}): ${error.message}`);
         paths[f.col] = key;

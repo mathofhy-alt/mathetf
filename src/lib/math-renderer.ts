@@ -89,7 +89,8 @@ export async function uploadMathImage(supabase: any, svgString: string, path: st
     .from('question-math')
     .upload(path, svgString, {
       contentType: 'image/svg+xml',
-      upsert: true
+      upsert: true,
+      cacheControl: '2592000' // 30일 — CDN 캐시 활성화 (기본 no-cache 방지)
     });
 
   if (error) throw error;

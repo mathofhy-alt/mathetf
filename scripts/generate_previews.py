@@ -113,8 +113,11 @@ def download_pdf(file_path):
     return r.content
 
 def upload_preview(name, data):
+    # cache-control: CDN(Cloudflare) 캐시 활성화. 없으면 no-cache로 저장돼 매 요청이 원본까지 감.
+    # 30일 — 미리보기는 사실상 불변이지만 재생성 시 한 달 내 반영되도록 절충.
     r = requests.post(f'{URL}/storage/v1/object/{DST_BUCKET}/{name}',
-                      headers={**H, 'Content-Type': 'image/webp', 'x-upsert': 'true'}, data=data)
+                      headers={**H, 'Content-Type': 'image/webp', 'x-upsert': 'true',
+                               'cache-control': 'max-age=2592000'}, data=data)
     if r.status_code not in (200, 201):
         raise RuntimeError(f'upload {r.status_code}: {r.text[:200]}')
     return f'{URL}/storage/v1/object/public/{DST_BUCKET}/{name}'
