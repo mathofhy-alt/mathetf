@@ -159,7 +159,12 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
             <div className="grid lg:grid-cols-[1fr_380px] gap-5 mt-5">
                 {/* 왼쪽: PDF 페이지 + 크롭 */}
                 <div className="space-y-4">
-                    {pages.length > 0 && <p className="text-xs text-slate-400">📌 문제 위를 마우스로 드래그하면 잘려서 오른쪽에 추가돼요.</p>}
+                    {pages.length > 0 && (
+                        <p className="text-xs text-slate-400">
+                            <span className="hidden sm:inline">📌 문제 위를 마우스로 드래그하면 잘려서 오른쪽에 추가돼요.</span>
+                            <span className="sm:hidden">📌 문제 위를 <strong className="text-[#2E9E5B]">길게 누른 뒤 드래그</strong>하면 잘려서 아래에 추가돼요.</span>
+                        </p>
+                    )}
                     {pages.map((pg, i) => (
                         <PageCanvas key={i} idx={i} dims={pg}
                             setRef={(el) => { canvasRefs.current[i] = el; }}
@@ -226,18 +231,81 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
     );
 }
 
-/** PDF 한 페이지 캔버스 + 드래그 크롭 오버레이 */
+/** PDF 한 페이지 캔버스 + 드래그 크롭 오버레이 (터치: 길게 눌러 크롭, 짧은 스와이프는 스크롤) */
 function PageCanvas({ idx, dims, setRef, onCrop }: { idx: number; dims: { w: number; h: number }; setRef: (el: HTMLCanvasElement | null) => void; onCrop: (sx: number, sy: number, sw: number, sh: number) => void }) {
     const wrapRef = useRef<HTMLDivElement>(null);
     const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
     const start = useRef<{ x: number; y: number } | null>(null);
+    // 터치 롱프레스 상태 (native listener에서 최신값 참조용 ref들)
+    const boxRef = useRef(box); boxRef.current = box;
+    const onCropRef = useRef(onCrop); onCropRef.current = onCrop;
 
-    const pt = (e: React.MouseEvent) => {
+    const ptXY = (clientX: number, clientY: number) => {
         const r = wrapRef.current!.getBoundingClientRect();
-        return { x: e.clientX - r.left, y: e.clientY - r.top };
+        return { x: clientX - r.left, y: clientY - r.top };
     };
+    const pt = (e: React.MouseEvent) => ptXY(e.clientX, e.clientY);
+
+    // 모바일: 짧은 터치/스와이프 = 스크롤 유지, 길게(0.35s) 누르면 크롭 모드 진입
+    // (touchmove preventDefault가 필요해 passive:false native 리스너로 부착)
+    useEffect(() => {
+        const el = wrapRef.current;
+        if (!el) return;
+        let timer: any = null;
+        let touchOrigin: { x: number; y: number } | null = null;
+        let cropping = false;
+
+        const onTS = (e: TouchEvent) => {
+            if (e.touches.length !== 1) return;
+            const t = e.touches[0];
+            touchOrigin = { x: t.clientX, y: t.clientY };
+            cropping = false;
+            timer = setTimeout(() => {
+                cropping = true;
+                const p = ptXY(t.clientX, t.clientY);
+                start.current = p;
+                setBox({ ...p, w: 0, h: 0 });
+                (navigator as any).vibrate?.(30);
+            }, 350);
+        };
+        const onTM = (e: TouchEvent) => {
+            const t = e.touches[0];
+            if (!cropping) {
+                // 롱프레스 전에 크게 움직이면 스크롤 의도 → 크롭 취소 (브라우저가 평소처럼 스크롤)
+                if (touchOrigin && (Math.abs(t.clientX - touchOrigin.x) > 10 || Math.abs(t.clientY - touchOrigin.y) > 10)) clearTimeout(timer);
+                return;
+            }
+            e.preventDefault(); // 크롭 중엔 스크롤 차단
+            if (!start.current) return;
+            const p = ptXY(t.clientX, t.clientY);
+            setBox({ x: Math.min(start.current.x, p.x), y: Math.min(start.current.y, p.y), w: Math.abs(p.x - start.current.x), h: Math.abs(p.y - start.current.y) });
+        };
+        const onTE = () => {
+            clearTimeout(timer);
+            if (cropping) {
+                const b = boxRef.current;
+                if (b && b.w > 12 && b.h > 12) onCropRef.current(b.x, b.y, b.w, b.h);
+            }
+            cropping = false;
+            start.current = null;
+            setBox(null);
+        };
+
+        el.addEventListener('touchstart', onTS, { passive: true });
+        el.addEventListener('touchmove', onTM, { passive: false });
+        el.addEventListener('touchend', onTE);
+        el.addEventListener('touchcancel', onTE);
+        return () => {
+            clearTimeout(timer);
+            el.removeEventListener('touchstart', onTS);
+            el.removeEventListener('touchmove', onTM);
+            el.removeEventListener('touchend', onTE);
+            el.removeEventListener('touchcancel', onTE);
+        };
+    }, []);
+
     return (
-        <div ref={wrapRef} className="relative inline-block w-full select-none"
+        <div ref={wrapRef} className="relative inline-block w-full select-none [-webkit-touch-callout:none]"
             onMouseDown={(e) => { start.current = pt(e); setBox({ ...pt(e), w: 0, h: 0 }); }}
             onMouseMove={(e) => { if (!start.current) return; const p = pt(e); setBox({ x: Math.min(start.current.x, p.x), y: Math.min(start.current.y, p.y), w: Math.abs(p.x - start.current.x), h: Math.abs(p.y - start.current.y) }); }}
             onMouseUp={() => { if (box && box.w > 12 && box.h > 12) onCrop(box.x, box.y, box.w, box.h); start.current = null; setBox(null); }}
