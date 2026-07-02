@@ -26,14 +26,11 @@ export default function SuggestionListPage() {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
 
-            const { data, error } = await supabase
-                .from('suggestions')
-                .select('id, title, created_at, views, author_id, author_nickname') // Removed author_email
-                .order('created_at', { ascending: false });
-
-            if (data) {
-                setSuggestions(data);
-            }
+            try {
+                const res = await fetch('/api/suggestions');
+                const j = await res.json();
+                if (res.ok && j.items) setSuggestions(j.items);
+            } catch { }
             setLoading(false);
         };
         fetchData();

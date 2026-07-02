@@ -33,45 +33,44 @@ export default function SuggestionDetailPage() {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
 
-            // Fetch data (including password - in a real app, use RPC to check password securely)
-            // Here we fetch it but client-side check for simplicity as per requirement.
-            const { data: post, error } = await supabase
-                .from('suggestions')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (post) {
-                setData(post);
-
-                // Auto unlock if:
-                // 1. User is admin
-                // 2. User is author
-                if (user) {
-                    if (user.email === 'mathofhy@naver.com' || user.id === post.author_id) {
-                        setIsUnlocked(true);
-                    }
+            // 본문·비밀번호는 서버에서만 다룸 — 여기선 메타만 (작성자/관리자면 서버가 본문 포함해 줌)
+            try {
+                const res = await fetch(`/api/suggestions/${id}`);
+                const j = await res.json();
+                if (res.ok && j.post) {
+                    setData(j.post);
+                    if (j.unlocked) setIsUnlocked(true);
                 }
-
-                // Increment Views
-                await supabase.from('suggestions')
-                    .update({ views: (post.views || 0) + 1 })
-                    .eq('id', id);
-            }
+            } catch { }
             setLoading(false);
         };
 
         fetchData();
     }, [id, supabase]);
 
-    const handlePasswordSubmit = (e: React.FormEvent) => {
+    const [verifying, setVerifying] = useState(false);
+    const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (data && inputPassword === data.password) {
-            setIsUnlocked(true);
-            setPasswordError(false);
-        } else {
+        if (verifying) return;
+        setVerifying(true);
+        try {
+            const res = await fetch(`/api/suggestions/${id}/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: inputPassword }),
+            });
+            const j = await res.json();
+            if (res.ok && j.post) {
+                setData(j.post);
+                setIsUnlocked(true);
+                setPasswordError(false);
+            } else {
+                setPasswordError(true);
+            }
+        } catch {
             setPasswordError(true);
         }
+        setVerifying(false);
     };
 
     const handleDelete = async () => {
@@ -82,12 +81,9 @@ export default function SuggestionDetailPage() {
         }
 
         try {
-            const { error } = await supabase
-                .from('suggestions')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            const res = await fetch(`/api/suggestions/${id}`, { method: 'DELETE' });
+            const j = await res.json();
+            if (!res.ok) throw new Error(j.error || '삭제 실패');
 
             alert('삭제되었습니다.');
             router.push('/suggestion');
@@ -167,7 +163,7 @@ export default function SuggestionDetailPage() {
                             </span>
                             <span className="flex items-center gap-1">
                                 <Eye size={14} />
-                                {data.views + 1}
+                                {(data.views || 0) + 1}
                             </span>
                         </div>
                     </div>

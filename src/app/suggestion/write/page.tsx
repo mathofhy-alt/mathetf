@@ -35,22 +35,18 @@ export default function SuggestionWritePage() {
         setSubmitting(true);
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            const res = await fetch('/api/suggestions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content, password }),
+            });
+            const j = await res.json();
+            if (res.status === 401) {
                 alert('로그인이 필요합니다.');
                 router.push('/login');
                 return;
             }
-
-            const { error } = await supabase.from('suggestions').insert({
-                title,
-                content,
-                password,
-                author_id: user.id,
-                author_nickname: user.user_metadata?.full_name || user.email?.split('@')[0]
-            });
-
-            if (error) throw error;
+            if (!res.ok) throw new Error(j.error || '등록 실패');
 
             alert('건의사항이 등록되었습니다.');
             router.push('/suggestion');
