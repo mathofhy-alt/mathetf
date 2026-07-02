@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { ArrowRight } from 'lucide-react';
 import Header from '@/components/Header';
-import MockExamCard, { MockCategory, MOCK_CATEGORIES } from '@/components/mock/MockExamCard';
+import MockExamCard, { MockCategory, MOCK_CATEGORIES, CATEGORY_DESC } from '@/components/mock/MockExamCard';
 import MockUploadButton from '@/components/mock/MockUploadButton';
 import { fetchAllMockExams } from '@/lib/mock-exams';
 
@@ -61,6 +61,21 @@ export default async function MockExamHubPage() {
                     </div>
                 </section>
 
+                {/* ── 허브 소개 (SEO 고유 텍스트) ── */}
+                <section className="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
+                    <p className="text-slate-600 text-sm leading-relaxed break-keep">
+                        <strong className="text-[#1E2D4F]">전국연합학력평가</strong>(시·도 교육청 주관 3·6·9·11월)와{' '}
+                        <strong className="text-[#1E2D4F]">평가원 6·9월 모의평가</strong>, <strong className="text-[#1E2D4F]">수능</strong>,
+                        그리고 <strong className="text-[#1E2D4F]">경찰대·사관학교 1차시험</strong> 수학 기출을 학년·연도별로 모았습니다.
+                        각 회차의 원본 문제와 같은 유형의 변형문제를 PDF·한글(HWP)로 무료로 받을 수 있어요.
+                        모의고사 기출은 시험 시기와 무관하게 실전 감각·유형 연습에 활용할 수 있습니다.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        <Link href="/study/common-math-2" className="text-xs font-bold text-[#497AB7] bg-[#EEF4FB] border border-[#B7D1EA]/60 px-3 py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors">공통수학2 예습 가이드 →</Link>
+                        <Link href="/study/calculus-1" className="text-xs font-bold text-[#497AB7] bg-[#EEF4FB] border border-[#B7D1EA]/60 px-3 py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors">미적분I 예습 가이드 →</Link>
+                    </div>
+                </section>
+
                 {/* ── 분류별 섹션 ── */}
                 <div className="mt-10">
                     {all.length === 0 ? (
@@ -84,6 +99,9 @@ export default async function MockExamHubPage() {
                                             전체보기 <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                         </Link>
                                     </div>
+                                    {CATEGORY_DESC[cat] && (
+                                        <p className="text-sm text-slate-500 leading-relaxed break-keep -mt-1 mb-4">{CATEGORY_DESC[cat]}</p>
+                                    )}
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                         {items.slice(0, 8).map((e) => (
                                             <MockExamCard key={e.slug} exam={e} />

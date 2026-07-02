@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Download, FileText } from 'lucide-react';
 import Header from '@/components/Header';
-import MockExamCard, { MOCK_CATEGORIES, MockCategory } from '@/components/mock/MockExamCard';
+import MockExamCard, { MOCK_CATEGORIES, MockCategory, CATEGORY_DESC } from '@/components/mock/MockExamCard';
 import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 import MockAdminControls from '@/components/mock/MockAdminControls';
 import { fetchMockExamsByCategory, fetchMockExamBySlug } from '@/lib/mock-exams';
@@ -72,14 +72,6 @@ async function CategoryView({ category }: { category: MockCategory }) {
         </div>
     );
 }
-
-const CATEGORY_DESC: Record<string, string> = {
-    '전국연합': '전국연합학력평가는 시·도 교육청이 주관하는 전국 단위 모의고사로, 내 위치를 전국 기준으로 점검할 수 있는 시험입니다.',
-    '평가원': '한국교육과정평가원이 주관하는 6월·9월 모의평가로, 그해 수능 출제 경향을 가장 잘 보여주는 핵심 시험입니다.',
-    '수능': '대학수학능력시험 수학 영역 기출입니다. 실제 수능과 동일한 형식으로 실전 감각을 익힐 수 있습니다.',
-    '경찰대': '경찰대학 1차시험 수학 기출입니다. 일반 수능보다 까다로운 문항으로 상위권 변별에 활용됩니다.',
-    '사관학교': '사관학교(육군·해군·공군·국군간호) 1차시험 수학 기출입니다. 높은 난이도로 실전 대비에 좋습니다.',
-};
 
 /* ── 회차 상세 ── */
 async function DetailView({ slug }: { slug: string }) {
