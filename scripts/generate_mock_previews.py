@@ -57,8 +57,10 @@ def download(path):
     return r.content
 
 def upload(name, data):
+    # cache-control: CDN 캐시 활성화 (generate_previews.py와 동일 — 30일)
     r = requests.post(f'{URL}/storage/v1/object/{DST_BUCKET}/{name}',
-                      headers={**H, 'Content-Type': 'image/webp', 'x-upsert': 'true'}, data=data)
+                      headers={**H, 'Content-Type': 'image/webp', 'x-upsert': 'true',
+                               'cache-control': 'max-age=2592000'}, data=data)
     if r.status_code not in (200, 201):
         raise RuntimeError(f'upload {r.status_code}: {r.text[:200]}')
     return f'{URL}/storage/v1/object/public/{DST_BUCKET}/{name}'
