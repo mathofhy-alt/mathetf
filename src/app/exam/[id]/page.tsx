@@ -22,6 +22,47 @@ function buildLabel(row: any) {
     return `${row.school} ${row.exam_year}년 ${grade}${sem} ${row.exam_type || ''}${subject}`.replace(/\s+/g, ' ').trim();
 }
 
+const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+
+type Composition = { total: number; byUnit: { unit: string; count: number }[]; avg: number; easy: number; mid: number; hard: number };
+
+// [SEO] 시험 구성 데이터를 고유 서술형 문단으로 변환 (얇은 콘텐츠 방지 — 표는 그대로 두고 글도 제공)
+function buildNarrative(label: string, comp: Composition, concepts: string[]): string[] {
+    const paras: string[] = [];
+    const top = comp.byUnit.slice(0, 3);
+    const topStr = top.map((u) => `${u.unit} ${u.count}문항(${pct(u.count, comp.total)}%)`).join(', ');
+    const diffLabel = comp.avg <= 3 ? '평이한 편' : comp.avg <= 5 ? '중간 수준' : '높은 편';
+
+    paras.push(
+        `${label} 수학 시험은 총 ${comp.total}문항으로, ${comp.byUnit.length}개 단원에 걸쳐 출제되었습니다. ` +
+        `평균 난이도는 10점 만점에 약 ${comp.avg.toFixed(1)}점으로 ${diffLabel}입니다. ` +
+        `아래에서 실제 시험지 문제 미리보기와 단원별·난이도별 출제 구성을 모두 확인할 수 있습니다.`
+    );
+
+    if (top.length > 0) {
+        paras.push(
+            `출제 비중이 가장 높은 단원은 ${topStr}입니다. ` +
+            `${top[0].unit} 단원의 비중이 가장 크므로, 이 단원의 개념과 대표 유형을 먼저 정리한 뒤 나머지 단원으로 넓혀가는 학습 순서가 효율적입니다.`
+        );
+    }
+
+    paras.push(
+        `난이도 분포는 쉬움 ${comp.easy}문항(${pct(comp.easy, comp.total)}%), 보통 ${comp.mid}문항(${pct(comp.mid, comp.total)}%), 어려움 ${comp.hard}문항(${pct(comp.hard, comp.total)}%)으로 구성됩니다. ` +
+        (comp.hard > 0
+            ? `어려움으로 분류된 ${comp.hard}문항이 등급을 가르는 변별 문항이므로, 기본기를 빠르게 확보한 뒤 이 상위 문항 유형에 시간을 집중하는 전략이 유효합니다.`
+            : `기본·중급 문항 위주라 개념과 대표 유형을 정확히 익히면 안정적으로 고득점을 노릴 수 있습니다.`)
+    );
+
+    if (concepts.length > 0) {
+        paras.push(
+            `주요 출제 개념·유형으로는 ${concepts.slice(0, 10).join(', ')} 등이 있습니다. ` +
+            `같은 유형의 변형문제로 반복 연습하면 실전에서 풀이 시간을 단축할 수 있습니다.`
+        );
+    }
+
+    return paras;
+}
+
 async function getExam(id: string) {
     const supabase = createAdminClient();
     const { data: row } = await supabase
@@ -144,8 +185,44 @@ export default async function ExamDetailPage({ params }: Props) {
     const hasHwp = siblings.some((f: any) => f.file_type === 'HWP');
     const hasDb = siblings.some((f: any) => f.file_type === 'DB');
 
+    // [SEO] 서술 문단 — 제미나이 배치가 생성한 고유 분석글(ai_analysis) 우선, 없으면 템플릿 폴백
+    const templateNarrative: string[] = composition ? buildNarrative(label, composition, concepts) : [];
+    const aiParas: string[] = typeof row.ai_analysis === 'string' && row.ai_analysis.trim()
+        ? row.ai_analysis.trim().split(/\n{2,}|\r?\n/).map((s: string) => s.trim()).filter((s: string) => Boolean(s))
+        : [];
+    const narrative: string[] = aiParas.length > 0 ? aiParas : templateNarrative;
+    const url = `https://mathetf.com/exam/${params.id}`;
+    const jsonLd = [
+        {
+            '@context': 'https://schema.org',
+            '@type': 'LearningResource',
+            name: `${label} 수학 기출문제 및 해설`,
+            description: narrative[0] || `${label} 수학 기출문제와 해설입니다.`,
+            url,
+            learningResourceType: '기출문제',
+            educationalUse: '시험 대비',
+            educationalLevel: row.grade ? `${row.grade}학년` : '고등학교',
+            about: { '@type': 'Thing', name: row.subject ? `수학 ${row.subject}` : '수학' },
+            inLanguage: 'ko',
+            isAccessibleForFree: true,
+            provider: { '@type': 'Organization', name: '수학ETF', url: 'https://mathetf.com' },
+            ...(row.exam_year ? { dateCreated: String(row.exam_year) } : {}),
+            ...(previews.length ? { image: previews } : {}),
+        },
+        {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+                { '@type': 'ListItem', position: 1, name: '전체 기출', item: 'https://mathetf.com/' },
+                { '@type': 'ListItem', position: 2, name: `${row.school} 수학 기출문제`, item: `https://mathetf.com/school/${encodeURIComponent(row.school)}` },
+                { '@type': 'ListItem', position: 3, name: `${label} 수학 기출문제 및 해설`, item: url },
+            ],
+        },
+    ];
+
     return (
         <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
             <div className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 {/* 헤더 */}
@@ -181,10 +258,22 @@ export default async function ExamDetailPage({ params }: Props) {
                     문제와 해설이 담긴 전체 자료는 PDF로, 편집 가능한 자료는 HWP·개인DB로 제공합니다.
                 </p>
 
+                {/* 시험 분석 서술 (SEO 고유 텍스트 — composition 데이터 기반) */}
+                {narrative.length > 0 && (
+                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
+                        <h2 className="text-base font-bold text-slate-800 mb-3">{label} 시험 분석</h2>
+                        <div className="space-y-3">
+                            {narrative.map((para, i) => (
+                                <p key={i} className="text-sm text-slate-600 leading-relaxed break-keep">{para}</p>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* 문제 미리보기 */}
                 {previews.length > 0 ? (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 mb-6">
-                        <p className="text-sm font-bold text-slate-700 mb-3">📄 문제 미리보기 <span className="text-slate-400 font-normal">(문제 전체 {previews.length}페이지 · 해설 제외)</span></p>
+                        <h2 className="text-sm font-bold text-slate-700 mb-3">📄 문제 미리보기 <span className="text-slate-400 font-normal">(문제 전체 {previews.length}페이지 · 해설 제외)</span></h2>
                         <ExamPreviewCarousel images={previews} label={label} />
                         <p className="text-xs text-slate-400 mt-3 text-center">해설은 다운로드로 제공됩니다.</p>
                     </div>
@@ -197,7 +286,7 @@ export default async function ExamDetailPage({ params }: Props) {
                 {/* 시험 구성 (단원별·난이도별 문항수) */}
                 {composition && (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                        <p className="text-sm font-bold text-slate-700 mb-3">📊 시험 구성</p>
+                        <h2 className="text-sm font-bold text-slate-700 mb-3">📊 시험 구성</h2>
                         <p className="text-sm text-slate-600 mb-4 break-keep">
                             총 <strong className="text-[#1E2D4F]">{composition.total}문항</strong> · 출제 단원{' '}
                             <strong className="text-[#1E2D4F]">{composition.byUnit.length}개</strong> · 평균 난이도{' '}
@@ -239,7 +328,7 @@ export default async function ExamDetailPage({ params }: Props) {
                 {/* 출제 개념·유형 (롱테일 키워드 — 문제 본문은 비공개) */}
                 {concepts && concepts.length > 0 && (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                        <p className="text-sm font-bold text-slate-700 mb-1">🧩 출제 개념·유형</p>
+                        <h2 className="text-sm font-bold text-slate-700 mb-1">🧩 출제 개념·유형</h2>
                         <p className="text-xs text-slate-400 mb-3 break-keep">
                             {label} 시험지에서 다루는 주요 개념·문제 유형입니다.
                         </p>
@@ -268,9 +357,9 @@ export default async function ExamDetailPage({ params }: Props) {
                 {/* 같은 시험 · 다른 연도 */}
                 {otherYears.length > 0 && (
                     <div className="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                        <p className="text-sm font-bold text-slate-700 mb-3">
+                        <h2 className="text-sm font-bold text-slate-700 mb-3">
                             📚 {row.school} {examShort} · 다른 연도
-                        </p>
+                        </h2>
                         <div className="flex flex-wrap gap-2">
                             {otherYears.map((r: any) => (
                                 <Link

@@ -133,6 +133,41 @@ const SPECIAL_INTRO: Record<string, string> = {
     '전국연합': '전국연합학력평가(시·도 교육청 주관) 수학 기출문제 모음입니다. 3월·6월·9월·11월 학력평가 원본 문제와 같은 유형의 변형문제를 학년·연도별로 정리했어요. 문제와 해설을 PDF·한글(HWP)로 무료로 받을 수 있습니다.',
 };
 
+type SubjUnits = { subject: string; total: number; units: { unit: string; count: number }[] }[];
+
+// [SEO] 학교 페이지 고유 서술 문단 (지역·연도·과목·단원 데이터 기반)
+function buildSchoolNarrative(
+    schoolName: string, region: string, examCount: number,
+    years: number[], subjects: string[], subjUnits: SubjUnits, specialIntro?: string
+): string[] {
+    const paras: string[] = [];
+    if (specialIntro) {
+        paras.push(`${specialIntro} 현재 ${examCount}개 회차의 문제와 해설을 제공하며, 문제 미리보기와 워터마크 없는 PDF·한글(HWP)은 회원가입 시 무료로 받을 수 있습니다.`);
+    } else {
+        const yearStr = years.length > 0 ? `${years[years.length - 1]}년부터 ${years[0]}년까지 ` : '';
+        const subjStr = subjects.length > 0 ? `${subjects.join('·')} 등 ` : '';
+        paras.push(
+            `${schoolName}${region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다. ` +
+            `${yearStr}${subjStr}총 ${examCount}개 시험지의 문제와 해설을 제공하며, ` +
+            `문제 미리보기와 워터마크 없는 문제 PDF는 회원가입 시 무료로 받을 수 있습니다.`
+        );
+    }
+    if (subjUnits.length > 0) {
+        const topSubj = subjUnits[0];
+        const topUnits = topSubj.units.slice(0, 3).map((u) => `${u.unit}(${u.count}문항)`).join(', ');
+        paras.push(
+            `가장 많은 문항이 축적된 과목은 ${topSubj.subject}(${topSubj.total}문항)이며, ` +
+            `${topUnits} 단원에서 특히 출제가 많았습니다. ` +
+            `학교별 출제 경향을 파악하면 시험 범위 안에서 우선순위를 정해 대비할 수 있습니다.`
+        );
+    }
+    paras.push(
+        `원본 기출뿐 아니라 같은 유형의 변형문제도 함께 제공하므로, 기출로 출제 경향을 익힌 뒤 변형문제로 한 번 더 실전 연습할 수 있습니다. ` +
+        `필요한 회차를 골라 나만의 시험지로 구성해 PDF·한글(HWP)로 받아보세요.`
+    );
+    return paras;
+}
+
 export default async function SchoolPage({ params }: Props) {
     const schoolName = decodeURIComponent(params.schoolName);
     const specialIntro = SPECIAL_INTRO[schoolName];
@@ -197,8 +232,34 @@ export default async function SchoolPage({ params }: Props) {
     const subjects = Array.from(new Set(examList.map((g: any) => g.subject).filter(Boolean)));
     const years = Array.from(new Set(examList.map((g: any) => g.year))).sort((a: number, b: number) => b - a);
 
+    // [SEO] 서술 문단 + 구조화 데이터
+    const narrative = buildSchoolNarrative(schoolName, region, examList.length, years, subjects, subjUnits, specialIntro);
+    const schoolUrl = `https://mathetf.com/school/${encodeURIComponent(schoolName)}`;
+    const jsonLd = [
+        {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: `${schoolName} 수학 기출문제`,
+            description: narrative[0],
+            url: schoolUrl,
+            inLanguage: 'ko',
+            isAccessibleForFree: true,
+            about: { '@type': 'Thing', name: '수학 내신 기출문제' },
+            provider: { '@type': 'Organization', name: '수학ETF', url: 'https://mathetf.com' },
+        },
+        {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+                { '@type': 'ListItem', position: 1, name: '전체 기출', item: 'https://mathetf.com/' },
+                { '@type': 'ListItem', position: 2, name: `${schoolName} 수학 기출문제`, item: schoolUrl },
+            ],
+        },
+    ];
+
     return (
         <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
             <main className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 {/* 브레드크럼 */}
@@ -216,27 +277,18 @@ export default async function SchoolPage({ params }: Props) {
                     </p>
                 </div>
 
-                {/* 학교 소개 (SEO 고유 텍스트) */}
+                {/* 학교 소개 (SEO 고유 텍스트 — 데이터 기반 서술 문단) */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-                    {specialIntro ? (
-                        <p className="text-slate-600 leading-relaxed break-keep text-sm">
-                            {specialIntro} 현재 <strong className="text-[#497AB7]">{examList.length}개</strong> 회차의 문제와 해설을 제공하며,
-                            문제 미리보기와 워터마크 없는 PDF·한글(HWP)은 회원가입 시 무료로 받을 수 있습니다.
-                        </p>
-                    ) : (
-                        <p className="text-slate-600 leading-relaxed break-keep text-sm">
-                            <strong className="text-[#1E2D4F]">{schoolName}</strong>
-                            {region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다.
-                            {years.length > 0 && <> {years[0]}{years.length > 1 ? `~${years[years.length - 1]}` : ''}년 </>}
-                            {subjects.length > 0 && <>{subjects.join('·')} 등 </>}
-                            총 <strong className="text-[#497AB7]">{examList.length}개</strong> 시험지의 문제와 해설을 제공하며,
-                            문제 미리보기와 워터마크 없는 문제 PDF는 회원가입 시 무료로 받을 수 있습니다.
-                        </p>
-                    )}
+                    <h2 className="sr-only">{schoolName} 수학 기출 안내</h2>
+                    <div className="space-y-3">
+                        {narrative.map((para, i) => (
+                            <p key={i} className="text-slate-600 leading-relaxed break-keep text-sm">{para}</p>
+                        ))}
+                    </div>
 
                     {subjUnits.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                            <p className="text-xs font-bold text-slate-700">📊 과목별 출제 단원</p>
+                            <h3 className="text-xs font-bold text-slate-700">📊 과목별 출제 단원</h3>
                             {subjUnits.map((s) => (
                                 <div key={s.subject}>
                                     <p className="text-xs font-bold text-[#497AB7] mb-1.5">{s.subject} <span className="text-slate-400 font-normal">({s.total}문항)</span></p>
