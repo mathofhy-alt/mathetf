@@ -515,7 +515,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
         setQuestions(prev => prev.filter(item => item.id !== q.id));
 
         try {
-            const res = await fetch('/api/admin/questions', {
+            const doPatch = () => fetch('/api/admin/questions', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -530,17 +530,26 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                 })
             });
 
+            // 일시 오류(토큰 갱신 레이스·배포 롤링)는 한 번 자동 재시도
+            let res = await doPatch();
+            if (!res.ok) {
+                await new Promise(r => setTimeout(r, 800));
+                res = await doPatch();
+            }
+
             if (!res.ok) {
                 // Revert on failure
                 fetchQuestions(); // Refresh is safer than manual revert logic
-                alert('소팅 상태 업데이트 실패');
+                let detail = '';
+                try { const j = await res.json(); if (j?.error) detail = ` — ${j.error}`; } catch { }
+                alert(`소팅 상태 업데이트 실패 (HTTP ${res.status}${detail})`);
             } else {
                 fetchConceptSuggestions();
             }
         } catch (e) {
             console.error(e);
             fetchQuestions();
-            alert('오류가 발생했습니다.');
+            alert('오류가 발생했습니다. (네트워크)');
         }
     };
 
