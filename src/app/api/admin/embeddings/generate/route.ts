@@ -35,6 +35,9 @@ function subjectFromSourceDbId(sourceDbId: string | null | undefined): string | 
 }
 
 export const dynamic = 'force-dynamic';
+// 문항당 Gemini+임베딩이 5~15초 걸림 — 기본 10초 함수 제한에 걸리면 결과 저장 없이 끊겨
+// "완료 알림은 뜨는데 안 채워지는" 증상이 됨 → 상한 연장
+export const maxDuration = 60;
 
 // [정리] 매 호출마다 디스크(ai-timing.log)에 쓰던 것 제거. (Vercel은 읽기전용이라 무의미 + 로컬 파일만 비대)
 const tlog = (msg: string) => {
@@ -73,11 +76,13 @@ export async function POST(req: NextRequest) {
             questionsToProcess = data || [];
         } else {
             // Processing pending items (embedding is null)
-            // 30개씩 처리 (병렬화로 속도 개선)
+            // 최신 파싱분 우선 — 정렬 없이 30개를 집으면 오래된 미처리 행들이 자리를 차지해
+            // 방금 올린 문항에 순서가 안 오는 기아 상태가 생김
             const { data, error } = await supabase
                 .from('questions')
                 .select('id, content_xml, plain_text, equation_scripts, subject, grade, school, difficulty, key_concepts, unit, source_db_id')
                 .or('embedding.is.null,unit.is.null')
+                .order('created_at', { ascending: false })
                 .limit(30);
 
             if (error) throw error;
