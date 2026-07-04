@@ -44,6 +44,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
     const [year, setYear] = useState('');
     const [grade, setGrade] = useState('');
     const [examScope, setExamScope] = useState(''); // Combined Semester + Type
+    const [variantOnly, setVariantOnly] = useState(false); // 변형문제만 (semester가 '...변형'인 행)
     const [selectedUnit, setSelectedUnit] = useState(''); // New: Unit filter state
     const [page, setPage] = useState(1);
 
@@ -826,6 +827,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                 }
                 apiExamType = type;
             }
+            // 변형문제만: 시험이 선택돼 있으면 그 구분의 변형('입학시험변형' 등)으로 좁히고,
+            // 시험 전체면 API에 variant=1을 보내 semester LIKE '%변형' 필터
+            if (variantOnly && apiSemester) apiSemester = `${apiSemester}변형`;
 
             // Map Grade (e.g. "1" -> "고1")
             let apiGrade = '';
@@ -843,7 +847,8 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                 semester: apiSemester, // Send mapped semester
                 examType: apiExamType, // Also send exact type if API supports it (it does now)
                 page: page.toString(),
-                status: currentTab === 'sorted' ? 'sorted' : 'unsorted'
+                status: currentTab === 'sorted' ? 'sorted' : 'unsorted',
+                variant: variantOnly && !examScope ? '1' : ''
             });
             params.append('_t', Date.now().toString());
 
@@ -1107,6 +1112,11 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <option value="12-수능">수능</option>
                             <option value="입학시험-입학시험">입학시험 (사관/경찰대)</option>
                         </select>
+
+                        <label className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer text-sm font-bold whitespace-nowrap transition-colors ${variantOnly ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                            <input type="checkbox" checked={variantOnly} onChange={e => setVariantOnly(e.target.checked)} className="w-3.5 h-3.5 accent-violet-600" />
+                            변형만
+                        </label>
 
                         <select
                             className="border-slate-200 rounded-lg px-3 py-2 w-24 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"

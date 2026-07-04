@@ -94,6 +94,8 @@ export async function GET(req: NextRequest) {
     if (gradeFilter && gradeFilter.trim() !== '') queryBuilder = queryBuilder.eq('grade', gradeFilter);
     if (yearFilter && yearFilter.trim() !== '') queryBuilder = queryBuilder.eq('year', yearFilter);
     if (semesterFilter && semesterFilter.trim() !== '') queryBuilder = queryBuilder.eq('semester', semesterFilter);
+    // 변형문제만 (semester가 '입학시험변형'·'N월 모의고사변형' 등 '변형'으로 끝나는 행)
+    if (searchParams.get('variant') === '1') queryBuilder = queryBuilder.like('semester', '%변형');
 
     // Multi-level sorting
     queryBuilder = queryBuilder
