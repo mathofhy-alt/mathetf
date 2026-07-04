@@ -39,6 +39,10 @@ export default function AdminIngestPage() {
     // 사관학교 1차 필기는 육·해·공·간호 4개교 공동출제(동일 시험지) → '사관학교' 하나로 통합
     const [militaryType, setMilitaryType] = useState('사관학교');
 
+    // 변형문제 여부 — 구분(semester)에 '변형' 접미를 붙여 원본과 소스를 분리
+    // (예: '입학시험변형', '6월 모의고사변형' — 보관함 그룹은 원본과 같이 묶이되 예상문제 소스제한·학교페이지 카드가 분리됨)
+    const [isVariant, setIsVariant] = useState(false);
+
     const supabase = createClient();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,12 +58,13 @@ export default function AdminIngestPage() {
             const formData = new FormData();
             formData.append('file', file);
             
+            const variantSuffix = isVariant ? '변형' : '';
             if (activeTab === 'mock') {
                 formData.append('school', '전국연합');
                 formData.append('region', '전국');
                 formData.append('district', '전국');
                 formData.append('year', mockYear);
-                formData.append('semester', `${mockMonth} 모의고사`);
+                formData.append('semester', `${mockMonth} 모의고사${variantSuffix}`);
                 formData.append('subject', mockSubject);
                 formData.append('grade', mockGrade);
             } else if (activeTab === 'police') {
@@ -67,7 +72,7 @@ export default function AdminIngestPage() {
                 formData.append('region', '경기');
                 formData.append('district', '용인시');
                 formData.append('year', policeYear);
-                formData.append('semester', '입학시험');
+                formData.append('semester', `입학시험${variantSuffix}`);
                 formData.append('subject', policeSubject);
                 formData.append('grade', '고3');
             } else if (activeTab === 'military') {
@@ -75,7 +80,7 @@ export default function AdminIngestPage() {
                 formData.append('region', '전국');
                 formData.append('district', '전국');
                 formData.append('year', militaryYear);
-                formData.append('semester', '입학시험');
+                formData.append('semester', `입학시험${variantSuffix}`);
                 formData.append('subject', militarySubject);
                 formData.append('grade', '고3');
             } else {
@@ -417,6 +422,21 @@ export default function AdminIngestPage() {
                             </div>
                         </div>
                     </>
+                )}
+
+                {activeTab !== 'regular' && (
+                    <label className={`flex items-center gap-2.5 p-3 rounded border cursor-pointer transition-colors ${isVariant ? 'bg-violet-50 border-violet-300' : 'bg-white border-gray-200 hover:bg-gray-50'}`}>
+                        <input
+                            type="checkbox"
+                            checked={isVariant}
+                            onChange={e => setIsVariant(e.target.checked)}
+                            className="w-4 h-4 accent-violet-600"
+                        />
+                        <span className="text-sm font-bold text-gray-700">변형문제로 등록</span>
+                        <span className="text-xs text-gray-400">
+                            구분이 {activeTab === 'mock' ? `'${mockMonth} 모의고사변형'` : `'입학시험변형'`}으로 저장돼 원본과 분리돼요
+                        </span>
+                    </label>
                 )}
 
                 <div className="pt-4 border-t">
