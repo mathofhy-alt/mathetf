@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import { ChevronRight } from 'lucide-react';
 import { examYearOf, examGroupKey } from '@/lib/exam-groups';
+import { proxiedOgImage } from '@/lib/og-image';
 
 // 1시간마다 자동 재검증 (새 시험지 추가 반영)
 export const revalidate = 3600;
@@ -43,7 +44,7 @@ async function schoolOgImage(schoolName: string): Promise<string> {
         const first = (data || [])
             .flatMap((r: any) => (Array.isArray(r.preview_urls) ? r.preview_urls : []))
             .find(Boolean);
-        if (first) return first;
+        if (first) return proxiedOgImage(first);
     } catch { }
     return '/og-image.png';
 }
@@ -263,8 +264,8 @@ export default async function SchoolPage({ params }: Props) {
             <Header />
             <main className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 {/* 브레드크럼 */}
-                <Link href="/" className="text-sm text-[#497AB7] hover:underline mb-4 inline-flex items-center gap-1">
-                    ← 전체 기출 목록
+                <Link href="/schools" className="text-sm text-[#497AB7] hover:underline mb-4 inline-flex items-center gap-1">
+                    ← 학교별 기출 목록
                 </Link>
 
                 {/* 제목 */}

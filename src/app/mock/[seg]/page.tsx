@@ -7,6 +7,7 @@ import MockExamCard, { MOCK_CATEGORIES, MockCategory, CATEGORY_DESC } from '@/co
 import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 import MockAdminControls from '@/components/mock/MockAdminControls';
 import { fetchMockExamsByCategory, fetchMockExamBySlug } from '@/lib/mock-exams';
+import { proxiedOgImage } from '@/lib/og-image';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: { params: { seg: string } }):
             title,
             description,
             url: `https://mathetf.com/모의고사/${encodeURIComponent(exam.slug)}`,
-            images: exam.preview_urls?.length ? [exam.preview_urls[0]] : undefined,
+            images: exam.preview_urls?.length ? [proxiedOgImage(exam.preview_urls[0])] : undefined,
         },
     };
 }

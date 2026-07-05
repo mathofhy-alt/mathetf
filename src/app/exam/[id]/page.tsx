@@ -6,6 +6,7 @@ import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 import FreeProblemCTA from '@/components/FreeProblemCTA';
 import Header from '@/components/Header';
 import { buildSourceDbId } from '@/lib/examKey';
+import { proxiedOgImage } from '@/lib/og-image';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
 
@@ -167,7 +168,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         alternates: { canonical: `/exam/${params.id}` },
         openGraph: {
             title, description, url: `https://mathetf.com/exam/${params.id}`, type: 'article',
-            images: [(Array.isArray(ex.row.preview_urls) && ex.row.preview_urls[0]) ? ex.row.preview_urls[0] : '/og-image.png'],
+            images: [(Array.isArray(ex.row.preview_urls) && ex.row.preview_urls[0]) ? proxiedOgImage(ex.row.preview_urls[0]) : '/og-image.png'],
         },
     };
 }
