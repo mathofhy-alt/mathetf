@@ -11,6 +11,7 @@ export const metadata: Metadata = {
         url: 'https://mathetf.com/suggestion',
         siteName: '수학ETF',
         type: 'website',
+        images: ['/og-image.png'],
     },
 };
 

@@ -15,6 +15,7 @@ export const metadata: Metadata = {
         title: '학교별 수학 기출 자료 모음 | 수학ETF',
         description: '전국 고등학교별 수학 내신 기출문제를 학교별로 모았습니다.',
         url: 'https://mathetf.com/schools',
+        images: ['/og-image.png'],
     },
 };
 

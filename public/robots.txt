@@ -1,10 +1,12 @@
 User-agent: *
+Allow: /api/og-image
 Allow: /
 Disallow: /admin/
 Disallow: /api/
 
 # 네이버 검색로봇 명시적 허용
 User-agent: Yeti
+Allow: /api/og-image
 Allow: /
 Disallow: /admin/
 Disallow: /api/

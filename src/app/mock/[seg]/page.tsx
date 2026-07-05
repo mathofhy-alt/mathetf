@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: { seg: string } }):
             description,
             alternates: { canonical: `/모의고사/${seg}` },
             // openGraph 미지정 시 홈 og(title/url)를 상속해 공유 카드가 홈으로 뜨는 것 방지
-            openGraph: { title, description, url: `https://mathetf.com/모의고사/${encodeURIComponent(seg)}` },
+            openGraph: { title, description, url: `https://mathetf.com/모의고사/${encodeURIComponent(seg)}`, images: ['/og-image.png'] },
         };
     }
     const exam = await fetchMockExamBySlug(seg);
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: { seg: string } }):
             title,
             description,
             url: `https://mathetf.com/모의고사/${encodeURIComponent(exam.slug)}`,
-            images: exam.preview_urls?.length ? [proxiedOgImage(exam.preview_urls[0])] : undefined,
+            images: exam.preview_urls?.length ? [proxiedOgImage(exam.preview_urls[0])] : ['/og-image.png'],
         },
     };
 }

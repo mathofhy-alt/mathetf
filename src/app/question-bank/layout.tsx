@@ -18,6 +18,7 @@ export const metadata: Metadata = {
         title: '수학 문제은행 - 기출로 나만의 시험지 무료 제작 | 수학ETF',
         description: '전국 내신·모의고사 수학 기출 문제은행. 원하는 문제를 골라 유사문제까지 자동으로 채우고 나만의 수학 시험지를 1분 만에 무료로 만드세요.',
         url: 'https://mathetf.com/question-bank',
+        images: ['/og-image.png'],
     },
 };
 

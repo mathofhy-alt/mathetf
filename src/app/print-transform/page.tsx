@@ -17,6 +17,7 @@ export const metadata: Metadata = {
         title: '학교프린트 변형만들기 - 수학 변형문제 자동 생성 | 수학ETF',
         description: '학교 프린트를 올리고 문제를 잘라내면 같은 유형의 변형문제를 자동으로 찾아 한글파일로 만들어 드립니다.',
         url: 'https://mathetf.com/print-transform',
+        images: ['/og-image.png'],
     },
 };
 

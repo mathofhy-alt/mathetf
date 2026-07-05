@@ -17,6 +17,7 @@ export const metadata: Metadata = {
         title: '모의고사 수학 기출·변형문제 무료 다운로드 | 수학ETF',
         description: '전국연합학력평가·평가원 모의평가·수능·경찰대·사관학교 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.',
         url: 'https://mathetf.com/모의고사',
+        images: ['/og-image.png'],
     },
 };
 
