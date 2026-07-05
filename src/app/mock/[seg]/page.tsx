@@ -159,25 +159,45 @@ async function DetailView({ slug }: { slug: string }) {
                     {downloads.length === 0 ? (
                         <p className="text-sm text-slate-400">등록된 파일이 없어요.</p>
                     ) : (
-                        <div className="grid grid-cols-2 gap-2.5">
-                            {downloads.map((d) => (
-                                <a
-                                    key={d.kind}
-                                    href={`/api/mock/download?slug=${encodeURIComponent(exam.slug)}&kind=${d.kind}`}
-                                    className={`flex items-center justify-between gap-2 rounded-xl px-4 py-3 font-bold text-sm transition-all border ${d.group === '변형'
-                                        ? 'bg-[#497AB7]/5 border-[#497AB7]/30 text-[#3A6CAE] hover:bg-[#497AB7]/10'
-                                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                                >
-                                    <span className="flex items-center gap-1.5"><FileText size={15} /> {d.group} {d.fmt}</span>
-                                    <Download size={15} />
-                                </a>
-                            ))}
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            {(['원본', '변형'] as const).map((group) => {
+                                const items = downloads.filter((d) => d.group === group);
+                                if (items.length === 0) return null;
+                                const isVariant = group === '변형';
+                                return (
+                                    <div
+                                        key={group}
+                                        className={`rounded-2xl border p-4 ${isVariant
+                                            ? 'border-[#5CC6C3]/50 bg-gradient-to-br from-[#497AB7]/5 to-[#3AADA9]/10'
+                                            : 'border-slate-200 bg-slate-50/60'}`}
+                                    >
+                                        <div className="flex items-baseline gap-2 mb-0.5">
+                                            <span className={`text-sm font-extrabold ${isVariant ? 'text-[#3AADA9]' : 'text-[#1E2D4F]'}`}>{group}</span>
+                                            {isVariant && <span className="text-[10px] font-extrabold text-white bg-gradient-to-r from-[#497AB7] to-[#3AADA9] px-2 py-0.5 rounded-full">한 번 더 연습</span>}
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 mb-3 break-keep">
+                                            {isVariant ? '같은 유형·난이도의 새 문제' : '실제 시험 문제 그대로'}
+                                        </p>
+                                        <div className="flex gap-2">
+                                            {items.map((d) => (
+                                                <a
+                                                    key={d.kind}
+                                                    href={`/api/mock/download?slug=${encodeURIComponent(exam.slug)}&kind=${d.kind}`}
+                                                    className="group/dl flex-1 flex items-center justify-center gap-1.5 bg-white rounded-xl px-3 py-2.5 border border-slate-200 shadow-sm font-extrabold text-sm text-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                                                >
+                                                    <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-black text-white ${d.fmt === 'PDF' ? 'bg-rose-500' : 'bg-[#3AADA9]'}`}>
+                                                        {d.fmt === 'PDF' ? 'P' : 'H'}
+                                                    </span>
+                                                    {d.fmt}
+                                                    <Download size={14} className="text-slate-400 group-hover/dl:text-[#497AB7] transition-colors" />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
-                    <div className="mt-4 grid sm:grid-cols-2 gap-2 text-xs text-slate-500">
-                        <div className="flex gap-2 bg-slate-50 rounded-lg p-3"><span className="font-bold text-slate-600 shrink-0">원본</span> 실제 시험 문제 그대로. 실전처럼 풀어보세요.</div>
-                        <div className="flex gap-2 bg-[#497AB7]/5 rounded-lg p-3"><span className="font-bold text-[#3A6CAE] shrink-0">변형</span> 같은 유형·난이도의 새 문제로 한 번 더 연습.</div>
-                    </div>
                 </div>
 
                 {/* 미리보기 (캐러셀) */}
