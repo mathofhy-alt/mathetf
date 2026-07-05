@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { createClient } from '@/utils/supabase/server';
 import Header from '@/components/Header';
 import PredictClient from './PredictClient';
 import type { Metadata } from 'next';
@@ -37,17 +36,11 @@ export default async function PredictPage() {
         richSchools = Array.from(set).sort((a, b) => a.localeCompare(b, 'ko'));
     } catch { richSchools = []; }
 
-    let isLoggedIn = false;
-    try {
-        const sb = createClient();
-        const { data: { user } } = await sb.auth.getUser();
-        isLoggedIn = !!user;
-    } catch { }
-
+    // [PERF] 로그인 여부는 PredictClient가 클라이언트에서 확인 — 쿠키를 읽지 않아야 revalidate(ISR)가 실제로 동작
     return (
         <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
             <Header />
-            <PredictClient richSchools={richSchools} isLoggedIn={isLoggedIn} />
+            <PredictClient richSchools={richSchools} />
         </div>
     );
 }

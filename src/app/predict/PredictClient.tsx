@@ -5,15 +5,22 @@ import { Wand2, Lock, Loader2, Download } from 'lucide-react';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 import { CURRICULA, subjectFor, SUBJECT_UNITS, unitVariants } from '@/lib/curriculum';
+import { createClient } from '@/utils/supabase/client';
 
-interface Props { richSchools: string[]; isLoggedIn: boolean; }
+interface Props { richSchools: string[]; }
 interface QItem { id: string; unit: string; difficulty: string; school: string; subject?: string; similarity?: number; }
 
 const GRADES = ['고1', '고2', '고3'];
 const SEMS = ['1', '2'];
 const EXAMS = ['중간', '기말'];
 
-export default function PredictClient({ richSchools, isLoggedIn }: Props) {
+export default function PredictClient({ richSchools }: Props) {
+    // [PERF] 로그인 여부는 클라이언트에서 확인 (서버가 쿠키를 안 읽어야 페이지가 ISR 캐시됨)
+    // 생성 버튼 클릭 시점에만 쓰이므로 마운트 직후 비동기 확인으로 충분
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    useEffect(() => {
+        createClient().auth.getUser().then(({ data: { user } }) => setIsLoggedIn(!!user)).catch(() => { });
+    }, []);
     const [school, setSchool] = useState('');
     const [showSug, setShowSug] = useState(false);
     const [grade, setGrade] = useState('고1');

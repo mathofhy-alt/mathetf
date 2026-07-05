@@ -10,34 +10,6 @@ import { useRouter } from 'next/navigation';
 import PromoCarousel from '@/components/PromoCarousel';
 import FeatureCards from '@/components/FeatureCards';
 import SimilarDemo from '@/components/SimilarDemo';
-import RoleOnboardingModal from '@/components/RoleOnboardingModal';
-import LaunchPromoModal from '@/components/LaunchPromoModal';
-import GuidedTour, { TourStep } from '@/components/GuidedTour';
-
-// 학생·학부모 홈 투어 단계
-const STUDENT_TOUR_STEPS: TourStep[] = [
-    {
-        target: '[data-tour="search-filter"]',
-        title: '① 기출 검색',
-        body: '시/도·학교·학년·시험으로 원하는 기출 시험지를 찾을 수 있어요. 시/도부터 선택해 보세요.',
-        advanceOn: 'click',
-        placement: 'bottom',
-    },
-    {
-        target: '[data-tour="exam-card"]',
-        title: '② 자료 고르기',
-        body: '검색 결과(또는 아래 목록)에서 원하는 학교·시험의 자료를 고르세요.',
-        advanceOn: 'click',
-        placement: 'top',
-    },
-    {
-        target: '[data-tour="pdf-download"]',
-        title: '③ PDF 받기',
-        body: '문제와 해설이 담긴 PDF는 여기서 받아요. (로그인 후 이용)',
-        advanceOn: 'click',
-        placement: 'left',
-    },
-];
 import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import Header from '@/components/Header';
 import { useCart } from '@/components/providers/CartProvider';
@@ -45,15 +17,16 @@ import dynamic from 'next/dynamic';
 
 const UploadModal = dynamic(() => import('@/components/UploadModal'), { ssr: false });
 const ReportModal = dynamic(() => import('@/components/ReportModal'), { ssr: false });
+// [PERF] 모달류는 초기 화면에 안 보이므로 지연 로드 (초기 JS 축소)
+const RoleOnboardingModal = dynamic(() => import('@/components/RoleOnboardingModal'), { ssr: false });
+const LaunchPromoModal = dynamic(() => import('@/components/LaunchPromoModal'), { ssr: false });
 
 interface HomeClientProps {
     initialExamData: any[];
     initialSchoolsRaw: any[];
-    initialUser: any | null;
-    isAdmin: boolean;
 }
 
-export default function HomeClient({ initialExamData, initialSchoolsRaw, initialUser, isAdmin }: HomeClientProps) {
+export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeClientProps) {
     interface GroupedExam {
         key: string;
         title: string;
@@ -77,23 +50,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     }
 
     const [groupedFiles, setGroupedFiles] = useState<GroupedExam[]>([]);
-    const [runStudentTour, setRunStudentTour] = useState(false);
-
-    // 홈 튜토리얼: 이 탭 첫 방문이면 1회 자동. (역할선택과 무관 / 데스크탑·모바일 동일)
-    const startHomeTourIfUnseen = () => {
-        if (typeof window === 'undefined') return;
-        if (localStorage.getItem('mathetf_home_tour_seen')) return;
-        setTimeout(() => setRunStudentTour(true), 400);
-    };
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const t = new URLSearchParams(window.location.search).get('tour');
-        if (t === '1' || t === 'student') { setRunStudentTour(true); return; }  // 강제
-        // 역할 모달이 뜰 첫 방문이면 그 모달이 닫힐 때(onClose) 시작 → 여기선 건너뜀
-        const roleUnresolved = !localStorage.getItem('mathetf_role') && !localStorage.getItem('mathetf_role_dismissed');
-        if (roleUnresolved) return;
-        startHomeTourIfUnseen();
-    }, []);
+    // (홈 튜토리얼 투어는 렌더링이 제거된 지 오래라 관련 상태·GuidedTour 번들도 정리함)
 
     const [files, setFiles] = useState<FileItem[]>([]);
     const [selectedRegion, setSelectedRegion] = useState('');
@@ -130,7 +87,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [selectedExamForReport, setSelectedExamForReport] = useState<{key: string, title: string} | null>(null);
-    const [user, setUser] = useState<User | null>(initialUser);
+    // [PERF] 서버(page.tsx)가 쿠키를 읽지 않아야 홈이 ISR/CDN 캐시되므로, 유저 상태는 클라이언트에서만 조회
+    const [user, setUser] = useState<User | null>(null);
+    const isAdmin = user?.email === 'mathofhy@naver.com';
     const router = useRouter();
     const supabase = createClient();
     const { addToCart, items: cartItems } = useCart();
@@ -251,22 +210,22 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
             setIsLoadingSchools(false);
         };
 
+        checkUser();
+        initSchoolData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // 파일 그룹핑 — 관리자 로그인 확인 시(isAdmin 변경) 원본제보 포함 여부가 달라지므로 재실행
+    useEffect(() => {
         const initFiles = () => {
             const data = initialExamData;
             if (data) {
                 const groups: { [key: string]: GroupedExam } = {};
 
-                // 무료 시험(모의고사·수능·사관학교/경찰대 입학시험·전국연합)은 홈 카탈로그에 노출하지 않음
-                // (이들은 시험지 출제 탭에서 무료 DB로만 제공)
-                const FREE_EXAM_SCHOOLS = ['전국연합', '사관학교', '경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
-                const isMockExam = (item: any) =>
-                    item.exam_type === '모의고사' || item.exam_type === '수능' || item.exam_type === '입학시험'
-                    || FREE_EXAM_SCHOOLS.includes(item.school)
-                    || item.title?.includes('모의고사');
-                
-                const filteredData = isAdmin 
-                    ? data.filter((item: any) => !isMockExam(item)) 
-                    : data.filter((item: any) => item.content_type !== '원본제보' && !isMockExam(item));
+                // 모의고사류 제외는 서버(page.tsx)에서 이미 처리 — 여기선 원본제보만 역할별 필터
+                const filteredData = isAdmin
+                    ? data
+                    : data.filter((item: any) => item.content_type !== '원본제보');
 
                 filteredData.forEach((item: any) => {
                     // Include subject in the key to differentiate exams
@@ -340,10 +299,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw, initial
                 setGroupedFiles(Object.values(groups));
             }
         };
-        checkUser();
-        initSchoolData();
         initFiles();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAdmin]);
 
     const fetchDbDetails = async (file: FileItem) => {
         setIsLoadingDetails(true);
