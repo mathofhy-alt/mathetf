@@ -129,6 +129,13 @@ export default function QuestionBankPage() {
     const [solutionTarget, setSolutionTarget] = useState<any | null>(null);
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [viewMode, setViewMode] = useState<'search' | 'review'>('search');
+    // 검색 결과 카드 열 수 (3=크게, 4=많이) — 사용자 선택, localStorage 유지
+    const [searchCols, setSearchCols] = useState<3 | 4>(3);
+    useEffect(() => {
+        const v = localStorage.getItem('qb_search_cols');
+        if (v === '3' || v === '4') setSearchCols(Number(v) as 3 | 4);
+    }, []);
+    const changeSearchCols = (n: 3 | 4) => { setSearchCols(n); try { localStorage.setItem('qb_search_cols', String(n)); } catch { } };
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const dragOrderRef = useRef<any[]>([]); // 드래그 중 순서를 ref에만 저장 (re-render 최소화)
     const [showAutoModal, setShowAutoModal] = useState(false);
@@ -1302,6 +1309,23 @@ export default function QuestionBankPage() {
                                 </h1>
                             </div>
                             <div className="flex gap-1.5 sm:gap-2 items-center">
+                                {/* 카드 크기(열 수) 토글 — lg 이상에서만 의미 있음 */}
+                                <div className="hidden lg:flex items-center border border-slate-200 rounded-lg overflow-hidden text-xs font-bold">
+                                    <button
+                                        onClick={() => changeSearchCols(3)}
+                                        title="카드 크게 (3열)"
+                                        className={`px-2.5 py-2 transition-colors ${searchCols === 3 ? 'bg-[#497AB7] text-white' : 'bg-white text-slate-400 hover:bg-slate-50'}`}
+                                    >
+                                        크게
+                                    </button>
+                                    <button
+                                        onClick={() => changeSearchCols(4)}
+                                        title="카드 작게 (4열)"
+                                        className={`px-2.5 py-2 transition-colors ${searchCols === 4 ? 'bg-[#497AB7] text-white' : 'bg-white text-slate-400 hover:bg-slate-50'}`}
+                                    >
+                                        작게
+                                    </button>
+                                </div>
                                 {questions.length > 0 && (
                                     <button
                                         onClick={handleSelectAllToggle}
@@ -1430,7 +1454,7 @@ export default function QuestionBankPage() {
 
                     {loading && viewMode === 'search' ? (
                         /* 검색 로딩: 문제 카드 모양 스켈레톤 (스피너보다 체감 빠름) */
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-6 pt-6 pb-10 animate-pulse" aria-label="문제 검색 중">
+                        <div className={`grid grid-cols-1 md:grid-cols-2 ${searchCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6 px-6 pt-6 pb-10 animate-pulse`} aria-label="문제 검색 중">
                             {Array.from({ length: 8 }).map((_, i) => (
                                 <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2.5">
                                     <div className="flex justify-between">
@@ -1450,7 +1474,7 @@ export default function QuestionBankPage() {
                         </div>
                     ) : (
                         <>
-                            <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-4'} gap-6 px-6 pt-6 pb-10 animate-in fade-in duration-500`}>
+                            <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : (searchCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4')} gap-6 px-6 pt-6 pb-10 animate-in fade-in duration-500`}>
                                 {(viewMode === 'search' ? questions : cart).length > 0 ? (viewMode === 'search' ? questions : cart).map((q, idx) => {
                                     const inCart = q && cartIdSet.has(q.id);
                                 return (
