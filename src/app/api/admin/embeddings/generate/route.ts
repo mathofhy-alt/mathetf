@@ -213,7 +213,14 @@ export async function POST(req: NextRequest) {
         // [성능] 동시 처리 개수. Tier 3 한도(4,000+ RPM / 4M+ TPM) 대비 충분히 안전한 16.
         // (호출당 ~12k 토큰 가정 시 16 → 약 2.3M TPM, 192 RPM 수준 — 한도 미달. 정확도는 그대로)
         const CONCURRENCY = 16;
+        // [시간 예산] 문항당 Gemini가 5~24초로 편차가 커서, 운이 나쁘면 총 실행이
+        // 함수 제한(60초)을 넘겨 강제 종료됨 → 뒤 웨이브 문항들이 통째로 미처리되던 원인.
+        // 40초 안에서 처리 가능한 만큼만 돌고 나머지는 다음 클릭이 이어받는다 (완료분 저장 보장).
+        const startedAt = Date.now();
+        const TIME_BUDGET_MS = 40_000;
+        let timeBoxed = false;
         for (let i = 0; i < questionsToProcess.length; i += CONCURRENCY) {
+            if (i > 0 && Date.now() - startedAt > TIME_BUDGET_MS) { timeBoxed = true; break; }
             const batch = questionsToProcess.slice(i, i + CONCURRENCY);
             const batchResults = await Promise.allSettled(batch.map(q => processQuestion(q)));
             for (const r of batchResults) {
@@ -291,6 +298,8 @@ export async function POST(req: NextRequest) {
             successCount,
             scannedCount: questionsToProcess.length,
             total: questionsToProcess.length,
+            // 시간 예산으로 이번에 못 돈 문항 수 — 다음 클릭이 이어서 처리
+            remaining: timeBoxed ? questionsToProcess.length - results.length : 0,
             totalEmbeddingTokens,
             totalTagTokens,
             estimatedCostUsd
