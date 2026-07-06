@@ -305,6 +305,19 @@ export default function AdminIngestPage() {
                                         <option value="확률과통계">확률과 통계</option>
                                         <option value="전과목">전과목 (고1, 고2 등)</option>
                                     </optgroup>
+                                    <optgroup label="2022 개정">
+                                        <option value="공통수학1">공통수학1</option>
+                                        <option value="공통수학2">공통수학2</option>
+                                        <option value="대수">대수</option>
+                                        <option value="미적분I">미적분I</option>
+                                    </optgroup>
+                                    <optgroup label="2015 개정">
+                                        <option value="수학(상)">수학(상)</option>
+                                        <option value="수학(하)">수학(하)</option>
+                                        <option value="수학I">수학I</option>
+                                        <option value="수학II">수학II</option>
+                                        <option value="미적분">미적분</option>
+                                    </optgroup>
                                     <optgroup label="구교과과정 (-2021학년도)">
                                         <option value="가형">가형</option>
                                         <option value="나형">나형</option>
@@ -350,6 +363,19 @@ export default function AdminIngestPage() {
                                         <option value="미적분II">미적분II</option>
                                         <option value="기하와벡터">기하와벡터</option>
                                         <option value="확률과통계">확률과 통계</option>
+                                    </optgroup>
+                                    <optgroup label="2022 개정">
+                                        <option value="공통수학1">공통수학1</option>
+                                        <option value="공통수학2">공통수학2</option>
+                                        <option value="대수">대수</option>
+                                        <option value="미적분I">미적분I</option>
+                                    </optgroup>
+                                    <optgroup label="2015 개정">
+                                        <option value="수학(상)">수학(상)</option>
+                                        <option value="수학(하)">수학(하)</option>
+                                        <option value="수학I">수학I</option>
+                                        <option value="수학II">수학II</option>
+                                        <option value="미적분">미적분</option>
                                     </optgroup>
                                     <optgroup label="구교과과정 (-2021학년도)">
                                         <option value="가형">가형</option>
@@ -403,6 +429,19 @@ export default function AdminIngestPage() {
                                         <option value="미적분II">미적분II</option>
                                         <option value="기하와벡터">기하와벡터</option>
                                         <option value="확률과통계">확률과 통계</option>
+                                    </optgroup>
+                                    <optgroup label="2022 개정">
+                                        <option value="공통수학1">공통수학1</option>
+                                        <option value="공통수학2">공통수학2</option>
+                                        <option value="대수">대수</option>
+                                        <option value="미적분I">미적분I</option>
+                                    </optgroup>
+                                    <optgroup label="2015 개정">
+                                        <option value="수학(상)">수학(상)</option>
+                                        <option value="수학(하)">수학(하)</option>
+                                        <option value="수학I">수학I</option>
+                                        <option value="수학II">수학II</option>
+                                        <option value="미적분">미적분</option>
                                     </optgroup>
                                     <optgroup label="구교과과정 (-2021학년도)">
                                         <option value="가형">가형</option>
