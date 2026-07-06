@@ -88,8 +88,19 @@ const _VARIANT_TO_CANONICAL: Record<string, string> = (() => {
     }
     return m;
 })();
-export function canonicalUnit(name: string | null | undefined): string | null {
+// 과목에 따라 의미가 갈리는 표기 — 전역 UNIT_SYNONYMS에 넣으면 다른 과목을 오염시키는 것들.
+// 예: '정적분'은 미적분I에선 정식 단원이지만, 미적분II(AI 분류맵의 세분류)에선 '여러가지적분법'으로 흡수.
+const _SUBJECT_CONDITIONAL_VARIANTS: Record<string, Record<string, string>> = {
+    '미적분II': { '정적분': '여러가지적분법' },
+    '미적분': { '정적분': '여러가지적분법' }, // 2015 개정명 (미적분II와 등가)
+};
+
+export function canonicalUnit(name: string | null | undefined, subject?: string | null): string | null {
     if (!name) return name ?? null;
     const trimmed = name.trim();
+    if (subject) {
+        const cond = _SUBJECT_CONDITIONAL_VARIANTS[subject]?.[trimmed];
+        if (cond) return cond;
+    }
     return _VARIANT_TO_CANONICAL[trimmed] || trimmed;
 }

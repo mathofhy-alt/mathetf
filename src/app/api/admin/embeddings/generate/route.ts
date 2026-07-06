@@ -164,7 +164,8 @@ export async function POST(req: NextRequest) {
                                 : (typeof updatedConcepts === 'string' ? updatedConcepts.replace(/^#/, '') : '');
                         }
                         // AI가 옛 표기(삼각함수의활용 등)를 뱉어도 표준명으로 정규화 → DB 단원 통일 유지
-                        if (needsUnit && tagData.unit) updatedUnit = canonicalUnit(tagData.unit) || tagData.unit;
+                        // 과목 전달: '정적분'처럼 과목에 따라 흡수 여부가 갈리는 표기 처리 (미적분II→여러가지적분법)
+                        if (needsUnit && tagData.unit) updatedUnit = canonicalUnit(tagData.unit, aiLockSubject || updatedSubject) || tagData.unit;
                         // source 과목이 있으면 절대 AI로 안 바꿈 (2015↔2022 혼동 방지)
                         if (needsSubject && !sourceSubject && tagData.subject) updatedSubject = tagData.subject;
                         if (needsDifficulty && tagData.difficulty != null) updatedDifficulty = tagData.difficulty.toString();
