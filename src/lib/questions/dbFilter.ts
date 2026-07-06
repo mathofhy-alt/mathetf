@@ -9,7 +9,8 @@
  *       이스케이프(이중따옴표 + 백슬래시)해 .or() 구문 인젝션을 방지.
  */
 
-const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '확률과통계', '확률과 통계'];
+// '미적분'은 미적분II의 2015 개정명 — 업로드 시 2015명을 골라도 공통 합류가 끊기지 않게 포함
+const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '미적분', '확률과통계', '확률과 통계'];
 
 // PostgREST 필터 값 이스케이프: 특수문자(쉼표/괄호/점/따옴표)가 포함돼도 안전하게.
 function quoteVal(v: unknown): string {

@@ -139,8 +139,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         }
 
                         if (db.subject && db.subject !== '전과정') {
-                            const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '확률과통계', '확률과 통계'];
-                            const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능')
+                            // lib/questions/dbFilter.ts 의 MOCK_SELECT_SUBJECTS 와 동기 유지 필수
+                            const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '미적분', '확률과통계', '확률과 통계'];
+                            const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능' || db.exam_type === '입학시험')
                                 && MOCK_SELECT_SUBJECTS.includes(db.subject);
                             if (isMockSelect) {
                                 parts.push(`subject.in.("\ub300\uc218","\ubbf8\uc801\ubd84I","${db.subject}")`);
