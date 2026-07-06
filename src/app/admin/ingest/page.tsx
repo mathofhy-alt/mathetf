@@ -302,7 +302,7 @@ export default function AdminIngestPage() {
                                         <option value="공통(수1,수2)">공통(수1,수2)</option>
                                         <option value="미적분II">미적분II</option>
                                         <option value="기하와벡터">기하와벡터</option>
-                                        <option value="확률과 통계">확률과 통계</option>
+                                        <option value="확률과통계">확률과 통계</option>
                                         <option value="전과목">전과목 (고1, 고2 등)</option>
                                     </optgroup>
                                     <optgroup label="구교과과정 (-2021학년도)">
@@ -349,7 +349,7 @@ export default function AdminIngestPage() {
                                         <option value="수학">수학 (공통+선택)</option>
                                         <option value="미적분II">미적분II</option>
                                         <option value="기하와벡터">기하와벡터</option>
-                                        <option value="확률과 통계">확률과 통계</option>
+                                        <option value="확률과통계">확률과 통계</option>
                                     </optgroup>
                                     <optgroup label="구교과과정 (-2021학년도)">
                                         <option value="가형">가형</option>
@@ -402,7 +402,7 @@ export default function AdminIngestPage() {
                                         <option value="수학">수학 (공통+선택)</option>
                                         <option value="미적분II">미적분II</option>
                                         <option value="기하와벡터">기하와벡터</option>
-                                        <option value="확률과 통계">확률과 통계</option>
+                                        <option value="확률과통계">확률과 통계</option>
                                     </optgroup>
                                     <optgroup label="구교과과정 (-2021학년도)">
                                         <option value="가형">가형</option>
