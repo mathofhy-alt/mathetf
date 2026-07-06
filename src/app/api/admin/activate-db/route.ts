@@ -112,7 +112,38 @@ export async function POST(req: NextRequest) {
             calculatedPrice = isFreeExam ? 0 : 20000;
         }
 
-        // 2. Insert into exam_materials
+        // 2. Upsert into exam_materials
+        // 같은 시험의 개인DB가 이미 있으면 새 행을 만들지 않고 가격·제목만 갱신 (멱등)
+        // — 파싱 실패 재시도·변형 파싱 후 재활성화 때마다 중복 행이 쌓여
+        //   보관함/DB선택창에 같은 DB가 3개씩 뜨던 근본 원인 (경찰대 2021 사례)
+        const dbGrade = Number(String(grade).replace(/[^0-9]/g, ''));
+        const dbSemester = Number(String(semester).replace(/[^0-9]/g, '')) || 1; // Fallback if string
+        const dbSubject = subject || '전과정';
+
+        const { data: existing } = await supabase
+            .from('exam_materials')
+            .select('id')
+            .eq('school', school)
+            .eq('exam_year', Number(year))
+            .eq('grade', dbGrade)
+            .eq('semester', dbSemester)
+            .eq('exam_type', exam_type)
+            .eq('subject', dbSubject)
+            .eq('content_type', '개인DB')
+            .limit(1)
+            .maybeSingle();
+
+        if (existing) {
+            const { data, error } = await supabase
+                .from('exam_materials')
+                .update({ title, price: calculatedPrice })
+                .eq('id', existing.id)
+                .select()
+                .single();
+            if (error) throw error;
+            return NextResponse.json({ success: true, data, calculated_price: calculatedPrice, updated: true });
+        }
+
         const { data, error } = await supabase
             .from('exam_materials')
             .insert({
@@ -121,10 +152,10 @@ export async function POST(req: NextRequest) {
                 school,
                 region: '서울', // Default
                 district: '강남구', // Default
-                grade: Number(String(grade).replace(/[^0-9]/g, '')),
-                semester: Number(String(semester).replace(/[^0-9]/g, '')) || 1, // Fallback if string
+                grade: dbGrade,
+                semester: dbSemester,
                 exam_type: exam_type,
-                subject: subject || '전과정',
+                subject: dbSubject,
                 title,
                 exam_year: Number(year),
                 file_type: 'DB',
@@ -159,6 +190,11 @@ export async function DELETE(req: NextRequest) {
     }
 
     try {
+        // 이 행을 참조하는 보관함·장바구니 항목 먼저 정리
+        // (안 지우면 사용자 보관함에 깨진 참조가 남음 — 덕수고 71건 잔재 사례)
+        await supabase.from('user_items').delete().eq('reference_id', id);
+        await supabase.from('cart_items').delete().eq('item_id', id);
+
         const { error } = await supabase
             .from('exam_materials')
             .delete()
