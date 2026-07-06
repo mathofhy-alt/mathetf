@@ -82,6 +82,19 @@ export async function POST(req: NextRequest) {
         const present = FILE_FIELDS.filter((f) => fd.get(f.field) instanceof File && (fd.get(f.field) as File).size > 0);
         if (present.length === 0) return NextResponse.json({ error: '업로드할 파일이 없습니다.' }, { status: 400 });
 
+        // 같은 시험(분류·연도·월·학년·과목)이 이미 있으면 중복 생성 차단
+        // (기존: slug에 꼬리표를 붙여 통과 → 자료실에 같은 카드가 2장 뜨던 원인. 경찰대 2021 사례)
+        let dupQuery = admin.from('mock_exams')
+            .select('id, title')
+            .eq('category', category).eq('exam_year', year).eq('grade', grade).eq('subject', subject);
+        dupQuery = month === null ? dupQuery.is('month', null) : dupQuery.eq('month', month);
+        const { data: dupExam } = await dupQuery.maybeSingle();
+        if (dupExam) {
+            return NextResponse.json({
+                error: `이미 등록된 자료입니다: "${dupExam.title}". 파일을 바꾸려면 목록에서 해당 항목의 수정을 사용하고, 새로 올리려면 먼저 삭제하세요.`,
+            }, { status: 409 });
+        }
+
         const newId = crypto.randomUUID();
         let slug = slugify(`${year}-${month ? month + '월-' : ''}${category}-${grade}-${subject}`);
         const { data: dup } = await admin.from('mock_exams').select('id').eq('slug', slug).maybeSingle();
