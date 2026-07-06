@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/utils/admin-auth';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+
+// 모의고사 허브·상세 ISR 캐시 즉시 갱신 (업로드/수정 반영 5분 대기 제거)
+function revalidateMockPages() {
+    revalidatePath('/mock');
+    revalidatePath('/mock/[seg]', 'page');
+}
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -67,6 +74,7 @@ export async function POST(req: NextRequest) {
             if (paths.original_pdf_path) patch.preview_urls = null;
             const { error } = await admin.from('mock_exams').update(patch).eq('id', id);
             if (error) throw new Error('수정 실패: ' + error.message);
+            revalidateMockPages();
             return NextResponse.json({ success: true, id, updated: true });
         }
 
@@ -84,6 +92,7 @@ export async function POST(req: NextRequest) {
             id: newId, category, exam_year: year, grade, month, subject, title, slug, ...paths,
         });
         if (insErr) throw new Error('DB 저장 실패: ' + insErr.message);
+        revalidateMockPages();
         return NextResponse.json({ success: true, id: newId, slug, title });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });

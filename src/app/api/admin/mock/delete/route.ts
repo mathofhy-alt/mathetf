@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/utils/admin-auth';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
@@ -30,6 +31,10 @@ export async function POST(req: NextRequest) {
         // 3) 행 삭제
         const { error } = await admin.from('mock_exams').delete().eq('id', id);
         if (error) throw new Error('삭제 실패: ' + error.message);
+
+        // 모의고사 허브·상세 ISR 캐시 즉시 갱신 (삭제 반영 5분 대기 제거)
+        revalidatePath('/mock');
+        revalidatePath('/mock/[seg]', 'page');
 
         return NextResponse.json({ success: true });
     } catch (e: any) {

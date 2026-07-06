@@ -133,6 +133,7 @@ export async function stopSelling(fileId: string) {
     }
 
     revalidatePath('/mypage');
+    revalidatePath('/'); // 홈 카탈로그에서도 즉시 제거 (ISR 5분 대기 없이)
     return { success: true, stoppedIds: siblingIds };
 }
 

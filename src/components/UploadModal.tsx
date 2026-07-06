@@ -283,6 +283,9 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                 await uploadRawSingleFile(fileRawCopy);
             }
 
+            // 홈 ISR 캐시 즉시 갱신 — 아래 reload 때 방금 올린 자료가 바로 보이게 (완료까지 대기)
+            try { await fetch('/api/revalidate', { method: 'POST' }); } catch { }
+
             alert('자료가 성공적으로 등록되었습니다!');
             onClose();
             router.refresh();
