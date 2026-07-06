@@ -33,6 +33,11 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
+            // 활성화율 측정용 로그 (실패해도 무시)
+            fetch('/api/log/feature', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feature: 'free_pdf', title: filename }),
+            }).catch(() => { });
         } catch (e) {
             alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
         } finally {
