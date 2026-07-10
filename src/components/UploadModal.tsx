@@ -385,8 +385,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                             </h3>
                             <p className="text-xs text-purple-700 font-medium">
                                 폰으로 촬영한 학교 시험지 사진이나 스캔본을 제보해주세요.<br/>
-                                제보된 자료는 관리자에게만 노출되며, <span className="text-purple-700 font-bold bg-white px-1">채택 시 10,000P를 드립니다.</span><br/>
-                                또한 이 자료를 바탕으로 개인DB가 판매될 경우 <span className="text-rose-600 font-bold bg-white px-1">판매 수익의 70%가 포인트로 자동 적립</span>됩니다.
+                                제보된 자료는 관리자에게만 노출되며, <span className="text-purple-700 font-bold bg-white px-1">채택 시 10,000P를 드립니다.</span>
                             </p>
                         </div>
                     )}
@@ -533,7 +532,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                                 <FileUploadSlot
                                     id="upload_raw_scan"
                                     label="진짜 원본 스캔본 (사진/PDF)"
-                                    subLabel="판매 수익 70% 포인트 적립"
+                                    subLabel="채택 시 10,000P 지급"
                                     file={fileRawCopy}
                                     setFile={setFileRawCopy}
                                     accept=".pdf,.jpg,.jpeg,.png,.zip"
