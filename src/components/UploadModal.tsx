@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { X, Upload, FileText, Trash2, CheckCircle2, AlertCircle, FileDown, Database } from 'lucide-react';
@@ -92,9 +92,12 @@ interface UploadModalProps {
     regions: string[];
     districtsMap: Record<string, string[]>;
     schoolsMap: Record<string, Record<string, string[]>>;
+    /** 제보 유도 진입 시: 원본제보 탭 + 학교 프리필 */
+    initialType?: 'MARKET' | 'SHADOW';
+    initialSchool?: { region: string; district: string; school: string };
 }
 
-export default function UploadModal({ isOpen, onClose, user, regions, districtsMap, schoolsMap }: UploadModalProps) {
+export default function UploadModal({ isOpen, onClose, user, regions, districtsMap, schoolsMap, initialType, initialSchool }: UploadModalProps) {
     const supabase = createClient();
     const router = useRouter();
 
@@ -125,6 +128,18 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
     // Validations & Loading
     const [isUploading, setIsUploading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+
+    // 제보 유도(검색 0건 카드)로 열릴 때: 원본제보 탭 + 학교 프리필
+    useEffect(() => {
+        if (!isOpen) return;
+        if (initialType) setUploadType(initialType);
+        if (initialSchool) {
+            setSelectedRegion(initialSchool.region);
+            setSelectedDistrict(initialSchool.district);
+            setSelectedSchool(initialSchool.school);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, initialType, initialSchool]);
 
     if (!isOpen) return null;
 
@@ -280,6 +295,24 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                 if (!fileRawCopy) {
                     throw new Error('원본 시험지 파일(PDF, 사진)을 첨부해주세요.');
                 }
+                // [중복 반려] 이미 정식 자료가 있거나, 같은 시험 제보가 접수돼 있으면 차단
+                // (보상 중복 지급·불필요 제보 방지)
+                const { data: existing } = await supabase
+                    .from('exam_materials')
+                    .select('id, title, exam_year, content_type')
+                    .eq('school', selectedSchool)
+                    .eq('grade', grade)
+                    .eq('semester', semester)
+                    .eq('exam_type', examType)
+                    .eq('subject', subject);
+                const sameYear = (existing || []).filter(item =>
+                    item.exam_year === Number(year) || item.title?.includes(String(year)));
+                if (sameYear.some(item => item.content_type !== '원본제보')) {
+                    throw new Error(`이미 보유 중인 시험지예요 (${selectedSchool} ${year}년 ${grade}학년 ${semester}학기 ${examType} ${subject}). 홈에서 검색해 이용해주세요!`);
+                }
+                if (sameYear.some(item => item.content_type === '원본제보')) {
+                    throw new Error('같은 시험의 제보가 이미 접수되어 검토 중이에요. 조금만 기다려주세요!');
+                }
                 await uploadRawSingleFile(fileRawCopy);
             }
 
@@ -352,7 +385,8 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                             </h3>
                             <p className="text-xs text-purple-700 font-medium">
                                 폰으로 촬영한 학교 시험지 사진이나 스캔본을 제보해주세요.<br/>
-                                제보된 자료는 관리자에게만 노출되며, 이 자료를 바탕으로 개인DB가 판매될 경우 <span className="text-rose-600 font-bold bg-white px-1">판매 수익의 70%가 포인트로 자동 적립</span>됩니다.
+                                제보된 자료는 관리자에게만 노출되며, <span className="text-purple-700 font-bold bg-white px-1">채택 시 10,000P를 드립니다.</span><br/>
+                                또한 이 자료를 바탕으로 개인DB가 판매될 경우 <span className="text-rose-600 font-bold bg-white px-1">판매 수익의 70%가 포인트로 자동 적립</span>됩니다.
                             </p>
                         </div>
                     )}

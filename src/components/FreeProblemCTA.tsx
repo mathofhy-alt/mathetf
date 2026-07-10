@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Download, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import NotifyOptIn from '@/components/NotifyOptIn';
 
 /**
  * 시험지 상세페이지의 '무료 문제 PDF' CTA.
@@ -12,11 +13,16 @@ import { createClient } from '@/utils/supabase/client';
  */
 export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { freePdfUrl: string; filename: string; pageCount: number }) {
     const [authed, setAuthed] = useState<boolean | null>(null);
+    const [marketingAgreed, setMarketingAgreed] = useState(true); // 기본 true → 확인 전엔 배너 안 뜸
+    const [showNotify, setShowNotify] = useState(false);
     const [downloading, setDownloading] = useState(false);
 
     useEffect(() => {
         const supabase = createClient();
-        supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user)).catch(() => setAuthed(false));
+        supabase.auth.getUser().then(({ data }) => {
+            setAuthed(!!data.user);
+            setMarketingAgreed(!!data.user?.user_metadata?.marketing_agreed);
+        }).catch(() => setAuthed(false));
     }, []);
 
     const handleDownload = async () => {
@@ -38,6 +44,8 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ feature: 'free_pdf', title: filename }),
             }).catch(() => { });
+            // 새 기출 알림 옵트인 배너 (미동의자에게만)
+            if (!marketingAgreed) setShowNotify(true);
         } catch (e) {
             alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
         } finally {
@@ -83,6 +91,7 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
                     )}
                 </>
             )}
+            <NotifyOptIn school={filename.split('_')[0] || ''} visible={showNotify} onClose={() => setShowNotify(false)} />
         </div>
     );
 }

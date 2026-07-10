@@ -11,6 +11,7 @@ import PromoCarousel from '@/components/PromoCarousel';
 import FeatureCards from '@/components/FeatureCards';
 import SimilarDemo from '@/components/SimilarDemo';
 import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
+import NotifyOptIn from '@/components/NotifyOptIn';
 import Header from '@/components/Header';
 import { useCart } from '@/components/providers/CartProvider';
 import dynamic from 'next/dynamic';
@@ -84,6 +85,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
 
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    // 자료 없는 학교 제보 유도: 모달을 원본제보 모드+학교 프리필로 열기 위한 초기값
+    const [uploadInit, setUploadInit] = useState<{ type: 'MARKET' | 'SHADOW'; school?: { region: string; district: string; school: string } } | null>(null);
+    // 무료PDF 다운로드 직후 "새 기출 알림" 옵트인 배너
+    const [notifySchool, setNotifySchool] = useState<string | null>(null);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [selectedExamForReport, setSelectedExamForReport] = useState<{key: string, title: string} | null>(null);
@@ -493,6 +498,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ feature: 'free_pdf', title: filename }),
             }).catch(() => { });
+            // 새 기출 알림 옵트인 배너 (미동의 + 미거절자에게만)
+            if (!user?.user_metadata?.marketing_agreed && !localStorage.getItem('mathetf_notify_dismissed')) {
+                setNotifySchool(file.school);
+            }
         } catch (error: any) {
             console.error('Free download error:', error);
             alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
@@ -744,8 +753,38 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                     </div>
                                 </div>
                             )) : (
-                                <div className="py-20 text-center text-[#AAAAC4] bg-white rounded-xl shadow-sm">
-                                    <p>검색 결과가 없습니다.</p>
+                                <div className="py-14 text-center bg-white rounded-xl shadow-sm px-6">
+                                    <p className="text-[#AAAAC4]">검색 결과가 없습니다.</p>
+                                    {(selectedSchool || searchKeyword) && (
+                                        <div className="mt-5 max-w-md mx-auto bg-[#F4F9F7] border border-[#3AADA9]/30 rounded-2xl p-5 text-left">
+                                            <p className="font-extrabold text-[#1E2D4F] break-keep">
+                                                📥 {(selectedSchool || searchKeyword)} 자료를 준비 중이에요
+                                            </p>
+                                            <p className="text-sm text-slate-500 mt-1.5 break-keep">
+                                                갖고 계신 기출 시험지(사진·PDF)를 제보해주시면, 채택 시{' '}
+                                                <strong className="text-[#3AADA9]">10,000P</strong>를 드려요.
+                                            </p>
+                                            <button
+                                                onClick={() => {
+                                                    if (!user) { setShowLoginPrompt(true); return; }
+                                                    const name = selectedSchool || '';
+                                                    let init: { type: 'MARKET' | 'SHADOW'; school?: { region: string; district: string; school: string } } = { type: 'SHADOW' };
+                                                    if (name) {
+                                                        outer: for (const r of Object.keys(schoolsMap)) {
+                                                            for (const d of Object.keys(schoolsMap[r] || {})) {
+                                                                if ((schoolsMap[r][d] || []).includes(name)) { init = { type: 'SHADOW', school: { region: r, district: d, school: name } }; break outer; }
+                                                            }
+                                                        }
+                                                    }
+                                                    setUploadInit(init);
+                                                    setIsUploadModalOpen(true);
+                                                }}
+                                                className="mt-3 w-full py-2.5 bg-[#3AADA9] hover:bg-[#2F938F] text-white text-sm font-extrabold rounded-xl transition-colors"
+                                            >
+                                                기출 제보하고 10,000P 받기
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -777,12 +816,16 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
 
             <UploadModal
                 isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
+                onClose={() => { setIsUploadModalOpen(false); setUploadInit(null); }}
                 user={user}
                 regions={regions}
                 districtsMap={districtsMap}
                 schoolsMap={schoolsMap}
+                initialType={uploadInit?.type}
+                initialSchool={uploadInit?.school}
             />
+
+            <NotifyOptIn school={notifySchool || ''} visible={!!notifySchool} onClose={() => setNotifySchool(null)} />
 
             <ReportModal
                 isOpen={isReportModalOpen}

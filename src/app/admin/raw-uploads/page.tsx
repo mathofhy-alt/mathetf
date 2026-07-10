@@ -18,6 +18,8 @@ export default function RawUploadsAdmin() {
     const [earningsMap, setEarningsMap] = useState<Record<string, number>>({});  // submission_id → 총 수익
     const [linkingId, setLinkingId] = useState<string | null>(null);  // 현재 연결 처리 중인 submission id
     const [selectedDbId, setSelectedDbId] = useState<string>('');
+    const [rewardedIds, setRewardedIds] = useState<Set<string>>(new Set());  // 채택 보상 지급 완료된 제보
+    const [rewardingId, setRewardingId] = useState<string | null>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -48,6 +50,15 @@ export default function RawUploadsAdmin() {
                 }
             }
         }
+
+        // 채택 보상 지급 완료 목록
+        try {
+            const res = await fetch('/api/admin/approve-submission');
+            if (res.ok) {
+                const j = await res.json();
+                setRewardedIds(new Set(j.ids || []));
+            }
+        } catch { }
 
         // 연결 가능한 모든 DB 자료 (content_type 이 '개인DB' 이거나 file_type이 'DB')
         const { data: dbData } = await supabase
@@ -140,6 +151,27 @@ export default function RawUploadsAdmin() {
     const getLinkedDbs = (submissionId: string) =>
         dbItems.filter(d => d.source_submission_id === submissionId);
 
+    // 제보 채택 → 제보자에게 10,000P 지급 (서버에서 멱등 보장)
+    const handleApprove = async (file: any) => {
+        if (!confirm(`이 제보를 채택하고 제보자(${file.submitter_name || file.uploader_name || '익명'})에게 10,000P를 지급하시겠습니까?`)) return;
+        setRewardingId(file.id);
+        try {
+            const res = await fetch('/api/admin/approve-submission', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: file.id }),
+            });
+            const j = await res.json();
+            if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
+            setRewardedIds(prev => new Set(prev).add(file.id));
+            alert('✅ 채택 완료 — 10,000P 지급됐습니다.');
+        } catch (err: any) {
+            alert('지급 실패: ' + err.message);
+        } finally {
+            setRewardingId(null);
+        }
+    };
+
     if (!user) return null;
 
     return (
@@ -215,6 +247,20 @@ export default function RawUploadsAdmin() {
 
                                                 {/* 액션 버튼 */}
                                                 <div className="flex items-center gap-2 shrink-0">
+                                                    {rewardedIds.has(file.id) ? (
+                                                        <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-amber-100 text-amber-700 border border-amber-200">
+                                                            <Coins size={13} /> 채택됨 · 10,000P
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleApprove(file)}
+                                                            disabled={rewardingId === file.id}
+                                                            title="채택하고 10,000P 지급"
+                                                            className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-colors shadow-sm disabled:opacity-50"
+                                                        >
+                                                            <Coins size={13} /> {rewardingId === file.id ? '지급 중…' : '채택 +10,000P'}
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleDownload(file.file_path, file.title)}
                                                         title="다운로드"
