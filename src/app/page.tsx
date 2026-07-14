@@ -3,9 +3,10 @@ import { unstable_cache } from 'next/cache';
 import type { Metadata } from 'next';
 import HomeClient from './HomeClient';
 
-// [PERF] 홈 ISR 5분 — 쿠키(auth) 읽기를 클라이언트로 내려 CDN 캐시 히트 확보 (TTFB ~900ms → ~150ms)
-// 신규 업로드 반영은 최대 5분 지연 (필요 시 업로드 라우트에서 revalidatePath('/') 호출)
-export const revalidate = 300;
+// [PERF] 홈 ISR — 쿠키(auth) 읽기를 클라이언트로 내려 CDN 캐시 히트 확보 (TTFB ~900ms → ~150ms)
+// 업로드·삭제는 revalidatePath로 즉시 반영되므로 주기 재생성은 보험용 1시간이면 충분
+// (기존 5분 주기는 하루 ~300회 백그라운드 재렌더로 Vercel CPU를 소모 — 7/14 한도 초과 원인 중 하나)
+export const revalidate = 3600;
 
 // 홈은 자기 자신을 canonical로 (루트 layout에서 canonical "/" 제거했기 때문에 여기서 명시)
 // 파라미터 붙은 홈(/?school= 등)은 canonical "/" 로 정규화되므로 중복 색인 걱정 없음

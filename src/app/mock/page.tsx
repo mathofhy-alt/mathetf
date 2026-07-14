@@ -6,8 +6,8 @@ import MockExamCard, { MockCategory, MOCK_CATEGORIES, CATEGORY_DESC } from '@/co
 import MockUploadButton from '@/components/mock/MockUploadButton';
 import { fetchAllMockExams } from '@/lib/mock-exams';
 
-// [PERF] force-dynamic → ISR 5분: 매 요청 SSR 제거 (자료 업로드 반영 최대 5분 지연)
-export const revalidate = 300;
+// [PERF] ISR — 업로드·수정·삭제는 revalidatePath로 즉시 반영되므로 주기 재생성은 보험용 1시간
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
     title: '모의고사 수학 기출·변형문제 무료 다운로드 | 수학ETF',

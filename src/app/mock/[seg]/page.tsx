@@ -9,8 +9,8 @@ import MockAdminControls from '@/components/mock/MockAdminControls';
 import { fetchMockExamsByCategory, fetchMockExamBySlug } from '@/lib/mock-exams';
 import { proxiedOgImage } from '@/lib/og-image';
 
-// [PERF] force-dynamic → ISR 5분: 매 요청 SSR 제거 (자료 업로드 반영 최대 5분 지연)
-export const revalidate = 300;
+// [PERF] ISR — 업로드·수정·삭제는 revalidatePath로 즉시 반영되므로 주기 재생성은 보험용 1시간
+export const revalidate = 3600;
 
 const CATEGORIES = Object.keys(MOCK_CATEGORIES) as MockCategory[];
 const isCategory = (s: string): s is MockCategory => (CATEGORIES as string[]).includes(s);
