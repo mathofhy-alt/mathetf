@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, Youtube } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
 import DepositModal from './payments/DepositModal';
@@ -136,6 +136,11 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                     {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
                                 </Link>
                             ))}
+                            {/* 유튜브 사용법 가이드 (외부 채널) */}
+                            <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
+                                className="px-2 py-2 rounded-lg text-[#FF0000] hover:bg-red-50 transition-colors whitespace-nowrap flex items-center gap-1">
+                                <Youtube size={16} /> 사용법
+                            </a>
                             {user?.email === 'mathofhy@naver.com' && (
                                 <Link href="/admin/inventory" className="px-2 py-2 text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
                             )}
@@ -241,6 +246,13 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 )}
                             </div>
                         ))}
+                        {/* 유튜브 사용법 가이드 (외부 채널) */}
+                        <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-1.5 py-3 px-4 rounded-xl text-sm font-bold text-[#FF0000] hover:bg-red-50 transition-colors">
+                            <Youtube size={17} /> 사용법 가이드
+                            <span className="text-[10px] text-slate-400 font-semibold ml-auto">유튜브 ↗</span>
+                        </a>
                         {user?.email === 'mathofhy@naver.com' && (
                             <Link href="/admin/inventory" className="block py-3 px-4 rounded-xl text-sm font-bold text-purple-600 hover:bg-purple-50">
                                 🎯 현황판
