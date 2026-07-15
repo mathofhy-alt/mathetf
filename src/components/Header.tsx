@@ -4,7 +4,15 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, Youtube } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+
+// 실제 유튜브 브랜드 로고 (빨간 라운드 사각형 + 흰 재생 삼각형)
+const YouTubeLogo = ({ size = 22 }: { size?: number }) => (
+    <svg viewBox="0 0 28 20" width={size} height={size * 20 / 28} aria-hidden="true" className="shrink-0">
+        <rect width="28" height="20" rx="6" fill="#FF0000" />
+        <path d="M11.3 5.7v8.6L18.7 10z" fill="#fff" />
+    </svg>
+);
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
 import DepositModal from './payments/DepositModal';
@@ -138,8 +146,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             ))}
                             {/* 유튜브 사용법 가이드 (외부 채널) */}
                             <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
-                                className="px-2 py-2 rounded-lg text-[#FF0000] hover:bg-red-50 transition-colors whitespace-nowrap flex items-center gap-1">
-                                <Youtube size={16} /> 사용법
+                                className="px-2 py-2 rounded-lg text-slate-600 hover:text-[#FF0000] hover:bg-red-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
+                                <YouTubeLogo size={20} /> 사용법
                             </a>
                             {user?.email === 'mathofhy@naver.com' && (
                                 <Link href="/admin/inventory" className="px-2 py-2 text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
@@ -249,8 +257,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {/* 유튜브 사용법 가이드 (외부 채널) */}
                         <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-1.5 py-3 px-4 rounded-xl text-sm font-bold text-[#FF0000] hover:bg-red-50 transition-colors">
-                            <Youtube size={17} /> 사용법 가이드
+                            className="flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-red-50 transition-colors">
+                            <YouTubeLogo size={22} /> 사용법 가이드
                             <span className="text-[10px] text-slate-400 font-semibold ml-auto">유튜브 ↗</span>
                         </a>
                         {user?.email === 'mathofhy@naver.com' && (
