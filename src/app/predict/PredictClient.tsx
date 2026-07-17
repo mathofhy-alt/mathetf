@@ -127,7 +127,9 @@ export default function PredictClient({ richSchools }: Props) {
             const a = document.createElement('a');
             a.href = url; a.download = `${title}.hml`;
             document.body.appendChild(a); a.click(); a.remove();
-            URL.revokeObjectURL(url);
+            // [수정] click() 직후 즉시 revoke하면 브라우저가 다운로드를 시작하기 전에
+            // URL이 폐기돼 '아무 반응 없이 실패'가 간헐 발생 → 40초 뒤 정리
+            setTimeout(() => URL.revokeObjectURL(url), 40_000);
             if (!isExamPromoHidden()) setShowPromo(true);
         } catch { alert('다운로드 중 오류가 발생했습니다.'); }
         setHwpLoading(false);
@@ -287,7 +289,7 @@ export default function PredictClient({ richSchools }: Props) {
                                                 {locked ? (
                                                     <div className="py-10 text-center px-4">
                                                         <Lock size={20} className="mx-auto text-slate-300 mb-2" />
-                                                        <p className="text-xs text-slate-400">가입하면 전체 문제와 PDF·HWP를 무료로 받아요</p>
+                                                        <p className="text-xs text-slate-400">가입하면 전체 문제와 한글(HWP) 파일을 무료로 받아요</p>
                                                     </div>
                                                 ) : !ready ? (
                                                     /* 문제 모양 스켈레톤 — 지문·수식·보기 자리 (스피너보다 체감 빠름) */
@@ -324,6 +326,7 @@ export default function PredictClient({ richSchools }: Props) {
                                             </button>
                                         </div>
                                         <p className="text-white/70 text-xs mt-3">문제+해설 포함 · 회원 무료 (런칭 기념)</p>
+                                        <p className="text-white/60 text-[11px] mt-1.5">💻 한글(HWP) 파일이라 한글 프로그램이 설치된 PC에서 열려요</p>
                                     </>
                                 ) : (
                                     <>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { buildPredictHml } from '@/lib/predict-hml';
@@ -28,14 +29,22 @@ export async function POST(req: NextRequest) {
         const hmlContent = await buildPredictHml(ids, title);
 
         // 사용 로그 (실패해도 다운로드엔 영향 없음)
+        // set_hash: 같은 문항 세트를 반복 다운로드하는지 판별용 (반복 다운로드 조사)
         try {
-            await createAdminClient().from('feature_usage').insert({
+            const setHash = crypto.createHash('sha1')
+                .update([...ids].sort().join(','))
+                .digest('hex').slice(0, 12);
+            const base = {
                 user_id: user.id,
                 user_email: user.email ?? null,
                 feature: source,
                 title,
                 question_count: ids.length,
-            });
+            };
+            const admin = createAdminClient();
+            const { error } = await admin.from('feature_usage').insert({ ...base, set_hash: setHash });
+            // set_hash 컬럼 마이그레이션 전이면 컬럼 없이 재시도 (로깅 끊김 방지)
+            if (error) await admin.from('feature_usage').insert(base);
         } catch { /* 로깅 실패 무시 */ }
 
         const titleStr = title.replace(/[\\/<>:"|?*]/g, '_').trim() || '예상문제';

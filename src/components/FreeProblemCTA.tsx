@@ -38,7 +38,8 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
             document.body.appendChild(a);
             a.click();
             a.remove();
-            window.URL.revokeObjectURL(url);
+            // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
+            setTimeout(() => window.URL.revokeObjectURL(url), 40_000);
             // 활성화율 측정용 로그 (실패해도 무시)
             fetch('/api/log/feature', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
