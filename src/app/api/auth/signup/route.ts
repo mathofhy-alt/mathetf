@@ -18,7 +18,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        let { email, password, phone, full_name, marketing_agreed } = body;
+        let { email, password, phone, full_name, marketing_agreed, persona } = body;
 
         // 1. 입력 검증
         if (!email || !password || !phone || !full_name) {
@@ -62,6 +62,11 @@ export async function POST(req: Request) {
 
         // 4. 사용된 인증기록 소비(삭제) — 같은 인증으로 추가 가입 못 하게
         await supabaseAdmin.from('phone_verifications').delete().eq('id', pv.id);
+
+        // 5. 온보딩에서 고른 역할(학생/강사)을 프로필에 저장 — 실패해도 가입은 성공 (PersonaSync가 백필)
+        if ((persona === 'student' || persona === 'teacher') && created.user?.id) {
+            await supabaseAdmin.from('profiles').update({ persona }).eq('id', created.user.id);
+        }
 
         return NextResponse.json({ success: true, userId: created.user?.id });
     } catch (error: any) {

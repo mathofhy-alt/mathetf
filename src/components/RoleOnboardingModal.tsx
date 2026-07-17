@@ -1,10 +1,23 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { GraduationCap, PencilRuler, X } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 export type UserRole = 'student' | 'teacher';
 
 const STORAGE_KEY = 'mathetf_role';
+export const ROLE_SYNCED_KEY = 'mathetf_role_synced';
+
+/** 로그인 상태면 선택 역할을 profiles.persona 에 반영. 실패해도 조용히 넘어감(PersonaSync가 재시도). */
+export async function syncRoleToProfile(role: UserRole): Promise<void> {
+    try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        const { error } = await supabase.from('profiles').update({ persona: role }).eq('id', session.user.id);
+        if (!error) localStorage.setItem(ROLE_SYNCED_KEY, role);
+    } catch { /* 오프라인·컬럼 미존재 등 — 다음 방문 때 PersonaSync가 재시도 */ }
+}
 
 export function getStoredRole(): UserRole | null {
     if (typeof window === 'undefined') return null;
@@ -28,6 +41,7 @@ export default function RoleOnboardingModal({ onSelect, onClose }: { onSelect?: 
 
     const choose = (role: UserRole) => {
         localStorage.setItem(STORAGE_KEY, role);
+        void syncRoleToProfile(role);
         setOpen(false);
         onSelect?.(role);
         onClose?.();

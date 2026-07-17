@@ -8,6 +8,7 @@ import Link from 'next/link';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import MarketingModal from '@/components/MarketingModal';
+import { getStoredRole } from '@/components/RoleOnboardingModal';
 
 export default function SignupPage() {
     const [step, setStep] = useState(1);
@@ -185,6 +186,7 @@ export default function SignupPage() {
                     phone,
                     full_name: nickname,
                     marketing_agreed: marketingAgreed,
+                    persona: getStoredRole(), // 온보딩 모달에서 고른 역할(학생/강사) — 없으면 null
                 }),
             });
             const result = await res.json();

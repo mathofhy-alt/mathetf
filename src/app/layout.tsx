@@ -12,6 +12,7 @@ const notoSansKr = Noto_Sans_KR({
 import { CartProvider } from "@/components/providers/CartProvider";
 import Footer from "@/components/Footer";
 import FloatingCart from "@/components/FloatingCart";
+import PersonaSync from "@/components/PersonaSync";
 import { Analytics } from '@vercel/analytics/react';
 import Script from "next/script";
 
@@ -72,6 +73,7 @@ export default function RootLayout({
                     </main>
                     <Footer />
                     <FloatingCart />
+                    <PersonaSync />
                 </CartProvider>
                 
                 {/* PortOne SDK - Lazy load */}
