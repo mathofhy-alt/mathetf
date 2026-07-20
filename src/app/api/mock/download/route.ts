@@ -35,5 +35,15 @@ export async function GET(req: NextRequest) {
     const { data: signed, error } = await admin.storage.from('mock-materials').createSignedUrl(path, 120, { download: filename });
     if (error || !signed?.signedUrl) return new NextResponse('다운로드 링크 생성 실패', { status: 500 });
 
+    // 다운로드 로깅 — 사관·경대/전국연합 수요 측정 (free_pdf 와 동일 테이블, 실패해도 다운로드는 진행)
+    try {
+        await admin.from('feature_usage').insert({
+            user_id: user.id,
+            user_email: user.email ?? null,
+            feature: 'mock_download',
+            title: `${row.title} ${k.label}(${k.ext})`,
+        });
+    } catch { /* 로깅 실패 무시 */ }
+
     return NextResponse.redirect(signed.signedUrl);
 }
