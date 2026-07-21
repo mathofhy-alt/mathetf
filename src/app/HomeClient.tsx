@@ -14,7 +14,7 @@ import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import NotifyOptIn from '@/components/NotifyOptIn';
 import Header from '@/components/Header';
 import { useCart } from '@/components/providers/CartProvider';
-import { ALL_SUBJECTS } from '@/lib/curriculum';
+import { CURRICULA } from '@/lib/curriculum';
 import dynamic from 'next/dynamic';
 
 const UploadModal = dynamic(() => import('@/components/UploadModal'), { ssr: false });
@@ -158,12 +158,21 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         return true;
     }), [groupedFiles, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject]);
 
-    // 과목 드롭다운 옵션: 실제 자료에 있는 과목만, 교육과정 순서로
-    const subjectOptions = useMemo(() => {
-        const present = new Set(groupedFiles.map(g => g.subject).filter(Boolean));
-        const ordered = ALL_SUBJECTS.filter(s => present.has(s));
-        const extras = Array.from(present).filter(s => !ALL_SUBJECTS.includes(s)).sort();
-        return [...ordered, ...extras];
+    // 과목 드롭다운: 실제 자료에 있는 과목만, 교육과정별 그룹으로 (수학I/대수 등 이름 혼동 방지)
+    // - 양쪽 교육과정에 같은 이름이 있으면(확통·기하와벡터) 먼저 나온 그룹에만 표시
+    // - '전과정'은 과목 미지정 데이터의 플레이스홀더라 옵션에서 제외
+    const subjectGroups = useMemo(() => {
+        const present = new Set(groupedFiles.map(g => g.subject).filter(s => s && s !== '전과정'));
+        const used = new Set<string>();
+        const groups: { label: string; subjects: string[] }[] = [];
+        for (const c of CURRICULA) {
+            const subjects = c.subjects.filter(s => present.has(s) && !used.has(s));
+            subjects.forEach(s => used.add(s));
+            if (subjects.length) groups.push({ label: c.label, subjects });
+        }
+        const extras = Array.from(present).filter(s => !used.has(s)).sort();
+        if (extras.length) groups.push({ label: '기타', subjects: extras });
+        return groups;
     }, [groupedFiles]);
 
     const fetchMyPoints = async (userId: string) => {
@@ -606,7 +615,11 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                     </select>
                                     <select className="w-full form-select h-10" aria-label="과목 선택" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
                                         <option value="">과목 전체</option>
-                                        {subjectOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                                        {subjectGroups.map(g => (
+                                            <optgroup key={g.label} label={g.label}>
+                                                {g.subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                                            </optgroup>
+                                        ))}
                                     </select>
                                     <select className="w-full form-select h-10" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
                                         <option value="">년도 전체</option>
