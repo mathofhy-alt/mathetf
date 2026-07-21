@@ -14,6 +14,7 @@ import { PdfFileIcon, HwpFileIcon, DbFileIcon } from '@/components/FileIcons';
 import NotifyOptIn from '@/components/NotifyOptIn';
 import Header from '@/components/Header';
 import { useCart } from '@/components/providers/CartProvider';
+import { ALL_SUBJECTS } from '@/lib/curriculum';
 import dynamic from 'next/dynamic';
 
 const UploadModal = dynamic(() => import('@/components/UploadModal'), { ssr: false });
@@ -70,6 +71,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const [selectedGrade, setSelectedGrade] = useState('');
     const [selectedExamScope, setSelectedExamScope] = useState(''); // Combined Semester + ExamType
     const [selectedYear, setSelectedYear] = useState('');
+    const [selectedSubject, setSelectedSubject] = useState('');
     const [searchKeyword, setSearchKeyword] = useState(''); // Search State
 
     // Points State
@@ -150,8 +152,19 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             if (groupExamType !== type) return false;
         }
 
+        // 7. Subject Filter
+        if (selectedSubject && group.subject !== selectedSubject) return false;
+
         return true;
-    }), [groupedFiles, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope]);
+    }), [groupedFiles, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject]);
+
+    // 과목 드롭다운 옵션: 실제 자료에 있는 과목만, 교육과정 순서로
+    const subjectOptions = useMemo(() => {
+        const present = new Set(groupedFiles.map(g => g.subject).filter(Boolean));
+        const ordered = ALL_SUBJECTS.filter(s => present.has(s));
+        const extras = Array.from(present).filter(s => !ALL_SUBJECTS.includes(s)).sort();
+        return [...ordered, ...extras];
+    }, [groupedFiles]);
 
     const fetchMyPoints = async (userId: string) => {
         const { data, error } = await supabase.from('profiles').select('purchased_points, earned_points').eq('id', userId).single();
@@ -525,7 +538,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedExamScope, selectedYear, searchKeyword]);
+    }, [selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedExamScope, selectedYear, selectedSubject, searchKeyword]);
 
     const checkAccess = (id: string) => purchasedIds.has(id) || user?.email === 'mathofhy@naver.com';
 
@@ -578,8 +591,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                         </select>
                                     </div>
                                 </div>
-                                {/* Row 2: Grade, Semester, Year */}
-                                <div className="grid grid-cols-3 gap-2">
+                                {/* Row 2: Grade, Semester, Subject, Year */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                     <select className="w-full form-select h-10" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
                                         <option value="">학년 전체</option>
                                         {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
@@ -590,6 +603,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                         <option value="1-기말고사">1학기 기말</option>
                                         <option value="2-중간고사">2학기 중간</option>
                                         <option value="2-기말고사">2학기 기말</option>
+                                    </select>
+                                    <select className="w-full form-select h-10" aria-label="과목 선택" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
+                                        <option value="">과목 전체</option>
+                                        {subjectOptions.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                     <select className="w-full form-select h-10" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
                                         <option value="">년도 전체</option>
