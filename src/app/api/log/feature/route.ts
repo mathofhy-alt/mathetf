@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 // 클라이언트 행동 로깅 (feature_usage) — RLS 때문에 서버 경유
 // 현재 용도: 무료 문제 PDF 다운로드 (활성화율 측정의 핵심 행동인데 기록이 없었음)
-const ALLOWED = new Set(['free_pdf']);
+const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide']);
 
 export async function POST(req: NextRequest) {
     const sb = createClient();

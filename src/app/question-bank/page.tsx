@@ -1681,6 +1681,26 @@ export default function QuestionBankPage() {
                                                 </div>
                                             )}
 
+                                            {/* 처음 온 사용자용: 사용법 영상 + 화면 안내 투어 (강사 사다리 Step 1) */}
+                                            <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                                                <p className="text-xs font-bold text-slate-500">처음이신가요? 1분이면 흐름이 잡혀요.</p>
+                                                <div className="flex gap-2">
+                                                    <a
+                                                        href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
+                                                        onClick={() => { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'qb_intro' }) }).catch(() => { }); }}
+                                                        className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#FF0000] hover:border-red-200 transition-colors"
+                                                    >
+                                                        ▶ 사용법 영상
+                                                    </a>
+                                                    <button
+                                                        onClick={() => setRunTeacherTour(true)}
+                                                        className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#497AB7] hover:border-[#B7D1EA] transition-colors"
+                                                    >
+                                                        🧭 화면 안내 보기
+                                                    </button>
+                                                </div>
+                                            </div>
+
                                             {/* ══════════════════════════════════════
                                                  히어로 섹션 — Premium Parallax
                                                ══════════════════════════════════════ */}

@@ -15,6 +15,8 @@ import NotifyOptIn from '@/components/NotifyOptIn';
 import Header from '@/components/Header';
 import { useCart } from '@/components/providers/CartProvider';
 import { CURRICULA } from '@/lib/curriculum';
+import { getStoredRole } from '@/components/RoleOnboardingModal';
+import TeacherExamCTA from '@/components/TeacherExamCTA';
 import dynamic from 'next/dynamic';
 
 const UploadModal = dynamic(() => import('@/components/UploadModal'), { ssr: false });
@@ -91,6 +93,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const [uploadInit, setUploadInit] = useState<{ type: 'MARKET' | 'SHADOW'; school?: { region: string; district: string; school: string } } | null>(null);
     // 무료PDF 다운로드 직후 "새 기출 알림" 옵트인 배너
     const [notifySchool, setNotifySchool] = useState<string | null>(null);
+    // [강사 사다리 Step 1] 강사에게 다운로드→시험지출제 다리 배너
+    const [teacherCta, setTeacherCta] = useState<{ school: string | null; variant: 'download' | 'onboard' } | null>(null);
+    const [personaDb, setPersonaDb] = useState<string | null>(null);
+    const isTeacher = personaDb === 'teacher' || (typeof window !== 'undefined' && getStoredRole() === 'teacher');
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [selectedExamForReport, setSelectedExamForReport] = useState<{key: string, title: string} | null>(null);
@@ -176,10 +182,11 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     }, [groupedFiles]);
 
     const fetchMyPoints = async (userId: string) => {
-        const { data, error } = await supabase.from('profiles').select('purchased_points, earned_points').eq('id', userId).single();
+        const { data, error } = await supabase.from('profiles').select('purchased_points, earned_points, persona').eq('id', userId).single();
         if (data) {
             setPurchasedPoints(data.purchased_points || 0);
             setEarnedPoints(data.earned_points || 0);
+            setPersonaDb((data as any).persona || null);
         }
 
         // Fetch purchased exams to distinguish in UI
@@ -489,6 +496,11 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(url), 40_000);
 
+            // [강사] 다운로드 직후 시험지출제 다리 배너
+            if (isTeacher && !localStorage.getItem('mathetf_teacher_cta_dismissed')) {
+                setTeacherCta({ school: file.school, variant: 'download' });
+            }
+
         } catch (error: any) {
             console.error('Download error:', error);
             alert('다운로드 중 오류가 발생했습니다: ' + (error.message || 'Unknown error'));
@@ -522,8 +534,11 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ feature: 'free_pdf', title: filename }),
             }).catch(() => { });
-            // 새 기출 알림 옵트인 배너 (미동의 + 미거절자에게만)
-            if (!user?.user_metadata?.marketing_agreed && !localStorage.getItem('mathetf_notify_dismissed')) {
+            // [강사] 다운로드 직후 시험지출제 다리 배너 (알림 옵트인보다 우선)
+            if (isTeacher && !localStorage.getItem('mathetf_teacher_cta_dismissed')) {
+                setTeacherCta({ school: file.school, variant: 'download' });
+            } else if (!user?.user_metadata?.marketing_agreed && !localStorage.getItem('mathetf_notify_dismissed')) {
+                // 새 기출 알림 옵트인 배너 (미동의 + 미거절자에게만)
                 setNotifySchool(file.school);
             }
         } catch (error: any) {
@@ -560,7 +575,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                 onUploadClick={handleUploadClick}
             />
 
-            <RoleOnboardingModal onClose={() => { }} />
+            <RoleOnboardingModal onClose={() => { }} onSelect={(role) => {
+                // [강사 사다리 Step 1] 강사 선택 직후가 시험지출제를 소개할 최적 타이밍
+                if (role === 'teacher') setTeacherCta({ school: null, variant: 'onboard' });
+            }} />
             {/* 홈(내신기출) 튜토리얼 제거 — 시험지출제 탭 튜토리얼만 유지 */}
             <LaunchPromoModal />
 
@@ -858,6 +876,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             />
 
             <NotifyOptIn school={notifySchool || ''} visible={!!notifySchool} onClose={() => setNotifySchool(null)} />
+            <TeacherExamCTA school={teacherCta?.school ?? null} variant={teacherCta?.variant ?? 'download'} visible={!!teacherCta} onClose={() => setTeacherCta(null)} />
 
             <ReportModal
                 isOpen={isReportModalOpen}

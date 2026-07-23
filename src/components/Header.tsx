@@ -146,6 +146,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             ))}
                             {/* 유튜브 사용법 가이드 (외부 채널) */}
                             <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
+                                onClick={() => { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'header' }) }).catch(() => { }); }}
                                 className="px-2 py-2 rounded-lg text-slate-600 hover:text-[#FF0000] hover:bg-red-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
                                 <YouTubeLogo size={20} /> 사용법
                             </a>
@@ -256,7 +257,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         ))}
                         {/* 유튜브 사용법 가이드 (외부 채널) */}
                         <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
-                            onClick={() => setMobileMenuOpen(false)}
+                            onClick={() => { setMobileMenuOpen(false); fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'header_mobile' }) }).catch(() => { }); }}
                             className="flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-red-50 transition-colors">
                             <YouTubeLogo size={22} /> 사용법 가이드
                             <span className="text-[10px] text-slate-400 font-semibold ml-auto">유튜브 ↗</span>
