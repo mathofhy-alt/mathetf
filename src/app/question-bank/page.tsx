@@ -1686,7 +1686,7 @@ export default function QuestionBankPage() {
                                                 <p className="text-xs font-bold text-slate-500">처음이신가요? 1분이면 흐름이 잡혀요.</p>
                                                 <div className="flex gap-2">
                                                     <a
-                                                        href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
+                                                        href="https://www.youtube.com/watch?v=2Yt94Ps8rk8&t=5s" target="_blank" rel="noopener noreferrer"
                                                         onClick={() => { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'qb_intro' }) }).catch(() => { }); }}
                                                         className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#FF0000] hover:border-red-200 transition-colors"
                                                     >
