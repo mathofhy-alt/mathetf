@@ -55,6 +55,9 @@ export default function QuestionBankPage() {
             return () => clearTimeout(t);
         }
     }, []);
+
+    // ?school=○○고등학교 → 그 학교 개인DB만 자동 선택 (학교 페이지 '시험지 만들기'에서 진입)
+    const schoolPrefillDone = useRef(false);
     const [cart, setCart] = useState<any[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -164,6 +167,17 @@ export default function QuestionBankPage() {
     const [selectedDbIds, setSelectedDbIds] = useState<string[]>([]);
     const [filterState, setFilterState] = useState<any>(null); // Store filters locally for manual search
     // Derived for legacy support or convenience if needed, but mainly use IDs
+
+    // [강사 유입] ?school= 로 들어오면 그 학교 DB만 선택된 상태로 시작 (학교 페이지 → 시험지 만들기 동선)
+    useEffect(() => {
+        if (schoolPrefillDone.current || purchasedDbs.length === 0) return;
+        schoolPrefillDone.current = true;
+        const raw = new URLSearchParams(window.location.search).get('school');
+        if (!raw) return;
+        const target = decodeURIComponent(raw);
+        const ids = purchasedDbs.filter((d: any) => d.school === target).map((d: any) => d.id);
+        if (ids.length > 0) setSelectedDbIds(ids);
+    }, [purchasedDbs]);
 
     // Header & Points State
     const [purchasedPoints, setPurchasedPoints] = useState<number>(0);

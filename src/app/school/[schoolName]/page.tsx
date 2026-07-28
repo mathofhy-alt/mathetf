@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, PencilRuler } from 'lucide-react';
 import { examYearOf, examGroupKey } from '@/lib/exam-groups';
 import { proxiedOgImage } from '@/lib/og-image';
 
@@ -233,6 +233,11 @@ export default async function SchoolPage({ params }: Props) {
     const subjects = Array.from(new Set(examList.map((g: any) => g.subject).filter(Boolean)));
     const years = Array.from(new Set(examList.map((g: any) => g.year))).sort((a: number, b: number) => b - a);
 
+    // [강사 섹션용] 이 학교 총 문항 수 + 출제 비중 높은 단원 (없으면 문구에서 자동 생략)
+    const totalQuestionCount = subjUnits.reduce((sum, s) => sum + s.total, 0);
+    const topUnitNames = Array.from(new Set(subjUnits.flatMap((s) => s.units.slice(0, 2).map((u) => u.unit))))
+        .slice(0, 3).join('·');
+
     // [SEO] 서술 문단 + 구조화 데이터
     const narrative = buildSchoolNarrative(schoolName, region, examList.length, years, subjects, subjUnits, specialIntro);
     const schoolUrl = `https://mathetf.com/school/${encodeURIComponent(schoolName)}`;
@@ -343,6 +348,61 @@ export default async function SchoolPage({ params }: Props) {
                         );
                     })}
                 </div>
+
+                {/* [강사 유입구] 선생님·강사 대상 섹션 — 학교 페이지 121개가 각각 강사 착지점이 되도록 */}
+                <section className="mt-8 bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 sm:p-6">
+                    <div className="flex items-start gap-3">
+                        <span className="shrink-0 w-10 h-10 rounded-xl bg-[#E0F7F6] text-[#3AADA9] flex items-center justify-center">
+                            <PencilRuler size={20} />
+                        </span>
+                        <div className="min-w-0">
+                            <h2 className="text-lg sm:text-xl font-black text-[#1E2D4F] break-keep">
+                                {schoolName} 대비 수학 시험지 만들기
+                            </h2>
+                            <p className="text-xs font-bold text-[#3AADA9] mt-0.5">선생님·강사님을 위한 기능</p>
+                        </div>
+                    </div>
+
+                    <p className="text-sm text-slate-600 leading-relaxed break-keep mt-4">
+                        {totalQuestionCount > 0
+                            ? `${schoolName} 기출 ${totalQuestionCount}문항이 단원·난이도별로 정리되어 있습니다. `
+                            : `${schoolName} 기출이 단원·난이도별로 정리되어 있습니다. `}
+                        출제 단원을 골라 <strong className="text-[#1E2D4F]">같은 유형의 유사문제로 나만의 시험지</strong>를 만들고,
+                        완성본을 <strong className="text-[#1E2D4F]">한글(HWP)·PDF</strong>로 받아 수업에 바로 쓸 수 있어요.
+                        {topUnitNames && ` 이 학교는 ${topUnitNames} 단원 출제 비중이 높습니다.`}
+                    </p>
+
+                    <ol className="mt-4 grid gap-2 sm:grid-cols-3">
+                        {[
+                            { n: '1', t: '기출 DB 선택', d: `${schoolName} 회차를 담기` },
+                            { n: '2', t: '조건 검색', d: '단원·난이도로 문항 고르기' },
+                            { n: '3', t: 'HWP 다운로드', d: '시험지 완성 후 편집·인쇄' },
+                        ].map((s) => (
+                            <li key={s.n} className="bg-[#F8FAFD] border border-slate-100 rounded-xl px-3 py-2.5">
+                                <p className="text-xs font-black text-[#497AB7]">STEP {s.n}</p>
+                                <p className="text-sm font-bold text-[#1E2D4F] mt-0.5 break-keep">{s.t}</p>
+                                <p className="text-[11px] text-slate-500 mt-0.5 break-keep">{s.d}</p>
+                            </li>
+                        ))}
+                    </ol>
+
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                        <Link
+                            href={`/question-bank?school=${encodeURIComponent(schoolName)}`}
+                            className="flex-1 text-center bg-[#3AADA9] hover:bg-[#2E948F] text-white font-extrabold px-5 py-3 rounded-xl transition-colors"
+                        >
+                            {schoolName} 기출로 시험지 만들기 →
+                        </Link>
+                        <a
+                            href="https://www.youtube.com/watch?v=2Yt94Ps8rk8&t=5s"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold px-4 py-3 rounded-xl text-sm transition-colors whitespace-nowrap"
+                        >
+                            ▶ 1분 사용법 영상
+                        </a>
+                    </div>
+                </section>
 
                 {/* CTA (브랜드 그라데이션) */}
                 <div className="mt-8 bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-6 text-center text-white shadow-md">

@@ -33,6 +33,12 @@ export default function Footer() {
                         >
                             학교별 기출 자료
                         </Link>
+                        <Link
+                            href="/teacher"
+                            className="hover:text-slate-800 transition-colors"
+                        >
+                            수학 시험지 만들기
+                        </Link>
                         <button
                             onClick={() => setIsTermsOpen(true)}
                             className="hover:text-slate-800 transition-colors"
