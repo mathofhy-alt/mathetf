@@ -144,14 +144,22 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, data, calculated_price: calculatedPrice, updated: true });
         }
 
+        // [수정] 예전엔 region/district를 '서울'/'강남구'로 하드코딩해서, 지방 학교 개인DB가 전부
+        //        강남구로 등록되는 버그가 있었음(2026-07-30 82개교 교정). schools 테이블에서 실제 지역 조회.
+        let regionVal = '서울', districtVal = '강남구';
+        try {
+            const { data: sc } = await supabase.from('schools').select('region, district').eq('name', school).limit(1);
+            if (sc && sc[0]?.region) { regionVal = sc[0].region; districtVal = sc[0].district || ''; }
+        } catch { /* 조회 실패 시 기본값 유지 */ }
+
         const { data, error } = await supabase
             .from('exam_materials')
             .insert({
                 uploader_id: user?.id,
                 uploader_name: user?.email?.split('@')[0] || '관리자',
                 school,
-                region: '서울', // Default
-                district: '강남구', // Default
+                region: regionVal,
+                district: districtVal,
                 grade: dbGrade,
                 semester: dbSemester,
                 exam_type: exam_type,
