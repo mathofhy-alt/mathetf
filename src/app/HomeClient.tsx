@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem } from '../lib/data';
-import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle, Search } from 'lucide-react';
+import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle, Search, Loader2, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -95,6 +95,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const [notifySchool, setNotifySchool] = useState<string | null>(null);
     // [강사 사다리 Step 1] 강사에게 다운로드→시험지출제 다리 배너
     const [teacherCta, setTeacherCta] = useState<{ school: string | null; variant: 'download' | 'onboard' } | null>(null);
+    // 다운로드 진행/완료 표시 — 피드백이 없어 사용자가 버튼을 연타하던 문제 (8/2: 한 명이 같은 파일 61회 클릭)
+    const [dlState, setDlState] = useState<Record<string, 'loading' | 'done'>>({});
     const [personaDb, setPersonaDb] = useState<string | null>(null);
     const isTeacher = personaDb === 'teacher' || (typeof window !== 'undefined' && getStoredRole() === 'teacher');
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -444,14 +446,18 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             return;
         }
 
+        if (dlState[file.id] === 'loading') return;   // 진행 중 재클릭 무시 (연타 방지)
+        setDlState(prev => ({ ...prev, [file.id]: 'loading' }));
         try {
             // Check if purchased
             if (!purchasedIds.has(file.id) && !isAdmin) {
+                setDlState(prev => { const n = { ...prev }; delete n[file.id]; return n; });
                 alert('구매가 완료되지 않은 자료입니다. 장바구니를 통해 결제해주세요.');
                 return;
             }
 
             if (file.type === 'DB' && !isAdmin) {
+                setDlState(prev => { const n = { ...prev }; delete n[file.id]; return n; });
                 alert('DB 상품은 시험지 만들기 탭에서 확인 하세요.');
                 return;
             }
@@ -496,6 +502,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(url), 40_000);
 
+            setDlState(prev => ({ ...prev, [file.id]: 'done' }));
             // [강사] 다운로드 직후 시험지출제 다리 배너
             if (isTeacher && !localStorage.getItem('mathetf_teacher_cta_dismissed')) {
                 setTeacherCta({ school: file.school, variant: 'download' });
@@ -503,6 +510,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
 
         } catch (error: any) {
             console.error('Download error:', error);
+            setDlState(prev => { const n = { ...prev }; delete n[file.id]; return n; });
             alert('다운로드 중 오류가 발생했습니다: ' + (error.message || 'Unknown error'));
         }
     };
@@ -515,6 +523,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         }
         const url = file.freePdfUrl;
         if (!url) return;
+        if (dlState[file.id] === 'loading') return;   // 진행 중 재클릭 무시 (연타 방지)
+        setDlState(prev => ({ ...prev, [file.id]: 'loading' }));
         try {
             const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_문제.pdf`;
             const response = await fetch(url);
@@ -529,6 +539,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             link.remove();
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(objUrl), 40_000);
+            setDlState(prev => ({ ...prev, [file.id]: 'done' }));
             // 활성화율 측정용 로그 (실패해도 무시)
             fetch('/api/log/feature', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -543,6 +554,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             }
         } catch (error: any) {
             console.error('Free download error:', error);
+            setDlState(prev => { const n = { ...prev }; delete n[file.id]; return n; });
             alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
         }
     };
@@ -705,16 +717,27 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                             {/* Download chips */}
                                             <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                                                 {/* 문제만 PDF (회원가입 시 무료) — 맨 앞 강조 */}
-                                                {group.files.pdfSol?.freePdfUrl && (
-                                                    <button
-                                                        onClick={() => handleFreeDownload(group.files.pdfSol!)}
-                                                        title={user ? '문제만 PDF 무료 다운로드' : '회원가입하면 문제만 PDF 무료'}
-                                                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
-                                                    >
-                                                        <Download size={13} />
-                                                        <span>문제 무료</span>
-                                                    </button>
-                                                )}
+                                                {group.files.pdfSol?.freePdfUrl && (() => {
+                                                    const st = dlState[group.files.pdfSol!.id];
+                                                    return (
+                                                        <button
+                                                            onClick={() => handleFreeDownload(group.files.pdfSol!)}
+                                                            disabled={st === 'loading'}
+                                                            title={user ? '문제만 PDF 무료 다운로드' : '회원가입하면 문제만 PDF 무료'}
+                                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${st === 'done'
+                                                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                                                : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'} ${st === 'loading' ? 'opacity-60 cursor-wait' : ''}`}
+                                                        >
+                                                            {st === 'loading' ? (
+                                                                <><Loader2 size={13} className="animate-spin" /><span>받는 중…</span></>
+                                                            ) : st === 'done' ? (
+                                                                <><Check size={13} /><span>받았어요</span></>
+                                                            ) : (
+                                                                <><Download size={13} /><span>문제 무료</span></>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })()}
 
                                                 {/* PDF */}
                                                 {group.files.pdfSol ? (
@@ -729,8 +752,12 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                                 : 'bg-red-50 text-red-400 border-red-100 hover:border-red-200 hover:text-red-500'
                                                         }`}
                                                     >
-                                                        <PdfFileIcon size={13} purchased={checkAccess(group.files.pdfSol.id)} />
-                                                        <span>{checkAccess(group.files.pdfSol.id) ? 'PDF 다운' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : `PDF ${group.files.pdfSol.price}원`}</span>
+                                                        {dlState[group.files.pdfSol.id] === 'loading'
+                                                            ? <Loader2 size={13} className="animate-spin" />
+                                                            : <PdfFileIcon size={13} purchased={checkAccess(group.files.pdfSol.id)} />}
+                                                        <span>{dlState[group.files.pdfSol.id] === 'loading' ? '받는 중…'
+                                                            : dlState[group.files.pdfSol.id] === 'done' ? '받았어요'
+                                                            : checkAccess(group.files.pdfSol.id) ? 'PDF 다운' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : `PDF ${group.files.pdfSol.price}원`}</span>
                                                     </button>
                                                 ) : (
                                                     <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
@@ -750,8 +777,12 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                                 : 'bg-[#E0F7F6] text-[#3AADA9] border-teal-100 hover:border-teal-200'
                                                         }`}
                                                     >
-                                                        <HwpFileIcon size={13} purchased={checkAccess(group.files.hwpSol.id)} />
-                                                        <span>{checkAccess(group.files.hwpSol.id) ? 'HWP 다운' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : `HWP ${group.files.hwpSol.price}원`}</span>
+                                                        {dlState[group.files.hwpSol.id] === 'loading'
+                                                            ? <Loader2 size={13} className="animate-spin" />
+                                                            : <HwpFileIcon size={13} purchased={checkAccess(group.files.hwpSol.id)} />}
+                                                        <span>{dlState[group.files.hwpSol.id] === 'loading' ? '받는 중…'
+                                                            : dlState[group.files.hwpSol.id] === 'done' ? '받았어요'
+                                                            : checkAccess(group.files.hwpSol.id) ? 'HWP 다운' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : `HWP ${group.files.hwpSol.price}원`}</span>
                                                     </button>
                                                 ) : (
                                                     <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
