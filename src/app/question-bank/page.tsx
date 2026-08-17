@@ -1560,6 +1560,15 @@ export default function QuestionBankPage() {
                                                 <span className="bg-[#E8F0FB] text-[#497AB7] text-xs px-2 py-0.5 rounded-md font-bold">
                                                     {q.unit || '단원 미정'}
                                                 </span>
+                                                {/* [교과외] 현행 교육과정에서 삭제된 단원 — 시험지에 담기 전에 눈에 띄어야 함 */}
+                                                {q.is_off_curriculum && (
+                                                    <span
+                                                        title="현행 교육과정에서 삭제된 단원입니다"
+                                                        className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold border border-amber-200"
+                                                    >
+                                                        교과외
+                                                    </span>
+                                                )}
                                                 <span className="text-[11px] font-bold text-gray-500">
                                                     {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.semester && `${q.semester} `}원본 {q.question_number}번
                                                 </span>

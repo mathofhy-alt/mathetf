@@ -13,6 +13,8 @@ export interface FilterState {
     // questionType removed
     subjects: string[]; // Keep for compatibility, though we prioritize units
     keywords: string[];
+    // 옛 회차(2006~)에는 현행 교육과정에서 삭제된 내용이 섞여 있다. 기본은 숨김.
+    includeOffCurriculum: boolean;
 }
 
 const SUBJECT_ORDER = [
@@ -27,6 +29,7 @@ interface UnitNode {
     name: string;
     concepts: string[];
     isExpanded: boolean;
+    offCurriculum?: boolean; // 현행 교육과정에서 삭제된 단원 (구 회차에만 존재)
 }
 
 interface TreeNode {
@@ -67,6 +70,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     const [keywordInput, setKeywordInput] = useState('');
     const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
     // selectedTypes removed
+    // [교과외] 옛 회차의 폐지 단원(부등식의 영역·이중근호·이항연산 등) 포함 여부. 기본은 숨김.
+    const [includeOffCurriculum, setIncludeOffCurriculum] = useState(false);
     // 교육과정 선택 (기본: 현 교육과정 2022). 선택한 과정 과목만 표시.
     const [curriculum, setCurriculum] = useState<string>('2022');
     const curSubjects = (CURRICULA.find(c => c.id === curriculum)?.subjects || []) as readonly string[];
@@ -84,8 +89,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
         const fetchTree = async () => {
             // DB목록(purchasedDbs) 로드 전이면 대기 — 빈 트리 캐시 오염 방지 (로드되면 deps로 재호출)
             if (!purchasedDbs || purchasedDbs.length === 0) return;
-            // 캐시 키: 선택된 DB ID 조합 (안정적 문자열)
-            const cacheKey = [...selectedDbIds].sort().join(',');
+            // 캐시 키: 선택된 DB ID 조합 (안정적 문자열) + 교과외 포함 여부(트리 내용이 달라짐)
+            const cacheKey = [...selectedDbIds].sort().join(',') + (includeOffCurriculum ? '|off' : '');
 
             // 쮨시 히트 → DB 조회 없이 즉시 반환
             if (treeCache.current[cacheKey]) {
@@ -98,8 +103,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
             const skeleton: Record<string, Record<string, Set<string>>> = {};
             const unitTotal: Record<string, Record<string, number>> = {};        // 단원별 문항수
             const conceptCount: Record<string, Record<string, Record<string, number>>> = {}; // 단원별 개념 등장횟수
+            const unitOff: Record<string, Record<string, boolean>> = {};          // 교과외 단원 표시
             SUBJECT_ORDER.forEach(sub => {
-                skeleton[sub] = {}; unitTotal[sub] = {}; conceptCount[sub] = {};
+                skeleton[sub] = {}; unitTotal[sub] = {}; conceptCount[sub] = {}; unitOff[sub] = {};
                 (UNIT_PRESETS[sub] || []).forEach(u => {
                     skeleton[sub][u] = new Set<string>();
                     unitTotal[sub][u] = 0; conceptCount[sub][u] = {};
@@ -156,16 +162,17 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     const facetRes = await fetch('/api/questions/facets', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ selectedDbs, purchasedDbsCount: purchasedDbs?.length || 0 }),
+                        body: JSON.stringify({ selectedDbs, purchasedDbsCount: purchasedDbs?.length || 0, includeOffCurriculum }),
                     });
                     const facetJson = await facetRes.json().catch(() => ({ data: [] }));
                     const data = facetJson?.data;
                     if (data) {
                         data.forEach((q: any) => {
                             if (q.subject && q.unit) {
-                                if (!skeleton[q.subject]) { skeleton[q.subject] = {}; unitTotal[q.subject] = {}; conceptCount[q.subject] = {}; }
+                                if (!skeleton[q.subject]) { skeleton[q.subject] = {}; unitTotal[q.subject] = {}; conceptCount[q.subject] = {}; unitOff[q.subject] = {}; }
                                 if (!skeleton[q.subject][q.unit]) { skeleton[q.subject][q.unit] = new Set<string>(); unitTotal[q.subject][q.unit] = 0; conceptCount[q.subject][q.unit] = {}; }
                                 unitTotal[q.subject][q.unit] += 1;
+                                if (q.is_off_curriculum) unitOff[q.subject][q.unit] = true;
                                 // 개념태그는 DB 실제 key_concepts 기준 + 등장횟수 집계 (빈도 필터로 교차개념 제거)
                                 if (Array.isArray(q.key_concepts)) {
                                     q.key_concepts.forEach((tag: string) => {
@@ -205,7 +212,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     let concepts = entries.filter(([, n]) => n >= threshold).map(([c]) => c);
                     // 임계 넘는 게 없으면(소수 문항 단원) 빈도 상위 일부라도 노출
                     if (concepts.length === 0 && entries.length > 0) concepts = entries.slice(0, 8).map(([c]) => c);
-                    return { name: uName, concepts, isExpanded: false };
+                    return { name: uName, concepts, isExpanded: false, offCurriculum: unitOff[sub]?.[uName] || false };
                 });
 
                 return {
@@ -223,7 +230,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
         fetchTree();
         // purchasedDbs?.length 도 의존: DB목록이 늦게 로드돼도 facets 재호출(경쟁조건 수정)
-    }, [selectedDbIds?.join(','), purchasedDbs?.length]);
+        // includeOffCurriculum 도 의존: 켜고 끌 때 단원 트리가 즉시 바뀌어야 함
+    }, [selectedDbIds?.join(','), purchasedDbs?.length, includeOffCurriculum]);
 
 
     // Emit changes
@@ -233,9 +241,10 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
             concepts: selectedConcepts.map(c => c.startsWith('#') ? c : `#${c}`), // DB는 #태그 형식으로 저장
             difficulty: selectedDifficulty,
             subjects: [],
-            keywords: activeKeywords
+            keywords: activeKeywords,
+            includeOffCurriculum,
         });
-    }, [selectedUnits, selectedConcepts, selectedDifficulty, activeKeywords]);
+    }, [selectedUnits, selectedConcepts, selectedDifficulty, activeKeywords, includeOffCurriculum]);
 
     const toggleSelection = (list: string[], item: string, setList: (L: string[]) => void) => {
         if (list.includes(item)) {
@@ -270,6 +279,21 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             </button>
                         ))}
                     </div>
+                    {/* [교과외] 옛 회차(2006~)에는 부등식의 영역·이중근호처럼 지금은 안 배우는 단원이 있다.
+                        기본은 숨김이고, 켜면 '교과외' 표시와 함께 함께 검색된다. */}
+                    <label className="flex items-start gap-2 mb-3 px-2 py-2 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer">
+                        <button
+                            type="button"
+                            onClick={() => setIncludeOffCurriculum(v => !v)}
+                            className={`mt-px w-3.5 h-3.5 shrink-0 border rounded flex items-center justify-center transition-colors ${includeOffCurriculum ? 'bg-amber-500 border-amber-500' : 'border-amber-300 bg-white'}`}
+                        >
+                            {includeOffCurriculum && <Check size={10} className="text-white" />}
+                        </button>
+                        <span className="text-[11px] leading-snug text-amber-900">
+                            <b>교과외 문항 포함</b>
+                            <span className="block text-amber-700/80">옛 기출의 부등식의 영역·이중근호 등 현행 과정에 없는 단원</span>
+                        </span>
+                    </label>
                     <div className="space-y-4">
                         {loadingUnits && <div className="text-xs text-slate-400">로딩중...</div>}
                         {!loadingUnits && treeData.filter((n) => curSubjects.includes(n.subject)).length === 0 && (
@@ -355,6 +379,11 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                     className={`text-xs flex-1 text-left ${isUnitSelected ? 'text-indigo-700 font-bold' : 'text-slate-600'} hover:text-indigo-500 transition-colors`}
                                                                 >
                                                                     {uNode.name}
+                                                                    {uNode.offCurriculum && (
+                                                                        <span className="ml-1 align-middle text-[9px] font-bold text-amber-700 bg-amber-100 border border-amber-200 px-1 py-px rounded">
+                                                                            교과외
+                                                                        </span>
+                                                                    )}
                                                                 </button>
                                                             </div>
                                                             {uNode.concepts.length > 0 && (

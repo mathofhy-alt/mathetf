@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
 
     const selectedDbs = Array.isArray(body?.selectedDbs) ? body.selectedDbs : [];
     const purchasedDbsCount = Number(body?.purchasedDbsCount) || 0;
+    // [교과외] 검색(search 라우트)과 같은 기준이어야 사이드바 옵션 = 실제 결과가 맞는다.
+    const includeOffCurriculum = body?.includeOffCurriculum === true;
     if (selectedDbs.length === 0) {
         return NextResponse.json({ success: true, data: [] });
     }
@@ -52,7 +54,8 @@ export async function POST(req: NextRequest) {
     // - 전체선택(관리자) → 필터 스킵(전부)  - 21개 이상 → school IN  - 그 외 → orConditions
     const isAllSelected = selectedDbs.length >= purchasedDbsCount && purchasedDbsCount > 0;
     const buildQuery = () => {
-        let q = supabase.from('questions').select('subject, unit, key_concepts').eq('work_status', 'sorted');
+        let q = supabase.from('questions').select('subject, unit, key_concepts, is_off_curriculum').eq('work_status', 'sorted');
+        if (!includeOffCurriculum) q = q.eq('is_off_curriculum', false);
         if (!isAllSelected) {
             if (selectedDbs.length > 20) {
                 const schools = [...new Set(selectedDbs.map((db: any) => db.school))];

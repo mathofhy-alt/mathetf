@@ -78,13 +78,19 @@ export async function POST(req: NextRequest) {
     // [성능] 이미지(question_images)는 더 이상 검색 응답에 싣지 않는다.
     // BMP 등 무거운 base64가 섞이면 응답이 수 MB로 커져 검색 체감속도가 들쭉날쭉하던 원인.
     // 카드 골격은 이 메타데이터로 즉시 뜨고, 이미지는 /api/questions/images 가 청크로 따라간다.
-    const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type';
+    const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, is_off_curriculum';
     let query = supabase
         .from('questions')
         .select(SELECT_COLS, wantCount ? { count: 'exact' } : undefined)
         .eq('work_status', 'sorted')
         .order('question_number', { ascending: true })
         .range(from, to);
+
+    // [교과외] 옛 회차의 폐지 단원(부등식의 영역·이중근호·이항연산 등)은 기본 제외.
+    // 사용자가 사이드바에서 "교과외 문항 포함"을 켰을 때만 함께 검색된다.
+    if (!advancedFilters?.includeOffCurriculum) {
+        query = query.eq('is_off_curriculum', false);
+    }
 
     // 중복출제 방지
     if (Array.isArray(excludedQuestionIds) && excludedQuestionIds.length > 0) {
