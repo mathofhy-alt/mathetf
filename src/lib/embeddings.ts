@@ -167,18 +167,28 @@ ${mapStr}`;
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
         
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemInstruction }] },
-                contents: [{ role: "user", parts: [{ text: promptText }, ...imageParts] }],
-                generationConfig: {
-                    temperature: 0.1,
-                    responseMimeType: "application/json"
-                }
-            })
+        // 429(RESOURCE_EXHAUSTED)는 순간 제한이라 잠시 뒤 재시도하면 대부분 통과 —
+        // 배치로 문항을 연속 처리할 때 반복 발생해서(7/29, 8/8) 지수 백오프 추가.
+        const payload = JSON.stringify({
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: "user", parts: [{ text: promptText }, ...imageParts] }],
+            generationConfig: {
+                temperature: 0.1,
+                responseMimeType: "application/json"
+            }
         });
+        let response!: Response;
+        for (let attempt = 0; attempt < 4; attempt++) {
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: payload,
+            });
+            if (response.status !== 429 || attempt === 3) break;
+            const wait = 3000 * Math.pow(2, attempt);   // 3s → 6s → 12s
+            console.warn(`[Gemini] 429 rate-limited, ${wait / 1000}s 후 재시도 (${attempt + 1}/3)`);
+            await new Promise(r => setTimeout(r, wait));
+        }
 
         if (!response.ok) {
             const errBody = await response.text();
