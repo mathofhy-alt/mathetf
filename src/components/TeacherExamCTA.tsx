@@ -10,9 +10,13 @@ const GUIDE_VIDEO_URL = 'https://www.youtube.com/watch?v=2Yt94Ps8rk8&t=5s';
 const DISMISS_KEY = 'mathetf_teacher_cta_dismissed';
 
 /**
- * [강사 가치 사다리 Step 1] 다운로드 직후 / 온보딩 강사 선택 직후 뜨는 "시험지 만들기" 다리 배너.
+ * [강사 가치 사다리 Step 1] 다운로드 직후 / 온보딩 강사 선택 직후 뜨는 배너.
  * - persona=teacher(또는 localStorage 역할)로 식별된 사용자에게만 부모가 켬
  * - X로 닫으면 다시 안 뜸 (localStorage), CTA 클릭도 목적 달성으로 보고 종료
+ *
+ * [8/19 개편] 배포 후 4주 실측: 강사 24명에게 280회 노출 → '시험지 만들어보기' 클릭 3건(1.1%).
+ * 반면 보조 버튼이던 '사용법 영상'은 13건으로 4배 이상 눌렸다(강사 4 + 학생·미선택 9).
+ * 기능으로 보내는 문보다 "어떻게 쓰는지"를 원한다는 신호 → 영상을 주 버튼으로 올린다.
  */
 export default function TeacherExamCTA({ school, variant, visible, onClose }: {
     school: string | null;
@@ -58,11 +62,11 @@ export default function TeacherExamCTA({ school, variant, visible, onClose }: {
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-[#1E2D4F] break-keep">
                             {variant === 'download' && school
-                                ? `${school} 기출을 받으셨네요 — 이 유형의 유사문제로 나만의 시험지를 만들 수 있어요.`
-                                : '선생님·강사님, 수학ETF의 진짜 기능은 시험지 만들기예요.'}
+                                ? `${school} 기출로 시험지 만드는 법, 1분이면 됩니다.`
+                                : '수학ETF로 시험지 만드는 법, 1분이면 됩니다.'}
                         </p>
                         <p className="text-xs text-slate-400 mt-0.5 break-keep">
-                            기출과 같은 유형의 문항을 골라 담아 HWP로 받는 수업용 시험지 — 1분이면 됩니다.
+                            기출과 같은 유형의 문항을 골라 담아 한글(HWP)로 받는 과정을 영상으로 보여드려요.
                         </p>
                     </div>
                     <button onClick={dismiss} aria-label="닫기" className="text-slate-300 hover:text-slate-500 shrink-0">
@@ -71,16 +75,16 @@ export default function TeacherExamCTA({ school, variant, visible, onClose }: {
                 </div>
                 <div className="flex gap-2 mt-3">
                     <button
-                        onClick={goMake}
-                        className="flex-1 py-2 bg-[#3AADA9] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
+                        onClick={openVideo}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#3AADA9] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
                     >
-                        시험지 만들어보기 →
+                        <PlayCircle size={16} /> 1분 사용법 보기
                     </button>
                     <button
-                        onClick={openVideo}
-                        className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
+                        onClick={goMake}
+                        className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
                     >
-                        <PlayCircle size={14} className="text-red-500" /> 사용법 영상
+                        바로 만들기 →
                     </button>
                 </div>
             </div>
