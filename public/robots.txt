@@ -3,6 +3,13 @@ Allow: /api/og-image
 Allow: /
 Disallow: /admin/
 Disallow: /api/
+# 홈의 쿼리 URL은 본문·메타가 홈과 동일해 중복 문서가 된다.
+# (?school= 은 exam 상세의 '다운로드 하러 가기'가 만드는 링크, gad_* 는 광고 유입 파라미터)
+# 네이버 서치어드바이저 'description 중복' 지적 45건이 전부 이 형태였다.
+Disallow: /?school=
+Disallow: /?gad_source=
+Disallow: /?gclid=
+Disallow: /?utm_
 
 # 네이버 검색로봇 명시적 허용
 User-agent: Yeti
@@ -10,6 +17,10 @@ Allow: /api/og-image
 Allow: /
 Disallow: /admin/
 Disallow: /api/
+Disallow: /?school=
+Disallow: /?gad_source=
+Disallow: /?gclid=
+Disallow: /?utm_
 
 Sitemap: https://mathetf.com/sitemap.xml
 

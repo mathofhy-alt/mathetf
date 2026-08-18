@@ -366,6 +366,10 @@ export default async function ExamDetailPage({ params }: Props) {
                     <p className="text-white/85 text-sm mb-4 break-keep">{label} 시험지의 전체 문제와 해설을 받아보세요.</p>
                     <Link
                         href={`/?school=${encodeURIComponent(row.school)}`}
+                        // 사용자에겐 유용한 바로가기지만, 크롤러가 따라가면 홈과 내용이 같은
+                        // /?school=학교명 URL 이 학교 수만큼 생겨 중복 문서가 된다
+                        // (네이버 'description 중복' 45건이 전부 이 형태였다 · 8/18)
+                        rel="nofollow"
                         className="inline-block bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
                     >
                         다운로드 하러 가기
