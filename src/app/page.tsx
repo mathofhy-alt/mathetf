@@ -63,12 +63,15 @@ async function getHomeExams() {
     // → 다운로드할 때만 필요한 값은 목록에서 빼고, 그 시점에 id 로 조회한다.
     //   free_pdf_url 은 버튼 노출 조건이라 존재 여부(boolean)만 남긴다.
     //   created_at 은 화면에서 날짜만 쓰므로 시각을 잘라 보낸다.
-    return (data || []).filter((item: any) => !isMockExam(item)).map((item: any) => ({
-        ...item,
-        created_at: typeof item.created_at === 'string' ? item.created_at.slice(0, 10) : item.created_at,
-        free_pdf_url: undefined,
-        has_free_pdf: !!item.free_pdf_url,
-    }));
+    return (data || []).filter((item: any) => !isMockExam(item)).map((item: any) => {
+        // undefined 로 두면 RSC 페이로드에 키가 그대로 남으므로 구조분해로 완전히 걷어낸다
+        const { free_pdf_url, ...rest } = item;
+        return {
+            ...rest,
+            created_at: typeof rest.created_at === 'string' ? rest.created_at.slice(0, 10) : rest.created_at,
+            has_free_pdf: !!free_pdf_url,
+        };
+    });
 }
 
 export default async function ExamPlatformPage() {
