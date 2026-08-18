@@ -7,6 +7,21 @@ import { ChevronRight, PencilRuler } from 'lucide-react';
 import { examYearOf, examGroupKey } from '@/lib/exam-groups';
 import { proxiedOgImage } from '@/lib/og-image';
 
+/**
+ * [SEO] 학교 축약명. 사람들은 '창덕여자고등학교'가 아니라 '창덕여고'로 검색하는데
+ * 페이지에 축약형이 한 번도 없어 그 검색어로는 잡히지 않았다(8/18 확인).
+ * 121개교 전수 검사 결과 축약형 충돌은 0건. 특수 페이지(사관학교·경찰대·전국연합)는 대상 아님.
+ */
+function shortSchoolName(name: string): string | null {
+    let s: string | null = null;
+    if (name.endsWith('여자고등학교')) s = name.slice(0, -6) + '여고';
+    else if (name.endsWith('여자중학교')) s = name.slice(0, -5) + '여중';
+    else if (name.endsWith('고등학교')) s = name.slice(0, -4) + '고';
+    else if (name.endsWith('중학교')) s = name.slice(0, -3) + '중';
+    return s && s !== name ? s : null;
+}
+
+
 // 1시간마다 자동 재검증 (새 시험지 추가 반영)
 export const revalidate = 3600;
 
@@ -109,13 +124,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
+    const shortName = shortSchoolName(schoolName);
+    const titleName = shortName ? `${schoolName}(${shortName})` : schoolName;
     return {
-        title: `${schoolName} 수학 기출문제 - 수학ETF`,
-        description: `${schoolName} 수학 내신 기출문제 다운로드. 중간고사, 기말고사 HWP, PDF 형식 제공. 수학ETF에서 즉시 확인하세요.`,
-        keywords: [`${schoolName} 수학 기출문제`, `${schoolName} 내신`, `${schoolName} 중간고사`, `${schoolName} 기말고사`, '수학 내신 기출문제', '수학 문제은행'],
+        title: `${titleName} 수학 기출문제 - 수학ETF`,
+        description: `${titleName} 수학 내신 기출문제 다운로드. 중간고사, 기말고사 HWP, PDF 형식 제공. 수학ETF에서 즉시 확인하세요.`,
+        keywords: [
+            `${schoolName} 수학 기출문제`, `${schoolName} 내신`, `${schoolName} 중간고사`, `${schoolName} 기말고사`,
+            ...(shortName ? [`${shortName} 수학 기출`, `${shortName} 기출문제`, `${shortName} 내신`, `${shortName} 중간고사`, `${shortName} 기말고사`] : []),
+            '수학 내신 기출문제', '수학 문제은행',
+        ],
         openGraph: {
-            title: `${schoolName} 수학 기출문제 - 수학ETF`,
-            description: `${schoolName} 수학 내신 기출문제를 즉시 다운로드하세요.`,
+            title: `${titleName} 수학 기출문제 - 수학ETF`,
+            description: `${titleName} 수학 내신 기출문제를 즉시 다운로드하세요.`,
             url: `https://mathetf.com/school/${encodeURIComponent(schoolName)}`,
             images: [ogImage],
         },
@@ -147,8 +168,10 @@ function buildSchoolNarrative(
     } else {
         const yearStr = years.length > 0 ? `${years[years.length - 1]}년부터 ${years[0]}년까지 ` : '';
         const subjStr = subjects.length > 0 ? `${subjects.join('·')} 등 ` : '';
+        // 축약명을 첫 문장에 한 번 병기 — 실제 검색어('창덕여고 수학기출')와 페이지를 잇는다
+        const sn = shortSchoolName(schoolName);
         paras.push(
-            `${schoolName}${region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다. ` +
+            `${schoolName}${sn ? `(${sn})` : ''}${region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다. ` +
             `${yearStr}${subjStr}총 ${examCount}개 시험지의 문제와 해설을 제공하며, ` +
             `문제 미리보기와 워터마크 없는 문제 PDF는 회원가입 시 무료로 받을 수 있습니다.`
         );
@@ -162,8 +185,10 @@ function buildSchoolNarrative(
             `학교별 출제 경향을 파악하면 시험 범위 안에서 우선순위를 정해 대비할 수 있습니다.`
         );
     }
+    const sn2 = specialIntro ? null : shortSchoolName(schoolName);
     paras.push(
         `원본 기출뿐 아니라 같은 유형의 변형문제도 함께 제공하므로, 기출로 출제 경향을 익힌 뒤 변형문제로 한 번 더 실전 연습할 수 있습니다. ` +
+        (sn2 ? `${sn2} 중간고사·기말고사 대비 자료를 찾는다면 ` : '') +
         `필요한 회차를 골라 나만의 시험지로 구성해 PDF·한글(HWP)로 받아보세요.`
     );
     return paras;
