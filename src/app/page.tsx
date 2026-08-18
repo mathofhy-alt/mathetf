@@ -48,7 +48,7 @@ const isMockExam = (item: any) =>
 // → HomeClient가 실제 쓰는 컬럼만 선택 (HTML ~250KB 목표)
 const HOME_COLUMNS =
     'id, title, school, grade, semester, subject, exam_type, exam_year, file_type, content_type, '
-    + 'created_at, price, uploader_name, region, district, file_path, free_pdf_url, is_verified';
+    + 'created_at, price, uploader_name, region, district, free_pdf_url, is_verified';
 
 async function getHomeExams() {
     const supabase = createAdminClient();
@@ -57,7 +57,18 @@ async function getHomeExams() {
         .select(HOME_COLUMNS)
         .neq('school', 'DELETED')
         .order('created_at', { ascending: false });
-    return (data || []).filter((item: any) => !isMockExam(item));
+    // [크롤예산] 자료가 1,200건을 넘으며 홈 HTML 이 744KB 까지 커졌고, 그 93%가 이 목록 데이터였다.
+    // Googlebot 은 사이트별 크롤 예산 안에서 움직이므로 홈이 무거우면 나머지 페이지가 밀린다
+    // (8/18 GSC: '발견됨-색인 생성 안 됨' 89개. 홈에서 직접 링크된 /predict 조차 미크롤).
+    // → 다운로드할 때만 필요한 값은 목록에서 빼고, 그 시점에 id 로 조회한다.
+    //   free_pdf_url 은 버튼 노출 조건이라 존재 여부(boolean)만 남긴다.
+    //   created_at 은 화면에서 날짜만 쓰므로 시각을 잘라 보낸다.
+    return (data || []).filter((item: any) => !isMockExam(item)).map((item: any) => ({
+        ...item,
+        created_at: typeof item.created_at === 'string' ? item.created_at.slice(0, 10) : item.created_at,
+        free_pdf_url: undefined,
+        has_free_pdf: !!item.free_pdf_url,
+    }));
 }
 
 export default async function ExamPlatformPage() {

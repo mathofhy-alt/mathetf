@@ -311,10 +311,11 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                         year: titleYear ? parseInt(titleYear) : (item.exam_year || new Date().getFullYear()),
                         semester: item.semester,
                         examType: item.exam_type,
-                        filePath: item.file_path, // Added
                         contentType: item.content_type, // Added
                         subject: item.subject || '', // Add subject here
-                        freePdfUrl: item.free_pdf_url || undefined // 무료 문제 PDF (해설 행)
+                        // [크롤예산] file_path·free_pdf_url 은 홈 목록에서 빼고 다운로드 시점에 조회한다.
+                        // 버튼 노출 판단에만 쓰이므로 존재 여부만 받는다.
+                        hasFreePdf: !!item.has_free_pdf
                     };
 
                     groups[key].sales += (item.sales_count || 0);
@@ -463,8 +464,13 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             }
 
             // 2. Download Logic
+            // [크롤예산] 목록에 file_path 를 싣지 않으므로 여기서 조회 (홈 HTML 경량화)
+            const { data: pathRow, error: pathErr } = await supabase
+                .from('exam_materials').select('file_path').eq('id', file.id).single();
+            if (pathErr || !pathRow?.file_path) throw new Error('파일 경로를 찾을 수 없습니다');
+            const filePath: string = pathRow.file_path;
             // [V102] Extract original extension from filePath to prevent format distortion
-            const originalExt = file.filePath.split('.').pop() || (file.type === 'PDF' ? 'pdf' : 'hwp');
+            const originalExt = filePath.split('.').pop() || (file.type === 'PDF' ? 'pdf' : 'hwp');
             const safeContentType = file.contentType || '자료';
             // Requested format: 학교이름_년도_학년_학기_중간/기말_문제(or 문제+해설)
             // e.g. 경기고_2024_1_1_중간고사_문제.pdf
@@ -474,7 +480,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             // Increase expiry to 1 hour (3600s) to handle client/server clock drift
             const { data, error: urlError } = await supabase.storage
                 .from('exam-materials')
-                .createSignedUrl(file.filePath, 3600);
+                .createSignedUrl(filePath, 3600);
 
             if (urlError) throw urlError;
             if (!data?.signedUrl) throw new Error('다운로드 URL 생성 실패');
@@ -521,11 +527,15 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             setShowLoginPrompt(true); // 비로그인 → 회원가입 유도
             return;
         }
-        const url = file.freePdfUrl;
-        if (!url) return;
+        if (!file.hasFreePdf) return;
         if (dlState[file.id] === 'loading') return;   // 진행 중 재클릭 무시 (연타 방지)
         setDlState(prev => ({ ...prev, [file.id]: 'loading' }));
         try {
+            // [크롤예산] 목록에 free_pdf_url 을 싣지 않으므로 여기서 조회
+            const { data: urlRow } = await supabase
+                .from('exam_materials').select('free_pdf_url').eq('id', file.id).single();
+            const url = urlRow?.free_pdf_url;
+            if (!url) throw new Error('무료 PDF를 준비 중입니다');
             const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_문제.pdf`;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`파일을 준비 중입니다 (${response.status})`);
@@ -717,7 +727,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                             {/* Download chips */}
                                             <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                                                 {/* 문제만 PDF (회원가입 시 무료) — 맨 앞 강조 */}
-                                                {group.files.pdfSol?.freePdfUrl && (() => {
+                                                {group.files.pdfSol?.hasFreePdf && (() => {
                                                     const st = dlState[group.files.pdfSol!.id];
                                                     return (
                                                         <button
