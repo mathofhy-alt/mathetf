@@ -27,15 +27,26 @@ export default async function SchoolsIndexPage() {
         const supabase = createAdminClient();
         // 1) 학교별 시험지 수 — 상세 페이지와 동일한 '시험(회차) 그룹' 기준으로 통일
         //    (기존: 해설 PDF 행수 기준 → 업로드 시차 등으로 상세 카운트와 어긋날 수 있었음)
-        const { data: exams } = await supabase
-            .from('exam_materials')
-            .select('school, title, exam_year, grade, semester, exam_type, subject, file_type, content_type')
-            .neq('school', 'DELETED');
+        // ⚠ PostgREST 는 limit 을 안 줘도 1000행에서 잘린다. 페이지네이션이 없어 자료 1,378건 중
+        //    1,000건만 집계돼 학교 10곳이 목록에서 통째로 빠져 있었다(8/18 GSC 미크롤 89개의 일부).
+        const exams: any[] = [];
+        let exFrom = 0;
+        while (true) {
+            const { data, error } = await supabase
+                .from('exam_materials')
+                .select('school, title, exam_year, grade, semester, exam_type, subject, file_type, content_type')
+                .neq('school', 'DELETED')
+                .range(exFrom, exFrom + 999);
+            if (error || !data || data.length === 0) break;
+            exams.push(...data);
+            if (data.length < 1000) break;
+            exFrom += 1000;
+        }
         // 내신 학교 목록이므로 해설 PDF가 하나도 없는 유사 학교(전국연합·사관학교 등 DB 전용)는 기존처럼 제외
         const hasSolutionPdf = new Set(
-            (exams || []).filter((r: any) => r.file_type === 'PDF' && r.content_type === '해설').map((r: any) => r.school)
+            exams.filter((r: any) => r.file_type === 'PDF' && r.content_type === '해설').map((r: any) => r.school)
         );
-        const counts = countExamGroupsBySchool((exams || []).filter((r: any) => hasSolutionPdf.has(r.school)));
+        const counts = countExamGroupsBySchool(exams.filter((r: any) => hasSolutionPdf.has(r.school)));
 
         // 2) 학교 → 지역(구/군) 매핑 (schools 테이블, 페이지네이션)
         const regionMap: Record<string, string> = {};
