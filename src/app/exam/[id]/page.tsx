@@ -151,12 +151,29 @@ export async function generateStaticParams() {
     return (data || []).map((r: any) => ({ id: r.id }));
 }
 
+/**
+ * [SEO] 한 회차는 개인DB·해설PDF·해설HWP 세 자료가 각각 페이지를 갖는다.
+ * 전부 같은 title 을 쓰던 탓에 1,378개 중 1,272개(92%)가 중복 제목이었고
+ * 네이버 서치어드바이저가 'title 중복 문서' 로, 구글은 '중복 페이지' 로 지적했다(8/18).
+ * → 자료 유형을 제목에 드러내 문서마다 다른 title 을 갖게 한다.
+ */
+function typeSuffix(row: any): { title: string; desc: string } {
+    const ft = row.file_type;
+    const ct = row.content_type;
+    if (ft === 'DB') return { title: '문제은행 DB', desc: '문항을 단원·난이도별로 골라 나만의 시험지로 재구성할 수 있습니다.' };
+    if (ft === 'HWP') return { title: '한글(HWP) 파일', desc: '한글 파일이라 문항을 편집해 수업 자료로 바로 쓸 수 있습니다.' };
+    if (ft === 'PDF' && ct === '문제') return { title: '문제 PDF', desc: '문제만 담긴 PDF로 인쇄해 바로 풀어볼 수 있습니다.' };
+    if (ft === 'PDF') return { title: '문제·해설 PDF', desc: '문제와 해설이 함께 담긴 PDF입니다.' };
+    return { title: '기출자료', desc: '' };
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const ex = await getExam(params.id);
     if (!ex) return { title: '시험지 | 수학ETF' };
     const label = buildLabel(ex.row);
-    const title = `${label} 수학 기출문제 및 해설 | 수학ETF`;
-    const description = `${label} 수학 기출문제와 해설. 실제 시험지 미리보기를 확인하고 PDF·HWP로 받아보세요. 수학ETF 전국 내신 기출 자료.`;
+    const sfx = typeSuffix(ex.row);
+    const title = `${label} 수학 기출 ${sfx.title} | 수학ETF`;
+    const description = `${label} 수학 기출문제. ${sfx.desc} 실제 시험지 미리보기를 확인하고 받아보세요.`;
     return {
         title,
         description,
