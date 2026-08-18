@@ -54,8 +54,43 @@ export default async function MockSegPage({ params }: { params: { seg: string } 
 async function CategoryView({ category }: { category: MockCategory }) {
     const items = await fetchMockExamsByCategory(category);
     const cat = MOCK_CATEGORIES[category];
+    // [SEO] 개별 회차 페이지에는 JSON-LD 가 있었지만 카테고리 목록에는 없었다.
+    // 사관학교·경찰대는 우리 최대 유입 경로라 구조화 데이터를 갖춰둔다.
+    const url = `https://mathetf.com/모의고사/${encodeURIComponent(category)}`;
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': 'CollectionPage',
+                name: `${category} 수학 기출문제`,
+                description: `${category} 수학 기출문제와 변형문제를 학년·연도·월별로 모았습니다. 문제와 해설을 PDF·한글(HWP)로 무료 제공합니다.`,
+                url,
+                inLanguage: 'ko-KR',
+                isPartOf: { '@type': 'WebSite', name: '수학ETF', url: 'https://mathetf.com' },
+                mainEntity: {
+                    '@type': 'ItemList',
+                    numberOfItems: items.length,
+                    itemListElement: items.slice(0, 30).map((e, i) => ({
+                        '@type': 'ListItem',
+                        position: i + 1,
+                        name: e.title,
+                        url: `https://mathetf.com/모의고사/${encodeURIComponent(e.slug)}`,
+                    })),
+                },
+            },
+            {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    { '@type': 'ListItem', position: 1, name: '홈', item: 'https://mathetf.com' },
+                    { '@type': 'ListItem', position: 2, name: '모의고사', item: 'https://mathetf.com/모의고사' },
+                    { '@type': 'ListItem', position: 3, name: category, item: url },
+                ],
+            },
+        ],
+    };
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#EEF3FA] to-[#F8FAFD] text-[#1E2D4F] font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
             <main className="max-w-[1140px] mx-auto px-4 py-7 sm:py-9">
                 <Link href="/모의고사" className="inline-flex items-center gap-1 text-sm text-[#497AB7] font-bold hover:underline mb-4">

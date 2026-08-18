@@ -268,12 +268,21 @@ export default async function ExamDetailPage({ params }: Props) {
                     />
                 )}
 
-                {/* 설명 텍스트 (SEO + 사용자) */}
+                {/* 설명 텍스트 (SEO + 사용자)
+                    [GEO] AI 인용의 44%가 페이지 상위 30%에서 나오고, 첫 40~60자에 사실이 있어야 인용된다.
+                    안내 문구 대신 문항 수·단원 같은 구체적 사실을 먼저 놓는다. */}
                 <p className="text-slate-600 leading-relaxed break-keep mb-6">
                     <strong className="text-slate-800">{row.school}</strong>의 {row.exam_year}년
                     {row.grade ? ` ${row.grade}학년` : ''} {isMock ? `${row.semester}월` : `${row.semester}학기`} {row.exam_type}
-                    {row.subject ? ` ${row.subject}` : ''} 수학 기출문제입니다. 아래에서 실제 시험지 문제 미리보기를 확인할 수 있으며,
-                    문제와 해설이 담긴 전체 자료는 PDF로, 편집 가능한 자료는 HWP·개인DB로 제공합니다.
+                    {row.subject ? ` ${row.subject}` : ''} 수학 기출문제입니다.
+                    {composition && composition.total > 0 && (
+                        <> 총 <strong className="text-slate-800">{composition.total}문항</strong>
+                            {composition.byUnit.length > 0
+                                ? <>이며 {composition.byUnit.slice(0, 3).map((u) => `${u.unit} ${u.count}문항`).join(', ')} 순으로 출제되었습니다.</>
+                                : <>입니다.</>}
+                        </>
+                    )}
+                    {' '}실제 시험지 미리보기와 단원·난이도별 구성을 아래에서 확인할 수 있고, 문제·해설 전체는 PDF·HWP·개인DB로 제공합니다.
                 </p>
 
                 {/* 시험 분석 서술 (SEO 고유 텍스트 — composition 데이터 기반) */}

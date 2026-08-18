@@ -80,10 +80,41 @@ export default async function ExamPlatformPage() {
         getCachedSchools(),
     ]);
 
+    // [SEO] 홈에 구조화 데이터가 없었다. 사이트 대표 정보(WebSite·Organization)를 명시하고
+    // 사이트 내 검색을 SearchAction 으로 알려 검색결과에 검색창이 노출될 여지를 만든다.
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': 'WebSite',
+                name: '수학ETF',
+                alternateName: 'mathETF',
+                url: 'https://mathetf.com',
+                inLanguage: 'ko-KR',
+                description: '전국 고등학교 수학 내신 기출과 전국연합·사관학교·경찰대 모의고사를 문항 단위로 모아, 원하는 문제만 골라 시험지로 만들 수 있는 문제은행입니다.',
+                potentialAction: {
+                    '@type': 'SearchAction',
+                    target: { '@type': 'EntryPoint', urlTemplate: 'https://mathetf.com/schools?q={search_term_string}' },
+                    'query-input': 'required name=search_term_string',
+                },
+            },
+            {
+                '@type': 'Organization',
+                name: '수학ETF',
+                url: 'https://mathetf.com',
+                logo: 'https://mathetf.com/og-image.png',
+                description: '수학 기출문제 은행 · 시험지 제작 서비스',
+            },
+        ],
+    };
+
     return (
+        <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <HomeClient
             initialExamData={examData}
             initialSchoolsRaw={schoolsRaw}
         />
+        </>
     );
 }
