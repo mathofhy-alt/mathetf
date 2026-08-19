@@ -291,7 +291,7 @@ export default function QuestionBankPage() {
         if (isAdmin) {
             const { data: allData } = await supabase
                 .from('exam_materials')
-                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
                 .eq('file_type', 'DB');
             if (allData) setPurchasedDbs(allData);
             return;
@@ -301,7 +301,7 @@ export default function QuestionBankPage() {
         if (PERSONAL_DB_FREE_MODE) {
             const { data: allData } = await supabase
                 .from('exam_materials')
-                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
                 .eq('file_type', 'DB');
             if (allData) {
                 setPurchasedDbs(allData);
@@ -320,7 +320,7 @@ export default function QuestionBankPage() {
             .select(`
                 *,
                 exam_materials!inner (
-                    id, title, school, grade, semester, exam_type, subject, file_type, exam_year
+                    id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id
                 )
             `)
             .eq('user_id', userId)
@@ -329,7 +329,7 @@ export default function QuestionBankPage() {
         // 2. Get all Mock Exams (Free for everyone)
         const { data: mockData, error: mockError } = await supabase
             .from('exam_materials')
-            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
             .eq('exam_type', '모의고사')
             .eq('file_type', 'DB');
 
@@ -337,7 +337,7 @@ export default function QuestionBankPage() {
         const FREE_SCHOOLS = ['경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
         const { data: freeSpecialData } = await supabase
             .from('exam_materials')
-            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year')
+            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
             .in('school', FREE_SCHOOLS)
             .eq('file_type', 'DB');
 

@@ -27,6 +27,13 @@ export interface DbDescriptor {
     exam_type?: string;
     subject?: string;
     title?: string;
+    /**
+     * 이 개인DB가 가리키는 questions.source_db_id.
+     * 2014 고2 3월처럼 A형·B형이 같은 회차(학교·학년·연도·월·과목 전부 동일)에 있으면
+     * 메타데이터만으로는 구분이 불가능해 양쪽 DB 모두 전체 문항을 반환한다.
+     * 이 값이 있으면 그것 하나로 매칭한다. (2026-08-20)
+     */
+    source_db_id?: string | null;
 }
 
 /**
@@ -35,6 +42,9 @@ export interface DbDescriptor {
  */
 export function buildDbOrConditions(selectedDbs: DbDescriptor[]): string[] {
     return (selectedDbs || []).map((db) => {
+        // source_db_id 가 지정된 DB 는 그 문항 묶음만 정확히 가리킨다 (A/B형·가/나형 구분).
+        if (db.source_db_id) return `and(source_db_id.eq.${quoteVal(db.source_db_id)})`;
+
         let gradeVal: string | number | undefined = db.grade;
         if (db.grade && ['1', '2', '3'].includes(String(db.grade).replace('고', ''))) {
             gradeVal = `고${String(db.grade).replace('고', '')}`;
