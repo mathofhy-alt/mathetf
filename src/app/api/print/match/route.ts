@@ -39,17 +39,29 @@ export async function POST(req: NextRequest) {
         const vecLit = '[' + embedding.join(',') + ']';
 
         // 3) match_predict 로 유사문제 검색 (단원 변형 포함, 단원 불명이면 전체)
-        const units = reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS;
         const admin = createAdminClient();
-        const { data, error } = await admin.rpc('match_predict', {
-            query_embedding: vecLit,
-            target_units: units,
-            min_diff: 1,
-            max_diff: 10,
-            exclude_school: null,
-            match_count: want * 3,
-        });
-        if (error) throw error;
+        const search = async (targetUnits: string[]) => {
+            const { data, error } = await admin.rpc('match_predict', {
+                query_embedding: vecLit,
+                target_units: targetUnits,
+                min_diff: 1,
+                max_diff: 10,
+                exclude_school: null,
+                match_count: want * 3,
+            });
+            if (error) throw error;
+            return data || [];
+        };
+
+        // 단원 판정이 틀리면 엉뚱한 단원 안에서만 찾게 되어 결과가 통째로 나빠진다.
+        // 실측 정확도가 7문항 중 4~5라, 좁힌 검색이 비면 전체 단원으로 한 번 더 찾는다.
+        // (틀린 필터는 필터가 없느니만 못하다 — RPC 자체는 0.5~1.7초라 재시도 비용이 작다)
+        let data = await search(reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS);
+        if (reading.unit && data.length < want) {
+            const wide = await search(ALL_VARIANTS);
+            const seen = new Set(data.map((q: any) => q.id));
+            data = [...data, ...wide.filter((q: any) => !seen.has(q.id))];
+        }
 
         // 출처 편중 방지 → want 개
         const perSource: Record<string, number> = {};

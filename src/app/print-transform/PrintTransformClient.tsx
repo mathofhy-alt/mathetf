@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Crop, Loader2, Upload, Wand2, Check, Download, Trash2 } from 'lucide-react';
+import { Crop, Loader2, Upload, Wand2, Check, Download, Trash2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 
@@ -20,53 +20,75 @@ interface CropItem {
 let _cid = 0;
 
 export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boolean }) {
-    const [pages, setPages] = useState<{ w: number; h: number }[]>([]);
+    const [numPages, setNumPages] = useState(0);
+    const [cur, setCur] = useState(0);              // 현재 보고 있는 페이지 (0-based)
     const [loadingPdf, setLoadingPdf] = useState(false);
     const [crops, setCrops] = useState<CropItem[]>([]);
     const [making, setMaking] = useState(false);
     const [showPromo, setShowPromo] = useState(false);
-    const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const pdfRef = useRef<any>(null);
+    const renderSeq = useRef(0);
+    const [expanded, setExpanded] = useState<Record<string, boolean>>({});   // 후보별 '전체보기'
 
     // PDF 업로드 → 렌더
     const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setLoadingPdf(true); setPages([]); setCrops([]); canvasRefs.current = [];
+        setLoadingPdf(true); setNumPages(0); setCur(0); setCrops([]);
         try {
             const pdfjs: any = await import('pdfjs-dist');
             pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'; // public 정적 파일 (webpack 번들 회피)
             const buf = await file.arrayBuffer();
             const doc = await pdfjs.getDocument({ data: buf }).promise;
             pdfRef.current = doc;
-            const dims: { w: number; h: number }[] = [];
-            for (let i = 1; i <= doc.numPages; i++) {
-                const page = await doc.getPage(i);
-                const vp = page.getViewport({ scale: 1.5 });
-                dims.push({ w: vp.width, h: vp.height });
-            }
-            setPages(dims);
-            // 다음 틱에 canvas 렌더
-            setTimeout(async () => {
-                for (let i = 1; i <= doc.numPages; i++) {
-                    const cv = canvasRefs.current[i - 1];
-                    if (!cv) continue;
-                    const page = await doc.getPage(i);
-                    const vp = page.getViewport({ scale: 1.5 });
-                    cv.width = vp.width; cv.height = vp.height;
-                    const ctx = cv.getContext('2d');
-                    if (ctx) await page.render({ canvasContext: ctx, viewport: vp }).promise;
-                }
-            }, 50);
+            // 예전엔 여기서 전 페이지를 한꺼번에 렌더했다. 50쪽짜리 프린트를 올리면
+            // 업로드가 한참 걸리고 스크롤도 감당이 안 됐다 → 현재 페이지만 렌더한다.
+            setNumPages(doc.numPages);
         } catch (err) {
             alert('PDF를 여는 데 실패했어요.');
         }
         setLoadingPdf(false);
     };
 
+    // 현재 페이지만 캔버스에 렌더 (페이지를 빠르게 넘기면 이전 렌더 결과는 버린다)
+    useEffect(() => {
+        const doc = pdfRef.current;
+        const cv = canvasRef.current;
+        if (!doc || !cv || numPages === 0) return;
+        const seq = ++renderSeq.current;
+        (async () => {
+            try {
+                const page = await doc.getPage(cur + 1);
+                const vp = page.getViewport({ scale: 1.5 });
+                if (seq !== renderSeq.current) return;
+                cv.width = vp.width; cv.height = vp.height;
+                const ctx = cv.getContext('2d');
+                if (ctx) await page.render({ canvasContext: ctx, viewport: vp }).promise;
+            } catch { /* 렌더 취소 등 */ }
+        })();
+    }, [cur, numPages]);
+
+    const goPage = useCallback((n: number) => {
+        setCur((c) => Math.min(Math.max(n, 0), Math.max(numPages - 1, 0)));
+    }, [numPages]);
+
+    // ←/→ 키로도 넘길 수 있게 (입력창에 포커스가 있을 땐 제외)
+    useEffect(() => {
+        if (numPages === 0) return;
+        const onKey = (e: KeyboardEvent) => {
+            const t = e.target as HTMLElement;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+            if (e.key === 'ArrowLeft') goPage(cur - 1);
+            if (e.key === 'ArrowRight') goPage(cur + 1);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [cur, numPages, goPage]);
+
     // 페이지에서 영역 드래그 → 크롭 추가
-    const addCrop = (pageIdx: number, sx: number, sy: number, sw: number, sh: number) => {
-        const cv = canvasRefs.current[pageIdx];
+    const addCrop = (sx: number, sy: number, sw: number, sh: number) => {
+        const cv = canvasRef.current;
         if (!cv || sw < 12 || sh < 12) return;
         const scaleX = cv.width / cv.clientWidth;
         const scaleY = cv.height / cv.clientHeight;
@@ -156,20 +178,35 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                 <input type="file" accept="application/pdf" onChange={onFile} className="hidden" />
             </label>
 
-            <div className="grid lg:grid-cols-[1fr_380px] gap-5 mt-5">
+            <div className="grid lg:grid-cols-[1fr_440px] gap-5 mt-5">
                 {/* 왼쪽: PDF 페이지 + 크롭 */}
-                <div className="space-y-4">
-                    {pages.length > 0 && (
-                        <p className="text-xs text-slate-400">
-                            <span className="hidden sm:inline">📌 문제 위를 마우스로 드래그하면 잘려서 오른쪽에 추가돼요.</span>
-                            <span className="sm:hidden">📌 문제 위를 <strong className="text-[#2E9E5B]">길게 누른 뒤 드래그</strong>하면 잘려서 아래에 추가돼요.</span>
-                        </p>
+                <div className="space-y-3">
+                    {numPages > 0 && (
+                        <>
+                            <p className="text-xs text-slate-400">
+                                <span className="hidden sm:inline">📌 문제 위를 마우스로 드래그하면 잘려서 오른쪽에 추가돼요. (← → 키로 페이지 이동)</span>
+                                <span className="sm:hidden">📌 문제 위를 <strong className="text-[#2E9E5B]">길게 누른 뒤 드래그</strong>하면 잘려서 아래에 추가돼요.</span>
+                            </p>
+                            <PageNav cur={cur} total={numPages} go={goPage} />
+                        </>
                     )}
-                    {pages.map((pg, i) => (
-                        <PageCanvas key={i} idx={i} dims={pg}
-                            setRef={(el) => { canvasRefs.current[i] = el; }}
-                            onCrop={(sx, sy, sw, sh) => addCrop(i, sx, sy, sw, sh)} />
-                    ))}
+
+                    {numPages > 0 && (
+                        <div className="relative">
+                            {/* 페이지 좌우 오버레이 버튼 — 캔버스에서 손을 떼지 않고 넘길 수 있게 */}
+                            <button onClick={() => goPage(cur - 1)} disabled={cur === 0} aria-label="이전 페이지"
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 border border-slate-200 shadow-md flex items-center justify-center text-slate-600 hover:bg-white hover:text-[#2E9E5B] disabled:opacity-0 disabled:pointer-events-none transition">
+                                <ChevronLeft size={20} />
+                            </button>
+                            <button onClick={() => goPage(cur + 1)} disabled={cur >= numPages - 1} aria-label="다음 페이지"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 border border-slate-200 shadow-md flex items-center justify-center text-slate-600 hover:bg-white hover:text-[#2E9E5B] disabled:opacity-0 disabled:pointer-events-none transition">
+                                <ChevronRight size={20} />
+                            </button>
+                            <PageCanvas setRef={(el) => { canvasRef.current = el; }} onCrop={addCrop} />
+                        </div>
+                    )}
+
+                    {numPages > 0 && <PageNav cur={cur} total={numPages} go={goPage} />}
                 </div>
 
                 {/* 오른쪽: 크롭 목록 + 매칭 */}
@@ -195,19 +232,39 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                                 <div className="mt-2">
                                     {c.reading?.unit && <p className="text-[11px] text-slate-400 mb-1">인식: {c.reading.unit} {c.reading.concepts?.slice(0, 2).join(', ')}</p>}
                                     <p className="text-[11px] text-slate-500 mb-1.5">채택할 변형문제를 고르세요 ({c.selected.length}개 선택)</p>
-                                    <div className="space-y-1.5 max-h-72 overflow-auto">
+                                    {/* 예전엔 후보 전체가 하나의 <button> 이라, 문제를 읽으려고 누르면
+                                        선택이 토글돼 버렸다. 게다가 미리보기가 max-h-28 로 잘려 문제 아래가
+                                        아예 안 보였다 → 선택 버튼과 본문을 분리하고 펼치기를 붙인다. */}
+                                    <div className="space-y-2 max-h-[70vh] overflow-auto pr-1">
                                         {(c.candidates || []).map((q: any) => {
                                             const on = c.selected.includes(q.id);
                                             const xml = c.contents[q.id];
+                                            const key = `${c.id}:${q.id}`;
+                                            const open = !!expanded[key];
                                             return (
-                                                <button key={q.id} onClick={() => toggleSel(c.id, q.id)}
-                                                    className={`block w-full text-left rounded-lg border p-2 ${on ? 'border-[#2E9E5B] bg-[#2E9E5B]/5' : 'border-slate-200'}`}>
-                                                    <div className="flex items-center gap-1.5 mb-1">
-                                                        <span className={`w-4 h-4 rounded flex items-center justify-center ${on ? 'bg-[#2E9E5B] text-white' : 'bg-slate-100'}`}>{on && <Check size={11} />}</span>
-                                                        <span className="text-[11px] text-slate-500">{q.unit} · 난이도 {q.difficulty} · {q.similarity ? Math.round(q.similarity * 100) + '%' : ''}</span>
+                                                <div key={q.id} className={`rounded-lg border ${on ? 'border-[#2E9E5B] bg-[#2E9E5B]/5' : 'border-slate-200 bg-white'}`}>
+                                                    <div className="flex items-center gap-2 p-2 border-b border-slate-100">
+                                                        <button onClick={() => toggleSel(c.id, q.id)} aria-label={on ? '선택 해제' : '선택'}
+                                                            className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-[#2E9E5B] border-[#2E9E5B] text-white' : 'bg-white border-slate-300 hover:border-[#2E9E5B]'}`}>
+                                                            {on && <Check size={13} />}
+                                                        </button>
+                                                        <span className="text-[11px] text-slate-500 flex-1 truncate">
+                                                            {q.unit} · 난이도 {q.difficulty}{q.similarity ? ` · ${Math.round(q.similarity * 100)}%` : ''}
+                                                        </span>
+                                                        <button onClick={() => setExpanded((p) => ({ ...p, [key]: !open }))}
+                                                            className="shrink-0 text-[11px] font-bold text-slate-500 hover:text-[#2E9E5B] flex items-center gap-1">
+                                                            {open ? <><Minimize2 size={12} /> 접기</> : <><Maximize2 size={12} /> 전체보기</>}
+                                                        </button>
                                                     </div>
-                                                    {xml ? <div className="max-h-28 overflow-hidden text-xs"><QuestionRenderer xmlContent={xml} externalImages={c.images[q.id] || []} displayMode="question" showDownloadAction={false} className="border-none shadow-none p-0 !text-xs" /></div> : <span className="text-xs text-slate-300">로딩…</span>}
-                                                </button>
+                                                    <div className={`relative px-2 py-1.5 ${open ? 'max-h-[60vh] overflow-auto' : 'max-h-32 overflow-hidden'}`}>
+                                                        {xml
+                                                            ? <QuestionRenderer xmlContent={xml} externalImages={c.images[q.id] || []} displayMode="question" showDownloadAction={false} className="border-none shadow-none p-0 !text-xs" />
+                                                            : <span className="text-xs text-slate-300">로딩…</span>}
+                                                        {!open && xml && (
+                                                            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                                                        )}
+                                                    </div>
+                                                </div>
                                             );
                                         })}
                                     </div>
@@ -231,8 +288,29 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
     );
 }
 
+function PageNav({ cur, total, go }: { cur: number; total: number; go: (n: number) => void }) {
+    return (
+        <div className="flex items-center justify-center gap-2">
+            <button onClick={() => go(cur - 1)} disabled={cur === 0}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:border-[#2E9E5B] hover:text-[#2E9E5B] disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1">
+                <ChevronLeft size={15} /> 이전
+            </button>
+            <div className="flex items-center gap-1 text-sm font-bold text-slate-600">
+                <input type="number" min={1} max={total} value={cur + 1}
+                    onChange={(e) => go(Number(e.target.value) - 1)}
+                    className="w-14 text-center border border-slate-200 rounded-lg py-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                <span className="text-slate-400">/ {total}</span>
+            </div>
+            <button onClick={() => go(cur + 1)} disabled={cur >= total - 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:border-[#2E9E5B] hover:text-[#2E9E5B] disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1">
+                다음 <ChevronRight size={15} />
+            </button>
+        </div>
+    );
+}
+
 /** PDF 한 페이지 캔버스 + 드래그 크롭 오버레이 (터치: 길게 눌러 크롭, 짧은 스와이프는 스크롤) */
-function PageCanvas({ idx, dims, setRef, onCrop }: { idx: number; dims: { w: number; h: number }; setRef: (el: HTMLCanvasElement | null) => void; onCrop: (sx: number, sy: number, sw: number, sh: number) => void }) {
+function PageCanvas({ setRef, onCrop }: { setRef: (el: HTMLCanvasElement | null) => void; onCrop: (sx: number, sy: number, sw: number, sh: number) => void }) {
     const wrapRef = useRef<HTMLDivElement>(null);
     const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
     const start = useRef<{ x: number; y: number } | null>(null);

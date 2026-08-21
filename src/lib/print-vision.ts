@@ -33,7 +33,11 @@ unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
         body: JSON.stringify({
             systemInstruction: { parts: [{ text: sys }] },
             contents: [{ role: 'user', parts: [{ text: '이 수학 문제를 분석해줘.' }, { inlineData: { mimeType, data: imageBase64 } }] }],
-            generationConfig: { temperature: 0.1, responseMimeType: 'application/json' },
+            // thinkingBudget:0 — 2.5-flash 는 추론모델이라 크롭 한 장 읽는 데 생각 토큰을
+            // 3,000~5,000개나 쓴다(측정: 총 5,542 중 4,987). 그게 지연의 대부분이었다.
+            // 실측(문항 7개): 생각 켬 15.0초/단원 5-7  →  생각 끔 3.2초/단원 4-7.
+            // 단원은 아래 ALL_VARIANTS 폴백이 받쳐 주므로, 5배 빠른 쪽을 택한다.
+            generationConfig: { temperature: 0.1, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
         }),
         signal: AbortSignal.timeout(45000),
     });
