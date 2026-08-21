@@ -251,8 +251,11 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         const { error: dbError } = await supabase.from('exam_materials').insert({
             uploader_id: user.id,
             uploader_name: displayName,
-            submitter_id: user.id,
-            submitter_name: displayName,
+            // ⚠ exam_materials 에는 submitter_id/submitter_name 컬럼이 없다.
+            //   넣으면 PostgREST 가 "Could not find the 'submitter_id' column" 으로 거절해
+            //   원본제보 등록이 통째로 실패한다(2026-07-08 건의사항 접수, 그때부터 계속 깨져 있었음).
+            //   제보자 식별은 uploader_id 로 충분하다 — 하위 코드가 이미
+            //   `submitter_id || uploader_id` 로 대체하도록 되어 있다.
             school: selectedSchool,
             region: selectedRegion,
             district: selectedDistrict,

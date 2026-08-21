@@ -66,6 +66,17 @@ export async function POST(req: NextRequest) {
             candidates: picked,
         });
     } catch (e: any) {
-        return NextResponse.json({ error: e.message || '매칭 실패' }, { status: 500 });
+        // 업스트림(OpenAI·Gemini) 에러 문구를 그대로 내보내면 사용자 화면에
+        // "429 You exceeded your current quota, please check your plan and billing details ..."
+        // 같은 결제 안내가 노출된다(2026-08-07 ~ 08-21 실제로 노출돼 있었고 건의사항으로 접수됨).
+        // 원문은 서버 로그에만 남기고, 사용자에게는 상황별 안내만 준다.
+        const raw = String(e?.message || e || '');
+        console.error('[print/match] 실패:', raw);
+        const isQuota = /quota|billing|insufficient_quota|rate limit|429/i.test(raw);
+        return NextResponse.json({
+            error: isQuota
+                ? '지금 변형문제 찾기가 일시적으로 막혀 있어요. 잠시 후 다시 시도해 주세요. (문제가 계속되면 건의사항으로 알려주세요)'
+                : '변형문제를 찾지 못했어요. 영역을 다시 잘라 시도해 주세요.',
+        }, { status: isQuota ? 503 : 500 });
     }
 }
