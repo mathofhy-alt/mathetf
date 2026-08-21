@@ -25,19 +25,25 @@ export async function readCrop(imageBase64: string, mimeType = 'image/png'): Pro
 }
 unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
 
-    // 2.5-pro 는 추론모델이라 느려서 타임아웃 → 읽기엔 flash 로 충분히 빠르고 정확
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // 2026-08-22: gemini-2.5-flash → gemini-3.7-flash (thinkingLevel:'low').
+    // 크롭 24문항(2010 가형·2009 나형)으로 단원 판정 정확도를 재본 결과:
+    //   3.7-flash level=low   22/24 (92%) · 2.3~3.2초
+    //   3.7-flash 생각 끔      21/24 (88%) · 2.6~3.1초
+    //   2.5-flash 생각 끔      13/24 (54%) · 2.7~2.8초   ← 직전 설정
+    //   2.5-flash 생각 켬       8/12 (67%) · 12.7초       ← 그 전 설정
+    // 3.7 이 틀린 2건은 폐지단원(이중근호·이항연산)이라 후보 목록에 아예 없는 문항 —
+    // 즉 고를 수 있는 것 중에서는 22/22 다. 더 빠르면서 더 정확하다.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             systemInstruction: { parts: [{ text: sys }] },
             contents: [{ role: 'user', parts: [{ text: '이 수학 문제를 분석해줘.' }, { inlineData: { mimeType, data: imageBase64 } }] }],
-            // thinkingBudget:0 — 2.5-flash 는 추론모델이라 크롭 한 장 읽는 데 생각 토큰을
-            // 3,000~5,000개나 쓴다(측정: 총 5,542 중 4,987). 그게 지연의 대부분이었다.
-            // 실측(문항 7개): 생각 켬 15.0초/단원 5-7  →  생각 끔 3.2초/단원 4-7.
-            // 단원은 아래 ALL_VARIANTS 폴백이 받쳐 주므로, 5배 빠른 쪽을 택한다.
-            generationConfig: { temperature: 0.1, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
+            // thinkingLevel:'low' — 생각을 완전히 끄면(budget:0) 정확도가 조금 떨어지고,
+            // 기본값으로 두면 크롭 한 장에 생각 토큰을 수천 개 써서 15초씩 걸린다.
+            // 'low' 가 둘 다 잡는 지점이다(위 측정표 참고).
+            generationConfig: { temperature: 0.1, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' } },
         }),
         signal: AbortSignal.timeout(45000),
     });
