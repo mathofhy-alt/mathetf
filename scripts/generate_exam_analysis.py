@@ -16,6 +16,11 @@
     python scripts/generate_exam_analysis.py --dry-run  # 생성만 하고 DB 저장/출력만 (저장 안 함)
 """
 import os, re, sys, json, time
+import sys as _stdio_sys
+# Windows: 출력이 파이프/파일이면 stdout 이 cp949 가 되어 이모지·em dash 에서 즉사한다.
+try: _stdio_sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+except Exception: pass
+
 import requests
 
 # --- 로컬 SSL 가로채기(Avast 등) 우회 — 로컬 수동 실행 & 자체 Supabase/제미나이 전용 ---

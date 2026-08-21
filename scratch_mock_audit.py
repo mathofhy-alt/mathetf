@@ -15,6 +15,11 @@
 사용: python scratch_mock_audit.py [--deep]   (--deep 이면 C 검사까지)
 """
 import re, sys, difflib
+import sys as _stdio_sys
+# Windows: 출력이 파이프/파일이면 stdout 이 cp949 가 되어 이모지·em dash 에서 즉사한다.
+try: _stdio_sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+except Exception: pass
+
 from collections import Counter, defaultdict
 import requests
 import urllib3 as _u; _u.disable_warnings()

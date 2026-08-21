@@ -12,6 +12,11 @@
     python scripts/naver_school_volume.py --limit 10  # 테스트
 """
 import base64, csv, hashlib, hmac, os, re, sys, time
+import sys as _stdio_sys
+# Windows: 출력이 파이프/파일이면 stdout 이 cp949 가 되어 이모지·em dash 에서 즉사한다.
+try: _stdio_sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+except Exception: pass
+
 import requests
 
 def load_env():
