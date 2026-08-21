@@ -35,6 +35,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const pathname = usePathname();
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
     const { cartCount } = useCart();
+    const isAdmin = user?.email === 'mathofhy@naver.com';
 
     // Close mobile menu on route change
     useEffect(() => {
@@ -110,7 +111,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     return (
         <>
             <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between">
+                <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between gap-4">
                     {/* Logo */}
                     <div className="flex items-center gap-6 min-w-0">
                         <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -150,16 +151,18 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 className="px-2 py-2 rounded-lg text-slate-600 hover:text-[#FF0000] hover:bg-red-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
                                 <YouTubeLogo size={20} /> 사용법
                             </a>
-                            {user?.email === 'mathofhy@naver.com' && (
+                            {isAdmin && (
                                 <Link href="/admin/inventory" className="px-2 py-2 text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
                             )}
                         </nav>
                     </div>
 
                     {/* Right Side */}
-                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-2 md:gap-4 shrink-0">
                         {/* Upload button - show only if logged in, desktop only */}
-                        {user && !hideUploadButton && (
+                        {/* 자료등록은 이제 사용자가 쓰지 않는다(운영자가 스크립트로 등록). 일반 계정에선
+                            유튜브 '사용법' 버튼과 맞닿아 겹쳐 보이기까지 해서 관리자에게만 남긴다. */}
+                        {user && isAdmin && !hideUploadButton && (
                             <button onClick={handleDefaultUploadClick} className="hidden lg:flex px-4 py-1.5 bg-brand-600 text-white rounded text-sm font-medium hover:bg-brand-700 items-center gap-2 whitespace-nowrap">
                                 <Upload size={14} /> 자료등록
                             </button>
@@ -262,7 +265,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             <YouTubeLogo size={22} /> 사용법 가이드
                             <span className="text-[10px] text-slate-400 font-semibold ml-auto">유튜브 ↗</span>
                         </a>
-                        {user?.email === 'mathofhy@naver.com' && (
+                        {isAdmin && (
                             <Link href="/admin/inventory" className="block py-3 px-4 rounded-xl text-sm font-bold text-purple-600 hover:bg-purple-50">
                                 🎯 현황판
                             </Link>
@@ -274,7 +277,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {/* User Section */}
                         {user ? (
                             <>
-                                {!hideUploadButton && (
+                                {isAdmin && !hideUploadButton && (
                                     <button
                                         onClick={() => { handleDefaultUploadClick(); setMobileMenuOpen(false); }}
                                         className="w-full py-3 px-4 bg-brand-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 justify-center hover:bg-brand-700 transition-colors"
