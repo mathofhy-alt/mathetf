@@ -39,6 +39,13 @@ import type { UserItem } from '@/types/storage';
 
 const MAX_CART_SIZE = 50;
 
+// A/B형·가/나형 회차는 같은 학년·월·번호를 공유해서 카드 라벨이 완전히 똑같아진다
+// (2010 6월 가형 2번 = 나형 2번). 형은 source_db_id 끝토막에만 있으므로 그걸 꺼내 붙인다.
+function examFormLabel(sourceDbId?: string | null): string {
+    const m = /_([A-B가나])형$/.exec(sourceDbId || '');
+    return m ? ` ${m[1]}형` : '';
+}
+
 export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -1570,7 +1577,7 @@ export default function QuestionBankPage() {
                                                     </span>
                                                 )}
                                                 <span className="text-[11px] font-bold text-gray-500">
-                                                    {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.semester && `${q.semester} `}원본 {q.question_number}번
+                                                    {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.semester && `${q.semester}`}{examFormLabel(q.source_db_id)} 원본 {q.question_number}번
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">

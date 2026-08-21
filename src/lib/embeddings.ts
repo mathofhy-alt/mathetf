@@ -141,9 +141,13 @@ ${mapStr}`;
         const promptText = `[현재주어진과목(참고용)]: ${subject}\n\n[문제 본문 및 해설]:\n${cleanedText}\n\n목록 내에서 가장 최적의 과목, 단원, 태그(최적 3개), 그리고 난이도(1~10)를 JSON형태로 출력하세요.`;
 
         const imageParts: any[] = [];
-        if (imageUrls && imageUrls.length > 0) {
+        // question_images.data 는 두 종류가 섞여 있다: AUTO_* 캡쳐는 http URL,
+        // MATH_* 수식은 base64 SVG 원본. 후자를 fetch 하면 ERR_INVALID_URL 이 나고
+        // 문항마다 헛된 요청·에러 로그가 쌓인다. 수식은 이미 본문 텍스트에 들어 있으므로 버린다.
+        const fetchableUrls = (imageUrls || []).filter(u => typeof u === 'string' && /^https?:\/\//.test(u));
+        if (fetchableUrls.length > 0) {
             const fetched = await Promise.all(
-                imageUrls.map(async (imgUrl) => {
+                fetchableUrls.map(async (imgUrl) => {
                     try {
                         const res = await fetch(imgUrl);
                         if (!res.ok) return null;
@@ -165,7 +169,16 @@ ${mapStr}`;
         }
 
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+        // 태깅 모델 (2026-08-21 gemini-3-flash-preview → gemini-3.7-flash).
+        // 형 간 불일치 7문항을 **사용자(수학강사)가 직접 확정한 정답지**로 각 3회 측정:
+        //   gemini-3.7-flash        단원 7/7 · 6/7 · 6/7
+        //   gemini-3-flash-preview  단원 4/7 · 5/7 · 4/7
+        // ⚠ 처음엔 정반대 결과가 나왔는데, 그건 내가 만든 정답지가 틀렸기 때문이었다.
+        //   특히 sec 는 현행 교육과정에서 대수에 없고 미적분II(삼각함수의 미분)에만 나온다 —
+        //   3.7 이 맞고 내가 틀렸다. 교육과정 판정은 강사 확인 없이 정답지로 삼지 말 것.
+        // 되돌리려면 .env.local 에 GEMINI_TAGGING_MODEL 만 넣으면 된다.
+        const TAGGING_MODEL = process.env.GEMINI_TAGGING_MODEL || 'gemini-3.7-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${TAGGING_MODEL}:generateContent?key=${apiKey}`;
         
         // 429(RESOURCE_EXHAUSTED)는 순간 제한이라 잠시 뒤 재시도하면 대부분 통과 —
         // 배치로 문항을 연속 처리할 때 반복 발생해서(7/29, 8/8) 지수 백오프 추가.
