@@ -14,6 +14,7 @@ interface CropItem {
     contents: Record<string, string>;   // id -> content_xml
     images: Record<string, any[]>;      // id -> 이미지행
     selected: string[];                 // 채택한 유사문제 id
+    widened?: boolean;                  // 같은 단원에 문항이 없어 과목 전체로 넓혀 찾았음
     error?: string;
 }
 
@@ -122,7 +123,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                 fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).then((x) => x.json()).catch(() => ({})),
             ]);
             setCrops((p) => p.map((c) => c.id === id ? {
-                ...c, loading: false, reading: j.reading, candidates: cands,
+                ...c, loading: false, reading: j.reading, candidates: cands, widened: !!j.widened,
                 contents: cont.content || {}, images: imgs.images || {},
                 selected: ids.slice(0, 1),
             } : c));
@@ -231,6 +232,16 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                             ) : (
                                 <div className="mt-2">
                                     {c.reading?.unit && <p className="text-[11px] text-slate-400 mb-1">인식: {c.reading.unit} {c.reading.concepts?.slice(0, 2).join(', ')}</p>}
+                                    {c.widened && (
+                                        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-1.5">
+                                            ‘{c.reading?.unit}’ 단원 문제가 아직 DB에 없어, <strong>같은 과목의 다른 단원</strong>에서 찾았어요. 유형이 다를 수 있습니다.
+                                        </p>
+                                    )}
+                                    {(c.candidates || []).length === 0 && (
+                                        <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-1.5">
+                                            비슷한 문제를 찾지 못했어요. 영역을 다시 잘라보거나, 다른 문제로 시도해 주세요.
+                                        </p>
+                                    )}
                                     <p className="text-[11px] text-slate-500 mb-1.5">채택할 변형문제를 고르세요 ({c.selected.length}개 선택)</p>
                                     {/* 예전엔 후보 전체가 하나의 <button> 이라, 문제를 읽으려고 누르면
                                         선택이 토글돼 버렸다. 게다가 미리보기가 max-h-28 로 잘려 문제 아래가

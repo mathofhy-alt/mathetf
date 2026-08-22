@@ -72,13 +72,29 @@ export async function POST(req: NextRequest) {
             return data || [];
         };
 
-        // ⚠ 전체 단원 폴백은 넣었다가 걷어냈다(8/22).
-        //   단원 판정이 틀릴 때를 대비한다는 취지였는데, 실제로는 결과가 부족할 때마다
-        //   전 단원에서 아무거나 끌어와 '변형문제라 할 수 없는 것들'을 채워 넣었다.
-        //   시험지출제(잘 동작하는 쪽)도 `q.unit === source.unit` 로 엄격히 거른다.
-        //   찾은 게 적으면 적은 대로 보여주는 편이 낫다.
-        const targetUnits = reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS;
-        const data = await search(targetUnits);
+        // ⚠ '전체 단원' 폴백은 넣었다가 걷어냈다(8/22).
+        //   결과가 부족할 때마다 전 단원에서 아무거나 끌어와 '변형문제라 할 수 없는 것들'을
+        //   채워 넣었다(사용자 제보). 시험지출제(잘 동작하는 쪽)도 unit 을 엄격히 맞춘다.
+        let data = await search(reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS);
+
+        // 다만 DB 에 그 단원 문항이 아예 없는 경우가 있다.
+        // 실제 사례: 고1 워크북 10번을 '도형의이동'(정확한 판정!)으로 읽었는데
+        //           그 단원의 sorted 문항이 0건이라 결과가 통째로 비었다.
+        // 이럴 때만 '같은 과목의 다른 단원'까지 넓힌다 — 전 과목이 아니라 과목 안으로 한정해야
+        // 최소한 결이 맞는 문제가 나온다(공통수학2 → 평면좌표·직선의방정식·원의방정식 …).
+        let widened = false;
+        if (data.length === 0 && reading.unit) {
+            const subj = UNIT_TO_SUBJECT[reading.unit];
+            const siblings = subj ? (SUBJECT_UNITS as Record<string, string[]>)[subj] : null;
+            if (siblings?.length) {
+                try {
+                    data = await search(siblings.flatMap((u) => unitVariants(u)));
+                    widened = true;
+                } catch (e) {
+                    console.error('[print/match] 같은 과목 폴백 실패(무시):', String(e).slice(0, 120));
+                }
+            }
+        }
 
         // 출처 편중 방지 → want 개
         const perSource: Record<string, number> = {};
@@ -93,6 +109,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             reading: { unit: reading.unit, concepts: reading.concepts },
             candidates: picked,
+            // 넓혀서 찾았으면 화면에 알린다 — 같은 단원이 아니라는 걸 숨기면
+            // '이상한 문제가 나온다'로만 보인다(8/22 사용자 제보의 실체).
+            widened,
         });
     } catch (e: any) {
         // 업스트림(OpenAI·Gemini) 에러 문구를 그대로 내보내면 사용자 화면에
