@@ -7,6 +7,7 @@ export interface CropReading {
     text: string;        // 문제 전사/요약 (임베딩용)
     unit: string | null; // canonical 단원
     concepts: string[];  // 개념 태그
+    difficulty: number | null;  // 1~10. 유사문제를 같은 난이도대에서 찾기 위함
 }
 
 /**
@@ -21,8 +22,10 @@ export async function readCrop(imageBase64: string, mimeType = 'image/png'): Pro
 {
   "text": "문제의 핵심 내용을 한 문단으로 전사/요약 (수식은 자연어로 풀어 써라. 예: x의 제곱 더하기 ...). 유사문제 검색에 쓰일 것이므로 어떤 개념·유형인지 잘 드러나게.",
   "unit": "아래 목록 중 가장 적합한 단원 하나",
-  "concepts": ["핵심 개념/유형 2~4개"]
+  "concepts": ["핵심 개념/유형 2~4개"],
+  "difficulty": 난이도 1~10 정수
 }
+[난이도 기준] 1~3 기본 계산·공식 적용 / 4~5 평이한 3점 / 6~7 일반 4점(복합 개념) / 8~9 준킬러 / 10 킬러
 unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
 
     // 2026-08-22: gemini-2.5-flash → gemini-3.7-flash (thinkingLevel:'low').
@@ -54,9 +57,14 @@ unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
     try { p = JSON.parse(out.replace(/^```(json)?\n?/i, '').replace(/\n?```$/i, '').trim()); } catch { }
 
     const unit = p.unit && typeof p.unit === 'string' ? p.unit.replace(/[\s#`"']/g, '') : null;
+    // DB 의 difficulty 는 embeddings.ts 가 1~10 판정에서 1 을 빼 저장한다.
+    // 같은 척도로 맞춰야 난이도 밴드 비교가 성립한다.
+    let diff: number | null = typeof p.difficulty === 'number' ? Math.max(1, Math.min(10, Math.floor(p.difficulty))) : null;
+    if (diff !== null && diff > 1) diff -= 1;
     return {
         text: String(p.text || ''),
         unit: unit && ALL_UNITS.includes(unit) ? unit : (unit || null),
         concepts: Array.isArray(p.concepts) ? p.concepts.map((c: any) => String(c)) : [],
+        difficulty: diff,
     };
 }

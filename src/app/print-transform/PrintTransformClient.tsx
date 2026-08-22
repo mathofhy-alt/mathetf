@@ -9,7 +9,7 @@ interface CropItem {
     id: string;
     dataUrl: string;
     loading: boolean;
-    reading?: { unit: string | null; concepts: string[] };
+    reading?: { unit: string | null; concepts: string[]; difficulty?: number | null };
     candidates?: any[];                 // 유사문제 후보
     contents: Record<string, string>;   // id -> content_xml
     images: Record<string, any[]>;      // id -> 이미지행
@@ -231,7 +231,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                                 </button>
                             ) : (
                                 <div className="mt-2">
-                                    {c.reading?.unit && <p className="text-[11px] text-slate-400 mb-1">인식: {c.reading.unit} {c.reading.concepts?.slice(0, 2).join(', ')}</p>}
+                                    {c.reading?.unit && <p className="text-[11px] text-slate-400 mb-1">인식: {c.reading.unit}{c.reading.difficulty ? ` · 난이도 ${c.reading.difficulty}` : ''} {c.reading.concepts?.slice(0, 2).join(', ')}</p>}
                                     {c.widened && (
                                         <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-1.5">
                                             ‘{c.reading?.unit}’ 단원 문제가 아직 DB에 없어, <strong>같은 과목의 다른 단원</strong>에서 찾았어요. 유형이 다를 수 있습니다.

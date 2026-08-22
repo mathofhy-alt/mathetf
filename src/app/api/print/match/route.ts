@@ -59,12 +59,19 @@ export async function POST(req: NextRequest) {
 
         // 3) match_predict 로 유사문제 검색 (단원 변형 포함, 단원 불명이면 전체)
         const admin = createAdminClient();
+        // 난이도 밴드. 난이도를 안 보면 '대칭이동' 같은 단어만 겹치는 Lv.1~2 기본 문제가
+        // 유사도 0.75 로 최상단에 올라온다(측정). 원본이 Lv.8 인데 기본 문제를 주면
+        // 그건 변형문제가 아니다. 예측 난이도 ±2 로 좁히면 같은 급의 문제가 올라온다.
+        const d = reading.difficulty;
+        const minDiff = d ? Math.max(1, d - 2) : 1;
+        const maxDiff = d ? Math.min(10, d + 2) : 10;
+
         const search = async (targetUnits: string[]) => {
             const { data, error } = await admin.rpc('match_predict', {
                 query_embedding: vecLit,
                 target_units: targetUnits,
-                min_diff: 1,
-                max_diff: 10,
+                min_diff: minDiff,
+                max_diff: maxDiff,
                 exclude_school: null,
                 match_count: want * 3,
             });
@@ -77,11 +84,11 @@ export async function POST(req: NextRequest) {
         //   채워 넣었다(사용자 제보). 시험지출제(잘 동작하는 쪽)도 unit 을 엄격히 맞춘다.
         let data = await search(reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS);
 
-        // 다만 DB 에 그 단원 문항이 아예 없는 경우가 있다.
-        // 실제 사례: 고1 워크북 10번을 '도형의이동'(정확한 판정!)으로 읽었는데
-        //           그 단원의 sorted 문항이 0건이라 결과가 통째로 비었다.
-        // 이럴 때만 '같은 과목의 다른 단원'까지 넓힌다 — 전 과목이 아니라 과목 안으로 한정해야
-        // 최소한 결이 맞는 문제가 나온다(공통수학2 → 평면좌표·직선의방정식·원의방정식 …).
+        // 결과가 0건이면 '같은 과목의 다른 단원'까지만 넓힌다 — 전 과목으로 넓히면
+        // 결이 안 맞는 문제가 섞인다(그래서 전체 폴백을 걷어냈다).
+        // 0건이 되는 실제 경우: 난이도 밴드가 좁아 그 단원·그 난이도대에 문항이 없을 때.
+        // (한때 '도형의이동 문항이 0건이라 그렇다'고 적어뒀는데 오진이었다 —
+        //  그 단원엔 390문항이 있고, 당시 DB 장애로 쿼리가 실패한 걸 빈 결과로 읽은 것이었다.)
         let widened = false;
         if (data.length === 0 && reading.unit) {
             const subj = UNIT_TO_SUBJECT[reading.unit];
@@ -107,7 +114,7 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({
-            reading: { unit: reading.unit, concepts: reading.concepts },
+            reading: { unit: reading.unit, concepts: reading.concepts, difficulty: reading.difficulty },
             candidates: picked,
             // 넓혀서 찾았으면 화면에 알린다 — 같은 단원이 아니라는 걸 숨기면
             // '이상한 문제가 나온다'로만 보인다(8/22 사용자 제보의 실체).
