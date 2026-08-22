@@ -10,6 +10,25 @@ export const maxDuration = 60;
 
 const ALL_VARIANTS = Array.from(new Set(Object.values(SUBJECT_UNITS).flat().flatMap((u) => unitVariants(u))));
 
+// 단원 → 과목 역인덱스. 크롭에서 읽은 단원으로 과목을 되짚어 쿼리 텍스트에 넣는다.
+const UNIT_TO_SUBJECT: Record<string, string> = {};
+for (const [subj, units] of Object.entries(SUBJECT_UNITS)) {
+    for (const u of units as string[]) if (!UNIT_TO_SUBJECT[u]) UNIT_TO_SUBJECT[u] = subj;
+}
+
+/**
+ * DB 의 embedding 은 `[핵심개념태그: …]\n[과목: X] [학년: Y] 본문+해설 수식…` 형식으로 만들어져 있다
+ * (scratch_batch_ai.ts). 그런데 여기서는 제미나이가 쓴 요약 한 문단만 임베딩하고 있었다.
+ * 형식이 달라 벡터가 멀어지고, 같은 문제끼리도 유사도가 0.55 밖에 안 나왔다.
+ * 같은 얼개로 감싸면 상위 8건의 단원 일치가 크게 올라간다(측정, 문항 5개 40칸):
+ *   요약만 18/40 → 태그+과목 32/40, 유사도도 0.60 → 0.75 대.
+ */
+function buildQueryText(reading: { text: string; unit: string | null; concepts: string[] }): string {
+    const tag = reading.concepts?.length ? `[핵심개념태그: ${reading.concepts.join(', ')}]\n` : '';
+    const subj = reading.unit ? UNIT_TO_SUBJECT[reading.unit] : '';
+    return `${tag}${subj ? `[과목: ${subj}] ` : ''}${reading.text}`;
+}
+
 /**
  * POST /api/print/match  { image: base64(데이터 접두사 제거), mimeType }
  * 크롭 문제 이미지 → Gemini 읽기 → OpenAI 임베딩 → match_predict 로 유사문제 후보 반환.
@@ -35,7 +54,7 @@ export async function POST(req: NextRequest) {
         if (!reading.text) return NextResponse.json({ error: '문제를 읽지 못했어요. 영역을 더 정확히 잘라보세요.' }, { status: 422 });
 
         // 2) OpenAI 임베딩 (DB 호환)
-        const { embedding } = await generateEmbedding(reading.text);
+        const { embedding } = await generateEmbedding(buildQueryText(reading));
         const vecLit = '[' + embedding.join(',') + ']';
 
         // 3) match_predict 로 유사문제 검색 (단원 변형 포함, 단원 불명이면 전체)
@@ -58,9 +77,15 @@ export async function POST(req: NextRequest) {
         // (틀린 필터는 필터가 없느니만 못하다 — RPC 자체는 0.5~1.7초라 재시도 비용이 작다)
         let data = await search(reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS);
         if (reading.unit && data.length < want) {
-            const wide = await search(ALL_VARIANTS);
-            const seen = new Set(data.map((q: any) => q.id));
-            data = [...data, ...wide.filter((q: any) => !seen.has(q.id))];
+            // 전체 단원 검색은 간헐적으로 오래 걸리고(최대 7.5초) statement timeout 이 나기도 한다.
+            // 어디까지나 보강이므로, 실패해도 좁힌 결과를 그대로 쓴다.
+            try {
+                const wide = await search(ALL_VARIANTS);
+                const seen = new Set(data.map((q: any) => q.id));
+                data = [...data, ...wide.filter((q: any) => !seen.has(q.id))];
+            } catch (e) {
+                console.error('[print/match] 전체 단원 폴백 실패(무시):', String(e).slice(0, 120));
+            }
         }
 
         // 출처 편중 방지 → want 개
