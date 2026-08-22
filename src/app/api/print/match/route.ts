@@ -72,21 +72,13 @@ export async function POST(req: NextRequest) {
             return data || [];
         };
 
-        // 단원 판정이 틀리면 엉뚱한 단원 안에서만 찾게 되어 결과가 통째로 나빠진다.
-        // 실측 정확도가 7문항 중 4~5라, 좁힌 검색이 비면 전체 단원으로 한 번 더 찾는다.
-        // (틀린 필터는 필터가 없느니만 못하다 — RPC 자체는 0.5~1.7초라 재시도 비용이 작다)
-        let data = await search(reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS);
-        if (reading.unit && data.length < want) {
-            // 전체 단원 검색은 간헐적으로 오래 걸리고(최대 7.5초) statement timeout 이 나기도 한다.
-            // 어디까지나 보강이므로, 실패해도 좁힌 결과를 그대로 쓴다.
-            try {
-                const wide = await search(ALL_VARIANTS);
-                const seen = new Set(data.map((q: any) => q.id));
-                data = [...data, ...wide.filter((q: any) => !seen.has(q.id))];
-            } catch (e) {
-                console.error('[print/match] 전체 단원 폴백 실패(무시):', String(e).slice(0, 120));
-            }
-        }
+        // ⚠ 전체 단원 폴백은 넣었다가 걷어냈다(8/22).
+        //   단원 판정이 틀릴 때를 대비한다는 취지였는데, 실제로는 결과가 부족할 때마다
+        //   전 단원에서 아무거나 끌어와 '변형문제라 할 수 없는 것들'을 채워 넣었다.
+        //   시험지출제(잘 동작하는 쪽)도 `q.unit === source.unit` 로 엄격히 거른다.
+        //   찾은 게 적으면 적은 대로 보여주는 편이 낫다.
+        const targetUnits = reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS;
+        const data = await search(targetUnits);
 
         // 출처 편중 방지 → want 개
         const perSource: Record<string, number> = {};
