@@ -52,11 +52,29 @@ const HOME_COLUMNS =
 
 async function getHomeExams() {
     const supabase = createAdminClient();
-    const { data } = await supabase
-        .from('exam_materials')
-        .select(HOME_COLUMNS)
-        .neq('school', 'DELETED')
-        .order('created_at', { ascending: false });
+    // ⚠ PostgREST 는 max-rows(1000)에서 조용히 잘린다. range() 로 페이지네이션하지 않으면
+    //   created_at DESC 기준 최신 1000건만 실려, 오래된 자료가 홈 검색에서 통째로 사라진다.
+    //   (8/24 발견: 전체 1,415건 중 415건 누락. 풍문고 자료가 1093~1095번째라
+    //    "현황판엔 있는데 내신기출탭에서 안 보인다"는 제보로 드러났다.)
+    let data: any[] = [];
+    let from = 0;
+    while (true) {
+        const { data: page, error } = await supabase
+            .from('exam_materials')
+            .select(HOME_COLUMNS)
+            .neq('school', 'DELETED')
+            // 모의고사 계열은 어차피 아래 isMockExam 으로 버려진다. 받아놓고 버리지 말고
+            // DB 에서 걸러 143건을 덜 실어온다(페이지네이션으로 늘어난 부담을 일부 상쇄).
+            // 제목에 '모의고사'가 든 예외는 아래 JS 필터가 마저 잡는다.
+            .not('school', 'in', `(${FREE_EXAM_SCHOOLS.map((s) => `"${s}"`).join(',')})`)
+            .not('exam_type', 'in', '("모의고사","수능","입학시험")')
+            .order('created_at', { ascending: false })
+            .range(from, from + 999);
+        if (error || !page || page.length === 0) break;
+        data = data.concat(page);
+        if (page.length < 1000) break;
+        from += 1000;
+    }
     // [크롤예산] 자료가 1,200건을 넘으며 홈 HTML 이 744KB 까지 커졌고, 그 93%가 이 목록 데이터였다.
     // Googlebot 은 사이트별 크롤 예산 안에서 움직이므로 홈이 무거우면 나머지 페이지가 밀린다
     // (8/18 GSC: '발견됨-색인 생성 안 됨' 89개. 홈에서 직접 링크된 /predict 조차 미크롤).
