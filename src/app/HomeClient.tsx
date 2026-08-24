@@ -251,17 +251,18 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // 파일 그룹핑 — 관리자 로그인 확인 시(isAdmin 변경) 원본제보 포함 여부가 달라지므로 재실행
+    // 파일 그룹핑 (원본제보는 역할과 무관하게 제외 — 아래 참고)
     useEffect(() => {
         const initFiles = () => {
             const data = initialExamData;
             if (data) {
                 const groups: { [key: string]: GroupedExam } = {};
 
-                // 모의고사류 제외는 서버(page.tsx)에서 이미 처리 — 여기선 원본제보만 역할별 필터
-                const filteredData = isAdmin
-                    ? data
-                    : data.filter((item: any) => item.content_type !== '원본제보');
+                // 모의고사류 제외는 서버(page.tsx)에서 이미 처리.
+                // 원본제보(is_verified=false, 검수 전)는 내신기출 목록에 낄 자리가 아니다 —
+                // 관리자도 여기서 볼 필요가 없고 검수는 /admin/raw-uploads 에서 한다.
+                // (예전엔 관리자에게만 보여줬는데, 8/25 포천고 제보 때 "왜 여기 뜨냐"로 확인됨)
+                const filteredData = data.filter((item: any) => item.content_type !== '원본제보');
 
                 filteredData.forEach((item: any) => {
                     // Include subject in the key to differentiate exams
