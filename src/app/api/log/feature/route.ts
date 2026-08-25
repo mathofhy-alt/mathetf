@@ -6,7 +6,13 @@ export const dynamic = 'force-dynamic';
 
 // 클라이언트 행동 로깅 (feature_usage) — RLS 때문에 서버 경유
 // 현재 용도: 무료 문제 PDF 다운로드 (활성화율 측정의 핵심 행동인데 기록이 없었음)
-const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide']);
+//
+// [시험지출제 퍼널] 2026-08-26 추가.
+// 그전까지 기록되던 건 전부 '성공한 행동'뿐이라, 몇 명이 만들려다 그만뒀는지 알 수 없었다.
+// (98건이 저장된 건 알지만 몇 명이 시도했는지를 몰라, 유입을 늘려야 할지 화면을 고쳐야 할지
+//  정반대의 처방을 구분하지 못했다.) 진입→DB선택→검색→담기→저장 5단계를 남긴다.
+const QB_FUNNEL = ['qb_enter', 'qb_db_select', 'qb_search', 'qb_cart_add', 'qb_save', 'qb_save_fail'];
+const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', ...QB_FUNNEL]);
 
 export async function POST(req: NextRequest) {
     const sb = createClient();

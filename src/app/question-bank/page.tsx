@@ -46,10 +46,30 @@ function examFormLabel(sourceDbId?: string | null): string {
     return m ? ` ${m[1]}형` : '';
 }
 
+/**
+ * [시험지출제 퍼널 로깅] 2026-08-26.
+ * 그전까지는 저장 성공(saved_exam)만 남아, 몇 명이 만들려다 그만뒀는지 알 수 없었다.
+ * 한 세션에 같은 단계가 여러 번 일어나도 첫 1회만 남긴다 —
+ * 검색·담기는 수십 번 반복되므로 그대로 두면 로그가 행동이 아니라 클릭 수를 세게 된다.
+ */
+const qbLogged = new Set<string>();
+function logQb(step: string, title?: string) {
+    if (typeof window === 'undefined' || qbLogged.has(step)) return;
+    qbLogged.add(step);
+    fetch('/api/log/feature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feature: step, title: title?.slice(0, 200) || null }),
+    }).catch(() => { });
+}
+
 export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [runTeacherTour, setRunTeacherTour] = useState(false);
+
+    // [퍼널] 페이지 진입 (로그인 사용자만 — 서버가 비로그인은 401 로 버린다)
+    useEffect(() => { logQb('qb_enter'); }, []);
 
     // ?tour=1 강제 진입 또는 이 페이지 첫 방문이면 투어 시작 (1회)
     useEffect(() => {
@@ -474,9 +494,13 @@ export default function QuestionBankPage() {
 
     const handleSearch = () => {
         if (selectedDbIds.length === 0) {
+            // [퍼널] DB 를 안 고르고 검색을 누른 순간 — 여기서 막히는 사람이 몇인지 봐야 한다
+            logQb('qb_search', 'blocked:no_db');
             showToast('DB를 먼저 선택해주세요.', 'info');
             return;
         }
+        logQb('qb_db_select', `dbs:${selectedDbIds.length}`);
+        logQb('qb_search', `dbs:${selectedDbIds.length}`);
         setHasSearched(false);
         fetchQuestions(selectedDbIds, filterState, 1);
     };
@@ -769,6 +793,7 @@ export default function QuestionBankPage() {
 
 
     const toggleCart = (question: any) => {
+        logQb('qb_cart_add');   // [퍼널] 첫 담기 1회만
         if (cart.find(q => q.id === question.id)) {
             setCart(cart.filter(q => q.id !== question.id));
         } else {
@@ -926,9 +951,12 @@ export default function QuestionBankPage() {
             const result = await response.json();
 
             if (!response.ok || !result.success) {
+                // [퍼널] 저장까지 왔는데 실패한 건 가장 아까운 이탈이라 따로 남긴다
+                logQb('qb_save_fail', String(result.error || response.status).slice(0, 120));
                 throw new Error(result.error || 'Save failed');
             }
 
+            logQb('qb_save', `q:${cart.length}`);
             showToast('보관함에 저장되었습니다! "내 보관함"에서 확인 및 다운로드 가능합니다.', 'success');
             setCart([]);
             localStorage.removeItem('exam_cart');
