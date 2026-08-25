@@ -808,6 +808,10 @@ export default function QuestionBankPage() {
     const handleSelectAllToggle = () => {
         if (!questions || questions.length === 0) return;
 
+        // [퍼널] 담기 경로가 둘이라 여기도 남긴다. 개별 클릭(toggleCart)만 걸어뒀더니
+        // 전체선택으로 50문항을 담아 저장해도 qb_cart_add 가 안 찍혔다(8/26 확인).
+        logQb('qb_cart_add', 'select_all');
+
         const allInSearchInCart = questions.every(q => q && cartIdSet.has(q.id));
 
         if (allInSearchInCart) {
