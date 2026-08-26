@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { packHomeRow } from '@/lib/data';
 import { unstable_cache } from 'next/cache';
 import type { Metadata } from 'next';
 import HomeClient from './HomeClient';
@@ -81,14 +82,15 @@ async function getHomeExams() {
     // → 다운로드할 때만 필요한 값은 목록에서 빼고, 그 시점에 id 로 조회한다.
     //   free_pdf_url 은 버튼 노출 조건이라 존재 여부(boolean)만 남긴다.
     //   created_at 은 화면에서 날짜만 쓰므로 시각을 잘라 보낸다.
+    //   그리고 필드명은 행마다 반복될 뿐이라 값만 배열로 보낸다(HOME_FIELDS 순서 규약).
+    //   측정: 객체 배열 645KB 중 키 이름이 248KB(38.5%)였다.
     return (data || []).filter((item: any) => !isMockExam(item)).map((item: any) => {
-        // undefined 로 두면 RSC 페이로드에 키가 그대로 남으므로 구조분해로 완전히 걷어낸다
         const { free_pdf_url, ...rest } = item;
-        return {
+        return packHomeRow({
             ...rest,
             created_at: typeof rest.created_at === 'string' ? rest.created_at.slice(0, 10) : rest.created_at,
             has_free_pdf: !!free_pdf_url,
-        };
+        });
     });
 }
 

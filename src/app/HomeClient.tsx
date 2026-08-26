@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { FileItem } from '../lib/data';
+import { FileItem, unpackHomeRow } from '../lib/data';
 import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle, Search, Loader2, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -26,34 +26,127 @@ const RoleOnboardingModal = dynamic(() => import('@/components/RoleOnboardingMod
 const LaunchPromoModal = dynamic(() => import('@/components/LaunchPromoModal'), { ssr: false });
 
 interface HomeClientProps {
-    initialExamData: any[];
+    initialExamData: any[][];   // packHomeRow 로 압축된 행
     initialSchoolsRaw: any[];
 }
 
-export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeClientProps) {
-    interface GroupedExam {
-        key: string;
-        title: string;
-        school: string;
-        grade: number;
-        semester: number;
-        subject: string;
-        uploader: string;
-        date: string;
-        sales: number;
-        isVerified?: boolean;
-        examType: string; // Added for filtering
-        files: {
-            pdfProb?: FileItem;
-            pdfSol?: FileItem;
-            hwpProb?: FileItem;
-            hwpSol?: FileItem;
-            db?: FileItem; // Added Personal DB
-            raw?: FileItem; // Added Original Raw Scan
-        };
-    }
+interface GroupedExam {
+    key: string;
+    title: string;
+    school: string;
+    grade: number;
+    semester: number;
+    subject: string;
+    uploader: string;
+    date: string;
+    sales: number;
+    isVerified?: boolean;
+    examType: string; // Added for filtering
+    files: {
+        pdfProb?: FileItem;
+        pdfSol?: FileItem;
+        hwpProb?: FileItem;
+        hwpSol?: FileItem;
+        db?: FileItem; // Added Personal DB
+        raw?: FileItem; // Added Original Raw Scan
+    };
+}
 
-    const [groupedFiles, setGroupedFiles] = useState<GroupedExam[]>([]);
+// 자료 행 → 화면 카드 그룹. 순수 함수라 서버·클라이언트가 같은 결과를 낸다(하이드레이션 안전).
+function buildGroupedFiles(packed: any[]): GroupedExam[] {
+    if (!packed) return [];
+    // 서버는 값만 담은 배열로 보낸다(page.tsx packHomeRow) — 여기서 되살린다.
+    const data = packed.map(unpackHomeRow);
+    const groups: { [key: string]: GroupedExam } = {};
+
+    // 모의고사류 제외는 서버(page.tsx)에서 이미 처리.
+    // 원본제보(is_verified=false, 검수 전)는 내신기출 목록에 낄 자리가 아니다 —
+    // 관리자도 여기서 볼 필요가 없고 검수는 /admin/raw-uploads 에서 한다.
+    // (예전엔 관리자에게만 보여줬는데, 8/25 포천고 제보 때 "왜 여기 뜨냐"로 확인됨)
+    const filteredData = data.filter((item: any) => item.content_type !== '원본제보');
+
+    filteredData.forEach((item: any) => {
+        // Include subject in the key to differentiate exams
+        const subjectKey = item.subject || 'Unknown';
+        const yearDerived = item.exam_year || new Date().getFullYear();
+        const isMockOpt = item.exam_type === '모의고사' || item.exam_type === '수능';
+        const semLabel = isMockOpt ? `${item.semester}월` : `${item.semester}학기`;
+
+        const key = `${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
+
+        if (!groups[key]) {
+            groups[key] = {
+                key,
+                title: `[${item.school}] ${yearDerived}년 ${item.grade}학년 ${semLabel} ${item.exam_type} ${item.subject || ''}`,
+                school: item.school,
+                grade: item.grade,
+                semester: item.semester,
+                subject: item.subject || '',
+                uploader: item.uploader_name || 'Anonymous',
+                date: new Date(item.created_at).toISOString().split('T')[0],
+                sales: 0,
+                examType: item.exam_type, // Added to match interface
+                isVerified: item.is_verified || false,
+                files: {}
+            };
+        }
+
+        if (item.is_verified) {
+            groups[key].isVerified = true;
+        }
+
+        const fileItem: FileItem = {
+            id: item.id,
+            // DB 원본 title 은 전송하지 않는다(HOME_FIELDS 주석 참고) — 같은 내용을 조합한다.
+            // 쓰이는 곳: 개인DB 상세 모달 헤더.
+            title: `${item.school} ${yearDerived}년 ${item.grade}학년 ${semLabel} ${item.exam_type} ${item.subject || ''} [${item.content_type}]`.replace(/\s+/g, ' ').trim(),
+            type: item.file_type,
+            price: item.price,
+            uploader: item.uploader_name || 'Anonymous',
+            uploaderId: item.uploader_id, // Added
+            date: new Date(item.created_at).toISOString().split('T')[0],
+            school: item.school,
+            grade: item.grade,
+            sales: item.sales_count,
+            region: item.region,
+            district: item.district,
+            year: yearDerived,
+            semester: item.semester,
+            examType: item.exam_type,
+            contentType: item.content_type, // Added
+            subject: item.subject || '', // Add subject here
+            // [크롤예산] file_path·free_pdf_url 은 홈 목록에서 빼고 다운로드 시점에 조회한다.
+            // 버튼 노출 판단에만 쓰이므로 존재 여부만 받는다.
+            hasFreePdf: !!item.has_free_pdf
+        };
+
+        groups[key].sales += (item.sales_count || 0);
+
+        if (item.content_type === '원본제보') {
+            groups[key].files.raw = fileItem;
+        } else if (item.file_type === 'PDF') {
+            if (item.content_type === '문제') groups[key].files.pdfProb = fileItem;
+            else groups[key].files.pdfSol = fileItem;
+        } else if (item.file_type === 'HWP') {
+            if (item.content_type === '문제') groups[key].files.hwpProb = fileItem;
+            else groups[key].files.hwpSol = fileItem;
+        } else if (item.file_type === 'DB') {
+            groups[key].files.db = fileItem;
+        }
+    });
+    return Object.values(groups);
+}
+
+export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeClientProps) {
+
+    // [SSR·크롤예산 2026-08-26] 예전엔 빈 배열로 시작해 useEffect 에서 채웠다.
+    // 그러면 서버 렌더링 시점에 목록이 비어, 구글이 받는 HTML 에 자료도 링크도 한 건도 없었다
+    // (본문 1,710자 · /exam/ 링크 0개 — 크롤의 72%가 JS·JSON 로 새던 원인).
+    // useState 의 지연 초기화 함수는 서버 렌더에서도 실행되므로 첫 HTML 부터 카드가 그려진다.
+    // setGroupedFiles 는 관리자 검수 토글(handleVerifyAdmin)이 계속 쓴다.
+    const [groupedFiles, setGroupedFiles] = useState<GroupedExam[]>(
+        () => buildGroupedFiles(initialExamData)
+    );
     // (홈 튜토리얼 투어는 렌더링이 제거된 지 오래라 관련 상태·GuidedTour 번들도 정리함)
 
     const [files, setFiles] = useState<FileItem[]>([]);
@@ -251,95 +344,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // 파일 그룹핑 (원본제보는 역할과 무관하게 제외 — 아래 참고)
-    useEffect(() => {
-        const initFiles = () => {
-            const data = initialExamData;
-            if (data) {
-                const groups: { [key: string]: GroupedExam } = {};
-
-                // 모의고사류 제외는 서버(page.tsx)에서 이미 처리.
-                // 원본제보(is_verified=false, 검수 전)는 내신기출 목록에 낄 자리가 아니다 —
-                // 관리자도 여기서 볼 필요가 없고 검수는 /admin/raw-uploads 에서 한다.
-                // (예전엔 관리자에게만 보여줬는데, 8/25 포천고 제보 때 "왜 여기 뜨냐"로 확인됨)
-                const filteredData = data.filter((item: any) => item.content_type !== '원본제보');
-
-                filteredData.forEach((item: any) => {
-                    // Include subject in the key to differentiate exams
-                    const subjectKey = item.subject || 'Unknown';
-                    // [V105] Prioritize title regex for year to fix 2024/2025 discrepancy
-                    const titleYear = item.title?.match(/20\d{2}/)?.[0];
-                    const yearDerived = titleYear ? parseInt(titleYear) : (item.exam_year || new Date().getFullYear());
-
-                    const key = `${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
-
-                    if (!groups[key]) {
-                        const isMockOpt = item.exam_type === '모의고사' || item.exam_type === '수능';
-                        const semLabel = isMockOpt ? `${item.semester}월` : `${item.semester}학기`;
-                        groups[key] = {
-                            key,
-                            title: `[${item.school}] ${yearDerived}년 ${item.grade}학년 ${semLabel} ${item.exam_type} ${item.subject || ''}`,
-                            school: item.school,
-                            grade: item.grade,
-                            semester: item.semester,
-                            subject: item.subject || '',
-                            uploader: item.uploader_name || 'Anonymous',
-                            date: new Date(item.created_at).toISOString().split('T')[0],
-                            sales: 0,
-                            examType: item.exam_type, // Added to match interface
-                            isVerified: item.is_verified || false,
-                            files: {}
-                        };
-                    }
-
-                    if (item.is_verified) {
-                        groups[key].isVerified = true;
-                    }
-
-                    const fileItem: FileItem = {
-                        id: item.id,
-                        title: item.title,
-                        type: item.file_type,
-                        price: item.price,
-                        uploader: item.uploader_name || 'Anonymous',
-                        uploaderId: item.uploader_id, // Added
-                        date: new Date(item.created_at).toISOString().split('T')[0],
-                        school: item.school,
-                        grade: item.grade,
-                        sales: item.sales_count,
-                        region: item.region,
-                        district: item.district,
-                        year: titleYear ? parseInt(titleYear) : (item.exam_year || new Date().getFullYear()),
-                        semester: item.semester,
-                        examType: item.exam_type,
-                        contentType: item.content_type, // Added
-                        subject: item.subject || '', // Add subject here
-                        // [크롤예산] file_path·free_pdf_url 은 홈 목록에서 빼고 다운로드 시점에 조회한다.
-                        // 버튼 노출 판단에만 쓰이므로 존재 여부만 받는다.
-                        hasFreePdf: !!item.has_free_pdf
-                    };
-
-                    groups[key].sales += (item.sales_count || 0);
-
-                    if (item.content_type === '원본제보') {
-                        groups[key].files.raw = fileItem;
-                    } else if (item.file_type === 'PDF') {
-                        if (item.content_type === '문제') groups[key].files.pdfProb = fileItem;
-                        else groups[key].files.pdfSol = fileItem;
-                    } else if (item.file_type === 'HWP') {
-                        if (item.content_type === '문제') groups[key].files.hwpProb = fileItem;
-                        else groups[key].files.hwpSol = fileItem;
-                    } else if (item.file_type === 'DB') {
-                        groups[key].files.db = fileItem;
-                    }
-                });
-
-                setGroupedFiles(Object.values(groups));
-            }
-        };
-        initFiles();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAdmin]);
 
     const fetchDbDetails = async (file: FileItem) => {
         setIsLoadingDetails(true);
