@@ -820,15 +820,28 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                                 <span>{checkAccess(group.files.db.id) ? 'DB 이용중' : '개인DB'}</span>
                                                             </button>
                                                             <div className="absolute right-0 top-full mt-1 bg-white rounded-xl border border-[#B7D1EA] shadow-xl z-20 p-2 w-36 opacity-0 group-hover/db:opacity-100 pointer-events-none group-hover/db:pointer-events-auto transition-all duration-200">
-                                                                <button onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }} className="w-full py-1.5 px-2 text-xs font-bold text-slate-500 hover:text-[#497AB7] hover:bg-blue-50 rounded-lg flex items-center gap-1 transition-colors">
+                                                                {/* 개인DB 는 내려받는 파일이 아니라 시험지출제에서 쓰는 문항 묶음이다.
+                                                                    file_path 가 db_access/… 자리표시자라 스토리지에 실물이 없는데(587건 전부)
+                                                                    보유자에게 뜨던 '열기' 가 handleDownload 를 불러
+                                                                    "다운로드 중 오류: Object not found" 를 띄우고 있었다.
+                                                                    마이페이지는 이미 다운로드 없이 'DB 소스용' 안내만 한다 — 홈만 어긋나 있었다.
+                                                                    이 버튼의 목적은 처음부터 문항 구성(단원·난이도) 확인뿐이다. */}
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }}
+                                                                    className={`w-full py-1.5 px-2 text-xs rounded-lg flex items-center gap-1 transition-colors ${checkAccess(group.files.db.id)
+                                                                        ? 'font-extrabold bg-[#497AB7] text-white hover:bg-[#3A6599] justify-center'
+                                                                        : 'font-bold text-slate-500 hover:text-[#497AB7] hover:bg-blue-50'}`}
+                                                                >
                                                                     <Info size={11} /> 구성 확인
                                                                 </button>
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); if(checkAccess(group.files.db!.id)) { handleDownload(group.files.db!); } else { handleAddToCart(group.files.db!); } }}
-                                                                    className="w-full mt-1 py-1.5 px-2 text-xs font-extrabold bg-[#497AB7] text-white hover:bg-[#3A6599] rounded-lg flex items-center gap-1 justify-center transition-colors"
-                                                                >
-                                                                    {checkAccess(group.files.db.id) ? <><Download size={11} /> 열기</> : <><ShoppingCart size={11} /> 장바구니</>}
-                                                                </button>
+                                                                {!checkAccess(group.files.db.id) && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handleAddToCart(group.files.db!); }}
+                                                                        className="w-full mt-1 py-1.5 px-2 text-xs font-extrabold bg-[#497AB7] text-white hover:bg-[#3A6599] rounded-lg flex items-center gap-1 justify-center transition-colors"
+                                                                    >
+                                                                        <ShoppingCart size={11} /> 장바구니
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </>
                                                     ) : (
