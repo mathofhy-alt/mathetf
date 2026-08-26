@@ -1017,7 +1017,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                         <div className="bg-indigo-50 border-b border-indigo-100 px-5 py-3 flex items-start gap-2">
                             <Info size={16} className="text-indigo-600 mt-0.5 shrink-0" />
                             <div className="text-xs text-indigo-900 font-medium leading-relaxed">
-                                <strong className="text-indigo-700">안내:</strong> 개인DB는 결제 후 <strong className="text-indigo-700 font-extrabold">1일(24시간) 이내</strong>에 '시험지 만들기' 탭에서 문항으로 제공됩니다.
+                                {/* 예전 문구는 "결제 후 1일(24시간) 이내 제공"이었는데
+                                    PERSONAL_DB_FREE_MODE(config.ts, 2027-05-26 까지)로
+                                    가입 즉시 전량 무료 지급이라 결제도 대기도 없다. */}
+                                <strong className="text-indigo-700">🎉 런칭 기념 1년간 무료:</strong> 개인DB는 <strong className="text-indigo-700 font-extrabold">가입 즉시 전체 무료</strong>로 열립니다. '시험지 만들기' 탭에서 바로 문항을 골라 쓰세요.
                             </div>
                         </div>
 
