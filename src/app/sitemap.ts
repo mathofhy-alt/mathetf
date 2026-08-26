@@ -21,24 +21,44 @@ async function fetchAll<T>(build: (from: number, to: number) => any): Promise<T[
     return out;
 }
 
+// 내용이 코드에만 있는 페이지들의 마지막 개편일.
+//
+// ⚠ 이 페이지들을 실제로 고칠 때 여기 날짜도 같이 갱신할 것.
+//
+// 예전엔 전부 `new Date()` 였다. 사이트맵이 1시간마다 재생성되니 이 URL 들이 매번
+// "방금 수정됨"이라고 신고했고, 구글은 몇 달째 그대로인 페이지를 계속 다시 받으러 왔다.
+// (2026-08-26 GSC: 크롤 목적이 새로고침 92% / 발견 8%.)
+// 진짜 손해는 낭비가 아니라 신뢰다 — 구글은 사이트의 lastmod 가 부정확하다고 판단하면
+// 그 사이트 전체의 lastmod 를 무시한다. 그러면 새로 올린 회차의 정직한 lastmod 도 안 믿는다.
+const PAGE_UPDATED: Record<string, string> = {
+    '/teacher': '2026-07-28',
+    '/predict': '2026-07-06',
+    '/print-transform': '2026-07-06',
+    '/study/common-math-2': '2026-07-02',
+    '/study/calculus-1': '2026-07-02',
+};
+
+const BASE = 'https://mathetf.com';
+const enc = (s: string) => encodeURIComponent(s);
+const at = (v: any, fallback: Date) => (v ? new Date(v) : fallback);
+
+// 데이터가 없거나 조회가 실패해도 이 목록은 항상 유효하다(고정 날짜라 거짓말을 하지 않는다).
+function staticPages(): MetadataRoute.Sitemap {
+    return (Object.keys(PAGE_UPDATED) as string[]).map((p) => ({
+        url: `${BASE}${p}`,
+        lastModified: new Date(PAGE_UPDATED[p]),
+        changeFrequency: 'monthly' as const,
+        priority: p === '/teacher' ? 0.9 : 0.8,
+    }));
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://mathetf.com';
+    const fallbackDate = new Date(PAGE_UPDATED['/teacher']);
 
-    // 고정 페이지
-    const staticPages: MetadataRoute.Sitemap = [
-        { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
-        { url: `${baseUrl}/question-bank`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-        { url: `${baseUrl}/teacher`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
-        { url: `${baseUrl}/schools`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
-        { url: `${baseUrl}/predict`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-        { url: `${baseUrl}/print-transform`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-        { url: `${baseUrl}/study/common-math-2`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-        { url: `${baseUrl}/study/calculus-1`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    ];
-
-    // DB에서 실제 시험지 있는 학교 목록 가져오기
     try {
         const supabase = createAdminClient();
+
+        // created_at DESC 이므로 data[0] 이 사이트 전체의 최신 자료 시각이다.
         const data = await fetchAll<any>((from, to) => supabase
             .from('exam_materials')
             .select('school, created_at')
@@ -46,7 +66,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .order('created_at', { ascending: false })
             .range(from, to));
 
-        if (!data.length) return staticPages;
+        if (!data.length) return staticPages();
+        const latestMaterial = at(data[0]?.created_at, fallbackDate);
+
+        // 문제은행은 문항이 늘 때 내용이 바뀐다.
+        const { data: qRow } = await supabase
+            .from('questions').select('created_at')
+            .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        const latestQuestion = at(qRow?.created_at, latestMaterial);
 
         // 학교별 최신 업데이트 날짜 추출
         const schoolMap: Record<string, Date> = {};
@@ -57,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
 
         const schoolPages: MetadataRoute.Sitemap = Object.entries(schoolMap).map(([school, date]) => ({
-            url: `${baseUrl}/school/${encodeURIComponent(school)}`,
+            url: `${BASE}/school/${enc(school)}`,
             lastModified: date,
             changeFrequency: 'weekly' as const,
             priority: 0.8,
@@ -74,39 +101,58 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .range(from, to));
 
         const examPages: MetadataRoute.Sitemap = examRows.map((r: any) => ({
-            url: `${baseUrl}/exam/${r.id}`,
+            url: `${BASE}/exam/${r.id}`,
             lastModified: new Date(r.created_at),
             changeFrequency: 'monthly' as const,
             priority: 0.7,
         }));
 
         // 모의고사: 미리보기 생성된 회차만 색인 (+ 허브·분류 페이지)
-        const enc = (s: string) => encodeURIComponent(s);
-        const mockStatic: MetadataRoute.Sitemap = ['모의고사'].map((p) => ({
-            url: `${baseUrl}/${enc(p)}`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.8,
-        }));
-        const mockCategoryPages: MetadataRoute.Sitemap = ['전국연합', '평가원', '수능', '경찰대', '사관학교'].map((c) => ({
-            url: `${baseUrl}/${enc('모의고사')}/${enc(c)}`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.7,
-        }));
         const mockRows = await fetchAll<any>((from, to) => supabase
             .from('mock_exams')
-            .select('slug, created_at, preview_urls')
+            .select('slug, category, created_at, preview_urls')
             .not('preview_urls', 'is', null)
             .range(from, to));
-        const mockExamPages: MetadataRoute.Sitemap = mockRows
-            .filter((r: any) => Array.isArray(r.preview_urls) && r.preview_urls.length > 0)
-            .map((r: any) => ({
-                url: `${baseUrl}/${enc('모의고사')}/${enc(r.slug)}`,
-                lastModified: new Date(r.created_at),
-                changeFrequency: 'monthly' as const,
-                priority: 0.7,
-            }));
+        const listed = mockRows.filter((r: any) => Array.isArray(r.preview_urls) && r.preview_urls.length > 0);
 
-        return [...staticPages, ...schoolPages, ...examPages, ...mockStatic, ...mockCategoryPages, ...mockExamPages];
+        // 허브·분류 페이지의 lastmod 는 그 아래 실제 회차의 최신 시각이다.
+        const newest = (rows: any[]) =>
+            rows.reduce((acc: Date | null, r: any) => {
+                const d = new Date(r.created_at);
+                return !acc || d > acc ? d : acc;
+            }, null);
+
+        const mockStatic: MetadataRoute.Sitemap = [{
+            url: `${BASE}/${enc('모의고사')}`,
+            lastModified: newest(listed) || fallbackDate,
+            changeFrequency: 'weekly' as const,
+            priority: 0.8,
+        }];
+
+        const mockCategoryPages: MetadataRoute.Sitemap = ['전국연합', '평가원', '수능', '경찰대', '사관학교'].map((c) => ({
+            url: `${BASE}/${enc('모의고사')}/${enc(c)}`,
+            lastModified: newest(listed.filter((r: any) => r.category === c)) || fallbackDate,
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        }));
+
+        const mockExamPages: MetadataRoute.Sitemap = listed.map((r: any) => ({
+            url: `${BASE}/${enc('모의고사')}/${enc(r.slug)}`,
+            lastModified: new Date(r.created_at),
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        }));
+
+        // 내용이 데이터에서 오는 페이지들 — 실제 데이터 변경 시각을 쓴다.
+        const dataDriven: MetadataRoute.Sitemap = [
+            { url: BASE, lastModified: latestMaterial, changeFrequency: 'daily', priority: 1.0 },
+            { url: `${BASE}/question-bank`, lastModified: latestQuestion, changeFrequency: 'daily', priority: 0.9 },
+            { url: `${BASE}/schools`, lastModified: latestMaterial, changeFrequency: 'weekly', priority: 0.7 },
+        ];
+
+        return [...dataDriven, ...staticPages(), ...schoolPages, ...examPages,
+            ...mockStatic, ...mockCategoryPages, ...mockExamPages];
     } catch {
-        return staticPages;
+        return staticPages();
     }
 }
-
-
-
