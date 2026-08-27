@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
     if (dbPurchases.length === 0) return NextResponse.json({ count: 0 });
 
     // 2. Find or Create "Purchased DBs" folder
-    const FOLDER_NAME = '구매한 학교 기출';
+    // 2026-08-27 '구매한 학교 기출' → '내신기출' (사용자 요청). 기존 행은 마이그레이션으로 함께 변경했다.
+    const FOLDER_NAME = '내신기출';
 
     // Fetch ALL matching folders to handle duplicates and update them all
     let { data: folders } = await supabase

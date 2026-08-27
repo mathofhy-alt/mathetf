@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Folder, ChevronRight, ChevronDown, Database, Trash2, BookOpen } from 'lucide-react';
-import type { Folder as FolderType } from '@/types/storage';
+import { isNaesinFolder, isVirtualFolder, type Folder as FolderType } from '@/types/storage';
 
 interface FolderTreeProps {
     folders: FolderType[];
@@ -69,14 +69,16 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                     if (folder.id === 'mock-exam-root') {
                         return <BookOpen size={16} className={isSelected ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-500'} />;
                     }
-                    if (folder.name === '구매한 학교 기출') {
+                    if (isNaesinFolder(folder.name)) {
                         return <Database size={16} className={isSelected ? 'fill-indigo-200 text-indigo-600' : 'text-indigo-400 group-hover:text-indigo-500'} />;
                     }
                     return <Folder size={16} className={isSelected ? 'fill-blue-200 text-blue-600' : 'text-slate-400 group-hover:text-slate-500'} />;
                 })()}
                 <span className="text-sm truncate flex-1">{folder.name}</span>
 
-                {onDelete && folder.name !== '구매한 학교 기출' && folder.id !== 'mock-exam-root' && (
+                {/* 시스템 가상 폴더(모의고사·사관학교·경찰대)와 내신기출 폴더는 사용자가 만든 게 아니라 지울 수 없다.
+                    예전엔 mock-exam-root 만 막아서 사관학교·경찰대에 휴지통이 떴다(8/27 제보). */}
+                {onDelete && !isNaesinFolder(folder.name) && !isVirtualFolder(folder) && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -116,11 +118,11 @@ export default function FolderTree({ folders, currentFolderId, onFolderSelect, o
     // Root level folders (parent_id is null)
     let rootFolders = folders.filter(f => f.parent_id === null);
 
-    // 순서 고정: 모의고사 → 사관학교·경찰대 → 구매한 학교 기출 → 기타(이름순)
+    // 순서 고정: 모의고사 → 사관학교·경찰대 → 내신기출 → 기타(이름순)
     const rank = (f: any) =>
         f.id === 'mock-exam-root' ? 0
         : (f.id === 'exam-school-root' || f.name === '사관학교·경찰대') ? 1
-        : f.name === '구매한 학교 기출' ? 2 : 3;
+        : isNaesinFolder(f.name) ? 2 : 3;
     rootFolders.sort((a, b) => rank(a) - rank(b) || (a.name || '').localeCompare(b.name || ''));
 
     const [isRootOpen, setIsRootOpen] = useState(true);
