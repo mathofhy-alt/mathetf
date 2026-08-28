@@ -27,7 +27,12 @@ export async function middleware(request: NextRequest) {
         if (target && target !== examMatch[1]) {
             const url = request.nextUrl.clone()
             url.pathname = `/exam/${target}`
-            return NextResponse.redirect(url, 308)
+            // ⚠ 308 이 아니라 301 을 쓴다.
+            //   308 은 표준이지만 네이버 Yeti 의 308 처리는 공개 문서가 빈약하고,
+            //   308 을 리다이렉트 체인 오류나 색인 탈락으로 다룬 사례가 보고돼 있다.
+            //   네이버가 우리 주력 유입 채널이라 보수적으로 간다. GET 만 쓰는 경로라 301 로 충분하다.
+            //   (아래 www→apex 는 기존 308 을 그대로 둔다 — 이미 색인이 안정된 경로라 건드릴 이유가 없다)
+            return NextResponse.redirect(url, 301)
         }
     }
     
