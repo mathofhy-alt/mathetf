@@ -17,9 +17,12 @@ export interface FilterState {
     includeOffCurriculum: boolean;
 }
 
+// ⚠ 이 목록에 없는 과목은 DB 에 문항이 있어도 트리 노드가 안 만들어져 필터에 안 뜬다.
+//    (8/28 '기하' 63문항을 넣었는데 과목 필터에 안 보인 원인 — CURRICULA 만 고쳐선 부족했다)
 const SUBJECT_ORDER = [
-    '공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하와벡터',
-    '수학(상)', '수학(하)', '수학I', '수학II', '미적분'
+    '공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하',
+    '수학(상)', '수학(하)', '수학I', '수학II', '미적분',
+    '기하와벡터',   // 옛 표기 — 기존 자료 1건이 이 이름이라 남긴다
 ];
 
 // 단원 목록 = curriculum.ts 단일 소스 (DB 단원명과 일치). 하드코딩 옛 이름 제거.
@@ -146,7 +149,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
                         if (db.subject && db.subject !== '전과정') {
                             // lib/questions/dbFilter.ts 의 MOCK_SELECT_SUBJECTS 와 동기 유지 필수
-                            const MOCK_SELECT_SUBJECTS = ['기하와벡터', '미적분II', '미적분', '확률과통계', '확률과 통계'];
+                            const MOCK_SELECT_SUBJECTS = ['기하', '기하와벡터', '미적분II', '미적분', '확률과통계', '확률과 통계'];
                             const isMockSelect = (db.exam_type === '모의고사' || db.exam_type === '수능' || db.exam_type === '입학시험')
                                 && MOCK_SELECT_SUBJECTS.includes(db.subject);
                             if (isMockSelect) {

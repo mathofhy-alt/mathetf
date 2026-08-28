@@ -301,7 +301,7 @@ export default function AdminIngestPage() {
                                     <optgroup label="현행 (2022학년도~)">
                                         <option value="공통(수1,수2)">공통(수1,수2)</option>
                                         <option value="미적분II">미적분II</option>
-                                        <option value="기하와벡터">기하와벡터</option>
+                                        <option value="기하">기하</option>
                                         <option value="확률과통계">확률과 통계</option>
                                         <option value="전과목">전과목 (고1, 고2 등)</option>
                                     </optgroup>
@@ -361,7 +361,7 @@ export default function AdminIngestPage() {
                                     <optgroup label="현행 (2022학년도~)">
                                         <option value="수학">수학 (공통+선택)</option>
                                         <option value="미적분II">미적분II</option>
-                                        <option value="기하와벡터">기하와벡터</option>
+                                        <option value="기하">기하</option>
                                         <option value="확률과통계">확률과 통계</option>
                                     </optgroup>
                                     <optgroup label="2022 개정">
@@ -427,7 +427,7 @@ export default function AdminIngestPage() {
                                     <optgroup label="현행 (2022학년도~)">
                                         <option value="수학">수학 (공통+선택)</option>
                                         <option value="미적분II">미적분II</option>
-                                        <option value="기하와벡터">기하와벡터</option>
+                                        <option value="기하">기하</option>
                                         <option value="확률과통계">확률과 통계</option>
                                     </optgroup>
                                     <optgroup label="2022 개정">
