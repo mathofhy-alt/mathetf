@@ -13,7 +13,11 @@ async function fetchAll<T>(build: (from: number, to: number) => any): Promise<T[
     let from = 0;
     while (true) {
         const { data, error } = await build(from, from + 999);
-        if (error || !data || data.length === 0) break;
+        // ⚠ 예전엔 오류도 break 로 삼켜서, 중간에 실패하면 잘린 목록을 정상인 척 내보냈다.
+        //   사이트맵이 조용히 쪼그라드는 건 구글에게 "이 사이트는 페이지가 이만큼뿐"이라고
+        //   거짓 신고하는 것과 같다. 실패는 실패로 드러내야 한다.
+        if (error) throw new Error(`sitemap fetch 실패(offset ${from}): ${error.message || error}`);
+        if (!data || data.length === 0) break;
         out.push(...(data as T[]));
         if (data.length < 1000) break;
         from += 1000;
@@ -66,7 +70,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .order('created_at', { ascending: false })
             .range(from, to));
 
-        if (!data.length) return staticPages();
+        // 자료가 1,500행 넘게 있는 사이트라 0행은 정상일 수 없다 — 조회 실패로 본다.
+        if (!data.length) throw new Error('sitemap: exam_materials 조회 결과 0행');
         const latestMaterial = at(data[0]?.created_at, fallbackDate);
 
         // 문제은행은 문항이 늘 때 내용이 바뀐다.
@@ -152,7 +157,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         return [...dataDriven, ...staticPages(), ...schoolPages, ...examPages,
             ...mockStatic, ...mockCategoryPages, ...mockExamPages];
-    } catch {
-        return staticPages();
+    } catch (e) {
+        // ⚠ 예전엔 여기서 정적 5개만 담아 HTTP 200 으로 응답했다.
+        //   DB 가 잠깐 느리거나 실패하면 사이트맵이 639개 → 5개로 쪼그라든 채 정상 응답이 되고,
+        //   revalidate 3600 탓에 그 상태가 한 시간 캐시된다. 구글이 그때 읽으면 사이트 규모를
+        //   5개로 인식한다. (2026-08 색인 급락 조사 중 발견 — 주원인은 아니었으나 실재하는 결함)
+        //   → 실패는 5xx 로 드러낸다. 구글은 사이트맵 요청이 실패하면 이전 것을 유지하고 재시도한다.
+        //     ISR 캐시가 있으면 Next 가 직전 정상본을 계속 제공하므로 손실도 없다.
+        console.error('[sitemap] 생성 실패 — 5xx 로 응답한다:', e);
+        throw e;
     }
 }
