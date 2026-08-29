@@ -1736,6 +1736,21 @@ export default function QuestionBankPage() {
                                             </div>
                                             <p className="text-base font-semibold text-slate-600">왼쪽 필터 조건 설정 후 <span className="text-indigo-600">「조건 검색하기」</span>를 눌러주세요.</p>
                                             <p className="text-sm text-slate-400">단원, 난이도, 키워드를 조합해 원하는 문제를 찾을 수 있어요.</p>
+                                            {/* [퍼널] 이 화면은 수동 경로만 안내하고 있었다. 같은 화면 상단에 한 번에 채워주는
+                                                '자동생성' 버튼이 이미 있는데 처음 온 사람은 그걸 쓸 생각을 못 한다.
+                                                (프리셋을 새로 만들기 전에, 있는 길부터 안내한다 — qb_autogen 로그로 효과를 본다) */}
+                                            <button
+                                                onClick={() => {
+                                                    if (cart.length >= MAX_CART_SIZE) {
+                                                        showToast(`장바구니가 이미 ${MAX_CART_SIZE}문제로 가득 찼습니다.`, 'info');
+                                                        return;
+                                                    }
+                                                    setShowAutoModal(true);
+                                                }}
+                                                className="mt-2 bg-[#5CC6C3] hover:bg-[#3AADA9] text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
+                                            >
+                                                고르기 어렵다면 — 단원·난이도만 정하고 자동생성 →
+                                            </button>
                                         </div>
                                     ) : !isDbInitialized ? (
                                         /* DB 초기 로딩 중 - 가이드 깜빡임 방지 (스켈레톤) */

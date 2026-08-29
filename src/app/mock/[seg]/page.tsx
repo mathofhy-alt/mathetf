@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Download, FileText } from 'lucide-react';
 import Header from '@/components/Header';
 import MockExamCard, { MOCK_CATEGORIES, MockCategory, CATEGORY_DESC } from '@/components/mock/MockExamCard';
+import { getMockCategoryStats } from '@/lib/mock-category-stats';
 import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 import MockAdminControls from '@/components/mock/MockAdminControls';
 import { fetchMockExamsByCategory, fetchMockExamBySlug } from '@/lib/mock-exams';
@@ -53,6 +54,7 @@ export default async function MockSegPage({ params }: { params: { seg: string } 
 /* ── 분류 목록 ── */
 async function CategoryView({ category }: { category: MockCategory }) {
     const items = await fetchMockExamsByCategory(category);
+    const stats = await getMockCategoryStats(category);
     const cat = MOCK_CATEGORIES[category];
     // [SEO] 개별 회차 페이지에는 JSON-LD 가 있었지만 카테고리 목록에는 없었다.
     // 사관학교·경찰대는 우리 최대 유입 경로라 구조화 데이터를 갖춰둔다.
@@ -114,6 +116,79 @@ async function CategoryView({ category }: { category: MockCategory }) {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {items.map((e) => <MockExamCard key={e.slug} exam={e} />)}
                     </div>
+                )}
+
+                {/* 우리 분류 데이터로 만든 출제 분석. 문제 원문이 아니라 통계라 저작권 문제가 없다.
+                    이 페이지가 본문 981자로 사이트에서 제일 얇았는데, '사관학교 기출' 은 월 6,650회로
+                    우리가 가진 단일 키워드 중 수요가 가장 크다(네이버 유기 12등). */}
+                {stats && (
+                    <section className="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
+                        <h2 className="text-base font-bold text-slate-800 mb-3">{category} 수학 기출 출제 분석</h2>
+                        <div className="space-y-3 text-sm text-slate-600 leading-relaxed break-keep">
+                            <p>
+                                수학ETF가 보유한 {category} 수학 기출{' '}
+                                <strong className="text-[#1E2D4F]">{stats.total.toLocaleString()}문항</strong>을
+                                과목·단원·난이도로 분류한 결과입니다.
+                                {stats.years.length > 1 && (
+                                    <> {stats.years[stats.years.length - 1].year}년부터 {stats.years[0].year}년까지
+                                    {' '}{stats.years.length}개년, 회차당 평균 {Math.round(stats.total / stats.years.length)}문항입니다.</>
+                                )}
+                            </p>
+                            <p>
+                                평균 난이도는 10점 만점에 <strong className="text-[#1E2D4F]">{stats.avgDifficulty.toFixed(1)}점</strong>이고,
+                                난이도 분포는 쉬움 {Math.round(stats.easy / stats.total * 100)}% ·
+                                보통 {Math.round(stats.mid / stats.total * 100)}% ·
+                                어려움 {Math.round(stats.hard / stats.total * 100)}% 입니다.
+                                출제 비중이 큰 단원은{' '}
+                                {stats.byUnit.slice(0, 3).map((u, i) => (
+                                    <span key={u.unit}>{i > 0 ? ', ' : ''}<strong className="text-[#1E2D4F]">{u.unit}</strong> {u.count}문항</span>
+                                ))}
+                                {' '}순입니다.
+                            </p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-5 mt-5">
+                            <div>
+                                <h3 className="text-xs font-bold text-slate-500 mb-2">과목별 출제</h3>
+                                <table className="w-full text-sm">
+                                    <tbody>
+                                        {stats.bySubject.slice(0, 7).map((x) => (
+                                            <tr key={x.subject} className="border-b border-slate-100 last:border-0">
+                                                <td className="py-1.5 text-slate-600 break-keep">{x.subject}</td>
+                                                <td className="py-1.5 text-right font-bold text-[#497AB7] tabular-nums">{x.count}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-slate-500 mb-2">단원별 출제</h3>
+                                <table className="w-full text-sm">
+                                    <tbody>
+                                        {stats.byUnit.slice(0, 7).map((x) => (
+                                            <tr key={x.unit} className="border-b border-slate-100 last:border-0">
+                                                <td className="py-1.5 text-slate-600 break-keep">{x.unit}</td>
+                                                <td className="py-1.5 text-right font-bold text-[#3AADA9] tabular-nums">{x.count}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {stats.years.length > 1 && (
+                            <div className="mt-5">
+                                <h3 className="text-xs font-bold text-slate-500 mb-2">연도별 보유 문항</h3>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {stats.years.map((y) => (
+                                        <span key={y.year} className="text-[11px] bg-slate-50 border border-slate-200 text-slate-600 font-semibold px-2.5 py-1 rounded-lg">
+                                            {y.year} <strong className="text-[#497AB7]">{y.count}</strong>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </section>
                 )}
             </main>
         </div>
