@@ -1,0 +1,167 @@
+[
+ {
+  "at": "2026-08-29T19:44:44.567824+09:00",
+  "rows": [
+   {
+    "pilot": "https://mathetf.com/exam/3dcb6acc-4c56-413e-bbc8-6ed7507ccfb1",
+    "p": {
+     "http": "200",
+     "chars": 6507,
+     "title": "대전여자고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/a02ff811-212e-4cf1-acec-080d0c9fbc7d",
+    "c": {
+     "http": "200",
+     "chars": 2408,
+     "title": "반포고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/e5e8b183-6d1c-4d00-8e36-78b043139c43",
+    "p": {
+     "http": "200",
+     "chars": 6825,
+     "title": "은광여자고등학교 2025년 2학년 1학기 기말고사 수학I 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/64c83920-3076-4871-8e68-9bdbbb606020",
+    "c": {
+     "http": "200",
+     "chars": 2753,
+     "title": "양천고등학교 2025년 2학년 1학기 기말고사 수학I 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/d9136c81-f69d-4060-88b4-55f0ec421949",
+    "p": {
+     "http": "200",
+     "chars": 5722,
+     "title": "서울세종고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/46af1b3a-eaf1-4555-ac0c-d054dc79c786",
+    "c": {
+     "http": "200",
+     "chars": 2514,
+     "title": "잠실여자고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/f8bb7be4-4894-4138-9c44-6903f7316567",
+    "p": {
+     "http": "200",
+     "chars": 6493,
+     "title": "영동일고등학교 2025년 2학년 2학기 중간고사 수학II 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/8d89aef2-aba4-42bb-a5f6-d47f51b12283",
+    "c": {
+     "http": "200",
+     "chars": 2592,
+     "title": "대원외국어고등학교 2025년 2학년 2학기 중간고사 수학II 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/4544d2ed-5d03-415d-8c23-8b9c80b630ba",
+    "p": {
+     "http": "200",
+     "chars": 5832,
+     "title": "대전외국어고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/2be2dc1a-570a-4b9c-a38d-c82eebbd745c",
+    "c": {
+     "http": "200",
+     "chars": 2602,
+     "title": "인천하늘고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/244ddd72-08e6-449e-9dc3-6fab68be0023",
+    "p": {
+     "http": "200",
+     "chars": 6417,
+     "title": "대구여자고등학교 2025년 2학년 1학기 중간고사 수학II 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/213d052c-7fac-4034-9454-621e903315fa",
+    "c": {
+     "http": "200",
+     "chars": 2523,
+     "title": "동산고등학교 2025년 2학년 1학기 중간고사 수학II 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/d217403c-fc3b-4027-8a70-975c1cb66de5",
+    "p": {
+     "http": "200",
+     "chars": 5554,
+     "title": "상문고등학교 2025년 1학년 1학기 중간고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/39f84422-7d0f-4333-91e8-8febd42df250",
+    "c": {
+     "http": "200",
+     "chars": 2649,
+     "title": "대전노은고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/0f170729-9fef-46b6-8a09-bb0f091c5173",
+    "p": {
+     "http": "200",
+     "chars": 6417,
+     "title": "용인한국외국어대학교부설고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/6e29056b-988c-4889-b63a-ec5ee1b9176b",
+    "c": {
+     "http": "200",
+     "chars": 2573,
+     "title": "가락고등학교 2025년 1학년 1학기 중간고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/e74099f1-09eb-4733-b4f7-4768de59b3f5",
+    "p": {
+     "http": "200",
+     "chars": 5444,
+     "title": "창덕여자고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/23e70a5b-6eb4-4dc4-ab7a-16b96dfa6945",
+    "c": {
+     "http": "200",
+     "chars": 2634,
+     "title": "경기여자고등학교 2026년 1학년 1학기 중간고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   },
+   {
+    "pilot": "https://mathetf.com/exam/9384cd62-48dc-47dc-aab4-7cdfc647103e",
+    "p": {
+     "http": "200",
+     "chars": 6095,
+     "title": "중동고등학교 2026년 1학년 1학기 중간고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": true
+    },
+    "control": "https://mathetf.com/exam/4560a502-6655-4d70-b487-1a3ecb7dad7c",
+    "c": {
+     "http": "200",
+     "chars": 2456,
+     "title": "목동고등학교 2025년 1학년 1학기 기말고사 공통수학1 수학 기출 문제·해설 PDF | 수학ETF",
+     "has_list": false
+    }
+   }
+  ]
+ }
+]
