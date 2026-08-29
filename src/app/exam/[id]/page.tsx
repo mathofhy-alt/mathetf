@@ -7,6 +7,7 @@ import FreeProblemCTA from '@/components/FreeProblemCTA';
 import Header from '@/components/Header';
 import { buildSourceDbId } from '@/lib/examKey';
 import { proxiedOgImage } from '@/lib/og-image';
+import examQuestions from '@/lib/exam-questions.json';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
 
@@ -24,6 +25,21 @@ function buildLabel(row: any) {
 }
 
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+
+/**
+ * [SEO] 문항 발문 텍스트 — 10개 회차만 넣어보는 시험(2026-08-29).
+ *
+ * 이 페이지의 실질 내용인 시험지는 미리보기 '이미지' 로만 있어 구글·AI검색이 본문으로 못 읽는다.
+ * 읽히는 고유 텍스트가 AI 분석 문단뿐이라 8/16 이후 '크롤링됨 - 색인 생성되지 않음' 으로 밀린 상태다.
+ * 발문을 텍스트로 실으면 회차당 3,000자 안팎의 고유 본문이 생긴다.
+ *
+ * 문제는 이미 미리보기 이미지·무료 PDF·강사카페 배포로 전량 무료 공개 중이라 판매 잠식이 없다.
+ * **해설은 싣지 않는다** — 대표가 직접 쓴 해설이 유일한 판매 근거다.
+ * 데이터는 scripts/gen_exam_questions.py 가 만든다(수식 변환 실패가 하나라도 있으면 회차째 제외).
+ * 나머지 462개 페이지가 대조군이다. 색인 반응을 보고 전체로 넓힐지 정한다.
+ */
+type QuestionItem = { n: string; t: string };
+const EXAM_QUESTIONS = examQuestions as Record<string, QuestionItem[]>;
 
 type Composition = { total: number; byUnit: { unit: string; count: number }[]; avg: number; easy: number; mid: number; hard: number };
 
@@ -209,6 +225,7 @@ export default async function ExamDetailPage({ params }: Props) {
         ? row.ai_analysis.trim().split(/\n{2,}|\r?\n/).map((s: string) => s.trim()).filter((s: string) => Boolean(s))
         : [];
     const narrative: string[] = aiParas.length > 0 ? aiParas : templateNarrative;
+    const questionTexts: QuestionItem[] = EXAM_QUESTIONS[params.id] || [];
     const url = `https://mathetf.com/exam/${params.id}`;
     const jsonLd = [
         {
@@ -308,6 +325,28 @@ export default async function ExamDetailPage({ params }: Props) {
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6 text-center text-slate-400 text-sm">
                         미리보기 준비 중입니다.
                     </div>
+                )}
+
+                {/* 문항 발문 텍스트 (SEO 고유 본문 — 해설 제외, 10개 회차 시험 중) */}
+                {questionTexts.length > 0 && (
+                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
+                        <h2 className="text-sm font-bold text-slate-700 mb-1">📝 문항 목록</h2>
+                        <p className="text-xs text-slate-400 mb-4">
+                            {label} 수학 기출 {questionTexts.length}문항의 문제입니다. 해설은 다운로드로 제공됩니다.
+                        </p>
+                        <ol className="space-y-4">
+                            {questionTexts.map((q) => (
+                                <li key={q.n} className="flex gap-2.5">
+                                    <span className="shrink-0 w-6 h-6 rounded-full bg-[#E8F0FB] text-[#497AB7] text-xs font-bold flex items-center justify-center mt-0.5">
+                                        {q.n}
+                                    </span>
+                                    <p className="text-sm text-slate-600 leading-relaxed break-keep whitespace-pre-line flex-1">
+                                        {q.t}
+                                    </p>
+                                </li>
+                            ))}
+                        </ol>
+                    </section>
                 )}
 
                 {/* 시험 구성 (단원별·난이도별 문항수) */}
