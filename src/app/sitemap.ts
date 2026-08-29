@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { HUB_SUBJECTS } from '@/lib/subject-hub';
 
 export const revalidate = 3600; // 1시간마다 갱신
 
@@ -148,6 +149,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.7,
         }));
 
+        // 과목 허브 — 네이버 실측상 '공통수학2' 7,880 · '공통수학1' 5,410(월).
+        // 학교 수가 받쳐주는 4개만 만든다(나머지는 2~8개교라 씬페이지가 된다).
+        const subjectPages: MetadataRoute.Sitemap = HUB_SUBJECTS.map((sub) => ({
+            url: `${BASE}/subject/${enc(sub)}`,
+            lastModified: latestQuestion,
+            changeFrequency: 'weekly' as const,
+            priority: 0.8,
+        }));
+
         // 내용이 데이터에서 오는 페이지들 — 실제 데이터 변경 시각을 쓴다.
         const dataDriven: MetadataRoute.Sitemap = [
             { url: BASE, lastModified: latestMaterial, changeFrequency: 'daily', priority: 1.0 },
@@ -155,7 +165,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             { url: `${BASE}/schools`, lastModified: latestMaterial, changeFrequency: 'weekly', priority: 0.7 },
         ];
 
-        return [...dataDriven, ...staticPages(), ...schoolPages, ...examPages,
+        return [...dataDriven, ...staticPages(), ...subjectPages, ...schoolPages, ...examPages,
             ...mockStatic, ...mockCategoryPages, ...mockExamPages];
     } catch (e) {
         // ⚠ 예전엔 여기서 정적 5개만 담아 HTTP 200 으로 응답했다.

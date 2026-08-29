@@ -2144,6 +2144,11 @@ export default function QuestionBankPage() {
                         onClose={() => setShowAutoModal(false)}
                         maxCount={Math.max(1, MAX_CART_SIZE - cart.length)}
                         onGenerate={(newQuestions) => {
+                            // [퍼널] 자동생성이 실제로 쓰이는지 기록이 없었다.
+                            // '프리셋 10문항 원클릭' 을 새로 만들지 말지는 이 수를 보고 정한다 —
+                            // 이미 '단원·난이도만 정하면 채워주는' 기능이 여기 있는데 안 쓰이는 것인지,
+                            // 아예 이 버튼까지 못 오는 것인지 구분이 안 된다.
+                            logQb('qb_autogen', `q:${newQuestions.length}`);
                             // 자동생성만 상한 없이 합치고 있었다. 장바구니 42개 + 생성 50개 = 92개가 되고,
                             // 저장 버튼을 눌러야 서버가 거절해 고른 것이 통째로 날아갔다(8/29 실패 1건).
                             const newIds = new Set(newQuestions.map((q: any) => q.id));
