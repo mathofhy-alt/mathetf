@@ -5,7 +5,8 @@ import { createClient } from '@/utils/supabase/client';
 
 export type UserRole = 'student' | 'teacher';
 
-const STORAGE_KEY = 'mathetf_role';
+export const ROLE_STORAGE_KEY = 'mathetf_role';
+const STORAGE_KEY = ROLE_STORAGE_KEY;
 export const ROLE_SYNCED_KEY = 'mathetf_role_synced';
 
 /** 로그인 상태면 선택 역할을 profiles.persona 에 반영. 실패해도 조용히 넘어감(PersonaSync가 재시도). */

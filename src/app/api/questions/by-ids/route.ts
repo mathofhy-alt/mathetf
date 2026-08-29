@@ -48,15 +48,22 @@ export async function POST(req: NextRequest) {
     }
 
     const ids = Array.isArray(body?.ids) ? body.ids.slice(0, MAX_IDS) : [];
-    if (ids.length === 0) {
+    // [2026-08-30] src 모드 — 시험지 상세(/exam/[id])에서 '이 문항으로 시험지 만들기' 로 올 때.
+    // 유입의 대부분이 네이버 정확매칭 검색으로 시험지 상세에 곧장 떨어지는데, 거기서 출제 도구로
+    // 가는 길이 없어 빈 화면에서 검색부터 다시 시작해야 했다(도구 완주율 20%).
+    // 회차 하나의 문항은 그 페이지에 이미 미리보기로 공개돼 있으므로 새로 열리는 것이 없다.
+    // ids 모드와 같은 컬럼·같은 속도제한을 쓴다.
+    const src = typeof body?.src === 'string' ? body.src.slice(0, 200) : '';
+    if (ids.length === 0 && !src) {
         return NextResponse.json({ success: true, data: [] });
     }
 
     const supabase = createAdminClient();
-    const { data, error } = await supabase
-        .from('questions')
-        .select(SELECT_COLS)
-        .in('id', ids);
+    let q = supabase.from('questions').select(SELECT_COLS);
+    q = src
+        ? q.eq('source_db_id', src).eq('work_status', 'sorted').order('question_number', { ascending: true }).limit(MAX_IDS)
+        : q.in('id', ids);
+    const { data, error } = await q;
 
     if (error) {
         console.error('[questions/by-ids] error:', error);

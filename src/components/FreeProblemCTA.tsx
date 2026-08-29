@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Download, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import PersonaAsk from '@/components/PersonaAsk';
 import NotifyOptIn from '@/components/NotifyOptIn';
 
 /**
@@ -24,6 +25,8 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
             setMarketingAgreed(!!data.user?.user_metadata?.marketing_agreed);
         }).catch(() => setAuthed(false));
     }, []);
+
+    const [askPersona, setAskPersona] = useState(false);
 
     const handleDownload = async () => {
         setDownloading(true);
@@ -47,6 +50,10 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
             }).catch(() => { });
             // 새 기출 알림 옵트인 배너 (미동의자에게만)
             if (!marketingAgreed) setShowNotify(true);
+            // [persona] 회원 613명 중 301명(49%)이 역할 미응답이다. 온보딩 모달은 홈에서만 뜨는데
+            // 유입은 네이버 검색으로 이 페이지에 곧장 떨어져 물어볼 기회가 없었다.
+            // 자료를 받은 직후 여기서 한 번만 묻는다(다운로드는 안 막는다).
+            setAskPersona(true);
         } catch (e) {
             alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
         } finally {
@@ -93,6 +100,7 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
                 </>
             )}
             <NotifyOptIn school={filename.split('_')[0] || ''} visible={showNotify} onClose={() => setShowNotify(false)} />
+            <PersonaAsk visible={askPersona} onDone={() => setAskPersona(false)} />
         </div>
     );
 }

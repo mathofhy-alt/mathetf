@@ -197,6 +197,36 @@ export default function QuestionBankPage() {
     const [filterState, setFilterState] = useState<any>(null); // Store filters locally for manual search
     // Derived for legacy support or convenience if needed, but mainly use IDs
 
+    // [퍼널 2026-08-30] ?src=<source_db_id> 로 들어오면 그 회차 문항을 장바구니에 담은 채로 시작한다.
+    // 시험지 상세(/exam/[id])의 '이 문항으로 시험지 만들기' 가 여기로 보낸다.
+    // 유입 대부분이 네이버 정확매칭 검색으로 시험지 상세에 떨어지는데, 도구로 오면 빈 화면이라
+    // 검색부터 다시 시작해야 했다(도구 완주율 20%, 검색→담기 53% 이탈).
+    const srcLoaded = useRef(false);
+    useEffect(() => {
+        if (srcLoaded.current) return;
+        const src = new URLSearchParams(window.location.search).get('src');
+        if (!src) return;
+        srcLoaded.current = true;
+        (async () => {
+            try {
+                const res = await fetch('/api/questions/by-ids', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ src }),
+                });
+                const r = await res.json();
+                const data = (r?.data || []) as any[];
+                if (!data.length) return;
+                setCart(data.slice(0, MAX_CART_SIZE));
+                setViewMode('review');
+                logQb('qb_cart_add', `from_exam:${data.length}`);
+                if (data.length > MAX_CART_SIZE) {
+                    showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${MAX_CART_SIZE}개만 담았습니다.`, 'info');
+                }
+            } catch { /* 조용히 — 빈 도구로 시작한다 */ }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // [강사 유입] ?school= 로 들어오면 그 학교 DB만 선택된 상태로 시작 (학교 페이지 → 시험지 만들기 동선)
     useEffect(() => {
         if (schoolPrefillDone.current || purchasedDbs.length === 0) return;
@@ -814,6 +844,43 @@ export default function QuestionBankPage() {
     };
 
 
+
+    /**
+     * [수업 사다리 2026-08-30] 문항 하나 → 기초·유형·목표 3단으로 장바구니를 채운다.
+     * 사용자(현직 강사)가 "쉬운것부터 사다리 하는건 강사가 수업을 구성할때 필요한 단계"라고 했다.
+     * 킬러 하나 가르치려고 하위 문제를 검색창에서 뒤지던 것을 없앤다.
+     */
+    const buildLadder = async (question: any) => {
+        try {
+            const res = await fetch('/api/pro/ladder', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: question.id }),
+            });
+            const r = await res.json();
+            const steps = (r?.steps || []) as { label: string; id: string }[];
+            if (steps.length <= 1) {
+                showToast(r?.reason || '이 문항은 아래 단계 문항을 찾지 못했습니다.', 'info');
+                return;
+            }
+            const need = steps.map((x) => x.id).filter((qid) => !cartIdSet.has(qid));
+            if (need.length === 0) { showToast('이미 다 담겨 있습니다.', 'info'); return; }
+            const byIds = await fetch('/api/questions/by-ids', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: need }),
+            });
+            const got = await byIds.json();
+            const map = new Map((got?.data || []).map((q: any) => [q.id, q]));
+            const ordered = steps.map((x) => map.get(x.id)).filter(Boolean) as any[];
+            const room = MAX_CART_SIZE - cart.length;
+            const add = ordered.slice(0, Math.max(0, room));
+            if (add.length === 0) { showToast(`장바구니가 이미 ${MAX_CART_SIZE}문제로 가득 찼습니다.`, 'info'); return; }
+            setCart((prev) => [...(Array.isArray(prev) ? prev : []), ...add]);
+            logQb('qb_ladder', `steps:${steps.length}`);
+            showToast(`${steps.map((x) => x.label).join(' → ')} ${add.length}문항을 담았습니다.`, 'success');
+        } catch {
+            showToast('사다리를 만들지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
+        }
+    };
 
     const toggleCart = (question: any) => {
         logQb('qb_cart_add');   // [퍼널] 첫 담기 1회만
@@ -1643,6 +1710,17 @@ export default function QuestionBankPage() {
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">
+                                                {/* [수업 사다리] 이 문항을 가르치기 전에 시킬 쉬운 문항부터 3단으로 담는다.
+                                                    난이도 5 이상에서만 의미가 있다(그 아래는 내려갈 계단이 없다). */}
+                                                {Number(q.difficulty) >= 5 && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate(true); return; } void buildLadder(q); }}
+                                                        className="px-2 py-1 bg-[#5CC6C3] hover:bg-[#3AADA9] text-white rounded-md shadow-sm transition-all flex items-center gap-1 whitespace-nowrap"
+                                                        title="이 문항까지 올라가는 3단 사다리(기초→유형→목표)를 담습니다"
+                                                    >
+                                                        <span className="text-[10px] font-bold">사다리</span>
+                                                    </button>
+                                                )}
                                                 {viewMode === 'review' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate(true); return; } setSimilarTarget(q); }}

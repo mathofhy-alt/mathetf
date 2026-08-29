@@ -152,7 +152,7 @@ async function getExam(id: string) {
         }
     }
 
-    return { row, siblings: siblings || [], otherYears: otherYears || [], composition, concepts };
+    return { row, siblings: siblings || [], otherYears: otherYears || [], composition, concepts, sourceKey };
 }
 
 // 빌드 시 실제 해설 PDF 시험만 미리 생성
@@ -209,7 +209,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExamDetailPage({ params }: Props) {
     const ex = await getExam(params.id);
     if (!ex) notFound();
-    const { row, siblings, otherYears, composition, concepts } = ex;
+    const { row, siblings, otherYears, composition, concepts, sourceKey } = ex;
     const label = buildLabel(row);
     const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
     const examShort = `${row.grade ? row.grade + '학년 ' : ''}${isMock ? row.semester + '월' : row.semester + '학기'} ${row.exam_type || ''}`.trim();
@@ -347,6 +347,27 @@ export default async function ExamDetailPage({ params }: Props) {
                             ))}
                         </ol>
                     </section>
+                )}
+
+                {/* [퍼널 2026-08-30] 시험지 상세 → 출제 도구 바로가기.
+                    유입의 대부분이 네이버 정확매칭 검색("2025 낙생고 1-2 중간고사")으로 이 페이지에
+                    곧장 떨어지는데, 여기서 출제 도구로 가는 길이 홈으로 보내는 링크뿐이었다.
+                    도구에 들어가도 빈 화면이라 검색부터 다시 시작해야 했다(완주율 20%). */}
+                {sourceKey && composition && composition.total > 0 && (
+                    <Link
+                        href={`/question-bank?src=${encodeURIComponent(sourceKey)}`}
+                        className="flex items-center justify-between gap-3 bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 mb-6 hover:border-[#3AADA9] transition-colors"
+                    >
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#1E2D4F] break-keep">
+                                이 시험지 {composition.total}문항으로 나만의 시험지 만들기
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1 break-keep">
+                                문항이 담긴 채로 시작합니다. 빼고 더하고 순서를 바꿔 한글(HWP)로 받으세요. 현재 무료입니다.
+                            </p>
+                        </div>
+                        <span className="shrink-0 text-sm font-extrabold text-[#3AADA9]">만들기 →</span>
+                    </Link>
                 )}
 
                 {/* 시험 구성 (단원별·난이도별 문항수) */}
