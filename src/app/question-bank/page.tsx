@@ -192,6 +192,8 @@ export default function QuestionBankPage() {
     // Personal DB State
     const [purchasedDbs, setPurchasedDbs] = useState<any[]>([]);
     const [selectedDbIds, setSelectedDbIds] = useState<string[]>([]);
+    // 마지막 검색이 실제로 쓴 DB 범위. 미선택('전체 문제 검색')일 때 페이징이 범위를 잃지 않게 한다.
+    const lastSearchDbIds = useRef<string[]>([]);
     const [filterState, setFilterState] = useState<any>(null); // Store filters locally for manual search
     // Derived for legacy support or convenience if needed, but mainly use IDs
 
@@ -480,6 +482,9 @@ export default function QuestionBankPage() {
             if (result.count !== null && result.count !== undefined) setTotalQuestions(result.count);
             if (targetPage === 1) setHasSearched(true);
             if (data.length === 0 && targetPage === 1) {
+                // [퍼널] 검색 15명 → 장바구니 7명(53% 이탈)의 원인이
+                // '결과가 0건' 인지 '찾았는데 안 담음' 인지 지금 로그로는 구분이 안 된다.
+                logQb('qb_search_empty', `f:${Object.keys(advancedFilters || {}).filter(k => (advancedFilters as any)[k]?.length).join(',') || 'none'}`);
                 showToast('해당 조건에 일치하는 문항이 없습니다. (0건)', 'info');
             }
         } catch (err: any) {
@@ -493,21 +498,39 @@ export default function QuestionBankPage() {
     };
 
     const handleSearch = () => {
-        if (selectedDbIds.length === 0) {
-            // [퍼널] DB 를 안 고르고 검색을 누른 순간 — 여기서 막히는 사람이 몇인지 봐야 한다
-            logQb('qb_search', 'blocked:no_db');
-            showToast('DB를 먼저 선택해주세요.', 'info');
+        // [퍼널 2026-08-29] 예전엔 DB 미선택이면 토스트만 띄우고 막았다.
+        // 로그를 붙여 재보니 도구 진입 29명 중 8명(28%)이 첫 동작에서 여기서 튕겼다.
+        // 게다가 화면 제목은 이 상태에서 '전체 문제 검색' 이라고 써 있어 앞뒤가 안 맞았다.
+        //
+        // 서버(/api/questions/search)는 '전체 선택'(selectedDbs >= purchasedDbsCount)이면
+        // 학교·DB 필터를 아예 걸지 않는다. 즉 '아무것도 안 고름' 과 '전체 선택' 의 결과가 같아야 맞다.
+        // 그래서 미선택이면 보유 DB 전체를 넘긴다 — 사용자가 '전체 선택' 버튼을 누른 것과 똑같은 요청이라
+        // 노출되는 문항이 늘지 않는다. 무료 기간이 끝나 purchasedDbs 가 '구매한 것' 으로 좁혀지면
+        // 이 경로도 자동으로 그만큼만 검색한다.
+        const effectiveDbIds = selectedDbIds.length > 0
+            ? selectedDbIds
+            : purchasedDbs.map((d: any) => d.id);
+
+        if (effectiveDbIds.length === 0) {
+            // 정말로 쓸 수 있는 DB 가 하나도 없는 경우 — 고르라고 해봐야 고를 게 없다
+            logQb('qb_search', 'blocked:empty_catalog');
+            showToast('아직 사용할 수 있는 문제 DB가 없습니다. 홈에서 학교 기출을 담아주세요.', 'info');
             return;
         }
-        logQb('qb_db_select', `dbs:${selectedDbIds.length}`);
-        logQb('qb_search', `dbs:${selectedDbIds.length}`);
+
+        logQb('qb_db_select', `dbs:${effectiveDbIds.length}`);
+        logQb('qb_search', selectedDbIds.length > 0 ? `dbs:${effectiveDbIds.length}` : `all:${effectiveDbIds.length}`);
         setHasSearched(false);
-        fetchQuestions(selectedDbIds, filterState, 1);
+        lastSearchDbIds.current = effectiveDbIds;
+        fetchQuestions(effectiveDbIds, filterState, 1);
     };
 
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
-        fetchQuestions(selectedDbIds, filterState, newPage);
+        // 미선택 상태로 '전체 문제 검색' 을 했으면 2페이지도 같은 범위여야 한다.
+        // selectedDbIds 를 그대로 쓰면 빈 배열이 넘어가 2페이지부터 0건이 된다.
+        fetchQuestions(lastSearchDbIds.current.length > 0 ? lastSearchDbIds.current : selectedDbIds,
+                       filterState, newPage);
         // Scroll to top of the actual scrollable container
         if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
     };
@@ -1398,7 +1421,14 @@ export default function QuestionBankPage() {
                                 </button>
                                 <button
                                     data-tour="qb-auto"
-                                    onClick={() => setShowAutoModal(true)}
+                                    onClick={() => {
+                                        // 장바구니가 이미 꽉 찼으면 '최대 1문제' 짜리 모달이 열려 혼란만 준다
+                                        if (cart.length >= MAX_CART_SIZE) {
+                                            showToast(`장바구니가 이미 ${MAX_CART_SIZE}문제로 가득 찼습니다. 빼고 다시 시도해주세요.`, 'info');
+                                            return;
+                                        }
+                                        setShowAutoModal(true);
+                                    }}
                                     className="bg-[#5CC6C3] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-[#3AADA9] shadow-sm transition font-bold whitespace-nowrap text-xs sm:text-sm"
                                 >
                                     자동생성
@@ -2112,10 +2142,19 @@ export default function QuestionBankPage() {
                 {showAutoModal && (
                     <AutoGenModal
                         onClose={() => setShowAutoModal(false)}
+                        maxCount={Math.max(1, MAX_CART_SIZE - cart.length)}
                         onGenerate={(newQuestions) => {
+                            // 자동생성만 상한 없이 합치고 있었다. 장바구니 42개 + 생성 50개 = 92개가 되고,
+                            // 저장 버튼을 눌러야 서버가 거절해 고른 것이 통째로 날아갔다(8/29 실패 1건).
                             const newIds = new Set(newQuestions.map((q: any) => q.id));
                             const existing = cart.filter(c => !newIds.has(c.id));
-                            setCart([...existing, ...newQuestions]);
+                            const room = MAX_CART_SIZE - existing.length;
+                            const kept = newQuestions.slice(0, Math.max(0, room));
+                            const dropped = newQuestions.length - kept.length;
+                            setCart([...existing, ...kept]);
+                            if (dropped > 0) {
+                                showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${kept.length}개만 담았습니다. (${dropped}개 제외)`, 'info');
+                            }
                             setShowConfigModal(true);
                         }}
                     />

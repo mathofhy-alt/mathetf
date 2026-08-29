@@ -17,14 +17,18 @@ const UNIT_PRESETS: Record<string, string[]> = {
 
 export default function AutoGenModal({
     onClose,
-    onGenerate
+    onGenerate,
+    maxCount = 50
 }: {
     onClose: () => void,
     onGenerate: (criteria: any) => void
+    /** 장바구니 남은 자리. 이걸 안 넘기면 생성분이 기존 문항과 합쳐져 상한을 넘고
+     *  저장할 때야 에러가 나 작업이 통째로 날아간다(8/29 92문항 요청 실패 사례). */
+    maxCount?: number
 }) {
     const [subject, setSubject] = useState(SUBJECTS[0]);
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
-    const [count, setCount] = useState(20);
+    const [count, setCount] = useState(Math.min(20, Math.max(1, maxCount)));
     const [minDiff, setMinDiff] = useState(1);
     const [maxDiff, setMaxDiff] = useState(5);
     const [generating, setGenerating] = useState(false);
@@ -207,17 +211,17 @@ export default function AutoGenModal({
                         {/* Question Count */}
                         <div>
                             <label className="block text-sm font-bold text-slate-700 mb-2">
-                                문항 수 <span className="text-slate-400 font-normal ml-1">(최대 50문제)</span>
+                                문항 수 <span className="text-slate-400 font-normal ml-1">(최대 {maxCount}문제)</span>
                             </label>
                             <input
                                 type="number"
                                 min="1"
-                                max="50"
+                                max={maxCount}
                                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-purple-500 outline-none"
                                 value={count}
                                 onChange={e => {
                                     const val = Number(e.target.value);
-                                    if (val > 50) setCount(50);
+                                    if (val > maxCount) setCount(maxCount);
                                     else if (val < 0) setCount(0);
                                     else setCount(val);
                                 }}
