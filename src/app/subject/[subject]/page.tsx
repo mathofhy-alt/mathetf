@@ -50,7 +50,12 @@ export default async function SubjectHubPage({ params }: Props) {
     if (!hub) notFound();
     const info = SUBJECT_INFO[subject as HubSubject];
     const url = `https://mathetf.com/subject/${encodeURIComponent(subject)}`;
-    const topUnits = hub.byUnit.slice(0, 3);
+    // 자료가 한쪽 시험에 쏠려 있으면 그렇다고 밝힌다.
+    // 합쳐서 내면 '과목의 출제 분포' 처럼 읽히는데 사실이 아니다(수학II 는 기말 0건이라 적분이 통째로 빠진다).
+    const lopsided = Math.min(hub.midtermCount, hub.finalCount) < hub.total * 0.15;
+    const richer = hub.midtermCount >= hub.finalCount ? '중간' : '기말';
+    const poorer = richer === '중간' ? '기말' : '중간';
+    const poorCount = Math.min(hub.midtermCount, hub.finalCount);
 
     const jsonLd = [
         {
@@ -90,20 +95,27 @@ export default async function SubjectHubPage({ params }: Props) {
                     <div className="space-y-3 text-sm text-slate-600 leading-relaxed break-keep">
                         <p>{info.blurb}</p>
                         <p>
-                            수학ETF가 전국 {hub.schoolCount}개교의 {subject} 내신 기출 {hub.total.toLocaleString()}문항을
-                            단원과 난이도로 분류한 결과, 출제 비중이 가장 높은 단원은{' '}
-                            {topUnits.map((u, i) => (
-                                <span key={u.unit}>
-                                    {i > 0 ? ', ' : ''}
-                                    <strong className="text-[#1E2D4F]">{u.unit}</strong> {u.count.toLocaleString()}문항({pct(u.count, hub.total)}%)
-                                </span>
-                            ))}
-                            입니다. 학교마다 시험 범위는 다르지만, 이 단원들은 어느 학교에서든 비중 있게 나옵니다.
+                            수학ETF는 전국 {hub.schoolCount}개교의 {subject} 내신 기출 {hub.total.toLocaleString()}문항을
+                            단원과 난이도로 분류해 두었습니다. 지금 보유한 자료는{' '}
+                            <strong className="text-[#1E2D4F]">중간고사 {hub.midtermCount.toLocaleString()}문항</strong>,{' '}
+                            <strong className="text-[#1E2D4F]">기말고사 {hub.finalCount.toLocaleString()}문항</strong>입니다.
+                        </p>
+                        <p>
+                            {lopsided ? (
+                                <>
+                                    아래 단원 분포는 <strong className="text-[#1E2D4F]">{`${richer}고사`} 자료를 기준으로</strong> 읽어야 합니다.
+                                    {poorCount === 0
+                                        ? `${poorer}고사 회차가 아직 없어서, ${poorer}고사에서 다루는 단원은 표에 나타나지 않습니다.`
+                                        : `${poorer}고사 회차가 아직 ${poorCount.toLocaleString()}문항뿐이라, ${poorer}고사에서 다루는 단원은 실제 출제 비중보다 적게 잡혀 있습니다.`}
+                                    {' '}해당 회차는 계속 등록하고 있습니다.
+                                </>
+                            ) : (
+                                <>아래 표는 중간·기말을 나누어 세었습니다. 대비하는 시험 쪽 숫자를 보시면 됩니다.</>
+                            )}
                         </p>
                         <p>
                             난이도 분포는 쉬움 {pct(hub.easy, hub.total)}% · 보통 {pct(hub.mid, hub.total)}% ·
                             어려움 {pct(hub.hard, hub.total)}% 입니다.
-                            아래에서 단원별 출제 분포와 학교별 기출 시험지를 확인할 수 있고,
                             문제 미리보기와 워터마크 없는 문제 PDF는 회원가입만 하면 무료입니다.
                         </p>
                     </div>
@@ -113,19 +125,26 @@ export default async function SubjectHubPage({ params }: Props) {
                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
                     <h2 className="text-sm font-bold text-slate-700 mb-1">📊 {subject} 단원별 출제 분포</h2>
                     <p className="text-xs text-slate-400 mb-4 break-keep">
-                        전국 {hub.schoolCount}개교 기출 {hub.total.toLocaleString()}문항을 실제로 세어 만든 표입니다.
+                        전국 {hub.schoolCount}개교 기출 {hub.total.toLocaleString()}문항을 실제로 세었습니다.
+                        과목 전체의 출제 비중이 아니라 <strong>지금 보유한 회차</strong>의 분포입니다.
                     </p>
                     <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-[11px] text-slate-400 border-b border-slate-200">
+                                <th className="py-1.5 text-left font-bold">단원</th>
+                                <th className="py-1.5 text-right font-bold w-20">중간고사</th>
+                                <th className="py-1.5 text-right font-bold w-20">기말고사</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {hub.byUnit.slice(0, 14).map((u) => (
                                 <tr key={u.unit} className="border-b border-slate-100 last:border-0">
                                     <td className="py-2 text-slate-600 break-keep">{u.unit}</td>
-                                    <td className="py-2 text-right w-40">
-                                        <span className="inline-flex items-center gap-2 justify-end">
-                                            <span className="inline-block h-1.5 rounded-full bg-[#497AB7]/30"
-                                                style={{ width: `${Math.max(8, (u.count / hub.byUnit[0].count) * 90)}px` }} />
-                                            <span className="font-bold text-[#497AB7] w-12 text-right tabular-nums">{u.count.toLocaleString()}</span>
-                                        </span>
+                                    <td className="py-2 text-right font-bold text-[#497AB7] tabular-nums">
+                                        {u.midterm > 0 ? u.midterm.toLocaleString() : <span className="text-slate-300 font-normal">·</span>}
+                                    </td>
+                                    <td className="py-2 text-right font-bold text-[#3AADA9] tabular-nums">
+                                        {u.final > 0 ? u.final.toLocaleString() : <span className="text-slate-300 font-normal">·</span>}
                                     </td>
                                 </tr>
                             ))}

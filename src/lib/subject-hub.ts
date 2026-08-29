@@ -56,7 +56,11 @@ export type SubjectHub = {
     subject: string;
     total: number;
     schoolCount: number;
-    byUnit: { unit: string; count: number }[];
+    /** 시험별 문항 수. 우리 자료가 한쪽에 쏠려 있어서 반드시 같이 보여준다(아래 주석). */
+    midtermCount: number;
+    finalCount: number;
+    /** 단원 분포를 시험별로 나눈 것. 합쳐 놓으면 '과목의 출제 분포' 처럼 읽혀 사실과 달라진다. */
+    byUnit: { unit: string; count: number; midterm: number; final: number }[];
     easy: number; mid: number; hard: number;
     concepts: string[];
     schools: string[];
@@ -76,7 +80,7 @@ export async function getSubjectHub(subject: string): Promise<SubjectHub | null>
         for (let from = 0; from < 20000; from += PAGE) {
             const { data, error } = await supabase
                 .from('questions')
-                .select('unit, difficulty, key_concepts, school')
+                .select('unit, difficulty, key_concepts, school, source_db_id')
                 .eq('work_status', 'sorted')
                 .eq('subject', subject)
                 .range(from, from + PAGE - 1);
@@ -87,14 +91,28 @@ export async function getSubjectHub(subject: string): Promise<SubjectHub | null>
         }
         if (rows.length === 0) return null;
 
-        const unitMap: Record<string, number> = {};
+        // ⚠ 우리 자료는 시험별로 심하게 쏠려 있다(2026-08-29 실측).
+        //   공통수학2 중간 2,377 / 기말 48   · 수학II 중간 1,717 / 기말 0
+        //   수학I  중간 89 / 기말 1,916      · 공통수학1 도 기말 쪽이 훨씬 많다
+        //   그래서 단원 분포를 합쳐서 내면 '과목의 실제 출제 분포' 가 아니라
+        //   '우리가 가진 회차의 분포' 가 된다. 수학II 는 적분이 통째로 빠져 보인다.
+        //   → 시험별로 나눠서 세고, 화면에서도 나눠 보여준다. (사용자(수학 강사) 지적, 8/29)
+        const unitMap: Record<string, { count: number; midterm: number; final: number }> = {};
+        let midtermCount = 0, finalCount = 0;
         const conceptCount: Record<string, number> = {};
         const schoolSet = new Set<string>();
         let easy = 0, mid = 0, hard = 0;
 
         for (const q of rows) {
             const unit = (q.unit || '기타').toString();
-            unitMap[unit] = (unitMap[unit] || 0) + 1;
+            // source_db_id 형식: {학교}_{연도}_{학기}{중간|기말}_{과목}
+            const sid = String(q.source_db_id || '');
+            const isFinal = sid.includes('기말');
+            const isMid = sid.includes('중간');
+            if (isFinal) finalCount++; else if (isMid) midtermCount++;
+            const cur = unitMap[unit] || (unitMap[unit] = { count: 0, midterm: 0, final: 0 });
+            cur.count++;
+            if (isFinal) cur.final++; else if (isMid) cur.midterm++;
             if (q.school) schoolSet.add(q.school);
             const d = Number(q.difficulty) || 0;
             // exam 상세와 같은 구간 보정 (분류기가 1~3에 몰리는 하향 편향)
@@ -122,7 +140,8 @@ export async function getSubjectHub(subject: string): Promise<SubjectHub | null>
             subject,
             total: rows.length,
             schoolCount: schoolSet.size,
-            byUnit: Object.entries(unitMap).map(([unit, count]) => ({ unit, count }))
+            midtermCount, finalCount,
+            byUnit: Object.entries(unitMap).map(([unit, v]) => ({ unit, ...v }))
                 .sort((a, b) => b.count - a.count),
             easy, mid, hard,
             concepts: Object.entries(conceptCount).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([c]) => c),
