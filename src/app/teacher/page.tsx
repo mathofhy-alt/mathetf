@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/utils/supabase/server-admin';
+import { getSiteStats } from '@/lib/stats';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import Header from '@/components/Header';
@@ -54,28 +54,10 @@ const FAQ = [
 ];
 
 export default async function TeacherLandingPage() {
-    const supabase = createAdminClient();
-
     // 실데이터 통계 (얇은 페이지 방지 + 신뢰도)
-    let questionCount = 0;
-    let schoolCount = 0;
-    let topSchools: string[] = [];
-    try {
-        const { count: qc } = await supabase
-            .from('questions').select('id', { count: 'exact', head: true }).eq('work_status', 'sorted');
-        questionCount = qc ?? 0;
-
-        const { data: mats } = await supabase
-            .from('exam_materials').select('school').neq('school', 'DELETED').limit(5000);
-        const bySchool: Record<string, number> = {};
-        (mats || []).forEach((m: any) => {
-            if (m.school) bySchool[m.school] = (bySchool[m.school] || 0) + 1;
-        });
-        schoolCount = Object.keys(bySchool).length;
-        topSchools = Object.entries(bySchool)
-            .filter(([s]) => !['경찰대학교', '사관학교', '전국연합'].includes(s))
-            .sort((a, b) => b[1] - a[1]).slice(0, 12).map(([s]) => s);
-    } catch { }
+    // 예전엔 여기서 exam_materials 를 .limit(5000) 으로 받아 학교를 셌는데,
+    // PostgREST 가 1,000행에서 잘라 120개로 나왔다(실제 121). 세는 일은 lib/stats 로 옮겼다.
+    const { questionCount, schoolCount, topSchools } = await getSiteStats();
 
     const jsonLd = [
         {

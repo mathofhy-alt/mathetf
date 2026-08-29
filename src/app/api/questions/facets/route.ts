@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSiteStats } from '@/lib/stats';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { buildDbOrConditions } from '@/lib/questions/dbFilter';
 
@@ -12,21 +13,12 @@ export const dynamic = 'force-dynamic';
  */
 
 export async function GET() {
-    const supabase = createAdminClient();
     try {
-        const { count } = await supabase
-            .from('questions')
-            .select('id', { count: 'exact', head: true })
-            .eq('work_status', 'sorted');
-
-        const { data: schools } = await supabase
-            .from('questions')
-            .select('school')
-            .eq('work_status', 'sorted')
-            .not('school', 'is', null);
-
-        const uniqueSchools = new Set((schools || []).map((s: any) => s.school).filter(Boolean));
-        return NextResponse.json({ success: true, count: count ?? 0, schoolCount: uniqueSchools.size });
+        // 예전엔 questions 에서 school 을 통째로 받아 Set 크기를 셌다.
+        // PostgREST 가 1,000행에서 자르는 바람에 14,394문항 중 앞 1,000개만 보고
+        // **학교 8개**라고 답하고 있었다(실제 121). 시험지 출제 도구 첫 화면이 그 값을 띄웠다.
+        const { questionCount, schoolCount } = await getSiteStats();
+        return NextResponse.json({ success: true, count: questionCount, schoolCount });
     } catch (e: any) {
         console.error('[questions/facets GET] error:', e);
         return NextResponse.json({ success: false, error: e.message }, { status: 500 });
