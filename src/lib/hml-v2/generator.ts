@@ -415,7 +415,7 @@ export function generateHmlFromTemplate(
     //   → **45 가 과소평가 0건이면서 가장 타이트하다.** 30 대비 줄 수 32% 감소.
     //
     // ⚠ 캡쳐 폭(1054px)·템플릿 지면·글꼴이 바뀌면 다시 재야 한다. 위 두 스크립트로 재현하면 된다.
-    const PIXELS_PER_LINE = 45;
+    const PIXELS_PER_LINE = 30;
     const COLUMN_LINES_PAGE1 = 43;
     const COLUMN_LINES_DEFAULT = 46;
     const MIN_GUTTER_LINES = 3;
