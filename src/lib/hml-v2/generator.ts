@@ -399,7 +399,22 @@ export function generateHmlFromTemplate(
     // ═══════════════════════════════════════════════════════════
     // [LAYOUT V3] 동적 단 레이아웃 — Pre-scan & Bin Packing
     // ═══════════════════════════════════════════════════════════
-    const PIXELS_PER_LINE = 30;
+    // [2026-08-30] 30 → 67. 캡쳐 높이를 줄 수로 바꾸는 환산값을 지면 기하로 다시 계산했다.
+    //
+    // 캡쳐(AUTO_Q_/MANUAL_Q_)는 폭이 항상 1054px 로 고정이다(4개 회차 81장 전수 확인).
+    // 템플릿 지면: B4(72852×103180 HWPUNIT), 좌우 여백 4252, 2단 SameGap 2268
+    //   → 단 폭 = (72852 - 4252×2 - 2268) / 2 = 31040 HWPUNIT = 110mm
+    //   → 캡쳐를 단 폭에 맞추면 배율 31040/1054 = 29.4 HWPUNIT/px
+    //   → 한 줄 = (103180 - 6500 - 5669) / 46 = 1978 HWPUNIT = 7.0mm
+    //   → 한 줄에 해당하는 캡쳐 픽셀 = 1978 / 29.4 = 67px
+    //
+    // 30 을 쓰면 문항마다 줄 수를 2.2배로 잡아 단이 금방 차고 문항이 계속 다음 단으로 밀렸다.
+    // 사용자(강사)가 "문제 높이에 대해 줄수를 많이 부과하는 것 같다" 고 지적해 재계산함.
+    // ⚠ 캡쳐 폭이 1054px 가 아니게 되면(크롭 설정 변경 등) 이 값도 다시 계산해야 한다.
+    const CAPTURE_WIDTH_PX = 1054;
+    const COLUMN_WIDTH_HWPUNIT = 31040;
+    const LINE_HEIGHT_HWPUNIT = 1978;
+    const PIXELS_PER_LINE = Math.round(LINE_HEIGHT_HWPUNIT / (COLUMN_WIDTH_HWPUNIT / CAPTURE_WIDTH_PX)); // = 67
     const COLUMN_LINES_PAGE1 = 43;
     const COLUMN_LINES_DEFAULT = 46;
     const MIN_GUTTER_LINES = 3;
