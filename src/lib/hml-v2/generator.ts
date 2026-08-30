@@ -215,31 +215,8 @@ export function generateHmlFromTemplate(
                     validStyles.ParaShape.add(glueChoicePsId);
                 }
 
-                // [2026-08-30] 원본 문단모양마다 '글루 변형' 을 만든다.
-                // 문항이 두 쪽에 걸쳐 잘리던 원인: KeepWithNext 가 최상위 문단(QUESTION·CHOICE)에만 걸리고
-                // 상자·표 안에 중첩된 문단은 원본 문단모양을 그대로 써서 거기서 쪽이 갈렸다.
-                // 실측으로 확인한 잘림 예: 앞 쪽에 문항 본문, 다음 쪽에 "…의 값은?" + 선택지만 남음.
-                // 원본 서식(정렬·들여쓰기)은 그대로 두고 KeepWithNext/KeepLines 만 켠 복제본을 쓴다.
-                // (KeepTogether 는 HML 2.8 에 없는 속성이라 여태 무시되고 있었다 — 삼자대면 8/30)
-                const glueMap: Record<string, string> = {};
-                let nextGlueId = maxPsId + 4;
-                for (const orig of existingPS) {
-                    const oid = orig.getAttribute('Id');
-                    if (!oid) continue;
-                    const cloned = orig.cloneNode(true) as Element;
-                    const nid = String(nextGlueId++);
-                    cloned.setAttribute('Id', nid);
-                    cloned.setAttribute('KeepWithNext', 'true');
-                    cloned.setAttribute('KeepLines', 'true');
-                    psList.appendChild(cloned);
-                    validStyles.ParaShape.add(nid);
-                    glueMap[oid] = nid;
-                }
-                (validStyles as any).glueMap = glueMap;
-                psGlue.setAttribute('KeepLines', 'true');
-
                 // Update Counts
-                psList.setAttribute('Count', String(existingPS.length + 3 + Object.keys(glueMap).length));
+                psList.setAttribute('Count', (existingPS.length + 3).toString());
 
                 // --- 4. Glue Style (Question) [V58: Font Change] ---
                 const styleGlue = questionStyle.el.cloneNode(true) as Element;
@@ -564,28 +541,6 @@ export function generateHmlFromTemplate(
             const charShapeId = targetCharId || '0';
 
             console.log(`[HML-V2 styling] Q${qIndex} Applying Style=${styleId}, PS=${paraShapeId}, CS=${charShapeId}`);
-
-            // [2026-08-30] 중첩 문단까지 글루 변형으로 갈아끼운다.
-            // 최상위만 바꾸던 탓에 상자·표 안의 문단에서 쪽이 갈려 문항이 잘렸다.
-            // 해설(ENDNOTE) 안쪽은 건드리지 않는다 — 미주 전체가 한 덩어리가 되면 더 나빠진다.
-            {
-                const gm = (validStyles as any).glueMap as Record<string, string> | undefined;
-                if (gm) {
-                    const inEndnote = (el: Element) => {
-                        let n: any = el.parentNode;
-                        while (n && n !== root) {
-                            if (n.nodeType === 1 && String(n.tagName).toUpperCase() === 'ENDNOTE') return true;
-                            n = n.parentNode;
-                        }
-                        return false;
-                    };
-                    for (const el of Array.from(root.getElementsByTagName('P')) as Element[]) {
-                        if (inEndnote(el)) continue;
-                        const o = el.getAttribute('ParaShape');
-                        if (o && gm[o]) el.setAttribute('ParaShape', gm[o]);
-                    }
-                }
-            }
 
             // Apply to ALL top-level paragraphs to ensure they stick together (KeepWithNext)
             const topPsInQ = Array.from(root.getElementsByTagName('P')).filter(p => p.parentNode === root);
@@ -934,12 +889,8 @@ export function generateHmlFromTemplate(
                 combinedContentXmlFull += '\n' + Array(gutterCount).fill(emptyLine).join('\n') + '\n';
                 console.log(`[LAYOUT V3] Q${qIndex}: gutter=${gutterCount}줄`);
 
-                // [실험 2026-08-30] 강제 단나눔을 뺀다.
-                // 증상: 빈 쪽이 생기고 문항이 두 쪽에 걸쳐 잘린다.
-                // 원인: 한글이 이미 넘쳐서 다음 쪽으로 흘려보낸 뒤에 우리가 또 ColumnBreak 를 넣는다.
-                //       (추정한 줄 수가 실제와 다르면 반드시 어긋난다 — 상수를 20·30·45 로 바꿔도 잘림 수가 같았다)
-                // → 한글이 알아서 흘리게 두고, 문항 사이 여백만 우리가 준다.
-                if (false && plan.colBreakAfter) {
+                if (plan.colBreakAfter) {
+                    console.log(`[LAYOUT V3] Q${qIndex}: ColBreak 삽입`);
                     combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
                 }
             }
