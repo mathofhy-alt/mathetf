@@ -11,11 +11,18 @@ const ADMIN_EMAIL = 'mathofhy@naver.com';
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
     try {
         const admin = createAdminClient();
-        const { data: post, error } = await admin
+        const COLS = 'id, title, content, created_at, views, author_id, author_nickname';
+        // admin_reply 는 나중에 추가된 컬럼이다. 마이그레이션 전에 배포돼도 페이지가 죽지 않게
+        // 컬럼이 없으면 그것만 빼고 다시 읽는다(배포 순서에 안 걸리게).
+        let { data: post, error } = await admin
             .from('suggestions')
-            .select('id, title, content, created_at, views, author_id, author_nickname')
+            .select(`${COLS}, admin_reply, admin_replied_at`)
             .eq('id', params.id)
             .single();
+        if (error) {
+            ({ data: post, error } = await admin
+                .from('suggestions').select(COLS).eq('id', params.id).single());
+        }
         if (error || !post) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
         // 조회수 증가 (서버에서)
@@ -25,11 +32,15 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         const { data: { user } } = await supabase.auth.getUser();
         const unlocked = !!user && (user.email === ADMIN_EMAIL || user.id === post.author_id);
 
-        const { content, ...meta } = post;
+        // 답변도 본문과 같은 취급 — 비밀글이므로 잠긴 사람에겐 안 내려간다.
+        const { content, admin_reply, admin_replied_at, ...meta } = post as typeof post & {
+            admin_reply?: string | null; admin_replied_at?: string | null;
+        };
         return NextResponse.json({
-            post: unlocked ? { ...meta, content } : meta,
+            post: unlocked ? { ...meta, content, admin_reply, admin_replied_at } : meta,
             unlocked,
             isOwner: unlocked,
+            isAdmin: !!user && user.email === ADMIN_EMAIL,
         });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });

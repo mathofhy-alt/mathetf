@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, Clock, Eye, Lock, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Clock, Eye, Lock, User as UserIcon, MessageSquare, Send } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import Header from '@/components/Header';
@@ -24,6 +24,12 @@ export default function SuggestionDetailPage() {
     const [passwordError, setPasswordError] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+    // 관리자 답변
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [replyDraft, setReplyDraft] = useState('');
+    const [replyEditing, setReplyEditing] = useState(false);
+    const [replySaving, setReplySaving] = useState(false);
+
     const supabase = createClient();
 
     useEffect(() => {
@@ -40,6 +46,8 @@ export default function SuggestionDetailPage() {
                 if (res.ok && j.post) {
                     setData(j.post);
                     if (j.unlocked) setIsUnlocked(true);
+                    if (j.isAdmin) setIsAdmin(true);
+                    setReplyDraft(j.post.admin_reply || '');
                 }
             } catch { }
             setLoading(false);
@@ -93,6 +101,29 @@ export default function SuggestionDetailPage() {
         }
     };
 
+    const handleReplySave = async () => {
+        setReplySaving(true);
+        try {
+            const res = await fetch(`/api/suggestions/${id}/reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reply: replyDraft }),
+            });
+            const j = await res.json();
+            if (!res.ok) throw new Error(j.error || '저장 실패');
+            setData((prev: any) => ({
+                ...prev,
+                admin_reply: j.admin_reply,
+                admin_replied_at: j.admin_reply ? new Date().toISOString() : null,
+            }));
+            setReplyEditing(false);
+        } catch (e: any) {
+            alert(e.message || '저장에 실패했습니다.');
+        } finally {
+            setReplySaving(false);
+        }
+    };
+
     if (loading) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">로딩중...</div>;
     if (!data) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">글을 찾을 수 없습니다.</div>;
 
@@ -104,7 +135,7 @@ export default function SuggestionDetailPage() {
                 <div className="bg-white border-b border-slate-200">
                     <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center gap-4">
                         <Link href="/suggestion" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
-                        <h1 className="text-xl font-bold text-slate-800">비밀글 보호</h1>
+                        <span className="text-xl font-bold text-slate-800">비밀글 보호</span>
                     </div>
                 </div>
                 <main className="max-w-[400px] mx-auto px-4 py-20">
@@ -145,7 +176,7 @@ export default function SuggestionDetailPage() {
             <div className="bg-white border-b border-slate-200">
                 <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center gap-4">
                     <Link href="/suggestion" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
-                    <h1 className="text-xl font-bold text-slate-800">건의사항</h1>
+                    <span className="text-xl font-bold text-slate-800">건의사항</span>
                 </div>
             </div>
 
@@ -168,9 +199,72 @@ export default function SuggestionDetailPage() {
                         </div>
                     </div>
 
-                    <div className="p-8 min-h-[300px] text-slate-700 leading-relaxed whitespace-pre-wrap">
+                    <div className="p-8 min-h-[240px] text-slate-700 leading-relaxed whitespace-pre-wrap">
                         {data.content}
                     </div>
+
+                    {/* 관리자 답변 — 작성자와 관리자에게만 보인다(잠긴 사람은 본문부터 못 본다) */}
+                    {(data.admin_reply || isAdmin) && (
+                        <div className="border-t border-slate-100 bg-brand-50/40 p-8">
+                            <div className="flex items-center gap-2 mb-3">
+                                <MessageSquare size={16} className="text-brand-600" />
+                                <span className="text-sm font-bold text-brand-700">답변</span>
+                                {data.admin_replied_at && !replyEditing && (
+                                    <span className="text-xs text-slate-400">
+                                        {new Date(data.admin_replied_at).toLocaleDateString()}
+                                    </span>
+                                )}
+                            </div>
+
+                            {isAdmin && replyEditing ? (
+                                <div className="space-y-3">
+                                    <textarea
+                                        value={replyDraft}
+                                        onChange={e => setReplyDraft(e.target.value)}
+                                        rows={6}
+                                        autoFocus
+                                        placeholder="답변을 입력하세요. 작성자에게만 보입니다."
+                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm leading-relaxed focus:border-brand-500 focus:outline-none resize-y"
+                                    />
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleReplySave}
+                                            disabled={replySaving}
+                                            className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-bold hover:bg-brand-700 disabled:opacity-60"
+                                        >
+                                            <Send size={14} />
+                                            {replySaving ? '저장 중…' : '답변 등록'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setReplyDraft(data.admin_reply || ''); setReplyEditing(false); }}
+                                            className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50"
+                                        >
+                                            취소
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : data.admin_reply ? (
+                                <div className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                    {data.admin_reply}
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => setReplyEditing(true)}
+                                            className="block mt-4 text-xs font-bold text-slate-400 hover:text-slate-600 underline"
+                                        >
+                                            답변 수정
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setReplyEditing(true)}
+                                    className="text-sm font-bold text-brand-600 hover:text-brand-700"
+                                >
+                                    + 답변 작성
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <div className="bg-slate-50 p-6 border-t border-slate-100 flex justify-center gap-2">
                         <Link href="/suggestion" className="px-6 py-2 bg-white border border-slate-300 rounded text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">
