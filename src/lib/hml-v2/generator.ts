@@ -444,7 +444,6 @@ export function generateHmlFromTemplate(
     console.log(`[LAYOUT V3] Packing result:`, layoutPlan.map((p, i) => `Q${i+1}: gutter=${p.gutterLines}, break=${p.colBreakAfter}`).join(' | '));
 
     let qIndex = 0;
-    let currentColumnHeight = 5; // [V60] Title takes ~5 lines (Reduced from 15)
     const allEndnotes: Element[] = []; // [NEW] Collect all endnotes for final restoration
 
     for (const qwi of questionsWithImages) {
@@ -1725,18 +1724,34 @@ function packColumns(
         return colIdx < 2 ? page1Lines : defaultLines;
     };
 
-    // 고정 N개씩 배치
-    for (let i = 0; i < questionLines.length; i += questionsPerColumn) {
-        const colIdx = columns.length;
-        const indices: number[] = [];
-        for (let j = i; j < Math.min(i + questionsPerColumn, questionLines.length); j++) {
-            indices.push(j);
-        }
-        columns.push({
-            questionIndices: indices,
-            capacity: getColumnCapacity(colIdx)
-        });
+    // [회귀 복원 2026-08-30] questionsPerColumn 은 '고정' 이 아니라 '상한' 이다.
+    //
+    // fca3b6b9(6/1 19:18) 에서 높이 기반 패킹(안 들어가면 다음 단으로)을 구현했는데,
+    // 3시간 뒤 2d97f974(6/1 22:43) '열당 문제 수 선택' 을 넣으면서 usedLines·capacity 비교가
+    // 통째로 지워지고 무조건 N개씩 자르는 고정 분할이 됐다.
+    // 그 결과 실측(4개 회차): 한 단 1문제 2% · **2문제 26%** · 3문제 51% 의 단이 용량을 넘겼다.
+    // (양정고 2026 1학기중간 기하는 2문제 설정에서 10단 중 6단이 넘침)
+    // 넘치면 한글이 다음 단으로 흘리는데 코드가 그 뒤에 ColBreak 를 또 넣어 빈 단이 생긴다.
+    //
+    // → 두 조건을 함께 본다: ①N개를 채웠거나 ②높이가 안 맞으면 다음 단으로.
+    //   사용자가 고른 수는 지켜지되(넘지 않음), 큰 문항이 걸린 단만 한 개 적게 들어간다.
+    let colIdx = 0;
+    let cur = { questionIndices: [] as number[], capacity: getColumnCapacity(0), usedLines: 0 };
+    const flush = () => {
+        if (cur.questionIndices.length === 0) return;
+        columns.push({ questionIndices: [...cur.questionIndices], capacity: cur.capacity });
+        colIdx++;
+        cur = { questionIndices: [], capacity: getColumnCapacity(colIdx), usedLines: 0 };
+    };
+    for (let i = 0; i < questionLines.length; i++) {
+        const needed = questionLines[i] + minGutter;
+        const full = cur.questionIndices.length >= questionsPerColumn;
+        const tooTall = cur.questionIndices.length > 0 && cur.usedLines + needed > cur.capacity;
+        if (full || tooTall) flush();
+        cur.questionIndices.push(i);
+        cur.usedLines += needed;
     }
+    flush();
 
     console.log(`[LAYOUT V3] Total columns: ${columns.length}, distribution: ${columns.map(c => c.questionIndices.length).join(', ')}`);
 
@@ -1757,10 +1772,12 @@ function packColumns(
             const isLastInColumn = (j === indices.length - 1);
             const gutter = gutterPerQuestion + (j < extraGutter ? 1 : 0);
 
-            // questionsPerColumn=1일 때 gutter가 과도하게 커지는 것을 방지 (최대 10줄)
-            const finalGutter = questionsPerColumn === 1
-                ? Math.min(10, Math.max(minGutter, gutter))
-                : Math.max(minGutter, gutter);
+            // [2026-08-30] gutter 상한을 모든 경우로 넓혔다.
+            // 예전엔 questionsPerColumn===1 에만 10줄 상한이 있어서, 2·3 에서 작은 문항끼리 만나면
+            // 문항 사이가 15줄씩 벌어졌다(배명고 8단 = [8줄, 8줄] / 용량 46 → 남는 30줄을 둘로 나눠 15줄씩).
+            // 한 문제에 풀이 공간 12줄이면 충분하다. 남는 공간은 단 끝에 두는 편이 낫다.
+            const MAX_GUTTER = 12;
+            const finalGutter = Math.min(MAX_GUTTER, Math.max(minGutter, gutter));
 
             result[qIdx] = {
                 gutterLines: finalGutter,
