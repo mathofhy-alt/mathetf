@@ -1051,7 +1051,13 @@ export default function QuestionBankPage() {
             }
 
             logQb('qb_save', `q:${cart.length}`);
-            showToast('보관함에 저장되었습니다! "내 보관함"에서 확인 및 다운로드 가능합니다.', 'success');
+            // 이름이 겹쳐 번호가 붙었으면 그대로 알려준다. 조용히 바꾸면 보관함에서 못 찾는다.
+            const saved = result.savedTitle as string | undefined;
+            showToast(
+                saved && saved !== examTitle
+                    ? `같은 이름이 있어 "${saved}" 로 저장했어요. "내 보관함"에서 확인 및 다운로드 가능합니다.`
+                    : '보관함에 저장되었습니다! "내 보관함"에서 확인 및 다운로드 가능합니다.',
+                'success');
             setCart([]);
             localStorage.removeItem('exam_cart');
             setShowSaveModal(false);

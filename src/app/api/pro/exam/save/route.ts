@@ -47,20 +47,25 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
-        // 중복 이름 체크
+        // 이름이 겹치면 막지 않고 뒤에 번호를 붙인다.
+        // [2026-08-31] 예전엔 409 로 거절했다. 그런데 8/31 에 한 사용자가 17:27 에 저장에 성공하고
+        // 17:28 에 같은 이름으로 두 번째 시험지를 만들려다 막혔다. 담기까지 다 해놓고 마지막에
+        // 튕기는 건 퍼널에서 가장 아까운 이탈이다(그날 저장 실패 2건 중 1건이 이것).
+        // 이름은 사용자가 나중에 보관함에서 바꿀 수 있으니, 여기서 막을 이유가 없다.
+        let finalTitle = title;
         if (title) {
-            const { count: nameCount } = await supabase
+            const { data: sameName } = await supabase
                 .from('user_items')
-                .select('*', { count: 'exact', head: true })
+                .select('name')
                 .eq('user_id', user.id)
                 .eq('type', 'saved_exam')
-                .eq('name', title);
+                .like('name', `${title}%`);
 
-            if (nameCount && nameCount > 0) {
-                return NextResponse.json({
-                    success: false,
-                    error: `"${title}" 이름의 시험지가 이미 존재합니다. 다른 이름을 사용해주세요.`
-                }, { status: 409 });
+            const taken = new Set((sameName || []).map((x: { name: string }) => x.name));
+            if (taken.has(title)) {
+                let n = 2;
+                while (taken.has(`${title} (${n})`) && n < 1000) n++;
+                finalTitle = `${title} (${n})`;
             }
         }
 
@@ -214,7 +219,8 @@ export async function POST(req: NextRequest) {
             images: q.images || []
         }));
 
-        const titleStr = (title || 'Exam_Paper').replace(/[\\/<>:"|\?\*]/g, '_').trim() || 'Exam_Paper';
+        // finalTitle — 이름이 겹쳐 번호가 붙었을 수 있다. 파일·보관함 이름 모두 이걸 쓴다.
+        const titleStr = (finalTitle || 'Exam_Paper').replace(/[\\/<>:"|\?\*]/g, '_').trim() || 'Exam_Paper';
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
 
         const result = await generateHmlFromTemplate(templateXml, questionsWithImages, {
@@ -281,7 +287,8 @@ export async function POST(req: NextRequest) {
         if (itemError) throw new Error(`Item creation failed: ${itemError.message}`);
 
         console.log('[SaveAPI] Success!');
-        return NextResponse.json({ success: true, item: itemData });
+        // savedTitle — 이름이 겹쳐 번호가 붙었으면 클라이언트가 그걸 알려줄 수 있게 돌려준다.
+        return NextResponse.json({ success: true, item: itemData, savedTitle: titleStr });
 
     } catch (e: any) {
         // 실패 시 이미 업로드된 .hml/.json 을 삭제해 '목록엔 없는데 파일만 남는' 고아를 방지한다.
