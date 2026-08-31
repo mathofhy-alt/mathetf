@@ -1804,14 +1804,17 @@ function packColumns(
         const indices = col.questionIndices;
         const totalQuestionLines = indices.reduce((sum, idx) => sum + questionLines[idx], 0);
 
-        // [2026-08-31] 단 용량을 남김없이 다 쓴다. 안전 여유를 두지 않는다(사용자 지시).
+        // [2026-08-31] 단 끝에 2줄만 남긴다(사용자 지시).
         //
-        // 잠깐 SAFETY_LINES(3~6줄)를 뒀었다. 실측이 '잉크 범위'(첫 글자~마지막 글자)라
-        // 문단 사이 간격이 안 잡혀서 그 몫을 남겨두려던 것인데, 사용자가 빼라고 했다.
-        // 설계 의도는 단순하다 — 단 용량에서 문항 높이 합을 뺀 나머지를 **전부** 문항 사이에 나눈다.
-        //   예) 1단 51줄에 3·4·5줄짜리 3문항 → 남는 39줄을 나눠 문항당 13줄.
-        // 이 값을 다시 만지지 말 것. 여유가 필요하면 문항 높이(layout_lines) 쪽을 고쳐야 한다.
-        const remainingSpace = Math.max(0, col.capacity - totalQuestionLines);
+        // 여유를 아예 0 으로 뒀다가 **쪽의 1/3 이 백지**가 됐다(영동고 22문항 실측:
+        // 열당1 39쪽 중 17쪽, 열당2 23쪽 중 9쪽, 열당3 19쪽 중 6쪽이 빈 쪽).
+        // 여백이 단 용량을 정확히 채우도록 계산되는데 실제 조판에서 아주 조금 넘치고,
+        // 넘친 여백(빈 문단뿐)이 다음 쪽으로 흘러 백지가 된 뒤 우리 단나눔이 또 들어간다.
+        //
+        // ⚠ 여유는 대증요법이다. 진짜 원인은 실측이 '잉크 범위'(첫 글자~마지막 글자)라
+        //    문항마다 조금씩 작게 잡히는 것이다. 그걸 고치면 여유 없이도 맞는다.
+        const SAFETY_LINES = 2;
+        const remainingSpace = Math.max(0, col.capacity - SAFETY_LINES - totalQuestionLines);
         const gutterPerQuestion = Math.floor(remainingSpace / indices.length);
         const extraGutter = remainingSpace - gutterPerQuestion * indices.length; // 나머지 줄은 앞 문제에 1줄씩 추가
 
