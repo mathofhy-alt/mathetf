@@ -416,9 +416,16 @@ export function generateHmlFromTemplate(
     //
     // ⚠ 캡쳐 폭(1054px)·템플릿 지면·글꼴이 바뀌면 다시 재야 한다. 위 두 스크립트로 재현하면 된다.
     const PIXELS_PER_LINE = 30;
-    const COLUMN_LINES_PAGE1 = 43;
-    const COLUMN_LINES_DEFAULT = 46;
-    const MIN_GUTTER_LINES = 3;
+    // [2026-08-31] 43/46 → 51/53 (사용자 실측값).
+    // 1쪽은 제목·날짜 머리말이 자리를 먹어 2쪽 이후보다 2줄 적다.
+    // 이 값이 바뀌면 한 줄의 높이도 바뀐다 — 본문 702pt ÷ 53줄 = 13.25pt/줄.
+    // layout_lines(실측 줄 수)도 같은 기준으로 다시 계산해 넣었다(scratch_write_heights.py).
+    const COLUMN_LINES_PAGE1 = 51;
+    const COLUMN_LINES_DEFAULT = 53;
+    // [2026-08-31] 3 → 4. 한 쪽 46줄 가정에서 한 줄은 15.25pt 였는데
+    // 51/53 으로 바뀌며 한 줄이 13.25pt 가 됐다. 줄 단위 여유값들이 그대로면
+    // 물리적으로 13% 쪼그라든다. 같은 여백이 되도록 줄 수를 올린다(3×15.25 ≈ 4×13.25).
+    const MIN_GUTTER_LINES = 4;
     const DEFAULT_QUESTION_LINES = 15;
 
     // Pre-scan: 각 문제의 MANUAL_Q_ 캡쳐 이미지에서 줄 수 계산
@@ -432,6 +439,25 @@ export function generateHmlFromTemplate(
         const manualImage = qwi.images?.find(
             (img: DbQuestionImage) => img.original_bin_id?.startsWith('MANUAL_Q_') || img.original_bin_id?.startsWith('AUTO_Q_')
         );
+
+        // [2026-08-30] 실측값이 있으면 그것을 쓴다. 추정(캡쳐높이 ÷ 상수)은 폴백이다.
+        //
+        // 캡쳐 높이로 줄 수를 추정하던 방식은 원리적으로 안 맞는다.
+        // 문항 200개를 한글 COM 으로 실제 조판해 재 보니 픽셀당 줄 수가 19~73px/줄로
+        // 3.8배까지 벌어졌다(중앙 52). 어떤 상수를 골라도 한쪽은 틀린다 —
+        //   작게 잡으면 과소평가 → 계획보다 실제가 커서 문항이 두 쪽에 걸쳐 잘린다
+        //   크게 잡으면 과대평가 → 안 잘리는 대신 지면을 40% 낭비한다
+        // 상수를 30·45·67 로 바꿔 봐도 잘림 건수가 그대로였던 이유가 이것이다.
+        //
+        // layout_lines 는 한글로 실제 조판해 잰 값이다(questions 테이블, 한 쪽 = 46줄 기준).
+        // NULL 이면(새로 들어온 문항) 예전 추정으로 조용히 되돌아간다.
+        // 다시 재려면: python scratch_measure_heights.py all 50 → scratch_write_heights.py
+        const measuredLines = (qwi.question as { layout_lines?: number | null }).layout_lines;
+        if (typeof measuredLines === 'number' && measuredLines > 0) {
+            questionLineHeights.push(measuredLines);
+            continue;
+        }
+
         if (manualImage && manualImage.data) {
             try {
                 const pixelHeight = getImagePixelHeight(manualImage.data);
@@ -1777,6 +1803,14 @@ function packColumns(
     for (const col of columns) {
         const indices = col.questionIndices;
         const totalQuestionLines = indices.reduce((sum, idx) => sum + questionLines[idx], 0);
+
+        // [2026-08-31] 단 용량을 남김없이 다 쓴다. 안전 여유를 두지 않는다(사용자 지시).
+        //
+        // 잠깐 SAFETY_LINES(3~6줄)를 뒀었다. 실측이 '잉크 범위'(첫 글자~마지막 글자)라
+        // 문단 사이 간격이 안 잡혀서 그 몫을 남겨두려던 것인데, 사용자가 빼라고 했다.
+        // 설계 의도는 단순하다 — 단 용량에서 문항 높이 합을 뺀 나머지를 **전부** 문항 사이에 나눈다.
+        //   예) 1단 51줄에 3·4·5줄짜리 3문항 → 남는 39줄을 나눠 문항당 13줄.
+        // 이 값을 다시 만지지 말 것. 여유가 필요하면 문항 높이(layout_lines) 쪽을 고쳐야 한다.
         const remainingSpace = Math.max(0, col.capacity - totalQuestionLines);
         const gutterPerQuestion = Math.floor(remainingSpace / indices.length);
         const extraGutter = remainingSpace - gutterPerQuestion * indices.length; // 나머지 줄은 앞 문제에 1줄씩 추가
@@ -1788,16 +1822,30 @@ function packColumns(
             const isLastInColumn = (j === indices.length - 1);
             const gutter = gutterPerQuestion + (j < extraGutter ? 1 : 0);
 
-            // [2026-08-30] gutter 상한을 모든 경우로 넓혔다.
-            // 예전엔 questionsPerColumn===1 에만 10줄 상한이 있어서, 2·3 에서 작은 문항끼리 만나면
-            // 문항 사이가 15줄씩 벌어졌다(배명고 8단 = [8줄, 8줄] / 용량 46 → 남는 30줄을 둘로 나눠 15줄씩).
-            // 한 문제에 풀이 공간 12줄이면 충분하다. 남는 공간은 단 끝에 두는 편이 낫다.
-            const MAX_GUTTER = 12;
-            const finalGutter = Math.min(MAX_GUTTER, Math.max(minGutter, gutter));
+            // [2026-08-31] 여백 상한(MAX_GUTTER)을 없앴다.
+            //
+            // 8/30 에 내가 임의로 넣은 값이다("15줄은 너무 넓다"고 혼자 판단). 사용자 지시가 아니었고,
+            // 설계 의도와 어긋난다. 의도는 이것이다 —
+            //   단 용량에서 문항 높이 합을 뺀 나머지를 문항 사이에 **전부 나눠 넣는다**.
+            //   예) 1단 51줄에 3·4·5줄짜리 3문항 → 남는 39줄을 나눠 문항당 12~13줄.
+            // 상한을 두면 남는 줄이 단 아래에 빈 공간으로 버려져 지면만 낭비된다.
+            //
+            // 풀이 여백의 넓이는 사용자가 '열당 문제 수' 로 조절한다. 그게 그 설정의 의미다.
+            const finalGutter = Math.max(minGutter, gutter);
+
+            // [2026-08-31] 이미 넘친 단 뒤에는 단나눔을 넣지 않는다 — 빈 쪽이 생긴다.
+            //
+            // 한 쪽(46줄)보다 큰 문항이 실측 15,096개 중 65개(0.4%) 있다. 최대 98줄이다.
+            // 그런 문항은 물리적으로 한 쪽에 못 들어가서 한글이 알아서 다음 쪽으로 흘린다.
+            // 그런데 우리가 그 뒤에 ColumnBreak 를 또 넣으면 한글은 이미 넘어간 쪽에서
+            // 한 번 더 끊어 **빈 쪽**을 만든다(실측: 문항 15가 51줄일 때 8·9쪽이 통째로 비었다).
+            // 넘친 단은 한글이 이미 쪽을 넘겼으니 우리가 끊을 필요가 없다.
+            const columnOverflows = totalQuestionLines >= col.capacity;
 
             result[qIdx] = {
                 gutterLines: finalGutter,
-                colBreakAfter: isLastInColumn && !isLastColumn // 마지막 단의 마지막 문제는 ColBreak 불필요
+                // 마지막 단의 마지막 문제는 ColBreak 불필요
+                colBreakAfter: isLastInColumn && !isLastColumn && !columnOverflows
             };
         }
     }
