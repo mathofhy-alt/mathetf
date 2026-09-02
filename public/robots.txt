@@ -10,6 +10,12 @@ Disallow: /?school=
 Disallow: /?gad_source=
 Disallow: /?gclid=
 Disallow: /?utm_
+# [2026-09-03] 시험지출제(question-bank)의 쿼리 URL도 막는다.
+# 본문·title 이 /question-bank 와 동일해 중복 문서가 된다. canonical 은 걸어뒀지만
+# 네이버는 canonical 로 중복 판정을 풀지 않는다(서치어드바이저 'title 중복' 이 87→105 로 증가).
+# ?src= 는 exam 상세의 '이 시험지로 나만의 시험지 만들기'(8/30 추가), ?school= 은 학교페이지 강사 CTA,
+# ?tour=1 은 온보딩 투어 링크다. 셋 다 사용자 동선용이라 차단해도 사용에는 지장이 없다.
+Disallow: /question-bank?
 
 # 네이버 검색로봇 명시적 허용
 User-agent: Yeti
@@ -21,6 +27,7 @@ Disallow: /?school=
 Disallow: /?gad_source=
 Disallow: /?gclid=
 Disallow: /?utm_
+Disallow: /question-bank?
 
 Sitemap: https://mathetf.com/sitemap.xml
 
