@@ -536,12 +536,17 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         if (dlState[file.id] === 'loading') return;   // 진행 중 재클릭 무시 (연타 방지)
         setDlState(prev => ({ ...prev, [file.id]: 'loading' }));
         try {
-            // [크롤예산] 목록에 free_pdf_url 을 싣지 않으므로 여기서 조회
-            const { data: urlRow } = await supabase
-                .from('exam_materials').select('free_pdf_url').eq('id', file.id).single();
-            const url = urlRow?.free_pdf_url;
-            if (!url) throw new Error('무료 PDF를 준비 중입니다');
+            // [2026-09-02] URL 발급을 서버로 옮겼다. 하루 상한(10건)을 서버에서 걸기 위함 —
+            // 예전처럼 클라이언트가 free_pdf_url 을 직접 읽으면 화면에서 막아도 우회된다.
+            // 다운로드 로그도 이 라우트가 직접 남기므로 아래의 별도 로깅 호출은 없앴다.
             const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_문제.pdf`;
+            const issued = await fetch('/api/free-pdf', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: file.id, title: filename }),
+            });
+            const issuedJson = await issued.json();
+            if (!issued.ok) throw new Error(issuedJson?.error || '무료 PDF를 준비 중입니다');
+            const url = issuedJson.url as string;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`파일을 준비 중입니다 (${response.status})`);
             const blob = await response.blob();
@@ -555,11 +560,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(objUrl), 40_000);
             setDlState(prev => ({ ...prev, [file.id]: 'done' }));
-            // 활성화율 측정용 로그 (실패해도 무시)
-            fetch('/api/log/feature', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ feature: 'free_pdf', title: filename }),
-            }).catch(() => { });
+            // 로그는 /api/free-pdf 가 발급 시점에 남긴다(상한 계산의 근거라 누락되면 안 됨).
             // [강사] 다운로드 직후 시험지출제 다리 배너 (알림 옵트인보다 우선)
             if (isTeacher && !localStorage.getItem('mathetf_teacher_cta_dismissed')) {
                 setTeacherCta({ school: file.school, variant: 'download' });
@@ -570,7 +571,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         } catch (error: any) {
             console.error('Free download error:', error);
             setDlState(prev => { const n = { ...prev }; delete n[file.id]; return n; });
-            alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
+            // 상한 안내는 서버 문구를 그대로 보여준다. '준비 중' 으로 뭉뚱그리면 왜 안 되는지 모른다.
+            alert(error?.message || '무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
         }
     };
 

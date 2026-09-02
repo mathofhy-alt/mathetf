@@ -279,7 +279,7 @@ export default async function ExamDetailPage({ params }: Props) {
                 {/* 무료 문제 PDF CTA (회원가입 유도 / 로그인 시 즉시 다운로드) — 페이지 상단 강조 */}
                 {row.free_pdf_url && (
                     <FreeProblemCTA
-                        freePdfUrl={row.free_pdf_url}
+                        examId={row.id}
                         filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`}
                         pageCount={previews.length}
                     />

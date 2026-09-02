@@ -12,7 +12,7 @@ import NotifyOptIn from '@/components/NotifyOptIn';
  * - 로그인: 워터마크 없는 문제 PDF 즉시 다운로드.
  * 페이지는 ISR 정적 캐시라 로그인 여부는 클라이언트에서 판별한다.
  */
-export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { freePdfUrl: string; filename: string; pageCount: number }) {
+export default function FreeProblemCTA({ examId, filename, pageCount }: { examId: string; filename: string; pageCount: number }) {
     const [authed, setAuthed] = useState<boolean | null>(null);
     const [marketingAgreed, setMarketingAgreed] = useState(true); // 기본 true → 확인 전엔 배너 안 뜸
     const [showNotify, setShowNotify] = useState(false);
@@ -31,7 +31,15 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
     const handleDownload = async () => {
         setDownloading(true);
         try {
-            const res = await fetch(freePdfUrl);
+            // [2026-09-02] URL 을 서버에서 발급받는다. 하루 상한(10건)을 서버에서 걸기 위함 —
+            // 예전엔 free_pdf_url 을 그대로 넘겨받아 받았기 때문에 상한을 걸 자리가 없었다.
+            const issued = await fetch('/api/free-pdf', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: examId, title: filename }),
+            });
+            const issuedJson = await issued.json();
+            if (!issued.ok) throw new Error(issuedJson?.error || '무료 PDF를 준비 중입니다.');
+            const res = await fetch(issuedJson.url as string);
             if (!res.ok) throw new Error(`status ${res.status}`);
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
@@ -43,19 +51,16 @@ export default function FreeProblemCTA({ freePdfUrl, filename, pageCount }: { fr
             a.remove();
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(url), 40_000);
-            // 활성화율 측정용 로그 (실패해도 무시)
-            fetch('/api/log/feature', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ feature: 'free_pdf', title: filename }),
-            }).catch(() => { });
+            // 로그는 /api/free-pdf 가 발급 시점에 남긴다(상한 계산의 근거라 누락되면 안 됨).
             // 새 기출 알림 옵트인 배너 (미동의자에게만)
             if (!marketingAgreed) setShowNotify(true);
             // [persona] 회원 613명 중 301명(49%)이 역할 미응답이다. 온보딩 모달은 홈에서만 뜨는데
             // 유입은 네이버 검색으로 이 페이지에 곧장 떨어져 물어볼 기회가 없었다.
             // 자료를 받은 직후 여기서 한 번만 묻는다(다운로드는 안 막는다).
             setAskPersona(true);
-        } catch (e) {
-            alert('무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
+        } catch (e: any) {
+            // 상한 안내는 서버 문구를 그대로 — '준비 중' 으로 뭉뚱그리면 왜 안 되는지 모른다.
+            alert(e?.message || '무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
         } finally {
             setDownloading(false);
         }
