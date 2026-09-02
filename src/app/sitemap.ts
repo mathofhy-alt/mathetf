@@ -66,7 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // created_at DESC 이므로 data[0] 이 사이트 전체의 최신 자료 시각이다.
         const data = await fetchAll<any>((from, to) => supabase
             .from('exam_materials')
-            .select('school, created_at')
+            .select('school, created_at, file_type, content_type')
             .neq('school', 'DELETED')
             .order('created_at', { ascending: false })
             .range(from, to));
@@ -82,8 +82,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const latestQuestion = at(qRow?.created_at, latestMaterial);
 
         // 학교별 최신 업데이트 날짜 추출
+        //
+        // [2026-09-03] 해설 PDF 가 있는 학교만 넣는다. 기준을 /schools 화면과 맞춘 것이다.
+        // 예전엔 exam_materials 에 행이 있으면 무조건 넣었다. 그 탓에 '원본제보' 만 있고
+        // 문항이 0개인 학교(백마고·포천고)가 사이트맵에 올라가 있었다 —
+        // /schools 는 그 학교를 링크하지 않으므로 사이트 안에서는 도달 경로가 없는데
+        // 구글에게만 "이런 페이지가 있다" 고 신고하는 꼴이었다(외부감사에서 고아 2건으로 잡힘).
+        // 구글이 이 사이트를 '크롤링됨-미색인' 으로 판정한 상황에서 알맹이 없는 페이지를
+        // 스스로 제출하는 건 손해다. 자료가 붙으면 자동으로 다시 들어온다.
+        const schoolsWithSolution = new Set(
+            data.filter((r: any) => r.file_type === 'PDF' && r.content_type === '해설')
+                .map((r: any) => r.school)
+        );
         const schoolMap: Record<string, Date> = {};
         data.forEach((item: any) => {
+            if (!schoolsWithSolution.has(item.school)) return;
             if (!schoolMap[item.school]) {
                 schoolMap[item.school] = new Date(item.created_at);
             }
