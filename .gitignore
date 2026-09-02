@@ -100,3 +100,4 @@ scratch_*
 
 # IndexNow 키 (공개 파일은 public/ 에 있고, 이건 스크립트용 사본)
 .indexnow-key
+.indexnow-sent.json

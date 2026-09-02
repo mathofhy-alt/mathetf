@@ -12,6 +12,11 @@
   python scripts/indexnow_ping.py                 # 최근 24시간에 생긴 회차 URL
   python scripts/indexnow_ping.py 72              # 최근 72시간
   python scripts/indexnow_ping.py --urls a.html b.html
+  python scripts/indexnow_ping.py 24 --force      # 이미 보낸 것도 다시 보낸다
+
+⚠ 같은 URL 을 하루에 여러 번 보내지 않는다(공식 안내: 내용이 실제로 바뀌었을 때만,
+   재제출은 최소 10분 간격). 배치를 하루 두 번 돌리면 첫 배치분이 또 나가므로
+   보낸 URL 을 .indexnow-sent.json 에 남겨두고 건너뛴다. 24시간 지나면 다시 허용한다.
 """
 import os, re, sys, json, requests, urllib3
 from datetime import datetime, timezone, timedelta
@@ -22,6 +27,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = 'https://mathetf.com'
 HOST = 'mathetf.com'
 ENDPOINT = 'https://api.indexnow.org/indexnow'
+SENT_LOG = os.path.join(ROOT, '.indexnow-sent.json')
+RESEND_AFTER_HOURS = 24   # 이 시간이 지나면 같은 URL 도 다시 보낸다
 
 
 def load_key() -> str:
@@ -68,6 +75,27 @@ def recent_urls(hours: int):
     return list(dict.fromkeys(urls))
 
 
+def load_sent() -> dict:
+    try:
+        return json.load(open(SENT_LOG, encoding='utf-8'))
+    except Exception:
+        return {}
+
+
+def save_sent(sent: dict):
+    # 오래된 기록은 버린다 — 파일이 무한히 커지지 않게.
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    keep = {u: t for u, t in sent.items() if t >= cutoff}
+    json.dump(keep, open(SENT_LOG, 'w', encoding='utf-8'), ensure_ascii=False)
+
+
+def drop_recently_sent(urls, sent):
+    """최근 RESEND_AFTER_HOURS 안에 보낸 URL 은 뺀다."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=RESEND_AFTER_HOURS)).isoformat()
+    fresh = [u for u in urls if sent.get(u, '') < cutoff]
+    return fresh, len(urls) - len(fresh)
+
+
 def ping(urls, key):
     if not urls:
         print('알릴 URL 이 없다'); return 0
@@ -87,12 +115,26 @@ def ping(urls, key):
 
 if __name__ == '__main__':
     key = load_key()
-    if '--urls' in sys.argv:
-        urls = sys.argv[sys.argv.index('--urls') + 1:]
+    force = '--force' in sys.argv
+    argv = [a for a in sys.argv[1:] if a != '--force']
+    if '--urls' in argv:
+        urls = argv[argv.index('--urls') + 1:]
     else:
-        hours = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 24
+        hours = int(argv[0]) if argv and argv[0].isdigit() else 24
         urls = recent_urls(hours)
         print(f'최근 {hours}시간 신규 회차 기준 URL {len(urls)}개')
+
+    sent = load_sent()
+    if not force:
+        urls, skipped = drop_recently_sent(urls, sent)
+        if skipped:
+            print(f'  최근 {RESEND_AFTER_HOURS}시간 안에 이미 보낸 {skipped}개는 건너뛴다')
+
     n = ping(urls, key)
-    print(f'\n접수됨 {n}/{len(urls)}개')
+    if n:
+        now = datetime.now(timezone.utc).isoformat()
+        for u in urls:
+            sent[u] = now
+        save_sent(sent)
+    print(f'{chr(10)}접수됨 {n}/{len(urls)}개')
     print('※ 구글은 IndexNow 미지원 — 네이버·빙·얀덱스에만 전달된다')
