@@ -20,7 +20,26 @@ export async function generateMetadata({ params }: { params: { seg: string } }):
     const seg = decodeURIComponent(params.seg);
     if (isCategory(seg)) {
         const title = `${seg} 수학 기출·변형문제 모음 | 수학ETF`;
-        const description = `${seg} 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.`;
+
+        // [2026-09-03] 설명에 실제 숫자를 넣는다.
+        // 예전엔 `${seg} 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.` — 한글 34자에
+        // 카테고리 이름만 바뀌는 같은 문장이었다. 15개 페이지가 사실상 동일한 설명을 썼다.
+        // 사관학교·경찰대는 내신판에 없는 우리 유일한 해자인데 그 페이지 설명이 제일 성의 없었다.
+        // 통계는 이미 getMockCategoryStats 가 뽑고 있으므로 그대로 쓴다(추가 조회 없음 — 아래 본문과 공유).
+        const st = await getMockCategoryStats(seg).catch(() => null);
+        let description = `${seg} 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.`;
+        if (st && st.total > 0) {
+            const ys = st.years.map(y => Number(y.year)).filter(Number.isFinite);
+            const span = ys.length ? (Math.min(...ys) === Math.max(...ys)
+                ? `${Math.max(...ys)}년`
+                : `${Math.min(...ys)}~${Math.max(...ys)}년 ${ys.length}개년`) : '';
+            const subj = st.bySubject.slice(0, 3).map(x => x.subject).join('·');
+            const unit = st.byUnit.slice(0, 3).map(x => x.unit).join('·');
+            description = `${seg} 수학 기출 ${span} 총 ${st.total}문항. `
+                + (subj ? `${subj} 과목별로 정리했고, ` : '')
+                + (unit ? `${unit} 단원이 가장 많이 출제됐습니다. ` : '')
+                + `문제·해설을 PDF·한글(HWP)로 무료 제공합니다.`;
+        }
         return {
             title,
             description,
