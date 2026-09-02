@@ -137,4 +137,6 @@ if __name__ == '__main__':
             sent[u] = now
         save_sent(sent)
     print(f'{chr(10)}접수됨 {n}/{len(urls)}개')
+    # 배치 오케스트레이터가 읽는 형식 — 이게 없으면 '결과 판독 실패' 로 찍힌다.
+    print(f'완료: 성공 {n} / 실패 {len(urls) - n}')
     print('※ 구글은 IndexNow 미지원 — 네이버·빙·얀덱스에만 전달된다')
