@@ -30,5 +30,7 @@ Disallow: /?utm_
 Disallow: /question-bank?
 
 Sitemap: https://mathetf.com/sitemap.xml
+# [2026-09-03] 자료가 이미지(webp) 중심인데 이미지 사이트맵이 없어 이미지 검색 경로가 막혀 있었다.
+Sitemap: https://mathetf.com/image-sitemap.xml
 
 #DaumWebMasterTool:4e290b2d559b2197ee12ffc2e977ac55d04cfb8444693cfc70109b9c109dd8b2:9QC48RIDoACLXH3FbFNbCg==
