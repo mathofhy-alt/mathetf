@@ -583,6 +583,16 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const itemsPerPage = 10;
     const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
 
+    // [2026-09-03] 페이지 번호는 한 번에 10개만 보인다.
+    // 자료가 늘면서 50쪽이 되자 번호 버튼 50개가 한 줄에 다 그려졌다(사용자 지적).
+    // 현재 페이지를 가운데 두고 10개 창이 따라 움직인다. 끝쪽에서는 창이 밀리지 않게 고정한다.
+    const PAGE_WINDOW = 10;
+    const pageWindowStart = Math.max(
+        1,
+        Math.min(currentPage - Math.floor(PAGE_WINDOW / 2), totalPages - PAGE_WINDOW + 1)
+    );
+    const pageWindowEnd = Math.min(totalPages, pageWindowStart + PAGE_WINDOW - 1);
+
     // Get current items
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -905,11 +915,19 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                     <button aria-label="이전 페이지" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-9 h-9 border border-[#B7D1EA] rounded-lg hover:bg-[#EEF4FB] flex items-center justify-center text-[#497AB7] disabled:opacity-30 transition-colors">
                                         <ChevronRight size={15} className="rotate-180" />
                                     </button>
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    {pageWindowStart > 1 && (
+                                        <button aria-label="1페이지" onClick={() => setCurrentPage(1)} className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm border border-[#B7D1EA] hover:bg-[#EEF4FB] text-[#497AB7]">1</button>
+                                    )}
+                                    {pageWindowStart > 2 && <span className="w-5 flex items-center justify-center text-[#9BB6D4] text-sm">…</span>}
+                                    {Array.from({ length: pageWindowEnd - pageWindowStart + 1 }, (_, i) => pageWindowStart + i).map(page => (
                                         <button key={page} aria-label={`페이지 ${page}`} onClick={() => setCurrentPage(page)} className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold transition-colors text-sm ${currentPage === page ? 'bg-[#497AB7] text-white shadow-sm' : 'border border-[#B7D1EA] hover:bg-[#EEF4FB] text-[#497AB7]'}`}>
                                             {page}
                                         </button>
                                     ))}
+                                    {pageWindowEnd < totalPages - 1 && <span className="w-5 flex items-center justify-center text-[#9BB6D4] text-sm">…</span>}
+                                    {pageWindowEnd < totalPages && (
+                                        <button aria-label={`${totalPages}페이지`} onClick={() => setCurrentPage(totalPages)} className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm border border-[#B7D1EA] hover:bg-[#EEF4FB] text-[#497AB7]">{totalPages}</button>
+                                    )}
                                     <button
                                         aria-label="다음 페이지"
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
