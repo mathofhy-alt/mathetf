@@ -157,7 +157,9 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
     if (!isLoggedIn) {
         return (
             <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-                <h1 className="text-2xl font-black mb-3">학교프린트 변형만들기</h1>
+                {/* 화면 제목은 h2 — 이 페이지의 h1 은 page.tsx 의 sr-only 하나뿐이다.
+                    여기까지 h1 이면 거의 같은 문장의 h1 이 한 페이지에 둘이 된다. */}
+                <h2 className="text-2xl font-black mb-3">학교프린트 변형만들기</h2>
                 <p className="text-slate-500 mb-6">회원가입 후 이용할 수 있어요 (런칭 기념 무료).</p>
                 <Link href="/signup" className="inline-block bg-[#497AB7] text-white font-extrabold px-6 py-3 rounded-xl">무료로 가입하기 →</Link>
             </main>
@@ -168,7 +170,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
         <main className="max-w-6xl mx-auto px-4 py-8">
             <div className="mb-5">
                 <div className="inline-flex items-center gap-1.5 bg-[#2E9E5B]/12 border border-[#2E9E5B]/30 text-[#2E9E5B] text-xs font-bold px-3 py-1 rounded-full mb-2"><Crop size={12} /> 학교프린트 변형만들기</div>
-                <h1 className="text-2xl sm:text-3xl font-black">학교 프린트로 변형문제 만들기</h1>
+                <h2 className="text-2xl sm:text-3xl font-black">학교 프린트로 변형문제 만들기</h2>
                 <p className="text-slate-600 text-base mt-2 break-keep">프린트(PDF)를 올리고 문제를 <strong className="text-[#2E9E5B]">드래그로 잘라내면</strong>, 같은 유형 변형문제를 찾아 한글파일로 만들어 드려요. <strong className="text-[#2E9E5B]">🎉 런칭 기념 무료</strong></p>
             </div>
 

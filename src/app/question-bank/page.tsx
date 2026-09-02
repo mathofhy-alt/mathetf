@@ -1453,9 +1453,12 @@ export default function QuestionBankPage() {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
                                     필터
                                 </button>
-                                <h1 className="text-sm sm:text-2xl font-bold text-gray-800 truncate">
+                                {/* 화면 제목은 h2 — 이 페이지의 h1 은 layout.tsx 의 sr-only 하나뿐이다.
+                                    전체화면 툴이라 화면에 본문이 없어 크롤러·스크린리더용 h1 을 layout 에 뒀는데,
+                                    여기까지 h1 이면 한 페이지에 h1 이 둘이 된다(2026-09-03 전수검사에서 확인). */}
+                                <h2 className="text-sm sm:text-2xl font-bold text-gray-800 truncate">
                                     {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
-                                </h1>
+                                </h2>
                             </div>
                             <div className="flex gap-1.5 sm:gap-2 items-center">
                                 {/* 카드 크기(열 수) 토글 — lg 이상에서만 의미 있음 */}
@@ -1513,7 +1516,7 @@ export default function QuestionBankPage() {
                             {/* 모바일: 컴팩트 단일 행 / 데스크탑: 2행 */}
                             <div className="flex justify-between items-center gap-2">
                                 <div className="min-w-0">
-                                    <h1 className="text-base sm:text-2xl font-black text-slate-800 whitespace-nowrap">시험지 문항 검토</h1>
+                                    <h2 className="text-base sm:text-2xl font-black text-slate-800 whitespace-nowrap">시험지 문항 검토</h2>
                                     <p className="hidden sm:block text-sm text-slate-500 mt-1">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
                                 </div>
                                 <div className="flex gap-2 flex-shrink-0">
