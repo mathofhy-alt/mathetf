@@ -69,9 +69,18 @@ def recent_urls(hours: int):
     urls = [f'{BASE}/exam/{x["id"]}' for x in rows]
     # 학교 페이지도 내용이 바뀌었다(회차가 늘었다). 중복 제거해서 같이 알린다.
     from urllib.parse import quote
-    urls += [f'{BASE}/schools']
+    if rows:
+        urls += [f'{BASE}/schools']
     for s in dict.fromkeys(x['school'] for x in rows if x.get('school')):
         urls.append(f'{BASE}/school/{quote(s)}')
+
+    # ⚠ 모의고사는 exam_materials 에 file_type='DB'(개인DB)로만 남아 위 조회에 안 걸린다.
+    #   2026-09-04 까지 신규 모의고사 회차가 통째로 통보에서 빠지고 있었다. 따로 훑는다.
+    mk = requests.get(f'{U}/rest/v1/mock_exams', headers=H, timeout=180, params={
+        'select': 'slug,created_at', 'created_at': f'gte.{since}', 'order': 'created_at.desc'}).json()
+    if isinstance(mk, list) and mk:
+        urls += [f'{BASE}/mock']
+        urls += [f'{BASE}/mock/{quote(x["slug"])}' for x in mk if x.get('slug')]
     return list(dict.fromkeys(urls))
 
 
