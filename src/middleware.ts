@@ -44,6 +44,26 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url, 308)
     }
 
+    // 모의고사 슬러그가 바뀐 회차 → 새 주소로 영구 이동.
+    // [2026-09-04] 고3 6월·9월은 평가원(한국교육과정평가원) 주관인데 6월이 '전국연합' 으로
+    //   등록돼 있었다. 카테고리를 바로잡으면서 슬러그도 바뀌므로 옛 주소를 넘겨준다.
+    //   (사이트맵·네이버에 이미 들어간 주소라 그냥 없애면 404 가 된다)
+    const MOCK_SLUG_REDIRECTS: Record<string, string> = {
+        '2026-6월-전국연합-고3-수학': '2026-6월-평가원-고3-수학',
+    }
+    {
+        let dec = request.nextUrl.pathname
+        try { dec = decodeURIComponent(dec) } catch { }
+        const m = dec.match(/^\/(?:모의고사|mock)\/(.+?)\/?$/)
+        const to = m && MOCK_SLUG_REDIRECTS[m[1]]
+        if (to) {
+            const url = request.nextUrl.clone()
+            // 사용자가 보는 주소는 한글 경로로 유지한다(정식 주소가 /모의고사 다).
+            url.pathname = `/모의고사/${to}`
+            return NextResponse.redirect(url, 301)   // 네이버 호환 위해 308 아님
+        }
+    }
+
     // 한글 URL(/모의고사…)은 next start에서 리터럴 한글 라우트 매칭이 깨지므로
     // 브라우저 URL은 한글로 유지하되 내부적으로 영문 라우트(/mock…)로 리라이트한다.
     let decoded = request.nextUrl.pathname

@@ -39,7 +39,7 @@ const getCachedSchools = unstable_cache(
 );
 
 // 무료 시험(모의고사·수능·사관학교/경찰대·전국연합)은 홈 카탈로그에 노출하지 않음 — 서버에서 걸러 전송량 축소
-const FREE_EXAM_SCHOOLS = ['전국연합', '사관학교', '경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
+const FREE_EXAM_SCHOOLS = ['전국연합', '평가원', '사관학교', '경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
 const isMockExam = (item: any) =>
     item.exam_type === '모의고사' || item.exam_type === '수능' || item.exam_type === '입학시험'
     || FREE_EXAM_SCHOOLS.includes(item.school)
