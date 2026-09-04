@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { MARKETING_CONSENT_VERSION } from '@/lib/consent';
 import { createClient } from '@supabase/supabase-js';
 
 // 서버에서만 사용하는 Service Role Key (관리자 권한). 절대 클라이언트로 나가면 안 됨.
@@ -48,6 +49,9 @@ export async function POST(req: Request) {
             user_metadata: {
                 full_name,
                 marketing_agreed: !!marketing_agreed,
+                // 어느 문구에 동의했는지 남긴다 — 옛 문구(매체 미고지)로 동의한 회원에게
+                // 문자를 보내면 안 되기 때문에, 발송 대상은 이 값으로 가른다. (src/lib/consent.ts)
+                ...(marketing_agreed ? { marketing_consent_version: MARKETING_CONSENT_VERSION } : {}),
                 phone,
                 phone_verified: true,
             },

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { MARKETING_CONSENT_VERSION } from '@/lib/consent';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
@@ -13,7 +14,12 @@ export async function POST() {
 
     const admin = createAdminClient();
     const { error } = await admin.auth.admin.updateUserById(user.id, {
-        user_metadata: { ...(user.user_metadata || {}), marketing_agreed: true },
+        user_metadata: {
+            ...(user.user_metadata || {}),
+            marketing_agreed: true,
+            // 이 배너의 안내 문구도 2026-09-05 개정본을 가리키므로 같은 버전을 남긴다.
+            marketing_consent_version: MARKETING_CONSENT_VERSION,
+        },
     });
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 

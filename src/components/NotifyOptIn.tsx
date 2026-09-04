@@ -47,7 +47,9 @@ export default function NotifyOptIn({ school, visible, onClose }: { school: stri
                                 <p className="text-sm font-bold text-[#1E2D4F] break-keep">
                                     {school ? `${school} 새 기출이 올라오면 알려드릴까요?` : '새 기출이 올라오면 알려드릴까요?'}
                                 </p>
-                                <p className="text-xs text-slate-400 mt-0.5">이메일로 새 자료 소식을 보내드려요 (언제든 해지 가능)</p>
+                                {/* 이 배너의 동의도 marketing_consent_version 을 남긴다(=이메일·문자 모두).
+                                    그러니 매체를 여기서 밝혀야 한다 — 안 밝히면 동의 범위와 문구가 어긋난다. */}
+                                <p className="text-xs text-slate-400 mt-0.5">이메일·문자로 새 자료 소식을 보내드려요 (야간 발송 없음 · 언제든 해지)</p>
                             </div>
                             <button onClick={dismiss} aria-label="닫기" className="text-slate-300 hover:text-slate-500 shrink-0">
                                 <X size={16} />

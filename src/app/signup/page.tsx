@@ -363,7 +363,7 @@ export default function SignupPage() {
                                                 </button>
                                             </div>
                                             <p className="text-xs text-slate-400 mt-1">
-                                                이벤트 및 혜택 정보를 받으실 수 있습니다.
+                                                새 기출 자료·혜택 소식을 <span className="font-bold">이메일과 문자</span>로 받습니다. (야간 21~08시 발송 없음)
                                             </p>
                                         </div>
                                     </div>
