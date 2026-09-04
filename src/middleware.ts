@@ -73,6 +73,12 @@ export async function middleware(request: NextRequest) {
         url.pathname = '/mock' + decoded.slice('/모의고사'.length)
         return NextResponse.rewrite(url)
     }
+    // [지역 허브] /지역, /지역/{시도}, /지역/{시도}/{구군} — 같은 이유로 /region 으로 리라이트한다.
+    if (decoded === '/지역' || decoded.startsWith('/지역/')) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/region' + decoded.slice('/지역'.length)
+        return NextResponse.rewrite(url)
+    }
 
     return await updateSession(request)
 }

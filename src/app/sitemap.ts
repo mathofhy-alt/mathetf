@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { HUB_SUBJECTS } from '@/lib/subject-hub';
+import { buildRegionTree } from '@/lib/region-hub';
 
 export const revalidate = 3600; // 1시간마다 갱신
 
@@ -171,6 +172,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         }));
 
+        // 지역 허브 — /schools 와 학교 페이지 사이의 빈 층("강남구 고등학교 수학 기출").
+        // ⚠ 학교 3곳 미만인 지역은 페이지 자체를 안 만든다(region-hub.ts MIN_SCHOOLS_FOR_PAGE).
+        //   자료 없는 얇은 페이지를 늘리면 색인에 해가 되기 때문이다.
+        const regionTree = await buildRegionTree();
+        const regionPages: MetadataRoute.Sitemap = [
+            { url: `${BASE}/${enc('지역')}`, lastModified: latestMaterial, changeFrequency: 'weekly' as const, priority: 0.8 },
+            ...regionTree.filter((sd) => sd.hasPage).flatMap((sd) => [
+                { url: `${BASE}/${enc('지역')}/${enc(sd.sido)}`, lastModified: latestMaterial, changeFrequency: 'weekly' as const, priority: 0.7 },
+                ...sd.districts.filter((d) => d.hasPage).map((d) => ({
+                    url: `${BASE}/${enc('지역')}/${enc(sd.sido)}/${enc(d.gu)}`,
+                    lastModified: latestMaterial, changeFrequency: 'weekly' as const, priority: 0.7,
+                })),
+            ]),
+        ];
+
         // 내용이 데이터에서 오는 페이지들 — 실제 데이터 변경 시각을 쓴다.
         const dataDriven: MetadataRoute.Sitemap = [
             { url: BASE, lastModified: latestMaterial, changeFrequency: 'daily', priority: 1.0 },
@@ -178,7 +194,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             { url: `${BASE}/schools`, lastModified: latestMaterial, changeFrequency: 'weekly', priority: 0.7 },
         ];
 
-        return [...dataDriven, ...staticPages(), ...subjectPages, ...schoolPages, ...examPages,
+        return [...dataDriven, ...staticPages(), ...subjectPages, ...regionPages, ...schoolPages, ...examPages,
             ...mockStatic, ...mockCategoryPages, ...mockExamPages];
     } catch (e) {
         // ⚠ 예전엔 여기서 정적 5개만 담아 HTTP 200 으로 응답했다.
