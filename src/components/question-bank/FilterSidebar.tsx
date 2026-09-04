@@ -259,13 +259,57 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
     return (
         <div className="w-full md:w-64 bg-white md:border-r flex flex-col md:h-full">
-            <div className="hidden md:block p-4 border-b">
-                <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                    <Filter size={18} /> 상세 필터
+            {/* 헤더는 작게 — 이 자리를 크게 쓰면 아래 키워드 검색이 첫 화면 밖으로 밀린다 (9/4) */}
+            <div className="hidden md:block px-4 py-2.5 border-b">
+                <h2 className="font-bold text-[13px] text-slate-500 flex items-center gap-1.5">
+                    <Filter size={14} /> 상세 필터
                 </h2>
             </div>
 
             <div className="flex-1 md:overflow-y-auto p-3 md:p-4 space-y-5 md:space-y-6">
+
+                {/* 키워드 검색을 맨 위로 (9/4 사용자 지적) — 아래에 있으면 스크롤해야 보여서
+                    "검색이라는 걸 할 수 있다"는 사실 자체가 전달되지 않았다. */}
+                <div>
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">키워드 검색</h3>
+                    <div className="space-y-2">
+                        <input
+                            type="text"
+                            value={keywordInput}
+                            onChange={(e) => setKeywordInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = keywordInput.trim();
+                                    if (val && !activeKeywords.includes(val)) {
+                                        setActiveKeywords([...activeKeywords, val]);
+                                        setKeywordInput('');
+                                    }
+                                }
+                            }}
+                            placeholder="예: 삼각함수 (Enter)"
+                            className="w-full text-sm p-2 border border-slate-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                        />
+
+                        {activeKeywords.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                                {activeKeywords.map(keyword => (
+                                    <span
+                                        key={keyword}
+                                        onClick={() => setActiveKeywords(activeKeywords.filter(k => k !== keyword))}
+                                        className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded border border-indigo-100 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center gap-1"
+                                    >
+                                        #{keyword}
+                                        <Check size={10} className="opacity-50" />
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        <p className="text-[10px] text-slate-400">
+                            * 입력한 모든 단어가 포함된 문제만 검색됩니다.
+                        </p>
+                    </div>
+                </div>
 
                 {/* 0. Subject / Unit Tree */}
                 <div>
@@ -466,49 +510,6 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         })}
                     </div>
                 </div>
-
-                {/* 2. Keyword Search */}
-                <div>
-                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">키워드 검색</h3>
-                    <div className="space-y-2">
-                        <input
-                            type="text"
-                            value={keywordInput}
-                            onChange={(e) => setKeywordInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    const val = keywordInput.trim();
-                                    if (val && !activeKeywords.includes(val)) {
-                                        setActiveKeywords([...activeKeywords, val]);
-                                        setKeywordInput('');
-                                    }
-                                }
-                            }}
-                            placeholder="단어 입력 후 Enter..."
-                            className="w-full text-sm p-2 border border-slate-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                        />
-
-                        {activeKeywords.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                                {activeKeywords.map(keyword => (
-                                    <span
-                                        key={keyword}
-                                        onClick={() => setActiveKeywords(activeKeywords.filter(k => k !== keyword))}
-                                        className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded border border-indigo-100 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center gap-1"
-                                    >
-                                        #{keyword}
-                                        <Check size={10} className="opacity-50" />
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                        <p className="text-[10px] text-slate-400">
-                            * 입력한 모든 단어가 포함된 문제만 검색됩니다.
-                        </p>
-                    </div>
-                </div>
-
             </div>
         </div>
     );
