@@ -2,6 +2,7 @@
 
 
 import React, { useState, useEffect } from 'react';
+import { logAnon } from '@/lib/anon-log';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,6 +17,9 @@ export default function SignupPage() {
     const [privacyAgreed, setPrivacyAgreed] = useState(false);
     const [marketingAgreed, setMarketingAgreed] = useState(false);
     const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+    // [익명 계측] 가입 화면까지 온 사람. 배너 클릭 대비 여기서 얼마나 새는지가 핵심이다.
+    useEffect(() => { logAnon('signup_start'); }, []);
+
     const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
     const [isMarketingModalOpen, setIsMarketingModalOpen] = useState(false);
 

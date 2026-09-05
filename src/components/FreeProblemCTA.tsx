@@ -5,6 +5,7 @@ import { Download, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import PersonaAsk from '@/components/PersonaAsk';
 import NotifyOptIn from '@/components/NotifyOptIn';
+import { logAnon } from '@/lib/anon-log';
 
 /**
  * 시험지 상세페이지의 '무료 문제 PDF' CTA.
@@ -27,6 +28,12 @@ export default function FreeProblemCTA({ examId, filename, pageCount }: { examId
     }, []);
 
     const [askPersona, setAskPersona] = useState(false);
+
+    // [익명 계측] 비로그인에게 가입 유도 배너가 실제로 보인 시점.
+    // authed === false 로 확정된 뒤에만 — null(판정 전)에 쏘면 로그인 사용자까지 섞인다.
+    useEffect(() => {
+        if (authed === false) logAnon('anon_cta_view', examId);
+    }, [authed, examId]);
 
     const handleDownload = async () => {
         setDownloading(true);
@@ -92,6 +99,7 @@ export default function FreeProblemCTA({ examId, filename, pageCount }: { examId
                 <>
                     <Link
                         href="/signup"
+                        onClick={() => logAnon('anon_cta_click', examId)}
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-6 py-3 rounded-xl transition-colors shadow-sm shadow-emerald-500/25"
                     >
                         <Sparkles size={18} /> 무료 회원가입하고 깨끗한 PDF 받기
