@@ -18,6 +18,11 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // [유사 기준] 지금 임베딩(embedding)은 해설을 함께 담고 있어 실측 75%가 해설 = 사실상 '풀이 유사'.
+    // 발문만의 임베딩(embedding_statement)을 따로 두어 사용자가 고르게 한다.
+    const [basis, setBasis] = useState<'statement' | 'solution'>('statement');
+    // 서버가 실제로 무엇을 썼는지 — 발문 임베딩이 없으면 풀이로 폴백한다.
+    const [usedBasis, setUsedBasis] = useState<'statement' | 'solution' | null>(null);
     // [2단계 로딩 대응] 검색 직후엔 question_images 가 아직 안 와서(null) 원본이 비어 보일 수 있음
     // → 모달이 직접 이미지를 받아온다.
     const [baseImages, setBaseImages] = useState<any[] | null>(baseQuestion?.question_images ?? null);
@@ -44,13 +49,14 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
             setError(null);
             try {
                 // [성능] meta=1: 이미지 없이 결과만 먼저 → 카드 즉시 표시, 스피너 최소화
-                const res = await fetch(`/api/pro/similar-questions?id=${baseQuestion.id}&limit=10&meta=1`);
+                const res = await fetch(`/api/pro/similar-questions?id=${baseQuestion.id}&limit=10&meta=1&basis=${basis}`);
                 if (!res.ok) {
                     const errorData = await res.json();
                     throw new Error(errorData.error || 'Failed to fetch similar questions');
                 }
                 const data = await res.json();
                 if (data.success) {
+                    setUsedBasis(data.basis ?? null);
                     setQuestions(data.data);          // question_images: null → 카드는 스켈레톤으로 즉시
                     setLoading(false);
                     // 이미지는 한 번에 뒤따라 로드 (10개 ≤ API 상한 20)
@@ -80,7 +86,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
         };
 
         fetchSimilar();
-    }, [baseQuestion]);
+    }, [baseQuestion, basis]);
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -95,8 +101,33 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                             </span>
                         </h2>
                         <p className="text-sm text-slate-500">
-                            선택한 문제와 개념/유형이 유사한 문제를 찾았습니다.
+                            {basis === 'statement'
+                                ? '문제(발문)가 비슷한 문항을 찾습니다 — 묻는 내용이 닮은 문제.'
+                                : '풀이가 비슷한 문항을 찾습니다 — 해결 방법이 닮은 문제.'}
                         </p>
+                        <div className="mt-2 inline-flex bg-white border border-indigo-200 rounded-lg p-0.5">
+                            {([
+                                ['statement', '문제 유사'],
+                                ['solution', '풀이 유사'],
+                            ] as const).map(([key, label]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setBasis(key)}
+                                    disabled={loading}
+                                    className={`px-3.5 py-1.5 text-xs font-bold rounded-md transition-colors disabled:opacity-60 ${basis === key
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-indigo-700'}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        {/* 발문 임베딩이 아직 없는 문항이면 서버가 풀이 기준으로 되돌린다. 조용히 속이지 않는다. */}
+                        {basis === 'statement' && usedBasis === 'solution' && !loading && (
+                            <p className="mt-1.5 text-[11px] font-bold text-amber-700">
+                                이 문항은 아직 발문 분석이 없어 풀이 유사로 찾았습니다.
+                            </p>
+                        )}
                     </div>
                     <button
                         onClick={onClose}

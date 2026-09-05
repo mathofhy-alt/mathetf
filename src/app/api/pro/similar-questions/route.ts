@@ -4,10 +4,15 @@ import { createClient } from '@/utils/supabase/server';
 import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
 
 /**
- * GET /api/pro/similar-questions?id={questionId}&limit={limit}
- * 
- * Finds questions similar to the given questionId using vector similarity.
- * Authenticated for Pro users.
+ * GET /api/pro/similar-questions?id={questionId}&limit={limit}&basis={statement|solution}
+ *
+ * 유사도 기준이 둘이다.
+ *  - solution(기본, 기존 동작): questions.embedding — content_xml 전체를 임베딩한 값인데
+ *    HML 파서가 미주(해설)를 문항에 함께 담아 실측 약 75%가 해설이다. 사실상 '풀이 유사'.
+ *  - statement: questions.embedding_statement — 해설(ENDNOTE)을 뺀 발문만의 임베딩. '문제 유사'.
+ *
+ * ⚠ statement 를 골랐는데 원본에 발문 임베딩이 아직 없으면(백필 미완) solution 으로 폴백하고
+ *   응답에 basis 를 실어 알려준다. 화면이 빈 채로 남는 것보다 낫다.
  */
 export async function GET(req: NextRequest) {
     const supabase = createClient();
@@ -16,6 +21,7 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get('id');
     const limit = parseInt(searchParams.get('limit') || '5');
     const threshold = parseFloat(searchParams.get('threshold') || '0.5');
+    const basisParam = searchParams.get('basis') === 'statement' ? 'statement' : 'solution';
 
     if (!id) {
         return NextResponse.json({ success: false, error: 'Missing question ID' }, { status: 400 });
@@ -26,7 +32,7 @@ export async function GET(req: NextRequest) {
         // 인증 실패면 조회 결과는 그냥 버려짐.
         const [authRes, sourceRes] = await Promise.all([
             supabase.auth.getUser(),
-            supabase.from('questions').select('embedding, plain_text, unit').eq('id', id).single(),
+            supabase.from('questions').select('embedding, embedding_statement, plain_text, unit').eq('id', id).single(),
         ]);
 
         const user = authRes.data?.user;
@@ -40,7 +46,12 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Source question not found' }, { status: 404 });
         }
 
-        if (!source.embedding) {
+        // 발문 임베딩이 아직 없는 문항은 기존 기준으로 되돌린다(백필 진행 중에도 화면이 살아 있게).
+        const basis: 'statement' | 'solution' =
+            basisParam === 'statement' && source.embedding_statement ? 'statement' : 'solution';
+        const queryEmbedding = basis === 'statement' ? source.embedding_statement : source.embedding;
+
+        if (!queryEmbedding) {
             return NextResponse.json({
                 success: false,
                 error: 'Vector embedding not generated for this question.'
@@ -86,8 +97,8 @@ export async function GET(req: NextRequest) {
 
         // 3. Perform Vector Search via RPC (구매한 DB 범위 안에서만 검색)
         const { data: similarQuestions, error: searchError } = await supabase
-            .rpc('match_questions', {
-                query_embedding: source.embedding,
+            .rpc(basis === 'statement' ? 'match_questions_statement' : 'match_questions', {
+                query_embedding: queryEmbedding,
                 match_threshold: 1 - threshold,
                 match_count: limit * 5, // 여유있게 limit의 5배만 가져오면 충분
                 filter_exclude_id: id,
@@ -159,7 +170,7 @@ export async function GET(req: NextRequest) {
         const metaOnly = searchParams.get('meta') === '1';
         if (metaOnly) {
             results = results.map((q: any) => ({ ...q, question_images: null }));
-            return NextResponse.json({ success: true, data: results });
+            return NextResponse.json({ success: true, data: results, basis });
         }
 
         // 5. RPC 결과를 그대로 사용, question_images만 별도 조회 후 merge
@@ -202,7 +213,8 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            data: results
+            data: results,
+            basis
         });
 
     } catch (e: any) {
