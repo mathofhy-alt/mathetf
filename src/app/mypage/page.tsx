@@ -6,7 +6,8 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileItem } from '@/lib/data';
-import { Download, FileText, User as UserIcon, Coins, ArrowLeft, RefreshCw, Edit, Trash2, Database, Gift } from 'lucide-react';
+import { Download, FileText, User as UserIcon, Coins, ArrowLeft, RefreshCw, Edit, Trash2, Database, Gift, Settings } from 'lucide-react';
+import MarketingSettings from '@/components/MarketingSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import SettlementModal from '@/components/SettlementModal';
 import EditModal from '@/components/EditModal';
@@ -14,7 +15,7 @@ import { deleteFile, deletePurchase, stopSelling } from './actions';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
-    const [activeTab, setActiveTab] = useState<'purchases' | 'sales' | 'submission_earnings'>('purchases');
+    const [activeTab, setActiveTab] = useState<'purchases' | 'sales' | 'submission_earnings' | 'settings'>('purchases');
     const [loading, setLoading] = useState(true);
     const [purchases, setPurchases] = useState<any[]>([]);
     const [uploads, setUploads] = useState<any[]>([]);
@@ -401,7 +402,21 @@ export default function MyPage() {
                             </span>
                         )}
                     </button>
+                    {/* [수신설정] 2026-09-05 배포한 마케팅 동의문이 "마이페이지 > 설정에서" 끄라고
+                        안내하는데 그 화면이 없었다. 법이 요구하는 '수신 거부 방법'이기도 하다. */}
+                    <button
+                        onClick={() => setActiveTab('settings')}
+                        className={`pb-3 px-2 font-bold text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${activeTab === 'settings' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
+                    >
+                        <Settings size={14} /> 설정
+                    </button>
                 </div>
+
+                {activeTab === 'settings' && (
+                    <div className="space-y-4">
+                        <MarketingSettings />
+                    </div>
+                )}
 
                 {activeTab === 'purchases' && (
                     <div className="space-y-4">
