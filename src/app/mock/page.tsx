@@ -58,7 +58,7 @@ export default async function MockExamHubPage() {
                                 <Link
                                     key={c}
                                     href={`/모의고사/${c}`}
-                                    className="bg-white/15 hover:bg-white/25 border border-white/25 backdrop-blur-sm text-white text-sm font-bold px-4 py-1.5 rounded-full transition-colors"
+                                    className="bg-white/15 hover:bg-white/25 border border-white/25 backdrop-blur-sm text-white text-sm font-bold px-4 py-2.5 sm:py-1.5 rounded-full transition-colors"
                                 >
                                     {MOCK_CATEGORIES[c].label}
                                 </Link>
@@ -101,7 +101,7 @@ export default async function MockExamHubPage() {
                                             <h2 className="text-lg font-extrabold">{MOCK_CATEGORIES[cat].label}</h2>
                                             <span className="text-xs font-bold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-full">{items.length}</span>
                                         </div>
-                                        <Link href={`/모의고사/${cat}`} className="group inline-flex items-center gap-1 text-sm font-bold text-[#497AB7] hover:text-[#3A6CAE] transition-colors">
+                                        <Link href={`/모의고사/${cat}`} className="group inline-flex items-center gap-1 text-sm font-bold text-[#497AB7] hover:text-[#3A6CAE] transition-colors py-3 pl-2 -my-3 -ml-2 sm:p-0 sm:m-0">
                                             전체보기 <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                         </Link>
                                     </div>

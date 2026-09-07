@@ -260,7 +260,7 @@ export default function SignupPage() {
                                                 type="checkbox"
                                                 checked={termsAgreed}
                                                 readOnly
-                                                className="w-5 h-5 accent-brand-600 cursor-pointer pointer-events-none"
+                                                className="w-6 h-6 sm:w-5 sm:h-5 accent-brand-600 cursor-pointer pointer-events-none"
                                                 id="terms"
                                             />
                                         </div>
@@ -279,7 +279,7 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsTermsModalOpen(true);
                                                     }}
-                                                    className="text-xs text-slate-500 underline hover:text-brand-600"
+                                                    className="text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
                                                 >
                                                     전문 보기
                                                 </button>
@@ -304,7 +304,7 @@ export default function SignupPage() {
                                                 type="checkbox"
                                                 checked={privacyAgreed}
                                                 readOnly
-                                                className="w-5 h-5 accent-brand-600 cursor-pointer pointer-events-none"
+                                                className="w-6 h-6 sm:w-5 sm:h-5 accent-brand-600 cursor-pointer pointer-events-none"
                                                 id="privacy"
                                             />
                                         </div>
@@ -323,7 +323,7 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsPrivacyModalOpen(true);
                                                     }}
-                                                    className="text-xs text-slate-500 underline hover:text-brand-600"
+                                                    className="text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
                                                 >
                                                     전문 보기
                                                 </button>
@@ -342,7 +342,7 @@ export default function SignupPage() {
                                                 type="checkbox"
                                                 checked={marketingAgreed}
                                                 onChange={(e) => setMarketingAgreed(e.target.checked)}
-                                                className="w-5 h-5 accent-brand-600 cursor-pointer"
+                                                className="w-6 h-6 sm:w-5 sm:h-5 accent-brand-600 cursor-pointer"
                                                 id="marketing"
                                             />
                                         </div>
@@ -361,7 +361,7 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsMarketingModalOpen(true);
                                                     }}
-                                                    className="text-xs text-slate-500 underline hover:text-brand-600"
+                                                    className="text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
                                                 >
                                                     전문 보기
                                                 </button>

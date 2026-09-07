@@ -162,7 +162,7 @@ export default function PredictClient({ richSchools }: Props) {
                             onFocus={() => setShowSug(true)}
                             onBlur={() => setTimeout(() => setShowSug(false), 150)}
                             placeholder="학교명 입력 (예: 중산고등학교)"
-                            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#497AB7]/30" />
+                            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#497AB7]/30" />
                         {showSug && suggestions.length > 0 && (
                             <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-56 overflow-auto">
                                 {suggestions.map((s) => (
@@ -181,15 +181,15 @@ export default function PredictClient({ richSchools }: Props) {
                 <div className="grid grid-cols-3 gap-3">
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">학년</label>
-                        <div className="flex gap-1">{GRADES.map((g) => <button key={g} onClick={() => { setGrade(g); setSubjectTouched(false); }} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${grade === g ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{g}</button>)}</div>
+                        <div className="flex gap-1">{GRADES.map((g) => <button key={g} onClick={() => { setGrade(g); setSubjectTouched(false); }} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${grade === g ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{g}</button>)}</div>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">학기</label>
-                        <div className="flex gap-1">{SEMS.map((s) => <button key={s} onClick={() => { setSem(s); setSubjectTouched(false); }} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${sem === s ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{s}학기</button>)}</div>
+                        <div className="flex gap-1">{SEMS.map((s) => <button key={s} onClick={() => { setSem(s); setSubjectTouched(false); }} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${sem === s ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{s}학기</button>)}</div>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">시험</label>
-                        <div className="flex gap-1">{EXAMS.map((e) => <button key={e} onClick={() => setExamType(e)} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${examType === e ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{e}</button>)}</div>
+                        <div className="flex gap-1">{EXAMS.map((e) => <button key={e} onClick={() => setExamType(e)} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${examType === e ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{e}</button>)}</div>
                     </div>
                 </div>
 
@@ -212,7 +212,7 @@ export default function PredictClient({ richSchools }: Props) {
                     <div className="flex flex-wrap gap-1.5">
                         {subjectList.map((s) => (
                             <button key={s} onClick={() => { setSubject(s); setSubjectTouched(true); }}
-                                className={`text-xs px-3 py-1.5 rounded-full border font-bold transition-colors ${subject === s ? 'bg-[#3AADA9] text-white border-[#3AADA9]' : 'bg-white text-slate-500 border-slate-200'}`}>
+                                className={`text-xs px-3 py-2.5 sm:py-1.5 rounded-full border font-bold transition-colors ${subject === s ? 'bg-[#3AADA9] text-white border-[#3AADA9]' : 'bg-white text-slate-500 border-slate-200'}`}>
                                 {s}
                             </button>
                         ))}
@@ -241,14 +241,14 @@ export default function PredictClient({ richSchools }: Props) {
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">난이도 ({minD} ~ {maxD})</label>
                         <div className="flex items-center gap-2">
-                            <select value={minD} onChange={(e) => setMinD(Number(e.target.value))} className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-sm">{Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}</select>
+                            <select value={minD} onChange={(e) => setMinD(Number(e.target.value))} className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-base sm:text-sm">{Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}</select>
                             <span className="text-slate-400">~</span>
-                            <select value={maxD} onChange={(e) => setMaxD(Number(e.target.value))} className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-sm">{Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}</select>
+                            <select value={maxD} onChange={(e) => setMaxD(Number(e.target.value))} className="flex-1 border border-slate-200 rounded-lg px-2 py-2 text-base sm:text-sm">{Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}</select>
                         </div>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">문항 수</label>
-                        <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm">{[5, 8, 10, 15, 20, 25, 30].map((n) => <option key={n} value={n}>{n}문항</option>)}</select>
+                        <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="w-full border border-slate-200 rounded-lg px-2 py-2 text-base sm:text-sm">{[5, 8, 10, 15, 20, 25, 30].map((n) => <option key={n} value={n}>{n}문항</option>)}</select>
                     </div>
                 </div>
 

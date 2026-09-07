@@ -52,9 +52,9 @@ export default async function DistrictPage({ params }: Props) {
             <Header />
             <main className="max-w-4xl mx-auto px-4 py-8">
                 <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#497AB7]">홈</Link>
+                    <Link href="/" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
                     <span className="mx-1.5">/</span>
-                    <Link href="/지역" className="hover:text-[#497AB7]">지역별 기출</Link>
+                    <Link href="/지역" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">지역별 기출</Link>
                     <span className="mx-1.5">/</span>
                     <Link href={`/지역/${sido}`} className="hover:text-[#497AB7]">{sido}</Link>
                     <span className="mx-1.5">/</span>

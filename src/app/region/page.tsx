@@ -41,7 +41,7 @@ export default async function RegionHubPage() {
             <Header />
             <main className="max-w-5xl mx-auto px-4 py-8">
                 <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#497AB7]">홈</Link>
+                    <Link href="/" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
                     <span className="mx-1.5">/</span>
                     <span className="text-slate-500 font-semibold">지역별 기출</span>
                 </nav>
@@ -71,7 +71,7 @@ export default async function RegionHubPage() {
                                     </span>
                                 </div>
                                 {s.hasPage && (
-                                    <Link href={`/지역/${s.sido}`} className="group inline-flex items-center gap-1 text-sm font-bold text-[#497AB7] hover:text-[#3A6CAE] shrink-0">
+                                    <Link href={`/지역/${s.sido}`} className="group inline-flex items-center gap-1 text-sm font-bold text-[#497AB7] hover:text-[#3A6CAE] shrink-0 py-3 pl-2 -my-3 -ml-2 sm:p-0 sm:m-0">
                                         전체보기 <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </Link>
                                 )}
@@ -83,19 +83,19 @@ export default async function RegionHubPage() {
                                         <Link
                                             key={d.gu}
                                             href={`/지역/${s.sido}/${d.gu}`}
-                                            className="text-sm font-bold text-[#497AB7] bg-[#EEF4FB] border border-[#B7D1EA]/60 px-3 py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors"
+                                            className="text-sm font-bold text-[#497AB7] bg-[#EEF4FB] border border-[#B7D1EA]/60 px-3 py-2.5 sm:py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors"
                                         >
                                             {d.gu} <span className="font-normal text-[#5b7ea8]">{d.schools.length}</span>
                                         </Link>
                                     ) : (
                                         /* 학교가 2곳 이하인 지역은 자체 페이지를 만들지 않는다 —
                                            내용이 거의 없는 페이지를 늘리면 색인에 해가 된다. 학교로 바로 보낸다. */
-                                        <span key={d.gu} className="text-sm text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full">
+                                        <span key={d.gu} className="text-sm text-slate-500 bg-slate-50 border border-slate-200 px-3 py-2.5 sm:py-1.5 rounded-full">
                                             {d.gu}{' '}
                                             {d.schools.map((sc, i) => (
                                                 <span key={sc.name}>
                                                     {i > 0 && ' · '}
-                                                    <Link href={`/school/${encodeURIComponent(sc.name)}`} className="font-bold text-slate-600 hover:text-[#497AB7]">
+                                                    <Link href={`/school/${encodeURIComponent(sc.name)}`} className="font-bold text-slate-600 hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">
                                                         {sc.name.replace('등학교', '')}
                                                     </Link>
                                                 </span>

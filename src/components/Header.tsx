@@ -212,7 +212,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {!user && !mobileMenuOpen && !['login', 'signup'].some(p => pathname.includes(p)) && (
                             <Link
                                 href="/signup"
-                                className="lg:hidden px-3 py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg hover:bg-brand-700 transition-colors whitespace-nowrap"
+                                className="lg:hidden px-3 py-3 sm:py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg hover:bg-brand-700 transition-colors whitespace-nowrap"
                             >
                                 무료 시작 →
                             </Link>
@@ -220,7 +220,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* Hamburger Button - Mobile Only */}
                         <button
-                            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="lg:hidden p-3 sm:p-2 rounded-lg hover:bg-slate-100 transition-colors"
                             onClick={() => setMobileMenuOpen(prev => !prev)}
                             aria-label="메뉴 열기"
                         >

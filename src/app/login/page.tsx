@@ -103,7 +103,7 @@ export default function Login({
                             </label>
                             <input
                                 id="email"
-                                className="w-full rounded-xl px-4 py-3 bg-white border border-slate-200 text-sm focus:border-[#2d5fa8] focus:outline-none focus:ring-2 focus:ring-[#2d5fa8]/15 transition-all placeholder:text-slate-400"
+                                className="w-full rounded-xl px-4 py-3 bg-white border border-slate-200 text-base sm:text-sm focus:border-[#2d5fa8] focus:outline-none focus:ring-2 focus:ring-[#2d5fa8]/15 transition-all placeholder:text-slate-400"
                                 name="email"
                                 type="email"
                                 placeholder="you@example.com"
@@ -117,7 +117,7 @@ export default function Login({
                             </label>
                             <input
                                 id="password"
-                                className="w-full rounded-xl px-4 py-3 bg-white border border-slate-200 text-sm focus:border-[#2d5fa8] focus:outline-none focus:ring-2 focus:ring-[#2d5fa8]/15 transition-all placeholder:text-slate-400"
+                                className="w-full rounded-xl px-4 py-3 bg-white border border-slate-200 text-base sm:text-sm focus:border-[#2d5fa8] focus:outline-none focus:ring-2 focus:ring-[#2d5fa8]/15 transition-all placeholder:text-slate-400"
                                 type="password"
                                 name="password"
                                 placeholder="••••••••"

@@ -366,10 +366,10 @@ export default async function SchoolPage({ params }: Props) {
                                         {group.subject && <span className="ml-1 text-[#497AB7]">{group.subject}</span>}
                                     </p>
                                     <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                        {hasPdf && <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2 py-0.5 rounded-full">문제 무료</span>}
-                                        {hasPdf && <span className="text-[10px] bg-red-50 text-red-500 border border-red-100 font-bold px-2 py-0.5 rounded-full">PDF</span>}
-                                        {hasHwp && <span className="text-[10px] bg-[#E0F7F6] text-[#3AADA9] border border-teal-100 font-bold px-2 py-0.5 rounded-full">HWP</span>}
-                                        {hasDb && <span className="text-[10px] bg-[#E8F0FB] text-[#497AB7] border border-blue-100 font-bold px-2 py-0.5 rounded-full">개인DB</span>}
+                                        {hasPdf && <span className="text-[11px] sm:text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2 py-0.5 rounded-full">문제 무료</span>}
+                                        {hasPdf && <span className="text-[11px] sm:text-[10px] bg-red-50 text-red-500 border border-red-100 font-bold px-2 py-0.5 rounded-full">PDF</span>}
+                                        {hasHwp && <span className="text-[11px] sm:text-[10px] bg-[#E0F7F6] text-[#3AADA9] border border-teal-100 font-bold px-2 py-0.5 rounded-full">HWP</span>}
+                                        {hasDb && <span className="text-[11px] sm:text-[10px] bg-[#E8F0FB] text-[#497AB7] border border-blue-100 font-bold px-2 py-0.5 rounded-full">개인DB</span>}
                                     </div>
                                 </div>
                                 <span className="flex-shrink-0 text-[#497AB7] group-hover:translate-x-0.5 transition-transform">

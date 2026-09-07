@@ -37,7 +37,17 @@ export default function RoleOnboardingModal({ onSelect, onClose }: { onSelect?: 
     useEffect(() => {
         // 이미 선택했거나 '둘러보기'로 닫은 적 있으면 안 띄움
         const seen = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY + '_dismissed');
-        if (!seen) setOpen(true);
+        if (seen) return;
+        // [모바일] 폰에서는 t=0 에 전체화면 모달이 첫 화면을 통째로 덮었다(9/7 모바일 감사).
+        //   검색으로 막 들어온 사람이 내용을 보기도 전에 선택을 강요받는다.
+        //   첫 스크롤(=관심 신호) 또는 6초 뒤에 연다. 데스크톱은 원래대로 즉시.
+        if (window.innerWidth >= 768) { setOpen(true); return; }
+        let done = false;
+        const fire = () => { if (done) return; done = true; setOpen(true); cleanup(); };
+        const t = setTimeout(fire, 6000);
+        const cleanup = () => { clearTimeout(t); window.removeEventListener('scroll', fire); };
+        window.addEventListener('scroll', fire, { passive: true, once: true });
+        return cleanup;
     }, []);
 
     const choose = (role: UserRole) => {

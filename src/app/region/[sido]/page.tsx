@@ -51,9 +51,9 @@ export default async function SidoPage({ params }: Props) {
             <Header />
             <main className="max-w-5xl mx-auto px-4 py-8">
                 <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#497AB7]">홈</Link>
+                    <Link href="/" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
                     <span className="mx-1.5">/</span>
-                    <Link href="/지역" className="hover:text-[#497AB7]">지역별 기출</Link>
+                    <Link href="/지역" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">지역별 기출</Link>
                     <span className="mx-1.5">/</span>
                     <span className="text-slate-500 font-semibold">{sido}</span>
                 </nav>
@@ -84,7 +84,7 @@ export default async function SidoPage({ params }: Props) {
                                     </span>
                                 </div>
                                 {d.hasPage && (
-                                    <Link href={`/지역/${sido}/${d.gu}`} className="text-[#497AB7] hover:text-[#3A6CAE] shrink-0" aria-label={`${d.gu} 전체보기`}>
+                                    <Link href={`/지역/${sido}/${d.gu}`} className="text-[#497AB7] hover:text-[#3A6CAE] shrink-0 p-2.5 -m-2.5 sm:p-0 sm:m-0" aria-label={`${d.gu} 전체보기`}>
                                         <ChevronRight size={16} />
                                     </Link>
                                 )}
@@ -92,7 +92,7 @@ export default async function SidoPage({ params }: Props) {
                             <ul className="space-y-1">
                                 {d.schools.slice(0, 6).map((sc) => (
                                     <li key={sc.name} className="flex items-center justify-between gap-2 text-sm">
-                                        <Link href={`/school/${encodeURIComponent(sc.name)}`} className="text-slate-600 hover:text-[#497AB7] font-semibold truncate">
+                                        <Link href={`/school/${encodeURIComponent(sc.name)}`} className="text-slate-600 hover:text-[#497AB7] font-semibold truncate inline-block py-2 -my-2 sm:p-0 sm:m-0">
                                             {sc.name}
                                         </Link>
                                         <span className="text-xs text-slate-400 shrink-0 tabular-nums">{sc.count}회차</span>

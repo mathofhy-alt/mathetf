@@ -639,19 +639,19 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                 {/* Row 1: Region, District, School */}
                                 <div className="grid grid-cols-2 md:grid-cols-12 gap-2">
                                     <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
+                                        <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
                                             <option value="">시/도</option>
                                             {regions.map(r => <option key={r} value={r}>{r}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
+                                        <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
                                             <option value="">구/군</option>
                                             {districts.map(d => <option key={d} value={d}>{d}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-2 md:col-span-6">
-                                        <select className="w-full form-select h-10" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
+                                        <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
                                             <option value="">학교 전체</option>
                                             {schools.map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
@@ -659,18 +659,18 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                 </div>
                                 {/* Row 2: Grade, Semester, Subject, Year */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                    <select className="w-full form-select h-10" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
+                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
                                         <option value="">학년 전체</option>
                                         {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
                                     </select>
-                                    <select className="w-full form-select h-10" aria-label="시험 범위 선택" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
+                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="시험 범위 선택" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
                                         <option value="">시험 전체</option>
                                         <option value="1-중간고사">1학기 중간</option>
                                         <option value="1-기말고사">1학기 기말</option>
                                         <option value="2-중간고사">2학기 중간</option>
                                         <option value="2-기말고사">2학기 기말</option>
                                     </select>
-                                    <select className="w-full form-select h-10" aria-label="과목 선택" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
+                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="과목 선택" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
                                         <option value="">과목 전체</option>
                                         {subjectGroups.map(g => (
                                             <optgroup key={g.label} label={g.label}>
@@ -678,7 +678,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                             </optgroup>
                                         ))}
                                     </select>
-                                    <select className="w-full form-select h-10" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
+                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
                                         <option value="">년도 전체</option>
                                         {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
                                             <option key={y} value={y}>{y}년</option>
@@ -694,7 +694,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                     value={searchKeyword}
                                     onChange={(e) => setSearchKeyword(e.target.value)}
                                     placeholder="학교명 검색 (예: 경기고)"
-                                    className="w-full pl-9 pr-3 py-2.5 border border-[#B7D1EA] rounded-lg text-sm focus:border-[#497AB7] focus:outline-none focus:ring-2 focus:ring-[#497AB7]/10 transition-colors"
+                                    className="w-full pl-9 pr-3 py-2.5 border border-[#B7D1EA] rounded-lg text-base sm:text-sm focus:border-[#497AB7] focus:outline-none focus:ring-2 focus:ring-[#497AB7]/10 transition-colors"
                                 />
                             </div>
                         </div>
