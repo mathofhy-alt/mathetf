@@ -22,13 +22,12 @@ body {
   :root {
     --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: 222.2 84% 4.9%;
-      --foreground: 210 40% 98%;
-    }
+    /* 이 사이트는 다크 디자인이 없다. 모든 화면이 밝은 배경을 직접 칠한다.
+       Next 템플릿이 남긴 prefers-color-scheme: dark 블록이 --foreground 만 흰색으로 뒤집어,
+       윈도우 다크 테마의 엣지/크롬에서 bg-white 입력칸 글자가 흰 바탕 위 흰 글자가 됐다
+       (2026-09-07 제보: 로그인 비밀번호 몇 글자 쳤는지 안 보임 — 재현 완료).
+       블록을 지우고 color-scheme 을 light 로 고정해 브라우저가 폼 컨트롤을 자동으로 어둡게 칠하지도 못하게 한다. */
+    color-scheme: light;
   }
 }
 
