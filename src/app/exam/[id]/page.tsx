@@ -282,6 +282,8 @@ export default async function ExamDetailPage({ params }: Props) {
                         examId={row.id}
                         filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`}
                         pageCount={previews.length}
+                        sourceKey={sourceKey}
+                        school={row.school}
                     />
                 )}
 

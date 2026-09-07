@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 // (98건이 저장된 건 알지만 몇 명이 시도했는지를 몰라, 유입을 늘려야 할지 화면을 고쳐야 할지
 //  정반대의 처방을 구분하지 못했다.) 진입→DB선택→검색→담기→저장 5단계를 남긴다.
 const QB_FUNNEL = ['qb_enter', 'qb_db_select', 'qb_search', 'qb_cart_add', 'qb_save', 'qb_save_fail'];
-const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', ...QB_FUNNEL]);
+const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_click', ...QB_FUNNEL]);
 
 // [익명 구간 계측] 2026-09-06 추가.
 // 그전까지 이 라우트는 비로그인이면 401 이었다. 그래서 **로그인 전 행동이 한 건도 없었다** —
