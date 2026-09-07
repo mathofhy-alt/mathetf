@@ -288,7 +288,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                 }
                             }}
                             placeholder="예: 삼각함수 (Enter)"
-                            className="w-full text-sm p-2 border border-slate-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                            className="w-full text-base md:text-sm p-2.5 md:p-2 border border-slate-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                         />
 
                         {activeKeywords.length > 0 && (
@@ -305,7 +305,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                 ))}
                             </div>
                         )}
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[12px] md:text-[10px] text-slate-400">
                             * 입력한 모든 단어가 포함된 문제만 검색됩니다.
                         </p>
                     </div>
@@ -320,7 +320,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             <button
                                 key={c.id}
                                 onClick={() => setCurriculum(c.id)}
-                                className={`flex-1 text-[11px] font-bold py-1.5 rounded-md transition-colors ${curriculum === c.id ? 'bg-white text-[#497AB7] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                className={`flex-1 text-[12px] md:text-[11px] font-bold py-1.5 rounded-md transition-colors ${curriculum === c.id ? 'bg-white text-[#497AB7] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 {c.label.replace(' 교육과정', '')}
                             </button>
@@ -332,11 +332,11 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         <button
                             type="button"
                             onClick={() => setIncludeOffCurriculum(v => !v)}
-                            className={`mt-px w-3.5 h-3.5 shrink-0 border rounded flex items-center justify-center transition-colors ${includeOffCurriculum ? 'bg-amber-500 border-amber-500' : 'border-amber-300 bg-white'}`}
+                            className={`mt-px w-5 h-5 md:w-3.5 md:h-3.5 shrink-0 border rounded flex items-center justify-center transition-colors ${includeOffCurriculum ? 'bg-amber-500 border-amber-500' : 'border-amber-300 bg-white'}`}
                         >
                             {includeOffCurriculum && <Check size={10} className="text-white" />}
                         </button>
-                        <span className="text-[11px] leading-snug text-amber-900">
+                        <span className="text-[12px] md:text-[11px] leading-snug text-amber-900">
                             <b>교과외 문항 포함</b>
                             <span className="block text-amber-700/80">옛 기출의 부등식의 영역·이중근호 등 현행 과정에 없는 단원</span>
                         </span>
@@ -355,8 +355,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             return (
                                 <div key={node.subject} className="space-y-1">
                                     {/* Level 1: Subject Header */}
-                                    <div className="flex items-center justify-between group">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between group py-1.5 md:py-0">
+                                        <div className="flex items-center gap-2.5 md:gap-2">
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -368,7 +368,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                         setSelectedUnits(Array.from(newUnits));
                                                     }
                                                 }}
-                                                className={`w-4 h-4 border rounded flex items-center justify-center transition-colors ${allUnitsSelected ? 'bg-indigo-600 border-indigo-600' :
+                                                className={`w-6 h-6 md:w-4 md:h-4 border rounded flex items-center justify-center transition-colors ${allUnitsSelected ? 'bg-indigo-600 border-indigo-600' :
                                                     someUnitsSelected ? 'bg-indigo-50 border-indigo-400' : 'border-slate-300'
                                                     }`}
                                             >
@@ -380,7 +380,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                 onClick={() => {
                                                     setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
                                                 }}
-                                                className="text-sm font-bold text-slate-800 hover:text-indigo-600 transition-colors"
+                                                className="text-base md:text-sm font-bold text-slate-800 hover:text-indigo-600 transition-colors"
                                             >
                                                 {node.subject}
                                             </button>
@@ -390,7 +390,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                             onClick={() => {
                                                 setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
                                             }}
-                                            className="text-slate-400 hover:text-indigo-500"
+                                            className="text-slate-400 hover:text-indigo-500 p-2 -m-2 md:p-0 md:m-0"
                                         >
                                             {node.isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                         </button>
@@ -406,13 +406,13 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
                                                 return (
                                                     <div key={uNode.name} className="space-y-1">
-                                                        <div className="flex items-center justify-between group py-0.5">
+                                                        <div className="flex items-center justify-between group py-1.5 md:py-0.5">
                                                             <div className="flex items-center gap-2">
                                                                 <button
                                                                     onClick={() => {
                                                                         toggleSelection(selectedUnits, uNode.name, setSelectedUnits);
                                                                     }}
-                                                                    className={`w-3.5 h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'}`}
+                                                                    className={`w-5 h-5 md:w-3.5 md:h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'}`}
                                                                 >
                                                                     {isUnitSelected && <Check size={10} className="text-white" />}
                                                                 </button>
@@ -423,7 +423,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             unitNodes: n.unitNodes.map(un => un.name === uNode.name ? { ...un, isExpanded: !un.isExpanded } : un)
                                                                         } : n));
                                                                     }}
-                                                                    className={`text-xs flex-1 text-left ${isUnitSelected ? 'text-indigo-700 font-bold' : 'text-slate-600'} hover:text-indigo-500 transition-colors`}
+                                                                    className={`text-sm md:text-xs flex-1 text-left ${isUnitSelected ? 'text-indigo-700 font-bold' : 'text-slate-600'} hover:text-indigo-500 transition-colors`}
                                                                 >
                                                                     {uNode.name}
                                                                     {uNode.offCurriculum && (
@@ -462,7 +462,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             checked={selectedConcepts.includes(concept)}
                                                                             onChange={() => toggleSelection(selectedConcepts, concept, setSelectedConcepts)}
                                                                         />
-                                                                        <span className={`text-[11px] ${selectedConcepts.includes(concept) ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>
+                                                                        <span className={`text-[12px] md:text-[11px] ${selectedConcepts.includes(concept) ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>
                                                                             #{concept}
                                                                         </span>
                                                                     </label>

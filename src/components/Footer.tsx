@@ -3,18 +3,24 @@
 import { useState } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 const TermsModal = dynamic(() => import("./TermsModal"), { ssr: false })
 const PrivacyModal = dynamic(() => import("./PrivacyModal"), { ssr: false })
 const RefundPolicyModal = dynamic(() => import("./RefundPolicyModal"), { ssr: false })
 
 export default function Footer() {
+    // [모바일 ⑧] 시험지출제는 100dvh 전체화면 도구라, 그 아래 푸터가 붙으면 문서가 화면보다 길어져
+    //   목록 스크롤과 페이지 스크롤이 두 겹이 된다(손가락이 목록 밖에 닿으면 푸터가 올라옴).
+    //   폰에서만 숨긴다 — 데스크톱은 그대로.
+    const pathname = usePathname();
+    const hideOnMobile = pathname === '/question-bank';
     const [isTermsOpen, setIsTermsOpen] = useState(false)
     const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
     const [isRefundOpen, setIsRefundOpen] = useState(false)
 
     return (
-        <footer className="w-full py-10 bg-slate-50 text-slate-600 border-t mt-auto">
+        <footer className={`w-full py-10 bg-slate-50 text-slate-600 border-t mt-auto ${hideOnMobile ? 'hidden md:block' : ''}`}>
             <div className="max-w-7xl mx-auto px-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b pb-8">
                     <div className="text-left">

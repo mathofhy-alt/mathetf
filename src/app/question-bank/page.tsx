@@ -33,7 +33,7 @@ import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsMo
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
 import Header from '@/components/Header';
 import UploadModal from '@/components/UploadModal';
-import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare } from 'lucide-react';
+import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
 
 
@@ -76,6 +76,9 @@ export default function QuestionBankPage() {
         if (typeof window === 'undefined') return;
         const forced = new URLSearchParams(window.location.search).get('tour') === '1';
         const seen = localStorage.getItem('mathetf_qb_tour_seen');
+        // [모바일] 투어가 바텀시트를 자동으로 열고 그 위에 카드를 겹쳐 첫 화면이 이중 오버레이가 됐다(9/7 감사 ③).
+        //   폰에서는 자동 시작하지 않는다. ?tour=1 로 직접 부른 경우만 연다.
+        if (!forced && window.innerWidth < 768) return;
         if (forced || !seen) {
             // DOM/요소 준비 후 시작
             const t = setTimeout(() => setRunTeacherTour(true), 600);
@@ -934,6 +937,18 @@ export default function QuestionBankPage() {
         setViewMode('review');
     };
 
+    // [모바일] HTML5 드래그는 터치에서 동작하지 않아 폰에서는 순서를 바꿀 방법이 없었다(9/7 감사 ②).
+    //   위/아래 한 칸 이동 버튼용. 데스크톱은 드래그 그대로.
+    const moveInCart = (idx: number, dir: -1 | 1) => {
+        setCart(prev => {
+            const j = idx + dir;
+            if (j < 0 || j >= prev.length) return prev;
+            const next = [...prev];
+            [next[idx], next[j]] = [next[j], next[idx]];
+            return next;
+        });
+    };
+
     // Sorting Logic for Review Mode
     const getDifficultyValue = (diff: any) => {
         if (!diff) return 5; // Default middle
@@ -1110,7 +1125,8 @@ export default function QuestionBankPage() {
             }}
             onClose={() => { setRunTeacherTour(false); setShowMobileSidebar(false); try { localStorage.setItem('mathetf_qb_tour_seen', '1'); } catch {} }}
         />
-        <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden">
+        {/* [모바일] h-screen(100vh)은 iOS 주소창 높이를 포함해 하단 60~80px이 잘린다 → dvh. 미지원 브라우저는 h-screen 폴백 */}
+        <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden" style={{ height: '100dvh' }}>
             <Header
                 user={user}
                 purchasedPoints={purchasedPoints}
@@ -1344,7 +1360,7 @@ export default function QuestionBankPage() {
                     viewMode === 'review'
                         ? 'hidden'
                         : showMobileSidebar
-                            ? 'fixed bottom-0 left-0 right-0 z-50 bg-white border-t rounded-t-2xl shadow-2xl flex flex-col w-full max-h-[85vh] md:relative md:bottom-auto md:z-20 md:border-t-0 md:border-r md:rounded-none md:shadow-none md:w-64 md:max-h-full'
+                            ? 'fixed bottom-0 left-0 right-0 z-50 bg-white border-t rounded-t-2xl shadow-2xl flex flex-col w-full max-h-[85dvh] md:relative md:bottom-auto md:z-20 md:border-t-0 md:border-r md:rounded-none md:shadow-none md:w-64 md:max-h-full'
                             : 'hidden md:flex md:flex-col md:w-64 md:bg-white md:border-r md:z-20'
                 }`}>
                     {/* Mobile bottom-sheet handle */}
@@ -1355,8 +1371,8 @@ export default function QuestionBankPage() {
                             className="absolute right-4 top-3 text-slate-400 hover:text-slate-600 text-xl font-bold"
                         >×</button>
                     </div>
-                    <div data-tour="qb-pool" className="p-4 border-b space-y-2">
-                        <h2 className="font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
+                    <div data-tour="qb-pool" className="px-4 py-2.5 md:p-4 border-b space-y-2">
+                        <h2 className="hidden md:block font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
                         {/* ... existing DB selectors ... */}
                         <div className="flex gap-2 mb-2">
                             {/* 비로그인도 열람 가능 (맛보기 — 게이트는 시험지 저장에서만) */}
@@ -1366,7 +1382,7 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-2 md:py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <Database size={16} />
                                 DB 문제
@@ -1377,7 +1393,7 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-2 md:py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <FolderIcon size={16} />
                                 만든 시험지
@@ -1456,7 +1472,7 @@ export default function QuestionBankPage() {
                                 {/* 화면 제목은 h2 — 이 페이지의 h1 은 layout.tsx 의 sr-only 하나뿐이다.
                                     전체화면 툴이라 화면에 본문이 없어 크롤러·스크린리더용 h1 을 layout 에 뒀는데,
                                     여기까지 h1 이면 한 페이지에 h1 이 둘이 된다(2026-09-03 전수검사에서 확인). */}
-                                <h2 className="text-sm sm:text-2xl font-bold text-gray-800 truncate">
+                                <h2 className="hidden sm:block sm:text-2xl font-bold text-gray-800 truncate">
                                     {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
                                 </h2>
                             </div>
@@ -1653,7 +1669,7 @@ export default function QuestionBankPage() {
                                         }}
                                         onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
                                         onDragEnd={() => viewMode === 'review' && handleDragEnd()}
-                                        className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group min-h-[500px] sm:h-[630px]
+                                        className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group sm:h-[630px]
                                             ${viewMode === 'review'
                                                 ? draggingIndex === idx
                                                     ? 'opacity-40 scale-95 border-[#497AB7] border-dashed'
@@ -1760,7 +1776,7 @@ export default function QuestionBankPage() {
                                         </div>
 
                                         {/* Content */}
-                                        <div className="p-5 bg-white flex-1 min-h-[160px] overflow-y-auto scrollbar-thin">
+                                        <div className="p-4 sm:p-5 bg-white flex-1 sm:min-h-[160px] overflow-y-auto scrollbar-thin">
                                             {q.question_images === null ? (
                                                 // 이미지 로딩 중 스켈레톤
                                                 <div className="space-y-2 animate-pulse">
@@ -1782,9 +1798,16 @@ export default function QuestionBankPage() {
 
                                         {/* Meta/Actions Footer */}
                                         <div className="px-4 py-3 bg-slate-50 border-t flex items-center justify-between">
-                                            <div className="text-[10px] text-slate-400 font-medium truncate flex-1 pr-2">
+                                            <div className="text-[12px] sm:text-[10px] text-slate-400 font-medium truncate flex-1 pr-2">
                                                 {q.school} {q.exam_year}
                                             </div>
+                                            {/* [모바일 ②] 순서 이동 — 헤더에 두면 390px 에서 뱃지가 줄바꿈되어 푸터(검토 모드엔 비어 있음)에 둔다. 데스크톱은 드래그. */}
+                                            {viewMode === 'review' && (
+                                                <div className="flex items-center gap-1.5 md:hidden" data-no-drag="true">
+                                                    <button onClick={(e) => { e.stopPropagation(); moveInCart(idx, -1); }} disabled={idx === 0} aria-label="위로" className="w-10 h-9 rounded-lg bg-white border border-slate-200 text-slate-600 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"><ChevronUp size={16} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); moveInCart(idx, 1); }} disabled={idx === cart.length - 1} aria-label="아래로" className="w-10 h-9 rounded-lg bg-white border border-slate-200 text-slate-600 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"><ChevronDown size={16} /></button>
+                                                </div>
+                                            )}
                                             {viewMode === 'search' && (
                                                 <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                     <button
@@ -1821,7 +1844,9 @@ export default function QuestionBankPage() {
                                             <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
                                                 <Search size={24} className="text-indigo-500" />
                                             </div>
-                                            <p className="text-base font-semibold text-slate-600">왼쪽 필터 조건 설정 후 <span className="text-indigo-600">「조건 검색하기」</span>를 눌러주세요.</p>
+                                            <p className="text-base font-semibold text-slate-600"><span className="hidden md:inline">왼쪽 필터 조건 설정 후 </span><span className="md:hidden">위 「필터」에서 조건을 고른 뒤 </span><span className="text-indigo-600">「조건 검색하기」</span>를 눌러주세요.</p>
+                                            {/* [모바일] 폰에는 "왼쪽 필터"가 없다 — 시트를 여는 버튼을 바로 준다 (9/7 모바일 감사 ④) */}
+                                            <button onClick={() => setShowMobileSidebar(true)} className="md:hidden mt-3 inline-flex items-center gap-2 px-5 py-3 bg-[#497AB7] text-white font-bold rounded-xl shadow-md active:scale-95 transition">필터 열기</button>
                                             <p className="text-sm text-slate-400">단원, 난이도, 키워드를 조합해 원하는 문제를 찾을 수 있어요.</p>
                                             {/* [퍼널] 이 화면은 수동 경로만 안내하고 있었다. 같은 화면 상단에 한 번에 채워주는
                                                 '자동생성' 버튼이 이미 있는데 처음 온 사람은 그걸 쓸 생각을 못 한다.
