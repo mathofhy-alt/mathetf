@@ -12,7 +12,11 @@ export const dynamic = 'force-dynamic';
 // (98건이 저장된 건 알지만 몇 명이 시도했는지를 몰라, 유입을 늘려야 할지 화면을 고쳐야 할지
 //  정반대의 처방을 구분하지 못했다.) 진입→DB선택→검색→담기→저장 5단계를 남긴다.
 const QB_FUNNEL = ['qb_enter', 'qb_db_select', 'qb_search', 'qb_cart_add', 'qb_save', 'qb_save_fail'];
-const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_click', ...QB_FUNNEL]);
+// [2026-09-08] promo_view 누락 사고. 노출 로그를 넣었는데 이 목록에 이름을 안 올려서
+//   서버가 전부 버렸다(promo_click 6건인데 promo_view 0건 — 모달이 떠야 누르는데 모순).
+//   분모를 남기려고 만든 로그였으므로 이게 빠지면 수정 자체가 무의미했다.
+//   ⚠ 새 이벤트를 클라이언트에 심을 때는 반드시 여기에 같이 추가할 것.
+const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_click', 'promo_view', ...QB_FUNNEL]);
 
 // [익명 구간 계측] 2026-09-06 추가.
 // 그전까지 이 라우트는 비로그인이면 401 이었다. 그래서 **로그인 전 행동이 한 건도 없었다** —
