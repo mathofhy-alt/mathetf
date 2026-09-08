@@ -91,8 +91,10 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const navItems: NavItem[] = [
         { href: '/', label: '내신기출' },
         {
+            // [2026-09-08] '시험지 출제' 자식을 뺐다 — 부모와 같은 /question-bank 라 한 화면에
+            //   같은 곳으로 가는 링크가 두 줄이었다(외부 감사 지적). 부모는 데스크톱·모바일 모두
+            //   실제 Link 라 도달성 손실은 없다.
             href: '/question-bank', label: '10초 시험지제작', children: [
-                { href: '/question-bank', label: '시험지 출제' },
                 { href: '/predict', label: '예상문제 뽑기' },
                 { href: '/print-transform', label: '학교프린트 변형', badge: 'NEW' },
             ]

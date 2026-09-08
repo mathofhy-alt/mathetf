@@ -66,10 +66,11 @@ export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey,
             // ⚠ 순서: 해설 안내(모달)를 먼저 띄우고, 역할 묻기는 그 뒤로 미룬다.
             //   받은 사람의 결핍은 '답이 없다' 하나다. 그 순간에 알림 신청·역할부터 물으면
             //   정작 필요한 안내가 묻힌다.
+            // [2026-09-08] 한 번에 하나만 띄운다. 그전엔 프로모 모달과 알림 배너가 **동시에** 떴다
+            //   (알림은 마케팅 미동의자용인데, 무료PDF 를 받는 사람 대부분이 미동의자다).
+            //   순서: 프로모 → 역할 묻기 → 알림 옵트인.
             const promo = !!sourceKey && !isExamPromoHidden();
             if (promo) setShowPromo(true);
-            // 새 기출 알림 옵트인 배너 (미동의자에게만)
-            if (!marketingAgreed) setShowNotify(true);
             // [persona] 회원 613명 중 301명(49%)이 역할 미응답이다. 온보딩 모달은 홈에서만 뜨는데
             // 유입은 네이버 검색으로 이 페이지에 곧장 떨어져 물어볼 기회가 없었다.
             // 자료를 받은 직후 여기서 한 번만 묻는다(다운로드는 안 막는다).
@@ -129,7 +130,7 @@ export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey,
                 />
             )}
             <NotifyOptIn school={filename.split('_')[0] || ''} visible={showNotify} onClose={() => setShowNotify(false)} />
-            <PersonaAsk visible={askPersona} onDone={() => setAskPersona(false)} />
+            <PersonaAsk visible={askPersona} onDone={() => { setAskPersona(false); if (!marketingAgreed) setShowNotify(true); }} />
         </div>
     );
 }

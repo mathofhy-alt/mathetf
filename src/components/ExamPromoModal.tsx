@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { Save, MousePointerClick, FileEdit } from 'lucide-react';
+import { getStoredRole } from '@/components/RoleOnboardingModal';
 
 const HIDE_KEY = 'examPromoHideDate';
 
@@ -33,6 +35,26 @@ export function isExamPromoHidden(): boolean {
  */
 export default function ExamPromoModal({ onClose, src, school }: { onClose: () => void; src?: string; school?: string }) {
     const href = src ? `/question-bank?src=${encodeURIComponent(src)}` : '/question-bank';
+
+    // [2026-09-08] 역할별 문구. 무료PDF 를 받는 사람 273명 중 역할을 밝힌 240명이
+    //   학생 179 · 강사 61 이다(강사 25%). 그런데 문구는 '시험지 출제' 라는 강사 도구 이름으로
+    //   말하고 있었다. 학생이 원하는 건 방금 받은 그 시험지의 해설 하나다.
+    //   미응답도 학생 쪽으로 기운 모수라 기본값을 학생 문구로 둔다.
+    const isTeacher = getStoredRole() === 'teacher';
+    const variant = src ? (isTeacher ? 'teacher' : 'student') : 'bare';
+    const logTitle = src ? `${src}|${variant}` : 'bare';
+
+    // [2026-09-08] 노출 로그. 클릭만 남기고 있어서 "1/55" 가 안 눌렀다는 뜻인지
+    //   아예 안 떴다는 뜻인지 구분할 수 없었다(삼자대면 감사). 분모를 남긴다.
+    useEffect(() => {
+        try {
+            fetch('/api/log/feature', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feature: 'promo_view', title: logTitle }),
+            });
+        } catch { }
+    }, [logTitle]);
+
     const hideToday = () => {
         try { localStorage.setItem(HIDE_KEY, todayKey()); } catch { }
         onClose();
@@ -54,20 +76,29 @@ export default function ExamPromoModal({ onClose, src, school }: { onClose: () =
                     </button>
                     <p className="text-sm font-bold text-white/85 mb-1">다운로드 완료! 🎉</p>
                     <h3 className="text-xl font-black break-keep">
-                        {src ? '해설도 필요하지 않으세요?' : '‘시험지 출제’ 기능도 써보셨어요?'}
+                        {!src ? '‘시험지 출제’ 기능도 써보셨어요?'
+                            : isTeacher ? '해설 붙여 시험지로 만드시겠어요?'
+                                : '이 시험지 해설, 지금 받으세요'}
                     </h3>
                 </div>
 
                 {/* 본문 */}
                 <div className="px-6 py-5">
                     <p className="text-slate-600 text-sm leading-relaxed mb-4 break-keep">
-                        {src ? (
+                        {src ? (isTeacher ? (
                             <>
                                 방금 받으신 건 <strong>문제만</strong> 담긴 PDF예요.{' '}
                                 <strong className="text-[#497AB7]">시험지 출제</strong>로 가면 같은{school ? ` ${school}` : ''} 문항을{' '}
                                 <strong className="text-[#3AADA9]">해설까지 붙여 한글(HWP)</strong>로 받으실 수 있어요.
                             </>
                         ) : (
+                            <>
+                                방금 받으신 PDF에는 <strong>답이 없어요</strong>.{' '}
+                                같은{school ? ` ${school}` : ''} 문제 그대로{' '}
+                                <strong className="text-[#3AADA9]">해설이 붙은 한글파일</strong>을 무료로 받을 수 있어요.
+                                <strong className="text-[#497AB7]"> 문제는 이미 담겨 있어요.</strong>
+                            </>
+                        )) : (
                             <>
                                 방금 받은 건 <strong>맛보기</strong>예요. <strong className="text-[#497AB7]">시험지 출제</strong>로 가면
                                 훨씬 자유롭게 나만의 시험지를 만들 수 있어요.
@@ -85,16 +116,16 @@ export default function ExamPromoModal({ onClose, src, school }: { onClose: () =
                         </li>
                         <li className="flex items-start gap-2.5 text-sm text-slate-700">
                             <FileEdit size={18} className="text-[#3AADA9] shrink-0 mt-0.5" />
-                            <span>문항 순서·난이도·구성까지 자유롭게</span>
+                            <span>{!src || isTeacher ? '문항 순서·난이도·구성까지 자유롭게' : '한글이 없으면 PDF로도 받을 수 있어요'}</span>
                         </li>
                     </ul>
                     <div className="flex flex-col gap-2">
                         <Link
                             href={href}
-                            onClick={() => { try { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'promo_click', title: src || 'bare' }) }); } catch { } }}
+                            onClick={() => { try { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'promo_click', title: logTitle }) }); } catch { } }}
                             className="w-full text-center bg-gradient-to-r from-[#497AB7] to-[#3AADA9] text-white font-extrabold py-3 rounded-xl hover:opacity-90 transition-opacity"
                         >
-                            {src ? '해설 포함 한글파일 만들기 →' : '시험지 출제 가보기 →'}
+                            {!src ? '시험지 출제 가보기 →' : isTeacher ? '해설 포함 한글파일 만들기 →' : '이 시험지 해설 받기 →'}
                         </Link>
                         <div className="flex items-center justify-between pt-0.5">
                             <button
