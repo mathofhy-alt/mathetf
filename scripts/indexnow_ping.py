@@ -79,8 +79,13 @@ def recent_urls(hours: int):
     mk = requests.get(f'{U}/rest/v1/mock_exams', headers=H, timeout=180, params={
         'select': 'slug,created_at', 'created_at': f'gte.{since}', 'order': 'created_at.desc'}).json()
     if isinstance(mk, list) and mk:
-        urls += [f'{BASE}/mock']
-        urls += [f'{BASE}/mock/{quote(x["slug"])}' for x in mk if x.get('slug')]
+        # [2026-09-09] ⚠ 주소 형태를 사이트맵·canonical 과 맞춘다.
+        #   그전엔 /mock/{slug} 로 보냈는데, 사이트맵과 페이지 canonical 은 둘 다
+        #   한글 경로 /모의고사/{slug} 였다. 두 주소 다 200 이지만 canonical 이 딴 곳을
+        #   가리키니 네이버가 통보받은 주소를 버렸다 — 실측 결과 122회차 중 1개만 색인.
+        #   (내신은 /exam/·/school/ 로 셋이 일치해 80~100% 색인됨)
+        urls += [f'{BASE}/{quote("모의고사")}']
+        urls += [f'{BASE}/{quote("모의고사")}/{quote(x["slug"])}' for x in mk if x.get('slug')]
     return list(dict.fromkeys(urls))
 
 
