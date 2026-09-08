@@ -220,7 +220,11 @@ export default async function SchoolPage({ params }: Props) {
     const groups: Record<string, any> = {};
     exams.forEach((item: any) => {
         const year = examYearOf(item);
-        const key = examGroupKey(item);
+        // [2026-09-08] 키 앞에 지역을 붙인다. 이 페이지는 학교 '이름' 으로만 조회하는데
+        //   같은 이름이 두 지역에 있으면(경신고 = 대구 수성구 / 서울 종로구) 두 학교 자료가
+        //   한 목록에 섞이고, 회차 메타까지 같으면 한 줄로 합쳐져 하나가 사라진다.
+        const locKey = `${item.region || ''}|${item.district || ''}`;
+        const key = `${locKey}-${examGroupKey(item)}`;
         if (!groups[key]) {
             groups[key] = {
                 year,
@@ -228,6 +232,9 @@ export default async function SchoolPage({ params }: Props) {
                 semester: item.semester,
                 examType: item.exam_type,
                 subject: item.subject || '',
+                region: item.region || '',
+                district: item.district || '',
+                locKey,
                 files: [],
             };
         }
@@ -236,13 +243,29 @@ export default async function SchoolPage({ params }: Props) {
 
     const examList = Object.values(groups).sort((a: any, b: any) => b.year - a.year);
 
+    // 이 이름으로 실제 자료가 있는 지역들. 2곳 이상이면 목록을 지역별로 나눠 보여준다.
+    const locations: { key: string; label: string; items: any[] }[] = [];
+    for (const g of examList as any[]) {
+        let loc = locations.find(l => l.key === g.locKey);
+        if (!loc) {
+            loc = { key: g.locKey, label: [g.region, g.district].filter(Boolean).join(' ') || '지역 미상', items: [] };
+            locations.push(loc);
+        }
+        loc.items.push(g);
+    }
+    const multiRegion = locations.length > 1;
+
     // [SEO] 학교 지역 + 단원 분포 (얇은 콘텐츠 방지용 고유 텍스트)
-    let region = '';
-    try {
-        // 동명 학교로 중복행이 있으면 maybeSingle()이 에러 → 첫 행 사용으로 지역 항상 표시
-        const { data: sc } = await supabase.from('schools').select('region, district').eq('name', schoolName).limit(1);
-        if (sc && sc[0]) region = [sc[0].region, sc[0].district].filter(Boolean).join(' ');
-    } catch { }
+    // [2026-09-08] 자료에 있는 지역을 먼저 쓴다. schools 테이블 첫 행을 쓰면 동명이교일 때
+    //   한쪽을 임의로 골라 "(서울 종로구)의 기출" 이라고 단정한다(경신고는 대구 자료가 4개로 더 많다).
+    //   두 지역이면 둘 다 적는다 — 소개 문단이 한쪽만 주장하지 않게.
+    let region = locations.map(l => l.label).filter(l => l && l !== '지역 미상').join('·');
+    if (!region) {
+        try {
+            const { data: sc } = await supabase.from('schools').select('region, district').eq('name', schoolName).limit(1);
+            if (sc && sc[0]) region = [sc[0].region, sc[0].district].filter(Boolean).join(' ');
+        } catch { }
+    }
     // 단원 분포는 '과목별'로 분리 (학년·과목 다른 시험을 한 표로 합치면 의미 없음)
     let subjUnits: { subject: string; total: number; units: { unit: string; count: number }[] }[] = [];
     try {
@@ -342,9 +365,21 @@ export default async function SchoolPage({ params }: Props) {
                     )}
                 </div>
 
-                {/* 시험 목록 (홈 카드 스타일) */}
+                {/* 시험 목록 (홈 카드 스타일) — 같은 이름의 학교가 두 지역에 있으면 지역별로 나눈다 */}
+                {multiRegion && (
+                    <p className="text-sm text-[#7A6A3F] bg-[#FBF3DE] border border-[#EBDCB4] rounded-xl px-4 py-3 mb-3 break-keep">
+                        같은 이름의 학교가 {locations.length}곳입니다. 지역을 확인하고 받으세요.
+                    </p>
+                )}
                 <div className="space-y-2">
-                    {examList.map((group: any, idx: number) => {
+                    {locations.map((loc) => (
+                    <div key={loc.key} className={multiRegion ? 'space-y-2 pt-2' : 'space-y-2'}>
+                    {multiRegion && (
+                        <h2 className="text-sm font-black text-[#1E2D4F] px-1 pt-2">
+                            {loc.label} <span className="font-bold text-slate-400">· {loc.items.length}개</span>
+                        </h2>
+                    )}
+                    {loc.items.map((group: any, idx: number) => {
                         const isMock = group.examType === '모의고사' || group.examType === '수능';
                         const semLabel = isMock ? `${group.semester}월` : `${group.semester}학기`;
                         const hasPdf = group.files.some((f: any) => f.file_type === 'PDF');
@@ -378,6 +413,8 @@ export default async function SchoolPage({ params }: Props) {
                             </Link>
                         );
                     })}
+                    </div>
+                    ))}
                 </div>
 
                 {/* [강사 유입구] 선생님·강사 대상 섹션 — 학교 페이지 121개가 각각 강사 착지점이 되도록 */}

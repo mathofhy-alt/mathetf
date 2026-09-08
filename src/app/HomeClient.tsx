@@ -34,6 +34,8 @@ interface GroupedExam {
     key: string;
     title: string;
     school: string;
+    region?: string;      // [2026-09-08] 동명이교 표시용
+    district?: string;
     grade: number;
     semester: number;
     subject: string;
@@ -72,13 +74,18 @@ function buildGroupedFiles(packed: any[]): GroupedExam[] {
         const isMockOpt = item.exam_type === '모의고사' || item.exam_type === '수능';
         const semLabel = isMockOpt ? `${item.semester}월` : `${item.semester}학기`;
 
-        const key = `${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
+        // [2026-09-08] 키에 지역을 넣는다. 그전엔 학교명만 써서 **동명이교의 같은 회차가 한 카드로 합쳐졌다**
+        //   (예: 대구 경신고와 서울 경신고가 둘 다 2025 고1 1학기기말 공통수학1 을 올리면 한 장이 된다).
+        //   지금은 겹치는 회차가 없어 드러나지 않았지만 자료가 늘면 조용히 섞인다.
+        const key = `${item.region || ''}-${item.district || ''}-${item.school}-${yearDerived}-${item.grade}-${item.semester}-${item.exam_type}-${subjectKey}`;
 
         if (!groups[key]) {
             groups[key] = {
                 key,
                 title: `[${item.school}] ${yearDerived}년 ${item.grade}학년 ${semLabel} ${item.exam_type} ${item.subject || ''}`,
                 school: item.school,
+                region: item.region,
+                district: item.district,
                 grade: item.grade,
                 semester: item.semester,
                 subject: item.subject || '',
@@ -211,6 +218,21 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     // Derived Data
     const districts = selectedRegion ? districtsMap[selectedRegion] || [] : [];
     const schools = (selectedRegion && selectedDistrict) ? schoolsMap[selectedRegion]?.[selectedDistrict] || [] : [];
+
+    // [2026-09-08] 동명이교 구분. 카드가 학교명만 찍어서 어느 지역 학교인지 알 수 없었다.
+    //   자료 보유 141곳 중 지금 겹치는 건 경신고 하나(대구 수성구 / 서울 종로구)뿐이지만,
+    //   전국에 같은 이름이 있는 학교가 24곳이라 커버리지가 늘면 계속 생긴다.
+    //   140곳까지 지역을 붙이면 목록이 지저분해지므로 **실제로 겹치는 이름에만** 붙인다.
+    const ambiguousSchools = useMemo(() => {
+        const seen = new Map<string, Set<string>>();
+        for (const g of groupedFiles) {
+            if (!g.school) continue;
+            const set = seen.get(g.school) || new Set<string>();
+            set.add(`${g.region || ''}|${g.district || ''}`);
+            seen.set(g.school, set);
+        }
+        return new Set(Array.from(seen.entries()).filter(([, v]) => v.size > 1).map(([k]) => k));
+    }, [groupedFiles]);
 
     // useMemo: 필터 조건이나 groupedFiles가 바뀔 때만 재계산 (기존: 매 렌더마다 filter 실행)
     const filteredFiles = useMemo(() => groupedFiles.filter(group => {
@@ -717,6 +739,11 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             >
                                                                 {group.title.split(']')[0]}]
                                                             </Link>{' '}
+                                                            {ambiguousSchools.has(group.school) && (group.region || group.district) && (
+                                                                <span className="text-[11px] font-bold text-[#7A6A3F] bg-[#FBF3DE] border border-[#EBDCB4] px-1.5 py-0.5 rounded align-middle whitespace-nowrap">
+                                                                    {[group.region, group.district].filter(Boolean).join(' ')}
+                                                                </span>
+                                                            )}{' '}
                                                             <span className="text-[#1E2D4F]">{group.title.split(']')[1].trim()}</span>
                                                         </>
                                                     ) : <span className="text-[#1E2D4F]">{group.title}</span>}
