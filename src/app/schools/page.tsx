@@ -78,7 +78,7 @@ export default async function SchoolsIndexPage() {
                 </Link>
                 <p className="text-slate-500 mt-2 text-sm">
                     전국 고등학교별 수학 내신 기출(문제·해설)을 모았습니다.
-                    {rows.length > 0 && <> 현재 <span className="font-bold text-[#497AB7]">{rows.length}개</span> 학교 · 문제 미리보기 무료.</>}
+                    {rows.length > 0 && <> 현재 <span className="font-bold text-[#497AB7]">{rows.length}개</span> 학교 · 문제 미리보기 무료. 해설은 시험지 출제에서 무료로 만들 수 있어요.</>}
                 </p>
 
                 {rows.length > 0 ? (

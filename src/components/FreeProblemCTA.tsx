@@ -94,7 +94,7 @@ export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey,
             <p className="text-sm text-slate-600 break-keep mb-4">
                 회원가입만 하면 위 미리보기의{' '}
                 <strong className="text-emerald-700">워터마크 없는 깨끗한 문제 PDF{pageCount > 0 ? ` (${pageCount}페이지)` : ''}</strong>
-                를 무료로 받을 수 있어요. <span className="text-slate-400">(해설은 별도 제공)</span>
+                를 무료로 받을 수 있어요. <span className="text-slate-400">해설은 시험지 출제에서 무료로 만들 수 있어요.</span>
             </p>
 
             {authed ? (

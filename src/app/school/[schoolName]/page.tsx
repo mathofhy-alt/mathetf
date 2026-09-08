@@ -310,7 +310,7 @@ export default async function SchoolPage({ params }: Props) {
                         {schoolName} 수학 기출문제
                     </h1>
                     <p className="text-slate-500 mt-2 text-sm">
-                        총 <span className="font-bold text-[#497AB7]">{examList.length}개</span>의 시험 자료 · 문제 미리보기 무료
+                        총 <span className="font-bold text-[#497AB7]">{examList.length}개</span>의 시험 자료 · 문제 미리보기 무료 · 해설은 시험지 출제에서 무료
                     </p>
                 </div>
 
