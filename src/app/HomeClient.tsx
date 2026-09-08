@@ -219,21 +219,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const districts = selectedRegion ? districtsMap[selectedRegion] || [] : [];
     const schools = (selectedRegion && selectedDistrict) ? schoolsMap[selectedRegion]?.[selectedDistrict] || [] : [];
 
-    // [2026-09-08] 동명이교 구분. 카드가 학교명만 찍어서 어느 지역 학교인지 알 수 없었다.
-    //   자료 보유 141곳 중 지금 겹치는 건 경신고 하나(대구 수성구 / 서울 종로구)뿐이지만,
-    //   전국에 같은 이름이 있는 학교가 24곳이라 커버리지가 늘면 계속 생긴다.
-    //   140곳까지 지역을 붙이면 목록이 지저분해지므로 **실제로 겹치는 이름에만** 붙인다.
-    const ambiguousSchools = useMemo(() => {
-        const seen = new Map<string, Set<string>>();
-        for (const g of groupedFiles) {
-            if (!g.school) continue;
-            const set = seen.get(g.school) || new Set<string>();
-            set.add(`${g.region || ''}|${g.district || ''}`);
-            seen.set(g.school, set);
-        }
-        return new Set(Array.from(seen.entries()).filter(([, v]) => v.size > 1).map(([k]) => k));
-    }, [groupedFiles]);
-
     // useMemo: 필터 조건이나 groupedFiles가 바뀔 때만 재계산 (기존: 매 렌더마다 filter 실행)
     const filteredFiles = useMemo(() => groupedFiles.filter(group => {
         // 0. Keyword Search
@@ -732,6 +717,14 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                 <div className="font-bold text-base break-keep leading-snug mb-1.5">
                                                     {group.title.includes(']') ? (
                                                         <>
+                                                            {/* [2026-09-08] 학교명 앞에 지역을 항상 적는다(사장님 지정 형식).
+                                                                동명이교(경신고 = 대구 수성구 / 서울 종로구)를 카드에서 바로 가리려면
+                                                                겹치는 이름에만 붙이는 것보다 전부 붙이는 쪽이 읽기 쉽다. */}
+                                                            {(group.region || group.district) && (
+                                                                <span className="text-[#8A93A6] font-semibold mr-1">
+                                                                    {`${group.region || ''}${group.district || ''}`}
+                                                                </span>
+                                                            )}
                                                             <Link
                                                                 href={group.files.pdfSol ? `/exam/${group.files.pdfSol.id}` : `/school/${encodeURIComponent(group.school)}`}
                                                                 className="text-[#497AB7] hover:underline"
@@ -739,11 +732,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             >
                                                                 {group.title.split(']')[0]}]
                                                             </Link>{' '}
-                                                            {ambiguousSchools.has(group.school) && (group.region || group.district) && (
-                                                                <span className="text-[11px] font-bold text-[#7A6A3F] bg-[#FBF3DE] border border-[#EBDCB4] px-1.5 py-0.5 rounded align-middle whitespace-nowrap">
-                                                                    {[group.region, group.district].filter(Boolean).join(' ')}
-                                                                </span>
-                                                            )}{' '}
                                                             <span className="text-[#1E2D4F]">{group.title.split(']')[1].trim()}</span>
                                                         </>
                                                     ) : <span className="text-[#1E2D4F]">{group.title}</span>}
