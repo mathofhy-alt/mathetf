@@ -891,36 +891,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                             )) : (
                                 <div className="py-14 text-center bg-white rounded-xl shadow-sm px-6">
                                     <p className="text-[#AAAAC4]">검색 결과가 없습니다.</p>
-                                    {(selectedSchool || searchKeyword) && (
-                                        <div className="mt-5 max-w-md mx-auto bg-[#F4F9F7] border border-[#3AADA9]/30 rounded-2xl p-5 text-left">
-                                            <p className="font-extrabold text-[#1E2D4F] break-keep">
-                                                📥 {(selectedSchool || searchKeyword)} 자료를 준비 중이에요
-                                            </p>
-                                            <p className="text-sm text-slate-500 mt-1.5 break-keep">
-                                                갖고 계신 기출 시험지(사진·PDF)를 제보해주시면, 채택 시{' '}
-                                                <strong className="text-[#3AADA9]">10,000P</strong>를 드려요.
-                                            </p>
-                                            <button
-                                                onClick={() => {
-                                                    if (!user) { setShowLoginPrompt(true); return; }
-                                                    const name = selectedSchool || '';
-                                                    let init: { type: 'MARKET' | 'SHADOW'; school?: { region: string; district: string; school: string } } = { type: 'SHADOW' };
-                                                    if (name) {
-                                                        outer: for (const r of Object.keys(schoolsMap)) {
-                                                            for (const d of Object.keys(schoolsMap[r] || {})) {
-                                                                if ((schoolsMap[r][d] || []).includes(name)) { init = { type: 'SHADOW', school: { region: r, district: d, school: name } }; break outer; }
-                                                            }
-                                                        }
-                                                    }
-                                                    setUploadInit(init);
-                                                    setIsUploadModalOpen(true);
-                                                }}
-                                                className="mt-3 w-full py-2.5 bg-[#3AADA9] hover:bg-[#2F938F] text-white text-sm font-extrabold rounded-xl transition-colors"
-                                            >
-                                                기출 제보하고 10,000P 받기
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
                             )}
 
