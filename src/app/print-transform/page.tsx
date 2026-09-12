@@ -48,8 +48,9 @@ export default async function PrintTransformPage() {
                     내신 대비로 학교 프린트를 한 번 더 연습하고 싶을 때, 같은 유형의 새 문제로 실전 감각을 키워 보세요.
                 </p>
             </section>
+            <PrintTransformClient isLoggedIn={isLoggedIn} />
             {!isLoggedIn && (
-                <section className="max-w-3xl mx-auto px-4 pt-6">
+                <section className="max-w-3xl mx-auto px-4 pb-10 -mt-4">
                     <h2 className="text-xl sm:text-2xl font-black break-keep text-[#1E2D4F]">
                         학교 프린트를 올리면 같은 유형 문제를 찾아 드려요
                     </h2>
@@ -103,7 +104,7 @@ export default async function PrintTransformPage() {
                     </p>
                 </section>
             )}
-            <PrintTransformClient isLoggedIn={isLoggedIn} />
+
         </div>
     );
 }
