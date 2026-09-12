@@ -205,29 +205,51 @@ export default function QuestionBankPage() {
     // 유입 대부분이 네이버 정확매칭 검색으로 시험지 상세에 떨어지는데, 도구로 오면 빈 화면이라
     // 검색부터 다시 시작해야 했다(도구 완주율 20%, 검색→담기 53% 이탈).
     const srcLoaded = useRef(false);
+
+    /** 회차 하나를 통째로 장바구니에 담는다. ?src= 진입과 '이어서 만들기' 카드가 같이 쓴다. */
+    const fillFromSrc = async (src: string, logTitle: string) => {
+        const res = await fetch('/api/questions/by-ids', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ src }),
+        });
+        const r = await res.json();
+        const data = (r?.data || []) as any[];
+        if (!data.length) return 0;
+        setCart(data.slice(0, MAX_CART_SIZE));
+        setViewMode('review');
+        logQb('qb_cart_add', logTitle.replace('{n}', String(data.length)));
+        if (data.length > MAX_CART_SIZE) {
+            showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${MAX_CART_SIZE}개만 담았습니다.`, 'info');
+        }
+        return data.length;
+    };
+
     useEffect(() => {
         if (srcLoaded.current) return;
         const src = new URLSearchParams(window.location.search).get('src');
         if (!src) return;
         srcLoaded.current = true;
         (async () => {
-            try {
-                const res = await fetch('/api/questions/by-ids', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ src }),
-                });
-                const r = await res.json();
-                const data = (r?.data || []) as any[];
-                if (!data.length) return;
-                setCart(data.slice(0, MAX_CART_SIZE));
-                setViewMode('review');
-                logQb('qb_cart_add', `from_exam:${data.length}`);
-                if (data.length > MAX_CART_SIZE) {
-                    showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${MAX_CART_SIZE}개만 담았습니다.`, 'info');
-                }
-            } catch { /* 조용히 — 빈 도구로 시작한다 */ }
+            try { await fillFromSrc(src, 'from_exam:{n}'); }
+            catch { /* 조용히 — 빈 도구로 시작한다 */ }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // [퍼널 2026-09-13] 직접 들어온 사람에게 '직전에 받아간 회차'를 한 번에 담을 카드를 준다.
+    //   실측(8/26~9/12): 빈 화면 진입 82명 중 32명이 아무것도 누르지 않고 이탈했고,
+    //   그중 21명은 이미 무료PDF 를 받아본 사람이었다. 만들 학교는 있는데 첫 화면에 할 일이 없었다.
+    const [resumeItem, setResumeItem] = useState<{ src: string; school: string; count: number; label: string } | null>(null);
+    const [resumeBusy, setResumeBusy] = useState(false);
+    useEffect(() => {
+        const q = new URLSearchParams(window.location.search);
+        if (q.get('src') || q.get('school')) return;   // 이미 채워져 들어온 사람에겐 필요 없다
+        let alive = true;
+        fetch('/api/questions/resume')
+            .then(r => r.json())
+            .then(r => { if (alive && r?.item) setResumeItem(r.item); })
+            .catch(() => { });
+        return () => { alive = false; };
     }, []);
 
     // [강사 유입] ?school= 로 들어오면 그 학교 DB만 선택된 상태로 시작 (학교 페이지 → 시험지 만들기 동선)
@@ -1840,6 +1862,36 @@ export default function QuestionBankPage() {
                                         </div>
                                     ) : selectedDbIds.length > 0 ? (
                                         /* DB 선택됨, 아직 검색 안 함 */
+                                        <div className="flex flex-col gap-4">
+                                        {/* [퍼널 2026-09-13] 받아간 회차가 있으면 그것부터. 이 화면에서 39%가
+                                                아무것도 누르지 않고 나갔는데, 그중 대부분이 무료PDF 를 받아본 사람이었다.
+                                                고를 것을 주는 대신, 이미 고른 것을 되돌려준다. */}
+                                            {resumeItem && (
+                                                <div className="rounded-2xl border-2 border-[#3AADA9]/40 bg-[#F2FBFA] p-4 flex flex-wrap items-center justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p className="text-[11px] font-black text-[#2A8C89] tracking-wide">직전에 받아가신 회차예요</p>
+                                                        <p className="font-extrabold text-[#1E2D4F] mt-1 break-keep">{resumeItem.label}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5">{resumeItem.count}문항 · 담은 뒤 빼거나 더 채우실 수 있어요</p>
+                                                    </div>
+                                                    <button
+                                                        disabled={resumeBusy}
+                                                        onClick={async () => {
+                                                            if (resumeBusy) return;
+                                                            setResumeBusy(true);
+                                                            try {
+                                                                const n = await fillFromSrc(resumeItem.src, 'resume:{n}');
+                                                                if (!n) showToast('이 회차 문항을 불러오지 못했어요. 검색으로 골라주세요.', 'info');
+                                                            } catch {
+                                                                showToast('불러오지 못했어요. 잠시 후 다시 눌러주세요.', 'info');
+                                                            }
+                                                            setResumeBusy(false);
+                                                        }}
+                                                        className="shrink-0 px-5 py-3 bg-[#3AADA9] hover:bg-[#2A8C89] disabled:opacity-60 text-white font-black rounded-xl shadow-sm transition-colors active:scale-95"
+                                                    >
+                                                        {resumeBusy ? '담는 중…' : '이 회차로 시작하기 →'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         <div className="text-center py-20 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
                                             <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
                                                 <Search size={24} className="text-indigo-500" />
@@ -1863,6 +1915,7 @@ export default function QuestionBankPage() {
                                             >
                                                 고르기 어렵다면 — 단원·난이도만 정하고 자동생성 →
                                             </button>
+                                        </div>
                                         </div>
                                     ) : !isDbInitialized ? (
                                         /* DB 초기 로딩 중 - 가이드 깜빡임 방지 (스켈레톤) */
