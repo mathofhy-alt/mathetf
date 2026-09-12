@@ -13,7 +13,7 @@
   여기서는 이메일만 보내므로 marketing_agreed 만 보면 되지만, SMS 로 확장할 때
   이 함수를 반드시 거치도록 남겨둔다.
 
-⚠ Resend 무료 한도: 하루 100통 / 월 3,000통. 196명이면 이틀에 나눠 보낸다.
+⚠ Resend 무료 한도: 하루 100통 / 월 3,000통. 239명(2026-09-12)이면 사흘에 나눠 보낸다.
   email_sends 표가 보낸 사람을 기억하므로 다음 날 같은 명령을 다시 돌리면 이어서 간다.
 
 사용:
@@ -125,33 +125,72 @@ print(f'이미 보낸 사람 {len(already)} · 이번 대상 {len(targets)}')
 # PERSONAL_DB_FREE_MODE 때문에 보관함에는 전 학교가 자동 동기화돼 있어 관심 신호가 못 된다.
 fu = get_all('feature_usage', {'select': 'user_email,title', 'feature': 'eq.free_pdf'})
 liked = {}
+popular = {}          # 학교 → 무료PDF 다운로드 수. 관심 신호가 없는 사람의 폴백 기준이다.
 for x in fu:
     t = (x.get('title') or '')
     em = x.get('user_email')
-    if em and t and '_' in t:
-        liked.setdefault(em, []).append(t.split('_')[0])
+    if t and '_' in t:
+        sc = t.split('_')[0]
+        popular[sc] = popular.get(sc, 0) + 1
+        if em:
+            liked.setdefault(em, []).append(sc)
 
 since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
 recent = get_all('exam_materials', {
     'select': 'id,school,exam_year,grade,semester,exam_type,subject,created_at',
     'content_type': 'eq.해설', 'file_type': 'eq.PDF',
     'created_at': f'gte.{since}', 'order': 'created_at.desc'})
+def in_season(r):
+    """제목이 '2학기 중간고사 대비'다. 그 회차를 먼저 보여야 말과 내용이 맞는다."""
+    return str(r.get('semester')) == '2' and r.get('exam_type') == '중간고사'
+
+
+def _desc(ts):
+    """문자열 날짜를 내림차순 정렬키로. 최근 등록분이 먼저 와야 '새 기출'이 맞다."""
+    return tuple(-ord(c) for c in (ts or ''))
+
+
+def rank(r):
+    # 시즌 회차 먼저, 그다음 최신 연도, 그다음 최근 등록순
+    try:
+        y = -int(r.get('exam_year') or 0)
+    except (TypeError, ValueError):
+        y = 0
+    return (0 if in_season(r) else 1, y, _desc(r.get('created_at')))
+
+
+
+recent.sort(key=rank)
 by_school = {}
 for r in recent:
     by_school.setdefault(r['school'], []).append(r)
-newest = recent[:5]
-print(f'최근 30일 신규 회차 {len(recent)}건 · 학교 {len(by_school)}곳')
+
+# 폴백 목록은 학교를 겹치지 않게 5곳 — 한 학교 5회차보다 다섯 학교가 고를 거리가 많다.
+# 순서는 '무료PDF 를 많이 받아간 학교' 순. 등록 순서대로 두면 그날 작업한 지역(예: 대전)만
+# 다섯 줄이 나가 다른 지역 수신자에겐 아무 쓸모가 없다.
+season_rows = [r for r in recent if in_season(r)] or recent
+newest, seen_school = [], set()
+for r in sorted(season_rows, key=lambda x: (-popular.get(x['school'], 0), rank(x))):
+    if r['school'] in seen_school:
+        continue
+    seen_school.add(r['school'])
+    newest.append(r)
+    if len(newest) == 5:
+        break
+print(f'최근 30일 신규 회차 {len(recent)}건 · 학교 {len(by_school)}곳 '
+      f'(2학기 중간 {sum(1 for r in recent if in_season(r))}건)')
 
 
 def rows_for(email):
     """이 사람이 받아간 학교의 신규 회차. 없으면 최근 등록분으로 대체."""
     picked, seen = [], set()
-    for s in dict.fromkeys(liked.get(email, [])):
-        for r in by_school.get(s, []):
+    for sc in dict.fromkeys(liked.get(email, [])):
+        for r in by_school.get(sc, []):
             if r['id'] in seen:
                 continue
             seen.add(r['id'])
             picked.append(r)
+    picked.sort(key=rank)          # 그 사람 학교 안에서도 시즌 회차가 먼저
     return (picked[:5], True) if picked else (newest, False)
 
 
@@ -183,9 +222,8 @@ def build(u):
       기출로 시험지 만들기 →</a>
   </p>
   <p style="font-size:13px;line-height:1.7;color:#5B6E82;margin:0 0 22px;padding:14px;background:#F1F4F8;border-radius:10px">
-    문자로도 새 기출 소식을 받으시겠어요?
-    <a href="{BASE}/mypage?sms=1&utm_source=email&utm_campaign={CAMPAIGN}" style="color:#2F5A92;font-weight:700">마이페이지에서 켜기</a>
-    <br><span style="color:#8698A9">문자 수신은 따로 동의가 필요해요. 야간(21~08시)에는 보내지 않습니다.</span>
+    학교 프린트를 올리면 같은 유형 기출을 찾아 드려요.
+    <a href="{BASE}/print-transform?utm_source=email&utm_campaign={CAMPAIGN}" style="color:#2F5A92;font-weight:700">학교프린트 변형만들기 →</a>
   </p>
   <hr style="border:none;border-top:1px solid #D2DCE7;margin:0 0 14px">
   <p style="font-size:12px;line-height:1.7;color:#8698A9;margin:0">
