@@ -190,9 +190,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const sfx = typeSuffix(ex.row);
     const title = `${label} 수학 기출 ${sfx.title} | 수학ETF`;
     const description = `${label} 수학 기출문제. ${sfx.desc} 실제 시험지 미리보기를 확인하고 받아보세요.`;
+    // [2026-09-14] 해설이 없는 회차(원본제보만 있음)는 색인에서 뺀다.
+    //   제목은 "문제·해설 PDF" 인데 본문은 "미리보기 준비 중" 뿐이라 얇은 페이지다. 페이지 자체는 남긴다(제보 확인용).
+    const hasSolution = ex.siblings.some((s: any) => s.content_type === '해설' || s.content_type === '개인DB');
     return {
         title,
         description,
+        ...(hasSolution ? {} : { robots: { index: false, follow: true } }),
         keywords: [
             `${ex.row.school} 수학 기출`, `${ex.row.school} ${ex.row.exam_year} 수학`,
             `${ex.row.school} ${ex.row.exam_type}`, `${ex.row.subject || ''} 기출문제`,

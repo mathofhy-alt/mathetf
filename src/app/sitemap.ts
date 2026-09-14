@@ -149,7 +149,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         }];
 
-        const mockCategoryPages: MetadataRoute.Sitemap = ['전국연합', '평가원', '수능', '경찰대', '사관학교'].map((c) => ({
+        // [2026-09-14] 자료가 0건인 분류(수능)는 "아직 자료가 없어요" 한 줄짜리라 사이트맵에서 뺀다. 들어오면 자동 복귀.
+        const mockCategoryPages: MetadataRoute.Sitemap = ['전국연합', '평가원', '수능', '경찰대', '사관학교']
+            .filter((c) => listed.some((r: any) => r.category === c))
+            .map((c) => ({
             url: `${BASE}/${enc('모의고사')}/${enc(c)}`,
             lastModified: newest(listed.filter((r: any) => r.category === c)) || fallbackDate,
             changeFrequency: 'monthly' as const,

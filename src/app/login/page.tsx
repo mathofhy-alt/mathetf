@@ -59,7 +59,6 @@ export default function Login({
                         {[
                             { icon: '📄', text: '전국 내신 기출 PDF·HWP 즉시 다운로드' },
                             { icon: '📝', text: '개인 맞춤 시험지 출제 기능' },
-                            { icon: '🎁', text: '자료 업로드 시 포인트 적립' },
                         ].map((item, i) => (
                             <div key={i} className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-base shrink-0">

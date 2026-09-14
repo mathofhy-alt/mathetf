@@ -7,14 +7,27 @@ import MockExamCard, { MOCK_CATEGORIES, MockCategory, CATEGORY_DESC } from '@/co
 import { getMockCategoryStats } from '@/lib/mock-category-stats';
 import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 import MockAdminControls from '@/components/mock/MockAdminControls';
-import { fetchMockExamsByCategory, fetchMockExamBySlug } from '@/lib/mock-exams';
+import { fetchMockExamsByCategory, fetchMockExamBySlug, fetchAllMockExams } from '@/lib/mock-exams';
 import { proxiedOgImage } from '@/lib/og-image';
 
 // [PERF] ISR — 업로드·수정·삭제는 revalidatePath로 즉시 반영되므로 주기 재생성은 보험용 1시간
 export const revalidate = 3600;
 
+
 const CATEGORIES = Object.keys(MOCK_CATEGORIES) as MockCategory[];
 const isCategory = (s: string): s is MockCategory => (CATEGORIES as string[]).includes(s);
+// [2026-09-14 전수조사] 이 라우트만 응답이 `Cache-Control: private, no-store` 였다(X-Vercel-Cache 항상 MISS).
+//   7e76795f 에서 force-dynamic → revalidate 로 바꿨지만 효과가 없었다.
+//   캐시되는 라우트(exam·school·subject·region·study)는 전부 generateStaticParams 가 있고 이것만 없었다.
+//   회차 슬러그 + 분류 5개를 빌드 시점에 알려준다. 새 회차는 dynamicParams(기본 true)로 첫 요청 때 생성·캐시.
+export async function generateStaticParams() {
+    const rows = await fetchAllMockExams();
+    return [
+        ...CATEGORIES.map((c) => ({ seg: c })),
+        ...rows.filter((r) => r.slug).map((r) => ({ seg: r.slug })),
+    ];
+}
+
 
 export async function generateMetadata({ params }: { params: { seg: string } }): Promise<Metadata> {
     const seg = decodeURIComponent(params.seg);

@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-    title: '예상문제 뽑아보기 — 우리 학교 기말 예상문제 | 수학ETF',
+    title: '예상문제 뽑아보기 — 우리 학교 중간·기말 예상문제 | 수학ETF',   // [2026-09-14] '기말' 고정이라 중간 시즌 검색을 놓쳤다
     description: '학교와 시험범위를 고르면 전국 기출 DB에서 그 학교 출제 스타일과 같은 유형의 실제 기출을 모아 예상문제 세트를 만들어 드립니다. 문제 PDF·HWP 다운로드.',
     alternates: { canonical: '/predict' },
     openGraph: {

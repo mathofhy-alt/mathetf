@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import { ChevronRight, PencilRuler } from 'lucide-react';
 import { examYearOf, examGroupKey } from '@/lib/exam-groups';
 import { proxiedOgImage } from '@/lib/og-image';
+import { NOT_A_SCHOOL } from '@/lib/stats';
 
 /**
  * [SEO] 학교 축약명. 사람들은 '창덕여자고등학교'가 아니라 '창덕여고'로 검색하는데
@@ -39,7 +40,8 @@ export async function generateStaticParams() {
 
     if (!data) return [];
 
-    const schools = Array.from(new Set(data.map((item: any) => item.school)));
+    // [2026-09-14] '전국연합·경찰대학교·사관학교·평가원' 은 학교가 아니다 — 페이지를 만들지 않는다.
+    const schools = Array.from(new Set(data.map((item: any) => item.school))).filter((s: any) => s && !NOT_A_SCHOOL.has(s));
     return schools.map((school: string) => ({
         schoolName: school,  // Next.js가 URL 디코딩을 자동으로 처리하므로 인코딩 불필요
     }));
@@ -202,6 +204,8 @@ function buildSchoolNarrative(
 
 export default async function SchoolPage({ params }: Props) {
     const schoolName = decodeURIComponent(params.schoolName);
+    // [2026-09-14] 가짜 학교(모의고사 분류명)는 404. /subject 허브가 링크하던 것도 같이 끊었다.
+    if (NOT_A_SCHOOL.has(schoolName)) notFound();
     const specialIntro = SPECIAL_INTRO[schoolName];
     const supabase = createAdminClient();
 
@@ -241,7 +245,12 @@ export default async function SchoolPage({ params }: Props) {
         groups[key].files.push(item);
     });
 
-    const examList = Object.values(groups).sort((a: any, b: any) => b.year - a.year);
+    // [2026-09-14] 해설이 없는 회차(원본제보만 있는 것)는 카드로 내지 않는다.
+    //   그 카드가 /exam/{id} 로 이어지면 "문제·해설 PDF" 제목에 "미리보기 준비 중" 만 있는 빈 페이지가 된다.
+    //   전수조사에서 4개 회차(포천·백마·영동·가재울)가 그 상태로 링크돼 있었다.
+    const examList = Object.values(groups)
+        .filter((g: any) => g.files.some((f: any) => f.content_type === '해설' || f.content_type === '개인DB'))
+        .sort((a: any, b: any) => b.year - a.year);
 
     // 이 이름으로 실제 자료가 있는 지역들. 2곳 이상이면 목록을 지역별로 나눠 보여준다.
     const locations: { key: string; label: string; items: any[] }[] = [];

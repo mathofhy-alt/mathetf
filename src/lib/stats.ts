@@ -15,7 +15,9 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
  */
 
 // 학교가 아니라 시험 종류. '기출 보유 학교' 수에 넣으면 안 된다.
-const NOT_A_SCHOOL = new Set(['경찰대학교', '사관학교', '전국연합', '평가원', '수능', 'DELETED']);
+// [2026-09-14] 학교 페이지·과목 허브도 같은 목록을 써야 한다. /school/전국연합 같은 가짜 학교 페이지가
+//   색인 가능 상태로 살아 있었다(410KB). export 해서 한 곳에서 관리한다.
+export const NOT_A_SCHOOL = new Set(['경찰대학교', '사관학교', '전국연합', '평가원', '수능', 'DELETED']);
 
 const PAGE = 1000;
 
@@ -36,13 +38,15 @@ export async function getSiteStats(): Promise<SiteStats> {
         for (let from = 0; from < 20000; from += PAGE) {
             const { data, error } = await supabase
                 .from('exam_materials')
-                .select('school')
+                .select('school, content_type')
                 .neq('school', 'DELETED')
                 .range(from, from + PAGE - 1);
             if (error) throw error;
             const rows = data || [];
             for (const m of rows as any[]) {
-                if (m.school && !NOT_A_SCHOOL.has(m.school)) {
+                // [2026-09-14 전수조사] /schools 는 163, 여기는 166 — 차이 3은 원본제보만 있는 학교(포천·백마·가재울).
+                //   해설도 개인DB도 없는 학교는 '기출 보유 학교'가 아니다. /schools 와 같은 기준으로 센다.
+                if (m.school && !NOT_A_SCHOOL.has(m.school) && (m.content_type === '해설' || m.content_type === '개인DB')) {
                     bySchool[m.school] = (bySchool[m.school] || 0) + 1;
                 }
             }

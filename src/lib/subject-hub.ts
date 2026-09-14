@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { NOT_A_SCHOOL } from '@/lib/stats';
 
 /**
  * 과목 허브 페이지(/subject/[subject])용 실측 데이터.
@@ -113,7 +114,7 @@ export async function getSubjectHub(subject: string): Promise<SubjectHub | null>
             const cur = unitMap[unit] || (unitMap[unit] = { count: 0, midterm: 0, final: 0 });
             cur.count++;
             if (isFinal) cur.final++; else if (isMid) cur.midterm++;
-            if (q.school) schoolSet.add(q.school);
+            if (q.school && !NOT_A_SCHOOL.has(q.school)) schoolSet.add(q.school);   // [2026-09-14] 전국연합 등은 학교가 아니다
             const d = Number(q.difficulty) || 0;
             // exam 상세와 같은 구간 보정 (분류기가 1~3에 몰리는 하향 편향)
             if (d <= 2) easy++; else if (d <= 4) mid++; else hard++;

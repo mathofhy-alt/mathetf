@@ -1,5 +1,6 @@
 'use client';
 
+import { createClient } from '@/utils/supabase/client';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { FolderPlus, RefreshCw, DownloadCloud, Search, X, ChevronRight, Folder as FolderIcon } from 'lucide-react';
 import FolderTree from './FolderTree';
@@ -72,6 +73,10 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
 
         setLoading(true);
         const typeParam = filterType === 'all' ? '' : `&folderType=${filterType}`;
+        // [2026-09-14 전수조사] 이 탐색기는 시험지 출제 화면의 (숨겨진) 보관함 모달 안에 항상 마운트돼
+        //   비로그인 방문자도 진입마다 /api/storage/folders 를 두 번 불러 401 을 받았다. 세션 없으면 안 부른다.
+        createClient().auth.getSession().then(({ data: { session } }) => {
+        if (!session) { setLoading(false); return; }
         fetch(`/api/storage/folders?mode=all${typeParam}`)
             .then(res => res.json())
             .then(data => {
@@ -92,6 +97,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
                 setLoading(false);
             })
             .catch(err => { console.error("Unified Load Error:", err); setLoading(false); });
+        });
     }, [refreshTrigger, refreshKey, filterType, initialData]);
 
     useEffect(() => {

@@ -53,14 +53,20 @@ function examFormLabel(sourceDbId?: string | null): string {
  * 검색·담기는 수십 번 반복되므로 그대로 두면 로그가 행동이 아니라 클릭 수를 세게 된다.
  */
 const qbLogged = new Set<string>();
+// [2026-09-14 전수조사] 비로그인 방문자의 qb_enter 가 매번 401 로 튕기고 있었다(서버가 버린다).
+//   콘솔 오류 + 서버리스 호출만 남기므로 세션이 없으면 아예 보내지 않는다. 세션 확인은 로컬 쿠키라 왕복이 없다.
+async function hasSession(): Promise<boolean> {
+    try { const { data: { session } } = await createClient().auth.getSession(); return !!session; }
+    catch { return false; }
+}
 function logQb(step: string, title?: string) {
     if (typeof window === 'undefined' || qbLogged.has(step)) return;
     qbLogged.add(step);
-    fetch('/api/log/feature', {
+    hasSession().then((ok) => { if (ok) fetch('/api/log/feature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ feature: step, title: title?.slice(0, 200) || null }),
-    }).catch(() => { });
+    }).catch(() => { }); });
 }
 
 export default function QuestionBankPage() {

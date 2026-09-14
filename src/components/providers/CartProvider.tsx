@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 export interface CartItem {
   id: string;
@@ -30,6 +31,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const fetchCart = useCallback(async () => {
     setIsLoading(true);
     try {
+      // [2026-09-14 전수조사] 비로그인 방문자도 매 페이지뷰마다 /api/cart 를 불러 401 을 받고 있었다
+      //   (브라우저 28회 로드 중 28회, 콘솔 오류 1건씩). 기능엔 지장이 없지만 서버리스 호출 1회 + 콘솔 오류가
+      //   페이지뷰마다 생긴다. 세션이 없으면 부르지 않는다. 세션 확인은 로컬 쿠키라 네트워크 왕복이 없다.
+      const { data: { session } } = await createClient().auth.getSession();
+      if (!session) { setItems([]); return; }
       const res = await fetch('/api/cart');
       if (res.ok) {
         const data = await res.json();
