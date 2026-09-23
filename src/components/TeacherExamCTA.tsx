@@ -5,7 +5,7 @@ import { PencilRuler, X, PlayCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // 사용법 영상 — 시험지출제에서 학교 시험지 다운로드하는 법 (사용자 제공, 7/24)
-const GUIDE_VIDEO_URL = '/guide#teacher';
+const GUIDE_VIDEO_URL = 'https://www.youtube.com/watch?v=2Yt94Ps8rk8&t=5s';
 
 const DISMISS_KEY = 'mathetf_teacher_cta_dismissed';
 
@@ -78,7 +78,7 @@ export default function TeacherExamCTA({ school, variant, visible, onClose }: {
                         onClick={openVideo}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#638747] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
                     >
-                        <PlayCircle size={16} /> 사용법 보기
+                        <PlayCircle size={16} /> 사용법 영상 보기
                     </button>
                     <button
                         onClick={goMake}

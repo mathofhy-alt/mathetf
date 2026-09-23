@@ -144,9 +144,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                     {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
                                 </Link>
                             ))}
-                            {/* 유튜브 사용법 가이드 (외부 채널) */}
+                            {/* 사용법 안내 */}
                             <a href="/guide"
-                                onClick={() => { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'header' }) }).catch(() => { }); }}
                                 className="px-2 py-2 rounded-lg text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
                                 <BookOpen size={20} /> 사용법
                             </a>
@@ -257,9 +256,9 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 )}
                             </div>
                         ))}
-                        {/* 유튜브 사용법 가이드 (외부 채널) */}
+                        {/* 사용법 안내 */}
                         <a href="/guide"
-                            onClick={() => { setMobileMenuOpen(false); fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'header_mobile' }) }).catch(() => { }); }}
+                            onClick={() => setMobileMenuOpen(false)}
                             className="flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
                             <BookOpen size={22} /> 사용법 가이드
                             <span className="text-[10px] text-slate-400 font-semibold ml-auto">이용 안내</span>
