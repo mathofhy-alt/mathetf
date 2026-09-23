@@ -29,6 +29,7 @@ const ReportModal = dynamic(() => import('@/components/ReportModal'), { ssr: fal
 // [PERF] 모달류는 초기 화면에 안 보이므로 지연 로드 (초기 JS 축소)
 const RoleOnboardingModal = dynamic(() => import('@/components/RoleOnboardingModal'), { ssr: false });
 const LaunchPromoModal = dynamic(() => import('@/components/LaunchPromoModal'), { ssr: false });
+const freePdfDownloadKey = (id: string) => `free-pdf:${id}`;
 
 interface HomeClientProps {
     initialExamData: any[][];   // packHomeRow 로 압축된 행
@@ -566,8 +567,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             return;
         }
         if (!file.hasFreePdf) return;
-        if (dlState[file.id] === 'loading') return;   // 진행 중 재클릭 무시 (연타 방지)
-        setDlState(prev => ({ ...prev, [file.id]: 'loading' }));
+        const stateKey = freePdfDownloadKey(file.id);
+        if (dlState[stateKey] === 'loading') return;   // 진행 중 재클릭 무시 (연타 방지)
+        setDlState(prev => ({ ...prev, [stateKey]: 'loading' }));
         try {
             // [2026-09-02] URL 발급을 서버로 옮겼다. 하루 상한(10건)을 서버에서 걸기 위함 —
             // 예전처럼 클라이언트가 free_pdf_url 을 직접 읽으면 화면에서 막아도 우회된다.
@@ -592,7 +594,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             link.remove();
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(objUrl), 40_000);
-            setDlState(prev => ({ ...prev, [file.id]: 'done' }));
+            setDlState(prev => ({ ...prev, [stateKey]: 'done' }));
             // 로그는 /api/free-pdf 가 발급 시점에 남긴다(상한 계산의 근거라 누락되면 안 됨).
             // [2026-09-09] 해설 프로모를 먼저 띄운다. 6주간 teacher_cta 는 7명만 눌렀고
             //   강사 전환율은 18% 에서 꿈쩍 안 했다 — 그 자리를 프로모로 대체한다.
@@ -615,7 +617,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
             }
         } catch (error: any) {
             console.error('Free download error:', error);
-            setDlState(prev => { const n = { ...prev }; delete n[file.id]; return n; });
+            setDlState(prev => { const n = { ...prev }; delete n[stateKey]; return n; });
             // 상한 안내는 서버 문구를 그대로 보여준다. '준비 중' 으로 뭉뚱그리면 왜 안 되는지 모른다.
             alert(error?.message || '무료 문제 PDF를 준비 중입니다. 잠시 후 다시 시도해주세요.');
         }
@@ -803,7 +805,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                 {/* 문제만 PDF (회원가입 시 무료) — 맨 앞 강조 */}
                                                 <p className="w-full text-xs text-slate-500">{group.files.pdfSol?.hasFreePdf?'무료 문제 PDF 제공':'무료 문제 PDF 준비 중'} · {Object.values(group.files).some((f:any)=>f?.hasPreview)?'미리보기 제공':'미리보기 준비 중'} · {group.files.db&&!unavailableDbs[group.files.db.id]?'문항별 출제 가능':'문항별 출제 준비 중'}</p>
                                                 {group.files.pdfSol?.hasFreePdf && (() => {
-                                                    const st = dlState[group.files.pdfSol!.id];
+                                                    const st = dlState[freePdfDownloadKey(group.files.pdfSol!.id)];
                                                     return (
                                                         <button
                                                             data-free-pdf="true"
@@ -843,7 +845,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             ? <Loader2 size={13} className="animate-spin" />
                                                             : <PdfFileIcon size={13} purchased={checkAccess(group.files.pdfSol.id)} />}
                                                         <span>{dlState[group.files.pdfSol.id] === 'loading' ? '받는 중…'
-                                                            : dlState[group.files.pdfSol.id] === 'done' ? '받았어요'
+                                                            : checkAccess(group.files.pdfSol.id) && dlState[group.files.pdfSol.id] === 'done' ? '받았어요'
                                                             : checkAccess(group.files.pdfSol.id) ? 'PDF 다운' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : `PDF ${group.files.pdfSol.price}원`}</span>
                                                     </button>
                                                 ) : (
