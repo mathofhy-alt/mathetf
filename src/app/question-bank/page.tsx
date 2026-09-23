@@ -1773,7 +1773,7 @@ export default function QuestionBankPage() {
                                                     </span>
                                                 )}
                                                 <span className="text-[11px] font-bold text-gray-500">
-                                                    {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.semester && `${q.semester}`}{examFormLabel(q.source_db_id)} 원본 {q.question_number}번
+                                                    {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.school === '수능' ? '대학수학능력시험' : q.semester}{examFormLabel(q.source_db_id)} 원본 {q.question_number}번
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">

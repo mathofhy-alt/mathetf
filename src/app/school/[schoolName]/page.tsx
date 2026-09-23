@@ -34,12 +34,18 @@ interface Props {
 // 빌드 시 실제 데이터 있는 학교만 미리 생성
 export async function generateStaticParams() {
     const supabase = createAdminClient();
-    const { data } = await supabase
-        .from('exam_materials')
-        .select('school')
-        .neq('school', 'DELETED');
-
-    if (!data) return [];
+    const data: { school: string }[] = [];
+    for (let offset = 0; ; offset += 1000) {
+        const { data: page, error } = await supabase
+            .from('exam_materials')
+            .select('school')
+            .neq('school', 'DELETED')
+            .order('id')
+            .range(offset, offset + 999);
+        if (error) throw error;
+        data.push(...(page || []));
+        if (!page || page.length < 1000) break;
+    }
 
     // [2026-09-14] '전국연합·경찰대학교·사관학교·평가원' 은 학교가 아니다 — 페이지를 만들지 않는다.
     const schools = Array.from(new Set(data.map((item: any) => item.school))).filter((s: any) => s && !NOT_A_SCHOOL.has(s));

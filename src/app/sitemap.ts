@@ -3,6 +3,7 @@ import { MetadataRoute } from 'next';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { HUB_SUBJECTS } from '@/lib/subject-hub';
 import { buildRegionTree } from '@/lib/region-hub';
+import { INSIGHT_REPORTS } from '@/lib/seo-insights';
 
 export const revalidate = 3600; // 1시간마다 갱신
 
@@ -44,6 +45,8 @@ const PAGE_UPDATED: Record<string, string> = {
     '/print-transform': '2026-09-20',
     '/study/common-math-2': '2026-07-02',
     '/study/calculus-1': '2026-07-02',
+    '/insights': '2026-09-24',
+    '/insights/methodology': '2026-09-24',
 };
 
 const BASE = 'https://mathetf.com';
@@ -112,22 +115,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         }));
 
-        // 시험지별 상세페이지 (해설 PDF 1행 = 시험 1개)
-        // 현재 440개라 아직 한도에 안 닿았지만, 넘는 순간 조용히 잘린다 — 미리 막는다.
+        // 시험지별 상세페이지 (해설 PDF 1행 = 시험 1개).
+        // 현재 1,300건 이상이므로 1,000행 제한을 넘지 않도록 모두 가져온다.
+        // 미리보기 준비 전 회차는 페이지 접근은 유지하되 색인 제출에서 제외한다.
         const examRows = await fetchAll<any>((from, to) => supabase
             .from('exam_materials')
-            .select('id, created_at')
+            .select('id, created_at, ai_analysis_at, preview_urls')
             .eq('file_type', 'PDF')
             .eq('content_type', '해설')
             .neq('school', 'DELETED')
             .range(from, to));
 
-        const examPages: MetadataRoute.Sitemap = examRows.map((r: any) => ({
-            url: `${BASE}/exam/${r.id}`,
-            lastModified: new Date(r.created_at),
-            changeFrequency: 'monthly' as const,
-            priority: 0.7,
-        }));
+        const examPages: MetadataRoute.Sitemap = examRows
+            .filter((r: any) => Array.isArray(r.preview_urls) && r.preview_urls.length > 0)
+            .map((r: any) => ({
+                url: `${BASE}/exam/${r.id}`,
+                lastModified: new Date(Math.max(
+                    new Date(r.created_at).getTime(),
+                    r.ai_analysis_at ? new Date(r.ai_analysis_at).getTime() : 0,
+                    new Date('2026-09-24').getTime(), // 관련 회차·보고서 링크와 이용 범위 설명 변경
+                )),
+                changeFrequency: 'monthly' as const,
+                priority: 0.7,
+            }));
 
         // 모의고사: 미리보기 생성된 회차만 색인 (+ 허브·분류 페이지)
         const mockRows = await fetchAll<any>((from, to) => supabase
@@ -136,6 +146,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .not('preview_urls', 'is', null)
             .range(from, to));
         const listed = mockRows.filter((r: any) => Array.isArray(r.preview_urls) && r.preview_urls.length > 0);
+        const mockMaterialRows = await fetchAll<any>((from, to) => supabase
+            .from('exam_materials')
+            .select('school, created_at')
+            .eq('file_type', 'DB')
+            .eq('grade', 3)
+            .in('school', ['전국연합', '평가원', '수능'])
+            .range(from, to));
+        const categoryActivity = [
+            ...listed,
+            ...mockMaterialRows.map((r: any) => ({ category: r.school, created_at: r.created_at })),
+        ];
+        const reclassifiedAt = new Date('2026-09-24');
 
         // 허브·분류 페이지의 lastmod 는 그 아래 실제 회차의 최신 시각이다.
         const newest = (rows: any[]) =>
@@ -151,12 +173,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         }];
 
-        // [2026-09-14] 자료가 0건인 분류(수능)는 "아직 자료가 없어요" 한 줄짜리라 사이트맵에서 뺀다. 들어오면 자동 복귀.
+        // 원본 파일이 없어도 문항별 출제 자료가 있는 분류는 사이트맵에 포함한다.
         const mockCategoryPages: MetadataRoute.Sitemap = ['전국연합', '평가원', '수능', '경찰대', '사관학교']
-            .filter((c) => listed.some((r: any) => r.category === c))
+            .filter((c) => categoryActivity.some((r: any) => r.category === c))
             .map((c) => ({
             url: `${BASE}/${enc('모의고사')}/${enc(c)}`,
-            lastModified: newest(listed.filter((r: any) => r.category === c)) || fallbackDate,
+            lastModified: new Date(Math.max(
+                (newest(categoryActivity.filter((r: any) => r.category === c)) || fallbackDate).getTime(),
+                ['평가원', '수능'].includes(c) ? reclassifiedAt.getTime() : 0,
+            )),
             changeFrequency: 'monthly' as const,
             priority: 0.7,
         }));
@@ -172,7 +197,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // 학교 수가 받쳐주는 4개만 만든다(나머지는 2~8개교라 씬페이지가 된다).
         const subjectPages: MetadataRoute.Sitemap = HUB_SUBJECTS.map((sub) => ({
             url: `${BASE}/subject/${enc(sub)}`,
-            lastModified: latestQuestion,
+            lastModified: ['공통수학1', '수학I'].includes(sub)
+                ? new Date(Math.max(latestQuestion.getTime(), new Date('2026-09-24').getTime()))
+                : latestQuestion,
             changeFrequency: 'weekly' as const,
             priority: 0.8,
         }));
@@ -199,7 +226,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             { url: `${BASE}/schools`, lastModified: latestMaterial, changeFrequency: 'weekly', priority: 0.7 },
         ];
 
-        return [...dataDriven, ...staticPages(), ...subjectPages, ...regionPages, ...schoolPages, ...examPages,
+        const insightPages: MetadataRoute.Sitemap = INSIGHT_REPORTS.map(report => ({
+            url: `${BASE}/insights/${report.slug}`,
+            lastModified: new Date('2026-09-24'),
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        }));
+
+        return [...dataDriven, ...staticPages(), ...insightPages, ...subjectPages, ...regionPages, ...schoolPages, ...examPages,
             ...mockStatic, ...mockCategoryPages, ...mockExamPages];
     } catch (e) {
         // ⚠ 예전엔 여기서 정적 5개만 담아 HTTP 200 으로 응답했다.

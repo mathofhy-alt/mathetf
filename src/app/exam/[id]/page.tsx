@@ -10,7 +10,9 @@ import FreeProblemCTA from '@/components/FreeProblemCTA';
 import Header from '@/components/Header';
 import { buildSourceDbId } from '@/lib/examKey';
 import { proxiedOgImage } from '@/lib/og-image';
-import examQuestions from '@/lib/exam-questions.json';
+import { HUB_SUBJECTS } from '@/lib/subject-hub';
+import { buildSeoPilotAnalysis, SEO_EXAM_PILOT_IDS } from '@/lib/seo-exam-pilot';
+import { reportForExam } from '@/lib/seo-insights';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
 
@@ -28,21 +30,6 @@ function buildLabel(row: any) {
 }
 
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
-
-/**
- * [SEO] 문항 발문 텍스트 — 10개 회차만 넣어보는 시험(2026-08-29).
- *
- * 이 페이지의 실질 내용인 시험지는 미리보기 '이미지' 로만 있어 구글·AI검색이 본문으로 못 읽는다.
- * 읽히는 고유 텍스트가 AI 분석 문단뿐이라 8/16 이후 '크롤링됨 - 색인 생성되지 않음' 으로 밀린 상태다.
- * 발문을 텍스트로 실으면 회차당 3,000자 안팎의 고유 본문이 생긴다.
- *
- * 문제는 이미 미리보기 이미지·무료 PDF·강사카페 배포로 전량 무료 공개 중이라 판매 잠식이 없다.
- * **해설은 싣지 않는다** — 대표가 직접 쓴 해설이 유일한 판매 근거다.
- * 데이터는 scripts/gen_exam_questions.py 가 만든다(수식 변환 실패가 하나라도 있으면 회차째 제외).
- * 나머지 462개 페이지가 대조군이다. 색인 반응을 보고 전체로 넓힐지 정한다.
- */
-type QuestionItem = { n: string; t: string };
-const EXAM_QUESTIONS = examQuestions as Record<string, QuestionItem[]>;
 
 type Composition = { total: number; byUnit: { unit: string; count: number }[]; avg: number; easy: number; mid: number; hard: number };
 
@@ -94,9 +81,15 @@ async function getExam(id: string) {
     if (!row) return null;
     // subject가 null인 행은 .eq('subject','')로 매칭이 안 됨 → null은 is()로 매칭
     const matchSubject = (q: any) => (row.subject ? q.eq('subject', row.subject) : q.is('subject', null));
+    const matchLocation = (q: any) => {
+        let query = q;
+        if (row.region) query = query.eq('region', row.region);
+        if (row.district) query = query.eq('district', row.district);
+        return query;
+    };
 
     // 같은 시험의 다른 형식(HWP/개인DB) 확인
-    const { data: siblings } = await matchSubject(
+    const { data: siblings } = await matchLocation(matchSubject(
         supabase
             .from('exam_materials')
             .select('id,file_type,content_type')
@@ -105,10 +98,10 @@ async function getExam(id: string) {
             .eq('grade', row.grade)
             .eq('semester', row.semester)
             .eq('exam_type', row.exam_type)
-    ).neq('school', 'DELETED');
+    )).neq('school', 'DELETED');
 
     // 같은 학교·같은 시험(학년·학기·시험·과목)의 다른 연도 → 상세페이지 링크
-    const { data: otherYears } = await matchSubject(
+    const { data: otherYears } = await matchLocation(matchSubject(
         supabase
             .from('exam_materials')
             .select('id, exam_year')
@@ -116,12 +109,34 @@ async function getExam(id: string) {
             .eq('grade', row.grade)
             .eq('semester', row.semester)
             .eq('exam_type', row.exam_type)
-    )
+    ))
         .eq('file_type', 'PDF')
         .eq('content_type', '해설')
         .neq('id', row.id)
         .neq('school', 'DELETED')
         .order('exam_year', { ascending: false });
+
+    // 같은 연도 시리즈가 없는 시험도 학교의 실제 다른 회차로 이어 준다.
+    const { data: schoolExams } = await matchLocation(supabase
+        .from('exam_materials')
+        .select('id, school, region, district, exam_year, grade, semester, exam_type, subject')
+        .eq('school', row.school)
+        .eq('file_type', 'PDF')
+        .eq('content_type', '해설'))
+        .neq('id', row.id)
+        .neq('school', 'DELETED')
+        .order('exam_year', { ascending: false })
+        .limit(100);
+    const yearIds = new Set((otherYears || []).map((item: any) => item.id));
+    const relatedExams = (schoolExams || [])
+        .filter((item: any) => !yearIds.has(item.id)
+            && (!row.region || item.region === row.region)
+            && (!row.district || item.district === row.district))
+        .sort((a: any, b: any) =>
+            Number(b.subject === row.subject) - Number(a.subject === row.subject)
+            || Number(b.grade === row.grade) - Number(a.grade === row.grade)
+            || Math.abs(Number(row.exam_year) - Number(a.exam_year)) - Math.abs(Number(row.exam_year) - Number(b.exam_year)))
+        .slice(0, 4);
 
     // 시험 구성(단원별·난이도별 문항수) + 출제 개념/유형(key_concepts) — source_db_id 로 questions 조회
     let composition: null | { total: number; byUnit: { unit: string; count: number }[]; avg: number; easy: number; mid: number; hard: number } = null;
@@ -155,19 +170,27 @@ async function getExam(id: string) {
         }
     }
 
-    return { row, siblings: siblings || [], otherYears: otherYears || [], composition, concepts, sourceKey };
+    return { row, siblings: siblings || [], otherYears: otherYears || [], relatedExams, composition, concepts, sourceKey };
 }
 
 // 빌드 시 실제 해설 PDF 시험만 미리 생성
 export async function generateStaticParams() {
     const supabase = createAdminClient();
-    const { data } = await supabase
-        .from('exam_materials')
-        .select('id')
-        .eq('file_type', 'PDF')
-        .eq('content_type', '해설')
-        .neq('school', 'DELETED');
-    return (data || []).map((r: any) => ({ id: r.id }));
+    const ids: string[] = [];
+    for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase
+            .from('exam_materials')
+            .select('id')
+            .eq('file_type', 'PDF')
+            .eq('content_type', '해설')
+            .neq('school', 'DELETED')
+            .order('id')
+            .range(offset, offset + 999);
+        if (error) throw error;
+        ids.push(...(data || []).map((r: any) => r.id));
+        if (!data || data.length < 1000) break;
+    }
+    return ids.map(id => ({ id }));
 }
 
 /**
@@ -196,10 +219,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // [2026-09-14] 해설이 없는 회차(원본제보만 있음)는 색인에서 뺀다.
     //   제목은 "문제·해설 PDF" 인데 본문은 "미리보기 준비 중" 뿐이라 얇은 페이지다. 페이지 자체는 남긴다(제보 확인용).
     const hasSolution = ex.siblings.some((s: any) => s.content_type === '해설' || s.content_type === '개인DB');
+    const hasPreview = Array.isArray(ex.row.preview_urls) && ex.row.preview_urls.length > 0;
     return {
         title,
         description,
-        ...(hasSolution ? {} : { robots: { index: false, follow: true } }),
+        ...(hasSolution && hasPreview ? {} : { robots: { index: false, follow: true } }),
         keywords: [
             `${ex.row.school} 수학 기출`, `${ex.row.school} ${ex.row.exam_year} 수학`,
             `${ex.row.school} ${ex.row.exam_type}`, `${ex.row.subject || ''} 기출문제`,
@@ -216,7 +240,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExamDetailPage({ params }: Props) {
     const ex = await getExam(params.id);
     if (!ex) notFound();
-    const { row, siblings, otherYears, composition, concepts, sourceKey } = ex;
+    const { row, siblings, otherYears, relatedExams, composition, concepts, sourceKey } = ex;
     const label = buildLabel(row);
     const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
     const examShort = `${row.grade ? row.grade + '학년 ' : ''}${isMock ? row.semester + '월' : row.semester + '학기'} ${row.exam_type || ''}`.trim();
@@ -231,15 +255,17 @@ export default async function ExamDetailPage({ params }: Props) {
     const aiParas: string[] = typeof row.ai_analysis === 'string' && row.ai_analysis.trim()
         ? row.ai_analysis.trim().split(/\n{2,}|\r?\n/).map((s: string) => s.trim()).filter((s: string) => Boolean(s))
         : [];
-    const narrative: string[] = aiParas.length > 0 ? aiParas : templateNarrative;
-    const questionTexts: QuestionItem[] = EXAM_QUESTIONS[params.id] || [];
+    const relatedReport = reportForExam(row);
+    const benchmark = relatedReport?.groups.find(group => group.label.includes(row.exam_type?.includes('중간') ? '중간' : '기말'));
+    const pilotAnalysis = composition && SEO_EXAM_PILOT_IDS.has(row.id) ? buildSeoPilotAnalysis(composition, benchmark) : [];
+    const narrative: string[] = pilotAnalysis.length > 0 ? pilotAnalysis : aiParas.length > 0 ? aiParas : templateNarrative;
     const url = `https://mathetf.com/exam/${params.id}`;
     const jsonLd = [
         {
             '@context': 'https://schema.org',
             '@type': 'LearningResource',
-            name: `${label} 수학 기출문제 및 해설`,
-            description: narrative[0] || `${label} 수학 기출문제와 해설입니다.`,
+            name: `${label} 수학 기출문제 미리보기`,
+            description: `${label} 문제 미리보기는 전체 공개됩니다. 문제만 있는 PDF는 로그인 회원에게 무료이며, 해설 포함 자료는 별도 제공됩니다. ${narrative[0] || ''}`.trim(),
             url,
             learningResourceType: '기출문제',
             educationalUse: '시험 대비',
@@ -321,6 +347,7 @@ export default async function ExamDetailPage({ params }: Props) {
                                 <p key={i} className="text-sm text-slate-600 leading-relaxed break-keep">{para}</p>
                             ))}
                         </div>
+                        {pilotAnalysis.length > 0 && <p className="text-xs text-slate-500 mt-3">분석 기준: 현재 등록된 문항의 단원·난이도 자동 분류. 문항 원문·정답·해설은 이 분석에 포함하지 않습니다.</p>}
                     </section>
                 )}
 
@@ -337,35 +364,13 @@ export default async function ExamDetailPage({ params }: Props) {
                     </div>
                 )}
 
-                {/* 문항 발문 텍스트 (SEO 고유 본문 — 해설 제외, 10개 회차 시험 중) */}
-                {questionTexts.length > 0 && (
-                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                        <h2 className="text-sm font-bold text-slate-700 mb-1">📝 문항 목록</h2>
-                        <p className="text-xs text-slate-400 mb-4">
-                            {label} 수학 기출 {questionTexts.length}문항의 문제입니다. 해설은 다운로드로 제공됩니다.
-                        </p>
-                        <ol className="space-y-4">
-                            {questionTexts.map((q) => (
-                                <li key={q.n} className="flex gap-2.5">
-                                    <span className="shrink-0 w-6 h-6 rounded-full bg-[#EAF1E1] text-[#426D36] text-xs font-bold flex items-center justify-center mt-0.5">
-                                        {q.n}
-                                    </span>
-                                    <p className="text-sm text-slate-600 leading-relaxed break-keep whitespace-pre-line flex-1">
-                                        {q.t}
-                                    </p>
-                                </li>
-                            ))}
-                        </ol>
-                    </section>
-                )}
-
                 {/* [퍼널 2026-08-30] 시험지 상세 → 출제 도구 바로가기.
                     유입의 대부분이 네이버 정확매칭 검색("2025 낙생고 1-2 중간고사")으로 이 페이지에
                     곧장 떨어지는데, 여기서 출제 도구로 가는 길이 홈으로 보내는 링크뿐이었다.
                     도구에 들어가도 빈 화면이라 검색부터 다시 시작해야 했다(완주율 20%). */}
                 {sourceKey && composition && composition.total > 0 && (
                     <Link
-                        href={`/question-bank?src=${encodeURIComponent(sourceKey)}`}
+                        href={`/question-bank?src=${encodeURIComponent(sourceKey)}&origin=exam`}
                         className="flex items-center justify-between gap-3 bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 mb-6 hover:border-[#638747] transition-colors"
                     >
                         <div className="min-w-0">
@@ -444,10 +449,8 @@ export default async function ExamDetailPage({ params }: Props) {
                     <p className="font-bold text-lg mb-1">문제 + 해설 전체 받기</p>
                     <p className="text-white/85 text-sm mb-4 break-keep">{label} 시험지의 전체 문제와 해설을 받아보세요.</p>
                     <Link
-                        href={`/?school=${encodeURIComponent(row.school)}`}
-                        // 사용자에겐 유용한 바로가기지만, 크롤러가 따라가면 홈과 내용이 같은
-                        // /?school=학교명 URL 이 학교 수만큼 생겨 중복 문서가 된다
-                        // (네이버 'description 중복' 45건이 전부 이 형태였다 · 8/18)
+                        href={`/#material=${siblings.find((s: any) => s.file_type === 'PDF' && s.content_type === '해설')?.id || row.id}`}
+                        // 홈의 정확한 회차 카드로 이동한다. 프래그먼트는 중복 검색 URL을 만들지 않는다.
                         rel="nofollow"
                         className="inline-block bg-white text-[#426D36] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
                     >
@@ -475,8 +478,34 @@ export default async function ExamDetailPage({ params }: Props) {
                     </div>
                 )}
 
+                {relatedExams.length > 0 && (
+                    <section className="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <h2 className="text-sm font-bold text-slate-700 mb-3">{row.school}의 관련 시험지</h2>
+                        <ul className="space-y-2">
+                            {relatedExams.map((item: any) => (
+                                <li key={item.id}>
+                                    <Link href={`/exam/${item.id}`} className="text-sm font-semibold text-[#426D36] hover:underline">
+                                        {buildLabel(item)} 기출문제 →
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+
+                {relatedReport && composition && previews.length > 0 && (
+                    <Link href={`/insights/${relatedReport.slug}`} className="mt-6 block bg-white rounded-2xl border border-slate-200 p-5 text-sm text-[#426D36] font-semibold hover:underline">
+                        {relatedReport.title} · 출제 동향 데이터 보기 →
+                    </Link>
+                )}
+
                 {/* 하단 링크 */}
                 <div className="mt-8 text-center">
+                    {row.subject && HUB_SUBJECTS.includes(row.subject) && (
+                        <Link href={`/subject/${encodeURIComponent(row.subject)}`} className="text-sm text-slate-500 hover:text-brand-600 hover:underline mr-4">
+                            {row.subject} 기출 모아 보기 →
+                        </Link>
+                    )}
                     <Link href="/schools" className="text-sm text-slate-500 hover:text-brand-600 hover:underline">
                         전국 학교별 기출 자료 모두 보기 →
                     </Link>

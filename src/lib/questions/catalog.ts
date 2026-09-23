@@ -26,7 +26,7 @@ export async function availableCatalog(): Promise<CatalogDb[]> {
             const direct = user ? await readAllPages<any>((from, to) => sb.from('purchased_items').select('id,item_id').eq('user_id', user.id).in('item_type', ['PERSONAL_DB', 'DB', '개인DB']).order('id').range(from, to)) : [];
             const owned = new Set([...purchases.map(p => p.exam_id), ...direct.map(p => p.item_id)]);
             const freeSchools = ['경찰대학교','육군사관학교','해군사관학교','공군사관학교','국군간호사관학교'];
-            allowed = rows.filter(db => owned.has(db.id) || db.exam_type === '모의고사' || freeSchools.includes(db.school || ''));
+            allowed = rows.filter(db => owned.has(db.id) || ['모의고사', '수능'].includes(db.exam_type || '') || freeSchools.includes(db.school || ''));
         }
     }
     return allowed.map(db => ({ ...db, availability: unavailableDbs[db.id] }));

@@ -4,6 +4,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import { getSubjectHub, HUB_SUBJECTS, SUBJECT_INFO, type HubSubject } from '@/lib/subject-hub';
+import { INSIGHT_REPORTS } from '@/lib/seo-insights';
 
 export const revalidate = 3600;
 
@@ -50,6 +51,7 @@ export default async function SubjectHubPage({ params }: Props) {
     const hub = await getSubjectHub(subject);
     if (!hub) notFound();
     const info = SUBJECT_INFO[subject as HubSubject];
+    const relatedInsight = subject === '공통수학1' ? INSIGHT_REPORTS[0] : subject === '수학I' ? INSIGHT_REPORTS[1] : null;
     const url = `https://mathetf.com/subject/${encodeURIComponent(subject)}`;
     // 자료가 한쪽 시험에 쏠려 있으면 그렇다고 밝힌다.
     // 합쳐서 내면 '과목의 출제 분포' 처럼 읽히는데 사실이 아니다(수학II 는 기말 0건이라 적분이 통째로 빠진다).
@@ -121,6 +123,12 @@ export default async function SubjectHubPage({ params }: Props) {
                         </p>
                     </div>
                 </section>
+
+                {relatedInsight && (
+                    <Link href={`/insights/${relatedInsight.slug}`} className="block bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6 text-sm font-semibold text-[#426D36] hover:underline">
+                        {relatedInsight.title} · 실제 보유 시험지 집계 보기 →
+                    </Link>
+                )}
 
                 {/* 단원별 출제 분포 */}
                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">

@@ -34,10 +34,11 @@ export interface MockExam {
     original_hwp_path?: string | null;
     variant_pdf_path?: string | null;
     variant_hwp_path?: string | null;
+    materialOnly?: boolean;
 }
 
 export default function MockExamCard({exam}:{exam:MockExam}){
  const cat=MOCK_CATEGORIES[exam.category]??MOCK_CATEGORIES['전국연합'];
  const formats=[(exam.original_pdf_path||exam.variant_pdf_path)?'PDF':null,(exam.original_hwp_path||exam.variant_hwp_path)?'HWP':null].filter(Boolean).join(' · ');
- return <Link href={`/모의고사/${exam.slug}`} className="suite-mock-card"><div className="mock-card-top">{cat.label}<span>{exam.year}</span></div><h3>{exam.title}</h3><p>{exam.grade}{exam.month?` · ${exam.month}월`:''}{exam.subject?` · ${exam.subject}`:''}</p><div className="mock-card-bottom"><div>{(exam.original_pdf_path||exam.original_hwp_path)&&<span>원본</span>}{(exam.hasVariant===true||exam.variant_pdf_path||exam.variant_hwp_path)&&<span>변형</span>}{formats&&<span>{formats}</span>}</div><ArrowRight size={18}/></div></Link>;
+ return <Link href={`/모의고사/${exam.slug}`} className="suite-mock-card"><div className="mock-card-top">{cat.label}<span>{exam.year}</span></div><h3>{exam.title}</h3><p>{exam.grade}{exam.month?` · ${exam.month}월`:''}{exam.subject?` · ${exam.subject}`:''}</p><div className="mock-card-bottom"><div>{exam.materialOnly&&<span>문항별 출제</span>}{(exam.original_pdf_path||exam.original_hwp_path)&&<span>원본</span>}{(exam.hasVariant===true||exam.variant_pdf_path||exam.variant_hwp_path)&&<span>변형</span>}{formats&&<span>{formats}</span>}</div><ArrowRight size={18}/></div></Link>;
 }

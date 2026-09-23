@@ -170,9 +170,15 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedDistrict, setSelectedDistrict] = useState('');
     const [selectedSchool, setSelectedSchool] = useState('');
+    const [targetMaterialId, setTargetMaterialId] = useState<string | null>(null);
     // URL ?school= 파라미터 → 해당 학교로 필터 + 자료 목록으로 스크롤
     // (exam 상세의 '다운로드 하러 가기'가 홈 최상단이 아니라 실제 다운로드 목록에 착지하도록)
     useEffect(() => {
+        const material = /^#material=([0-9a-f-]{36})$/i.exec(window.location.hash)?.[1];
+        if (material) {
+            setTargetMaterialId(material);
+            return;
+        }
         const s = new URLSearchParams(window.location.search).get('school');
         if (s) {
             setSelectedSchool(decodeURIComponent(s));
@@ -180,6 +186,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    useEffect(() => {
+        if (!targetMaterialId || catalogState !== 'ready') return;
+        document.getElementById('main-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [targetMaterialId, catalogState]);
     const [selectedGrade, setSelectedGrade] = useState('');
     const [selectedExamScope, setSelectedExamScope] = useState(''); // Combined Semester + ExamType
     const [selectedYear, setSelectedYear] = useState('');
@@ -237,6 +247,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
 
     // useMemo: 필터 조건이나 groupedFiles가 바뀔 때만 재계산 (기존: 매 렌더마다 filter 실행)
     const filteredFiles = useMemo(() => groupedFiles.filter(group => {
+        if (targetMaterialId && !Object.values(group.files).some(file => file?.id === targetMaterialId)) return false;
         if (freePdfOnly && !group.files.pdfSol?.hasFreePdf) return false;
         // 0. Keyword Search
         if (searchKeyword) {
@@ -279,7 +290,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         if (selectedSubject && group.subject !== selectedSubject) return false;
 
         return true;
-    }), [groupedFiles, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject, freePdfOnly]);
+    }), [groupedFiles, targetMaterialId, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject, freePdfOnly]);
 
     // 과목 드롭다운: 실제 자료에 있는 과목만, 교육과정별 그룹으로 (수학I/대수 등 이름 혼동 방지)
     // - 양쪽 교육과정에 같은 이름이 있으면(확통·기하와벡터) 먼저 나온 그룹에만 표시
@@ -737,7 +748,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                         </div>
 
                         {/* 기출 자료 카드 목록 */}
-                        <div className="atelier-results"><div className="cloud-results-summary" role="status"><span>{freePdfOnly?'무료 PDF 자료':'기출 자료'} <strong>{filteredFiles.length.toLocaleString()}건</strong></span><span>학교 · 학년 · 회차별로 살펴보세요.</span></div>
+                        <div className="atelier-results"><div className="cloud-results-summary" role="status"><span>{targetMaterialId ? '선택한 회차' : freePdfOnly?'무료 PDF 자료':'기출 자료'} <strong>{targetMaterialId && catalogState === 'loading' ? '확인 중' : `${filteredFiles.length.toLocaleString()}건`}</strong></span>{targetMaterialId ? <button type="button" onClick={() => { setTargetMaterialId(null); history.replaceState(null, '', `${location.pathname}${location.search}`); }} className="text-[#426D36] font-bold underline">전체 자료 보기</button> : <span>학교 · 학년 · 회차별로 살펴보세요.</span>}</div>
                         <div id="main-list" className="space-y-2">
                             {currentItems.length > 0 ? currentItems.map((group, idx) => (
                                 <div key={group.key} data-tour={idx === 0 ? 'exam-card' : undefined} className="cloud-exam-card">
@@ -924,7 +935,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                 </div>
                             )) : (
                                 <div className="py-14 text-center bg-white rounded-xl shadow-sm px-6">
-                                    <p className="text-[#AAAAC4]">검색 결과가 없습니다.</p>
+                                    <p className="text-[#AAAAC4]">{targetMaterialId && catalogState === 'loading' ? '선택한 회차를 불러오는 중입니다.' : targetMaterialId && catalogState === 'error' ? '자료를 확인하지 못했습니다. 새로고침해 주세요.' : '검색 결과가 없습니다.'}</p>
                                 </div>
                             )}
 

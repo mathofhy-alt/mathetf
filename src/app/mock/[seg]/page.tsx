@@ -35,7 +35,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: { seg: string } }): Promise<Metadata> {
     const seg = decodeURIComponent(params.seg);
     if (isCategory(seg)) {
-        const title = `${seg} 수학 기출·변형문제 모음 | 수학ETF`;
+        const title = `${seg} 수학 기출 자료실 | 수학ETF`;
 
         // [2026-09-03] 설명에 실제 숫자를 넣는다.
         // 예전엔 `${seg} 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.` — 한글 34자에
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: { params: { seg: string } }):
         // 사관학교·경찰대는 내신판에 없는 우리 유일한 해자인데 그 페이지 설명이 제일 성의 없었다.
         // 통계는 이미 getMockCategoryStats 가 뽑고 있으므로 그대로 쓴다(추가 조회 없음 — 아래 본문과 공유).
         const st = await getMockCategoryStats(seg).catch(() => null);
-        let description = `${seg} 수학 기출과 변형문제를 PDF·HWP로 무료 제공합니다.`;
+        let description = `${seg} 수학 기출 회차와 문항별 시험지 출제 자료를 살펴보세요.`;
         if (st && st.total > 0) {
             const ys = st.years.map(y => Number(y.year)).filter(Number.isFinite);
             const span = ys.length ? (Math.min(...ys) === Math.max(...ys)
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: { params: { seg: string } }):
             description = `${seg} 수학 기출 ${span} 총 ${st.total}문항. `
                 + (subj ? `${subj} 과목별로 정리했고, ` : '')
                 + (unit ? `${unit} 단원이 가장 많이 출제됐습니다. ` : '')
-                + `문제·해설을 PDF·한글(HWP)로 무료 제공합니다.`;
+                + `문항별 출제 자료와 등록된 원본 파일을 살펴보세요.`;
         }
         return {
             title,
@@ -66,11 +66,16 @@ export async function generateMetadata({ params }: { params: { seg: string } }):
     }
     const exam = await fetchMockExamBySlug(seg);
     if (!exam) return { title: '모의고사 | 수학ETF' };
-    const title = `${exam.title} 문제·해설·변형문제 | 수학ETF`;
-    const description = `${exam.title} 원본 문제와 변형문제를 PDF·HWP로 무료 다운로드하세요.`;
+    const title = exam.materialOnly
+        ? `${exam.title} 문항별 시험지 출제 | 수학ETF`
+        : `${exam.title} 문제·해설·변형문제 | 수학ETF`;
+    const description = exam.materialOnly
+        ? `${exam.title} 기출문항을 과목별로 골라 시험지로 출제하세요.`
+        : `${exam.title} 원본 문제와 변형문제를 PDF·HWP로 무료 다운로드하세요.`;
     return {
         title,
         description,
+        ...(exam.materialOnly ? { robots: { index: false, follow: true } } : {}),
         alternates: { canonical: `/모의고사/${exam.slug}` },
         openGraph: {
             title,
@@ -100,7 +105,7 @@ async function CategoryView({ category }: { category: MockCategory }) {
             {
                 '@type': 'CollectionPage',
                 name: `${category} 수학 기출문제`,
-                description: `${category} 수학 기출문제와 변형문제를 학년·연도·월별로 모았습니다. 문제와 해설을 PDF·한글(HWP)로 무료 제공합니다.`,
+                description: `${category} 수학 기출문제를 학년·연도·월별로 모았습니다. 문항별 출제 자료와 등록된 원본 파일을 제공합니다.`,
                 url,
                 inLanguage: 'ko-KR',
                 isPartOf: { '@type': 'WebSite', name: '수학ETF', url: 'https://mathetf.com' },
@@ -133,7 +138,7 @@ async function CategoryView({ category }: { category: MockCategory }) {
                 <Link href="/모의고사" className="inline-flex items-center gap-1 text-sm text-[#426D36] font-bold hover:underline mb-4">
                     <ArrowLeft size={15} /> 모의고사 전체
                 </Link>
-                <PageHeading eyebrow="THE EXAM COLLECTION" title={`${category} 수학 자료실.`} description={`${CATEGORY_DESC[category]||''} 기출과 변형 자료 ${items.length}회차를 모았습니다.`}/>
+                <PageHeading eyebrow="THE EXAM COLLECTION" title={`${category} 수학 자료실.`} description={`${CATEGORY_DESC[category]||''} 원본 파일과 문항별 출제 자료 ${items.length}회차를 모았습니다.`}/>
                 {items.length === 0 ? (
                     <div className="py-20 text-center bg-white rounded-2xl border border-slate-200 text-slate-400 font-semibold">
                         아직 {category} 자료가 없어요.
@@ -157,7 +162,7 @@ async function CategoryView({ category }: { category: MockCategory }) {
                                 과목·단원·난이도로 분류한 결과입니다.
                                 {stats.years.length > 1 && (
                                     <> {stats.years[stats.years.length - 1].year}년부터 {stats.years[0].year}년까지
-                                    {' '}{stats.years.length}개년, 회차당 평균 {Math.round(stats.total / stats.years.length)}문항입니다.</>
+                                    {' '}{stats.years.length}개년, 연도당 평균 {Math.round(stats.total / stats.years.length)}문항입니다.</>
                                 )}
                             </p>
                             <p>
@@ -238,7 +243,9 @@ async function DetailView({ slug }: { slug: string }) {
         { kind: 'variant-hwp', has: !!exam.variant_hwp_path, group: '변형', fmt: 'HWP' },
     ].filter((d) => d.has);
 
-    const intro = `${exam.title} 기출입니다. 원본 문제${hasVariant ? '와 변형문제까지' : '를'} PDF·HWP로 무료로 받아 ${exam.category} 대비에 활용하세요. ${CATEGORY_DESC[exam.category] || ''}`;
+    const intro = exam.materialOnly
+        ? `${exam.title} 기출문항을 과목별로 골라 시험지를 만들 수 있습니다. ${CATEGORY_DESC[exam.category] || ''}`
+        : `${exam.title} 기출입니다. 원본 문제${hasVariant ? '와 변형문제까지' : '를'} PDF·HWP로 무료로 받아 ${exam.category} 대비에 활용하세요. ${CATEGORY_DESC[exam.category] || ''}`;
 
     const jsonLd = {
         '@context': 'https://schema.org',
@@ -275,14 +282,24 @@ async function DetailView({ slug }: { slug: string }) {
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
                     <div className="flex items-start justify-between gap-3">
                         <span className={`text-[11px] font-extrabold text-white px-2.5 py-1 rounded-full bg-gradient-to-r ${cat.grad}`}>{exam.category}</span>
-                        <MockAdminControls exam={{
+                        {!exam.materialOnly && <MockAdminControls exam={{
                             id: exam.id, category: exam.category, year: exam.year, grade: exam.grade,
                             month: exam.month, subject: exam.subject || '', title: exam.title,
                             hasOriginalPdf: !!exam.original_pdf_path, hasOriginalHwp: !!exam.original_hwp_path,
                             hasVariantPdf: !!exam.variant_pdf_path, hasVariantHwp: !!exam.variant_hwp_path,
-                        }} />
+                        }} />}
                     </div>
-                    <h1 className="mt-3 text-xl sm:text-2xl font-black break-keep">{exam.title}</h1><div className="mt-4 rounded-xl border bg-brand-50 p-4 text-sm">{(mockLinks as Record<string,unknown>)[exam.slug]?<Link className="font-bold underline" href={questionBankHref({mock:exam.slug,origin:'mock'})}>이 회차 문항으로 시험지 만들기 →</Link>:<p>이 회차의 문항별 출제 연결은 준비 중입니다. 아래 원본 파일을 이용하거나 <Link href="/question-bank?demo=1&origin=mock" className="underline">예시 5문항 체험</Link>으로 시작하세요.</p>}</div>
+                    <h1 className="mt-3 text-xl sm:text-2xl font-black break-keep">{exam.title}</h1>
+                    <div className="mt-4 rounded-xl border bg-brand-50 p-4 text-sm">
+                        {exam.materialDbs?.length ? <>
+                            <p className="font-bold mb-2">이 회차 문항으로 시험지 만들기</p>
+                            <div className="flex flex-wrap gap-2">{exam.materialDbs.map(db =>
+                                <Link key={db.id} className="inline-flex rounded-lg border border-brand-200 bg-white px-3 py-2 font-semibold hover:bg-brand-100" href={questionBankHref({material:db.id,origin:'mock'})}>{db.subject} 문항 출제 →</Link>
+                            )}</div>
+                        </> : (mockLinks as Record<string,unknown>)[exam.slug]
+                            ? <Link className="font-bold underline" href={questionBankHref({mock:exam.slug,origin:'mock'})}>이 회차 문항으로 시험지 만들기 →</Link>
+                            : <p>이 회차의 문항별 출제 연결은 준비 중입니다. 아래 원본 파일을 이용하거나 <Link href="/question-bank?demo=1&origin=mock" className="underline">예시 5문항 체험</Link>으로 시작하세요.</p>}
+                    </div>
                     <p className="mt-1.5 text-sm text-slate-400 font-medium">
                         {exam.year} · {exam.grade}{exam.month ? ` · ${exam.month}월` : ''}{exam.subject ? ` · ${exam.subject}` : ''}
                     </p>
@@ -290,7 +307,7 @@ async function DetailView({ slug }: { slug: string }) {
                 </div>
 
                 {/* 다운로드 */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
+                {!exam.materialOnly && <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
                     <h2 className="font-extrabold text-[#294437] mb-1">자료 다운로드</h2>
                     <p className="text-xs text-slate-400 mb-4">로그인 후 다운로드할 수 있어요 · 무료</p>
                     {downloads.length === 0 ? (
@@ -335,17 +352,17 @@ async function DetailView({ slug }: { slug: string }) {
                             })}
                         </div>
                     )}
-                </div>
+                </div>}
 
                 {/* 미리보기 (캐러셀) */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
+                {!exam.materialOnly && <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
                     <h2 className="font-extrabold text-[#294437] mb-4">문제 미리보기</h2>
                     {previews.length === 0 ? (
                         <div className="py-12 text-center text-slate-300 text-sm">미리보기 준비 중이에요.</div>
                     ) : (
                         <ExamPreviewCarousel images={previews} label={exam.title} />
                     )}
-                </div>
+                </div>}
 
                 {/* 관련 회차 */}
                 {related.length > 0 && (
