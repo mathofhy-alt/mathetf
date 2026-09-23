@@ -7,18 +7,18 @@ export const metadata = { title: '페이지를 찾을 수 없어요 | 수학ETF'
 
 export default function NotFound() {
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <Header />
             <main className="max-w-2xl mx-auto px-4 py-20 text-center">
-                <p className="text-6xl font-black text-[#B7D1EA]">404</p>
+                <p className="text-6xl font-black text-[#C5D8B5]">404</p>
                 <h1 className="text-2xl font-black mt-4 break-keep">페이지를 찾을 수 없어요</h1>
                 <p className="text-slate-500 mt-3 break-keep">
                     주소가 바뀌었거나, 자료가 정리되면서 옮겨졌을 수 있어요.
                 </p>
                 <div className="flex flex-wrap justify-center gap-3 mt-8">
-                    <Link href="/" className="px-5 py-3 bg-[#497AB7] text-white font-bold rounded-xl shadow-sm hover:bg-[#3A659A] transition-colors">홈으로</Link>
-                    <Link href="/schools" className="px-5 py-3 bg-white border border-slate-200 font-bold rounded-xl hover:border-[#B7D1EA] transition-colors">학교별 기출 찾기</Link>
-                    <Link href="/question-bank" className="px-5 py-3 bg-white border border-slate-200 font-bold rounded-xl hover:border-[#B7D1EA] transition-colors">시험지 만들기</Link>
+                    <Link href="/" className="px-5 py-3 bg-[#426D36] text-white font-bold rounded-xl shadow-sm hover:bg-[#3A659A] transition-colors">홈으로</Link>
+                    <Link href="/schools" className="px-5 py-3 bg-white border border-slate-200 font-bold rounded-xl hover:border-[#C5D8B5] transition-colors">학교별 기출 찾기</Link>
+                    <Link href="/question-bank" className="px-5 py-3 bg-white border border-slate-200 font-bold rounded-xl hover:border-[#C5D8B5] transition-colors">시험지 만들기</Link>
                 </div>
             </main>
         </div>

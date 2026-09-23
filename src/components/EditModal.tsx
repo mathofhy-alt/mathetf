@@ -312,12 +312,12 @@ export default function EditModal({ isOpen, onClose, user, fileData, regions, di
                                         type="button"
                                         onClick={() => fileType !== 'DB' && setFileType('HWP')}
                                         disabled={fileType === 'DB'}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'HWP' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} ${fileType === 'DB' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all ${fileType === 'HWP' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} ${fileType === 'DB' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <HwpFileIcon size={16} /> HWP / HML
                                     </button>
                                     {fileType === 'DB' && (
-                                        <div className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow-sm">
+                                        <div className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg bg-brand-600 text-white shadow-sm">
                                             <Database size={16} /> DB 전용
                                         </div>
                                     )}

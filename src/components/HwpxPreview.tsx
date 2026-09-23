@@ -39,7 +39,7 @@ export default function HwpxPreview({ xmlContent }: HwpxPreviewProps) {
                                     const script = node.getElementsByTagName("hp:script")[0]?.textContent;
                                     if (script) {
                                         elements.push(
-                                            <span key={`eq-${i}`} className="mx-1 inline-block bg-gray-100 border border-gray-300 rounded px-1 text-xs text-blue-700 font-mono align-middle">
+                                            <span key={`eq-${i}`} className="mx-1 inline-block bg-gray-100 border border-gray-300 rounded px-1 text-xs text-brand-700 font-mono align-middle">
                                                 {script}
                                             </span>
                                         );

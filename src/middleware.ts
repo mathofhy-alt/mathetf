@@ -1,3 +1,4 @@
+import { INSTITUTION_CATEGORY, schoolDestination } from '@/lib/discovery';
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/utils/supabase/middleware'
 import examRedirects from '@/lib/exam-redirects.json'
@@ -19,6 +20,13 @@ const EXAM_REDIRECTS = new Map<string, string>(Object.entries(examRedirects as R
 
 export async function middleware(request: NextRequest) {
     const host = request.headers.get('host')
+    let schoolPath=request.nextUrl.pathname;
+    try {schoolPath=decodeURIComponent(schoolPath);}catch{}
+    const schoolMatch=schoolPath.match(/^\/school\/([^/]+)\/?$/);
+    if(schoolMatch&&INSTITUTION_CATEGORY[schoolMatch[1]]){
+        const url=request.nextUrl.clone();url.pathname=schoolDestination(schoolMatch[1]);url.search='';return NextResponse.redirect(url,301);
+    }
+
 
     // 비대표 시험지 URL → 같은 회차의 대표로 영구 이동 (캐시 밖이라 Location 이 보존된다)
     const examMatch = request.nextUrl.pathname.match(/^\/exam\/([0-9a-fA-F-]{36})\/?$/)

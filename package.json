@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:improvements": "node --test tests/improvements.test.cjs",
+    "check:improvements": "tsc --project tsconfig.improvements.json --pretty false",
+    "preview:local": "node tests/preview.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -37,6 +40,7 @@
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/html2canvas": "^0.5.35",
     "@types/katex": "^0.16.8",
     "@types/node": "^20",

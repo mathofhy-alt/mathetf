@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { logAnon } from '@/lib/anon-log';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { safeReturnPath } from '@/lib/auth-return';
 import Link from 'next/link';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
@@ -44,6 +45,8 @@ export default function SignupPage() {
     const [otpVerifying, setOtpVerifying] = useState(false);
 
     const router = useRouter();
+    const [nextPath, setNextPath] = useState('/');
+    useEffect(() => { setNextPath(safeReturnPath(new URLSearchParams(window.location.search).get('next'))); }, []);
     const supabase = createClient();
 
     const handleNextStep = () => {
@@ -199,7 +202,9 @@ export default function SignupPage() {
             }
 
             // 가입 직후 자동 로그인 (UX)
-            await supabase.auth.signInWithPassword({ email, password });
+            const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+            if (loginError) { router.push('/login?next=' + encodeURIComponent(nextPath)); return; }
+            if (nextPath !== '/') { router.push(nextPath); return; }
 
             setSuccessMsg('회원가입이 성공적으로 완료되었습니다!');
         } catch (error: any) {
@@ -211,9 +216,9 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4 overflow-x-hidden">
+        <div className="min-h-screen bg-[#f2f3f0] flex items-center justify-center p-4 overflow-x-hidden">
             <div className="bg-white rounded-lg shadow-md max-w-md w-full px-5 py-8 sm:px-8 border border-slate-200 overflow-hidden">
-                <h1 className="text-2xl font-bold text-center mb-6 text-slate-800">
+                <Link href="/" className="suite-auth-brand">∑ 수학ETF</Link><p className="suite-eyebrow text-center mb-3">YOUR NEXT CHAPTER</p><h1 className="text-2xl font-bold text-center mb-6 text-slate-800">
                     회원가입
                 </h1>
 
@@ -233,7 +238,7 @@ export default function SignupPage() {
                             휴대폰 인증을 통해 성공적으로 가입되었습니다.<br />
                             지금 바로 서비스를 이용하실 수 있습니다.
                         </p>
-                        <Link href="/" className="block w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">
+                        <Link href={nextPath} className="block w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">
                             로그인하고 시작하기
                         </Link>
                     </div>
@@ -279,7 +284,7 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsTermsModalOpen(true);
                                                     }}
-                                                    className="text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
+                                                    className="shrink-0 whitespace-nowrap text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
                                                 >
                                                     전문 보기
                                                 </button>
@@ -323,7 +328,7 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsPrivacyModalOpen(true);
                                                     }}
-                                                    className="text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
+                                                    className="shrink-0 whitespace-nowrap text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
                                                 >
                                                     전문 보기
                                                 </button>
@@ -361,7 +366,7 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsMarketingModalOpen(true);
                                                     }}
-                                                    className="text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
+                                                    className="shrink-0 whitespace-nowrap text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
                                                 >
                                                     전문 보기
                                                 </button>
@@ -563,7 +568,7 @@ export default function SignupPage() {
                             </form>
                         )}
                         <div className="text-center mt-6">
-                            <Link href="/login" className="text-sm text-slate-500 underline">
+                            <Link href={'/login?next=' + encodeURIComponent(nextPath)} className="text-sm text-slate-500 underline">
                                 이미 계정이 있으신가요? 로그인
                             </Link>
                         </div>

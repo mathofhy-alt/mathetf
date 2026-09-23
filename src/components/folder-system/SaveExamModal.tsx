@@ -117,7 +117,7 @@ export default function SaveExamModal({
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-6 py-2 text-sm bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700 disabled:opacity-50"
+                        className="px-6 py-2 text-sm bg-brand-600 text-white font-bold rounded hover:bg-brand-700 disabled:opacity-50"
                     >
                         {isSaving ? '저장 중...' : '저장하기'}
                     </button>

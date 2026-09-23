@@ -395,14 +395,14 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
 
                     {/* Template Download Section */}
                     {uploadType === 'MARKET' && (
-                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                        <div className="bg-brand-50 border border-brand-100 rounded-lg p-4">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="space-y-1">
-                                    <h3 className="font-bold text-blue-900 flex items-center gap-2">
+                                    <h3 className="font-bold text-brand-900 flex items-center gap-2">
                                         <FileText size={18} />
                                         필수 양식 다운로드
                                     </h3>
-                                    <p className="text-xs text-blue-700 font-medium">
+                                    <p className="text-xs text-brand-700 font-medium">
                                         반드시 제공된 양식을 준수하여 작성해주세요.<br className="hidden sm:block" />
                                         양식 미준수 시 자료 판매가 중지될 수 있습니다.
                                     </p>
@@ -410,7 +410,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
                                 <a
                                     href="/files/standard_template.hwp"
                                     download
-                                    className="flex items-center gap-2 bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-50 transition-colors shadow-sm whitespace-nowrap"
+                                    className="flex items-center gap-2 bg-white text-brand-600 border border-brand-200 px-4 py-2 rounded-md text-sm font-bold hover:bg-brand-50 transition-colors shadow-sm whitespace-nowrap"
                                 >
                                     <FileDown size={16} />
                                     수학ETF 표준 양식 다운로드(.hwp)

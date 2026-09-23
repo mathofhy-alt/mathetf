@@ -35,7 +35,7 @@ export default function MockAdminControls({ exam }: { exam: MockEditInitial }) {
     return (
         <div className="flex items-center gap-1.5">
             <button onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#497AB7] bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors">
+                className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#426D36] bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors">
                 <Pencil size={13} /> 수정
             </button>
             <button onClick={del} disabled={deleting}

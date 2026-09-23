@@ -60,7 +60,7 @@ export default function ExamPreviewCarousel({ images, label }: { images: string[
                             type="button"
                             onClick={() => setI(idx)}
                             aria-label={`${idx + 1}페이지로`}
-                            className={`h-1.5 rounded-full transition-all ${idx === i ? 'w-5 bg-[#497AB7]' : 'w-1.5 bg-slate-300 hover:bg-slate-400'}`}
+                            className={`h-1.5 rounded-full transition-all ${idx === i ? 'w-5 bg-[#426D36]' : 'w-1.5 bg-slate-300 hover:bg-slate-400'}`}
                         />
                     ))}
                 </div>

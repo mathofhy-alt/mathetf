@@ -11,18 +11,18 @@ import { Search, Wand2, Sparkles, School, Gift, Crop, ArrowRight } from 'lucide-
 export default function FeatureCards({ user }: { user: User | null }) {
     const cards = [
         {
-            icon: Search, title: '내신기출 검색·다운로드', badge: '무료',
+            icon: Search, title: '내신기출 검색·다운로드', badge: '미리보기 무료',
             desc: '전국 학교 기출을 찾아 문제·해설 PDF·HWP로. 미리보기는 무료예요.',
             href: '#main-list', grad: 'from-[#3F72B5] to-[#5B93D6]',
         },
         {
             icon: Wand2, title: '시험지 출제', badge: '핵심',
-            desc: '전국 기출 DB에서 문제를 골라 나만의 시험지를 1분 만에 만들어요.',
+            desc: '전국 기출 DB에서 문제를 골라 나만의 시험지를 직접 만들어요.',
             href: '/question-bank', grad: 'from-[#463F86] to-[#6E5FB5]',
         },
         {
             icon: Sparkles, title: '예상문제 뽑아보기', badge: 'HOT',
-            desc: '기출과 같은 유형의 예상문제를 자동으로 뽑아 시험지에 채워줍니다.',
+            desc: '조건과 유형이 맞는 기존 기출문항을 추천받아 시험지에 담습니다.',
             href: '/predict', grad: 'from-[#23837F] to-[#33A39E]',
         },
         {
@@ -32,12 +32,12 @@ export default function FeatureCards({ user }: { user: User | null }) {
         },
         {
             icon: Gift, title: '가입하면 문제 PDF 무료', badge: '무료',
-            desc: '워터마크 없는 깨끗한 문제 PDF를 회원가입만 하면 무료로 받아요.',
+            desc: '제공되는 회차의 문제 PDF는 회원당 하루 10회 무료입니다. 해설 파일은 별도 구매입니다.',
             href: user ? '#main-list' : '/signup', grad: 'from-[#BE7A1C] to-[#D89328]',
         },
         {
-            icon: Crop, title: '학교프린트 변형만들기', badge: 'NEW',
-            desc: '학교에서 받은 프린트를 올리고 문제를 잘라내면, 같은 유형 변형문제를 자동으로 만들어 드려요.',
+            icon: Crop, title: '프린트와 비슷한 기출 찾기', badge: 'NEW',
+            desc: '학교에서 받은 프린트를 올리고 문제를 잘라내면, 같은 유형의 기존 기출문제를 찾아드립니다.',
             href: '/print-transform', grad: 'from-[#23864A] to-[#33AC63]',
         },
     ];
@@ -45,7 +45,7 @@ export default function FeatureCards({ user }: { user: User | null }) {
     return (
         <section className="max-w-[1200px] mx-auto px-5 md:px-6 mb-8">
             <div className="text-center mb-5">
-                <h2 className="text-xl md:text-2xl font-extrabold text-[#1E2D4F] break-keep">
+                <h2 className="text-xl md:text-2xl font-extrabold text-[#294437] break-keep">
                     기출 검색만 하고 끝내지 마세요
                 </h2>
                 <p className="text-slate-500 text-sm mt-1.5 break-keep">

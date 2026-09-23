@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
+import { isPersonalDbFree } from '@/lib/config';
 
 /**
  * GET /api/pro/similar-questions?id={questionId}&limit={limit}&basis={statement|solution}
@@ -37,13 +37,13 @@ export async function GET(req: NextRequest) {
 
         const user = authRes.data?.user;
         if (authRes.error || !user) {
-            return new NextResponse('Unauthorized', { status: 401 });
+            return NextResponse.json({success:false,error:'로그인 후 유사 문항을 찾아볼 수 있습니다.'},{status:401});
         }
         const isAdmin = user.email === 'mathofhy@naver.com';
 
         const { data: source, error: sourceError } = sourceRes;
         if (sourceError || !source) {
-            return NextResponse.json({ success: false, error: 'Source question not found' }, { status: 404 });
+            return NextResponse.json({ success: false, error: '원본 문항을 찾을 수 없습니다. 다른 문항을 선택해주세요.' }, { status: 404 });
         }
 
         // 발문 임베딩이 아직 없는 문항은 기존 기준으로 되돌린다(백필 진행 중에도 화면이 살아 있게).
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         if (!queryEmbedding) {
             return NextResponse.json({
                 success: false,
-                error: 'Vector embedding not generated for this question.'
+                error: process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' ? '검토 화면에는 유사문항 추천 결과가 포함되지 않았습니다. 실제 기출 선택·저장·같은 범위 재출제를 이용할 수 있습니다.' : '이 문항의 유사문항 검색 자료가 아직 준비되지 않았습니다. 다른 문항을 선택하거나 같은 범위로 자동 출제해주세요.'
             }, { status: 400 });
         }
 
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
         // [성능] 무료모드/어드민은 필터를 안 거치므로 조회 자체를 생략 (왕복 1회 절약).
         let purchasedDbs: any[] = [];
 
-        if (!isAdmin && !PERSONAL_DB_FREE_MODE) {
+        if (!isAdmin && !isPersonalDbFree()) {
             // [PAID MODE] 구매한 DB만 허용
             const { data: purchases, error: purchaseError } = await supabase
                 .from('purchases')
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
 
             if (purchaseError) {
                 console.error("Purchase Fetch Error:", purchaseError);
-                return NextResponse.json({ success: false, error: 'Failed to fetch purchased databases' }, { status: 500 });
+                return NextResponse.json({ success: false, error: '이용 가능한 출제 자료를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
             }
 
             const dbPurchases = purchases?.filter((p: any) =>
@@ -87,11 +87,11 @@ export async function GET(req: NextRequest) {
 
         // 구매한 DB의 exam_materials ID 목록 → RPC에 전달해 DB 레벨에서 필터링
         // 무료 모드/어드민은 null (전체 허용), 유료 모드는 구매한 DB ID 목록
-        const allowedBinIds = (isAdmin || PERSONAL_DB_FREE_MODE)
+        const allowedBinIds = (isAdmin || isPersonalDbFree())
             ? null
             : (purchasedDbs.length > 0 ? purchasedDbs.map((db: any) => db.id) : null);
 
-        if (!isAdmin && !PERSONAL_DB_FREE_MODE && purchasedDbs.length === 0) {
+        if (!isAdmin && !isPersonalDbFree() && purchasedDbs.length === 0) {
             return NextResponse.json({ success: false, error: '구매한 DB가 없습니다.', data: [] });
         }
 
@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
         // questions 테이블엔 exam_materials 와 연결되는 컬럼이 없어 DB 레벨 필터(allowed_bin_ids)가
         // 불가능했고(존재하지 않는 컬럼 참조로 유료모드에서 RPC가 터지는 잠복 버그),
         // match_questions 는 인덱스 경로로 단일화 + 필터는 여기서 수행.
-        if (!isAdmin && !PERSONAL_DB_FREE_MODE) {
+        if (!isAdmin && !isPersonalDbFree()) {
             results = results.filter(metadataFilter);
         }
 

@@ -1,3 +1,4 @@
+import {NOT_A_SCHOOL} from '@/lib/stats';
 import { MetadataRoute } from 'next';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { HUB_SUBJECTS } from '@/lib/subject-hub';
@@ -37,9 +38,10 @@ async function fetchAll<T>(build: (from: number, to: number) => any): Promise<T[
 // 진짜 손해는 낭비가 아니라 신뢰다 — 구글은 사이트의 lastmod 가 부정확하다고 판단하면
 // 그 사이트 전체의 lastmod 를 무시한다. 그러면 새로 올린 회차의 정직한 lastmod 도 안 믿는다.
 const PAGE_UPDATED: Record<string, string> = {
-    '/teacher': '2026-07-28',
-    '/predict': '2026-07-06',
-    '/print-transform': '2026-07-06',
+    '/teacher': '2026-09-20',
+    '/guide': '2026-09-20',
+    '/predict': '2026-09-20',
+    '/print-transform': '2026-09-20',
     '/study/common-math-2': '2026-07-02',
     '/study/calculus-1': '2026-07-02',
 };
@@ -92,12 +94,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // 구글이 이 사이트를 '크롤링됨-미색인' 으로 판정한 상황에서 알맹이 없는 페이지를
         // 스스로 제출하는 건 손해다. 자료가 붙으면 자동으로 다시 들어온다.
         const schoolsWithSolution = new Set(
-            data.filter((r: any) => r.file_type === 'PDF' && r.content_type === '해설')
+            data.filter((r: any) => (r.content_type==='해설'||r.content_type==='개인DB'))
                 .map((r: any) => r.school)
         );
         const schoolMap: Record<string, Date> = {};
         data.forEach((item: any) => {
-            if (!schoolsWithSolution.has(item.school)) return;
+            if (!schoolsWithSolution.has(item.school)||NOT_A_SCHOOL.has(item.school)) return;
             if (!schoolMap[item.school]) {
                 schoolMap[item.school] = new Date(item.created_at);
             }

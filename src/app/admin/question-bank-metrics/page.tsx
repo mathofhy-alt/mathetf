@@ -1,0 +1,8 @@
+'use client';
+import {useEffect,useState} from 'react';
+export default function MetricsPage(){
+ const [data,setData]=useState<any[]>([]),[error,setError]=useState(''),[days,setDays]=useState(28);
+ useEffect(()=>{setError('');fetch(`/api/admin/question-bank-metrics?days=${days}`).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||'관리자 로그인이 필요합니다.');setData(j.data||[]);}).catch(e=>setError(e.message));},[days]);
+ const labels:Record<string,string>={qb_enter:'출제 화면 진입',qb_db_select:'자료 선택',qb_search:'검색',qb_cart_add:'문항 담기',qb_save_fail:'저장 실패 안내',qb_save:'시험지 저장 완료',qb_file_response:'파일 전송 응답 완료'};
+ return <div className="max-w-5xl mx-auto px-6 py-12"><h1 className="text-2xl font-bold">수학ETF 시험지 이용 현황</h1><p className="my-4 text-slate-600">수학ETF 운영 사이트에서 새로 쌓인 기록입니다. 저장 완료는 서버에 시험지가 만들어진 건수이며, 파일 전송은 브라우저가 다운로드 응답을 받은 요청 수입니다. 실제 파일 열기 여부는 알 수 없습니다.</p><select aria-label="집계 기간" value={days} onChange={e=>setDays(Number(e.target.value))}>{[7,28,90].map(n=><option key={n} value={n}>최근 {n}일</option>)}</select>{error?<p role="alert" className="my-6">{error}</p>:<div className="overflow-x-auto"><table className="w-full mt-6 text-left"><thead><tr>{['행동','기록 기준','횟수','이용 세션','로그인 이용자','시험지 수'].map(x=><th className="p-3 border-b" key={x}>{x}</th>)}</tr></thead><tbody>{data.map(r=><tr key={r.event}><td className="p-3 border-b">{labels[r.event]}</td><td>{r.source==='server'?'서버 완료':'화면 행동'}</td>{['events','sessions','users','exams'].map(k=><td key={k}>{r[k]}</td>)}</tr>)}</tbody></table>{!data.length&&<p className="mt-6">이 기간에 기록된 이용 내역이 없습니다.</p>}</div>}<p className="mt-6 text-sm text-slate-500">세션은 브라우저 탭 기준입니다. 같은 사람이 탭을 여러 개 열면 별도 세션으로 계산됩니다. 날짜 범위에 걸쳐 이어진 작업 때문에 단계별 수가 항상 감소하지는 않습니다.</p></div>;
+}

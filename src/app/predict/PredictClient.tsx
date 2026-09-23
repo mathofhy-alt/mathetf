@@ -1,4 +1,6 @@
 "use client";
+import {sendToExamCart} from '@/lib/questions/handoff';
+import FeatureExplanation from '@/components/FeatureExplanation';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Wand2, Lock, Loader2, Download } from 'lucide-react';
@@ -139,19 +141,7 @@ export default function PredictClient({ richSchools }: Props) {
 
     return (
         <main className="max-w-5xl mx-auto px-4 py-8 sm:py-10">
-            <div className="mb-6">
-                <div className="inline-flex items-center gap-1.5 bg-[#5CC6C3]/12 border border-[#5CC6C3]/30 text-[#3AADA9] text-xs font-bold px-3 py-1 rounded-full mb-3">
-                    <Wand2 size={12} /> 예상문제 뽑아보기
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-black break-keep">우리 학교 예상문제, 1분 만에</h1>
-                <p className="text-slate-600 text-base md:text-lg mt-2 break-keep leading-relaxed">
-                    학교와 시험범위를 고르면, <strong className="text-[#497AB7]">그 학교 출제 스타일과 같은 유형의 실제 기출</strong>을 모아 예상문제 세트를 만들어 드려요.
-                </p>
-                <p className="mt-1.5 text-[#3AADA9] font-extrabold text-base md:text-lg break-keep">
-                    🎉 런칭 기념, 지금은 무료입니다!
-                </p>
-            </div>
-
+            <section className="suite-tool-intro"><p className="suite-eyebrow">A STUDY IN POSSIBILITIES</p><h1>우리 학교의 다음 연습.</h1><p className="suite-description">학교와 시험 범위를 선택하면, 같은 유형의 기존 기출문항을 찾아 한 세트로 모아드립니다.</p><div className="suite-tool-actions"><span>런칭 기간 무료 이용</span><button className="suite-button" disabled={!results?.length} onClick={()=>sendToExamCart((results||[]).map(q=>q.id),`${school} 유사 기출`,'predict')}>결과로 시험지 만들기 →</button></div><FeatureExplanation/></section>
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6 space-y-5">
                 {/* 학교 (타이핑 시에만 매칭 자동완성) */}
                 <div>
@@ -162,7 +152,7 @@ export default function PredictClient({ richSchools }: Props) {
                             onFocus={() => setShowSug(true)}
                             onBlur={() => setTimeout(() => setShowSug(false), 150)}
                             placeholder="학교명 입력 (예: 중산고등학교)"
-                            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#497AB7]/30" />
+                            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#426D36]/30" />
                         {showSug && suggestions.length > 0 && (
                             <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-56 overflow-auto">
                                 {suggestions.map((s) => (
@@ -181,15 +171,15 @@ export default function PredictClient({ richSchools }: Props) {
                 <div className="grid grid-cols-3 gap-3">
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">학년</label>
-                        <div className="flex gap-1">{GRADES.map((g) => <button key={g} onClick={() => { setGrade(g); setSubjectTouched(false); }} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${grade === g ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{g}</button>)}</div>
+                        <div className="flex gap-1">{GRADES.map((g) => <button key={g} onClick={() => { setGrade(g); setSubjectTouched(false); }} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${grade === g ? 'bg-[#426D36] text-white' : 'bg-slate-100 text-slate-500'}`}>{g}</button>)}</div>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">학기</label>
-                        <div className="flex gap-1">{SEMS.map((s) => <button key={s} onClick={() => { setSem(s); setSubjectTouched(false); }} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${sem === s ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{s}학기</button>)}</div>
+                        <div className="flex gap-1">{SEMS.map((s) => <button key={s} onClick={() => { setSem(s); setSubjectTouched(false); }} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${sem === s ? 'bg-[#426D36] text-white' : 'bg-slate-100 text-slate-500'}`}>{s}학기</button>)}</div>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">시험</label>
-                        <div className="flex gap-1">{EXAMS.map((e) => <button key={e} onClick={() => setExamType(e)} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${examType === e ? 'bg-[#497AB7] text-white' : 'bg-slate-100 text-slate-500'}`}>{e}</button>)}</div>
+                        <div className="flex gap-1">{EXAMS.map((e) => <button key={e} onClick={() => setExamType(e)} className={`flex-1 py-2.5 sm:py-2 rounded-lg text-sm font-bold transition-colors ${examType === e ? 'bg-[#426D36] text-white' : 'bg-slate-100 text-slate-500'}`}>{e}</button>)}</div>
                     </div>
                 </div>
 
@@ -199,7 +189,7 @@ export default function PredictClient({ richSchools }: Props) {
                     <div className="inline-flex rounded-xl border border-slate-200 p-1 bg-slate-50">
                         {CURRICULA.map((c) => (
                             <button key={c.id} onClick={() => { setCurriculum(c.id); setSubjectTouched(false); }}
-                                className={`text-sm font-bold px-4 py-2 rounded-lg transition-colors ${curriculum === c.id ? 'bg-[#497AB7] text-white shadow-sm' : 'text-slate-500'}`}>
+                                className={`text-sm font-bold px-4 py-2 rounded-lg transition-colors ${curriculum === c.id ? 'bg-[#426D36] text-white shadow-sm' : 'text-slate-500'}`}>
                                 {c.label}
                             </button>
                         ))}
@@ -212,7 +202,7 @@ export default function PredictClient({ richSchools }: Props) {
                     <div className="flex flex-wrap gap-1.5">
                         {subjectList.map((s) => (
                             <button key={s} onClick={() => { setSubject(s); setSubjectTouched(true); }}
-                                className={`text-xs px-3 py-2.5 sm:py-1.5 rounded-full border font-bold transition-colors ${subject === s ? 'bg-[#3AADA9] text-white border-[#3AADA9]' : 'bg-white text-slate-500 border-slate-200'}`}>
+                                className={`text-xs px-3 py-2.5 sm:py-1.5 rounded-full border font-bold transition-colors ${subject === s ? 'bg-[#638747] text-white border-[#638747]' : 'bg-white text-slate-500 border-slate-200'}`}>
                                 {s}
                             </button>
                         ))}
@@ -225,13 +215,13 @@ export default function PredictClient({ richSchools }: Props) {
                     <div className="flex flex-wrap gap-1.5">
                         {unitList.map((un) => (
                             <button key={un} onClick={() => toggleLabel(un)}
-                                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${selectedLabels.includes(un) ? 'bg-[#497AB7] text-white border-[#497AB7]' : 'bg-white text-slate-400 border-slate-200'}`}>
+                                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${selectedLabels.includes(un) ? 'bg-[#426D36] text-white border-[#426D36]' : 'bg-white text-slate-400 border-slate-200'}`}>
                                 {un}
                             </button>
                         ))}
                     </div>
                     <div className="flex gap-2 mt-2">
-                        <button onClick={() => setSelectedLabels(unitList)} className="text-[11px] text-[#497AB7] font-bold">전체 선택</button>
+                        <button onClick={() => setSelectedLabels(unitList)} className="text-[11px] text-[#426D36] font-bold">전체 선택</button>
                         <button onClick={() => setSelectedLabels([])} className="text-[11px] text-slate-400 font-bold">전체 해제</button>
                     </div>
                 </div>
@@ -255,7 +245,7 @@ export default function PredictClient({ richSchools }: Props) {
                 {err && <p className="text-sm text-rose-500 font-medium">{err}</p>}
 
                 <button onClick={generate} disabled={!canGen}
-                    className="w-full py-3 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#497AB7] to-[#3AADA9] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2">
+                    className="w-full py-3 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#426D36] to-[#638747] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2">
                     {genLoading ? <><Loader2 size={18} className="animate-spin" /> 뽑는 중…</> : <><Wand2 size={18} /> 예상문제 뽑기</>}
                 </button>
             </div>
@@ -265,7 +255,7 @@ export default function PredictClient({ richSchools }: Props) {
                 <div>
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-extrabold">예상문제 {results.length}문항</h2>
-                        {styleUsed && <span className="text-[11px] text-[#3AADA9] font-bold bg-[#5CC6C3]/12 px-2 py-1 rounded-full">{school} 스타일 매칭</span>}
+                        {styleUsed && <span className="text-[11px] text-[#638747] font-bold bg-[#88A96D]/12 px-2 py-1 rounded-full">{school} 스타일 매칭</span>}
                     </div>
 
                     {results.length === 0 ? (
@@ -281,7 +271,7 @@ export default function PredictClient({ richSchools }: Props) {
                                     return (
                                         <div key={q.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100">
-                                                <span className="w-6 h-6 rounded-lg bg-[#497AB7] text-white text-xs font-extrabold flex items-center justify-center">{idx + 1}</span>
+                                                <span className="w-6 h-6 rounded-lg bg-[#426D36] text-white text-xs font-extrabold flex items-center justify-center">{idx + 1}</span>
                                                 <span className="text-xs font-bold text-slate-600">{q.unit}</span>
                                                 <span className="text-[11px] text-slate-400 ml-auto">난이도 {q.difficulty}</span>
                                             </div>
@@ -314,14 +304,14 @@ export default function PredictClient({ richSchools }: Props) {
                                 })}
                             </div>
 
-                            <div className="mt-6 bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-6 text-center text-white">
+                            <div className="mt-6 bg-gradient-to-br from-[#426D36] to-[#638747] rounded-2xl p-6 text-center text-white">
                                 {isLoggedIn ? (
                                     <>
                                         <p className="font-bold text-lg mb-1">예상문제 세트 다운로드</p>
                                         <p className="text-white/90 text-sm mb-3">🎉 런칭 기념 — <strong>문제 + 해설</strong> 한글파일 회원 무료!</p>
                                         <div className="flex justify-center">
                                             <button onClick={downloadHwp} disabled={hwpLoading}
-                                                className="inline-flex items-center justify-center gap-2 bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 disabled:opacity-60">
+                                                className="inline-flex items-center justify-center gap-2 bg-white text-[#426D36] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 disabled:opacity-60">
                                                 {hwpLoading ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글(HWP) 다운로드</>}
                                             </button>
                                         </div>
@@ -332,7 +322,7 @@ export default function PredictClient({ richSchools }: Props) {
                                     <>
                                         <p className="font-bold text-lg mb-1">🎉 런칭 기념 — 가입하면 <span className="underline">문제 + 해설</span> 한글파일 무료</p>
                                         <p className="text-white/85 text-sm mb-4">회원가입만 하면 예상문제 전체(나머지 {Math.max(0, results.length - freeCount)}문항 포함)를 문제·해설까지 한글파일로 받아요.</p>
-                                        <Link href="/signup" className="inline-block bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50">무료로 가입하고 전체 받기 →</Link>
+                                        <Link href="/signup" className="inline-block bg-white text-[#426D36] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50">무료로 가입하고 전체 받기 →</Link>
                                     </>
                                 )}
                             </div>

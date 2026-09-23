@@ -73,7 +73,7 @@ export default function StorageContextMenu({ x, y, type, clipboardHasData, onClo
                                 onClose();
                             }}
                         >
-                            <FolderInput size={16} className="rotate-180 text-blue-500" /> 다운로드
+                            <FolderInput size={16} className="rotate-180 text-brand-500" /> 다운로드
                         </button>
                     )}
                     <button

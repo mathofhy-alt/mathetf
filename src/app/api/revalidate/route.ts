@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
             const sb = createClient();
             const { data: { user } } = await sb.auth.getUser();
             if (user) {
-                revalidatePath('/');
+                revalidateTag('home-catalog'); revalidatePath('/');
                 return NextResponse.json({ ok: true, revalidated: ['/'] });
             }
         } catch { }
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const done: string[] = [];
     for (const p of paths) {
         if (typeof p === 'string' && p.startsWith('/')) {
-            try { revalidatePath(p); done.push(p); } catch { /* skip */ }
+            try { if(p==='/')revalidateTag('home-catalog'); revalidatePath(p); done.push(p); } catch { /* skip */ }
             // 한글 세그먼트(/mock/전국연합 등)는 Next 캐시 키가 URL 인코딩 형태라
             // 디코딩된 경로만 넘기면 무효화가 조용히 실패한다(8/17 모의고사 목록 미반영).
             // 이미 인코딩된 입력의 이중 인코딩을 막기 위해 decode 후 encode.

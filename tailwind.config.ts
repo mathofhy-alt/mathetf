@@ -14,19 +14,8 @@ const config: Config = {
             colors: {
                 background: "hsl(var(--background))",
                 foreground: "hsl(var(--foreground))",
-                // Pantone 2026 Atmospheric Palette
-                brand: {
-                    50:  '#EEF4FB',
-                    100: '#DCE9F7',
-                    200: '#B7D1EA', // Nantucket Breeze
-                    300: '#8DB8DC',
-                    400: '#6399CA',
-                    500: '#5B8EC4',
-                    600: '#497AB7', // Regatta ← Primary
-                    700: '#3A6599',
-                    800: '#2C517A',
-                    900: '#1E2D4F', // Deep Navy
-                },
+                // Porcelain surfaces with a clear sapphire action palette
+                brand: {50:'#F0F5FF',100:'#E5EDFF',200:'#C9D9FF',300:'#A3BFFF',400:'#749AFF',500:'#4778F5',600:'#285CE6',700:'#204BC3',800:'#203F9C',900:'#20366F'},
                 rivulet: '#5CC6C3', // Rinsing Rivulet (teal)
                 cosmic:  '#AAAAC4', // Cosmic Sky (muted purple-gray)
                 cloud:   '#F2F3F0', // Cloud Dancer (off-white base)

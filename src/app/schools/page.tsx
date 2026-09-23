@@ -1,3 +1,5 @@
+import SchoolDirectory from '@/components/SchoolDirectory';
+import { NOT_A_SCHOOL } from '@/lib/stats';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { createAdminClient } from '@/utils/supabase/server-admin';
@@ -36,7 +38,7 @@ export default async function SchoolsIndexPage() {
                 .from('exam_materials')
                 .select('school, title, exam_year, grade, semester, exam_type, subject, file_type, content_type')
                 .neq('school', 'DELETED')
-                .range(exFrom, exFrom + 999);
+                .order('id').range(exFrom, exFrom + 999);
             if (error || !data || data.length === 0) break;
             exams.push(...data);
             if (data.length < 1000) break;
@@ -44,7 +46,7 @@ export default async function SchoolsIndexPage() {
         }
         // 내신 학교 목록이므로 해설 PDF가 하나도 없는 유사 학교(전국연합·사관학교 등 DB 전용)는 기존처럼 제외
         const hasSolutionPdf = new Set(
-            exams.filter((r: any) => r.file_type === 'PDF' && r.content_type === '해설').map((r: any) => r.school)
+            exams.filter((r: any) => !NOT_A_SCHOOL.has(r.school) && ['해설','개인DB'].includes(r.content_type)).map((r: any) => r.school)
         );
         const counts = countExamGroupsBySchool(exams.filter((r: any) => hasSolutionPdf.has(r.school)));
 
@@ -52,7 +54,7 @@ export default async function SchoolsIndexPage() {
         const regionMap: Record<string, string> = {};
         let from = 0;
         while (true) {
-            const { data, error } = await supabase.from('schools').select('name, region, district').range(from, from + 999);
+            const { data, error } = await supabase.from('schools').select('name, region, district').order('id').range(from, from + 999);
             if (error || !data || data.length === 0) break;
             data.forEach((s: any) => { if (s.name && !regionMap[s.name]) regionMap[s.name] = [s.region, s.district].filter(Boolean).join(' '); });
             if (data.length < 1000) break;
@@ -66,44 +68,23 @@ export default async function SchoolsIndexPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <Header />
-            <main className="max-w-4xl mx-auto px-4 py-8 sm:py-10">
-                <Link href="/" className="text-sm text-[#497AB7] hover:underline mb-4 inline-block">← 홈으로</Link>
-                <h1 className="text-2xl sm:text-3xl font-black break-keep">학교별 수학 기출 자료</h1>
+            <main className="discovery-page max-w-[1200px] mx-auto px-5 py-10 sm:py-14">
+                <Link href="/" className="text-sm text-[#426D36] hover:underline mb-4 inline-block">← 홈으로</Link>
+                <p className="eyebrow mt-4">SCHOOL LIBRARY</p><h1 className="discovery-title">우리 학교의 다음 시험을 위해.</h1>
                 {/* 지역 허브로 가는 내부 링크 — 사이트맵에만 있고 사이트 안에서 도달할 수 없으면
                     색인이 잘 안 붙는다(8/18 학교 페이지에서 같은 문제를 겪었다). */}
-                <Link href="/지역" className="inline-block mt-3 text-sm font-bold text-[#497AB7] bg-[#EEF4FB] border border-[#B7D1EA]/60 px-3 py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors">
+                <Link href="/지역" className="inline-block mt-3 text-sm font-bold text-[#426D36] bg-[#EAF1E1] border border-[#C5D8B5]/60 px-3 py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors">
                     지역별로 찾기 (강남구·송파구 등) →
                 </Link>
                 <p className="text-slate-500 mt-2 text-sm">
                     전국 고등학교별 수학 내신 기출(문제·해설)을 모았습니다.
-                    {rows.length > 0 && <> 현재 <span className="font-bold text-[#497AB7]">{rows.length}개</span> 학교 · 문제 미리보기 무료. 해설은 시험지 출제에서 무료로 만들 수 있어요.</>}
+                    {rows.length > 0 && <> 현재 <span className="font-bold text-[#426D36]">{rows.length}개</span> 학교 · 제공 형식과 이용 조건은 자료마다 확인하세요.</>}
                 </p>
 
-                {rows.length > 0 ? (
-                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {rows.map((s) => (
-                            <Link
-                                key={s.name}
-                                href={`/school/${encodeURIComponent(s.name)}`}
-                                className="group flex items-center justify-between gap-2 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all px-4 py-3"
-                            >
-                                <div className="min-w-0">
-                                    <p className="font-bold text-[#1E2D4F] group-hover:text-[#497AB7] transition-colors truncate">{s.name}</p>
-                                    <p className="text-xs text-slate-400 mt-0.5">
-                                        {s.region && <span>{s.region} · </span>}수학 기출 <span className="text-[#497AB7] font-bold">{s.count}개</span>
-                                    </p>
-                                </div>
-                                <ChevronRight size={18} className="flex-shrink-0 text-[#497AB7] group-hover:translate-x-0.5 transition-transform" />
-                            </Link>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="py-20 text-center text-slate-400 bg-white rounded-2xl border border-slate-200 mt-6">
-                        <p>등록된 학교 자료가 없습니다.</p>
-                    </div>
-                )}
+                <SchoolDirectory rows={rows} />
+
             </main>
         </div>
     );

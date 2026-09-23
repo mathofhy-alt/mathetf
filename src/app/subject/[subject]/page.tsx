@@ -1,3 +1,4 @@
+import {questionBankHref} from '@/lib/discovery';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -74,18 +75,18 @@ export default async function SubjectHubPage({ params }: Props) {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
+            <main className="library-page max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 <div className="mb-6">
                     <Link href="/" className="text-sm text-brand-600 hover:underline mb-3 inline-block">← 전체 기출</Link>
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 break-keep">
                         {subject} 기출문제
-                    </h1>
+                    </h1><p className="mt-4 text-sm leading-relaxed text-slate-600">보유 기출의 회차와 단원을 확인하고 필요한 문항만 골라 출제할 수 있습니다. <Link className="underline" href="/guide">만드는 순서·무료 범위·결과물 보기</Link> · <Link className="underline" href="/question-bank?demo=1&origin=content">5문항 체험</Link></p>
                     <p className="text-sm text-slate-500 mt-2 break-keep">
-                        {info.grade} {info.when} · 전국 <strong className="text-[#1E2D4F]">{hub.schoolCount}개교</strong> 내신 기출{' '}
-                        <strong className="text-[#1E2D4F]">{hub.total.toLocaleString()}문항</strong>
+                        {info.grade} {info.when} · 전국 <strong className="text-[#294437]">{hub.schoolCount}개교</strong> 내신 기출{' '}
+                        <strong className="text-[#294437]">{hub.total.toLocaleString()}문항</strong>
                     </p>
                 </div>
 
@@ -97,13 +98,13 @@ export default async function SubjectHubPage({ params }: Props) {
                         <p>
                             수학ETF는 전국 {hub.schoolCount}개교의 {subject} 내신 기출 {hub.total.toLocaleString()}문항을
                             단원과 난이도로 분류해 두었습니다. 지금 보유한 자료는{' '}
-                            <strong className="text-[#1E2D4F]">중간고사 {hub.midtermCount.toLocaleString()}문항</strong>,{' '}
-                            <strong className="text-[#1E2D4F]">기말고사 {hub.finalCount.toLocaleString()}문항</strong>입니다.
+                            <strong className="text-[#294437]">중간고사 {hub.midtermCount.toLocaleString()}문항</strong>,{' '}
+                            <strong className="text-[#294437]">기말고사 {hub.finalCount.toLocaleString()}문항</strong>입니다.
                         </p>
                         <p>
                             {lopsided ? (
                                 <>
-                                    아래 단원 분포는 <strong className="text-[#1E2D4F]">{`${richer}고사`} 자료를 기준으로</strong> 읽어야 합니다.
+                                    아래 단원 분포는 <strong className="text-[#294437]">{`${richer}고사`} 자료를 기준으로</strong> 읽어야 합니다.
                                     {poorCount === 0
                                         ? `${poorer}고사 회차가 아직 없어서, ${poorer}고사에서 다루는 단원은 표에 나타나지 않습니다.`
                                         : `${poorer}고사 회차가 아직 ${poorCount.toLocaleString()}문항뿐이라, ${poorer}고사에서 다루는 단원은 실제 출제 비중보다 적게 잡혀 있습니다.`}
@@ -140,10 +141,10 @@ export default async function SubjectHubPage({ params }: Props) {
                             {hub.byUnit.slice(0, 14).map((u) => (
                                 <tr key={u.unit} className="border-b border-slate-100 last:border-0">
                                     <td className="py-2 text-slate-600 break-keep">{u.unit}</td>
-                                    <td className="py-2 text-right font-bold text-[#497AB7] tabular-nums">
+                                    <td className="py-2 text-right font-bold text-[#426D36] tabular-nums">
                                         {u.midterm > 0 ? u.midterm.toLocaleString() : <span className="text-slate-300 font-normal">·</span>}
                                     </td>
-                                    <td className="py-2 text-right font-bold text-[#3AADA9] tabular-nums">
+                                    <td className="py-2 text-right font-bold text-[#638747] tabular-nums">
                                         {u.final > 0 ? u.final.toLocaleString() : <span className="text-slate-300 font-normal">·</span>}
                                     </td>
                                 </tr>
@@ -164,7 +165,7 @@ export default async function SubjectHubPage({ params }: Props) {
                         <p className="text-xs text-slate-400 mb-3 break-keep">출제 빈도 순입니다.</p>
                         <div className="flex flex-wrap gap-1.5">
                             {hub.concepts.map((c) => (
-                                <span key={c} className="text-[11px] bg-[#E8F0FB] text-[#497AB7] font-bold px-2.5 py-1 rounded-full">{c}</span>
+                                <span key={c} className="text-[11px] bg-[#EAF1E1] text-[#426D36] font-bold px-2.5 py-1 rounded-full">{c}</span>
                             ))}
                         </div>
                     </section>
@@ -178,7 +179,7 @@ export default async function SubjectHubPage({ params }: Props) {
                         <div className="flex flex-wrap gap-1.5">
                             {hub.schools.map((s) => (
                                 <Link key={s} href={`/school/${encodeURIComponent(s)}`}
-                                    className="text-xs bg-slate-50 hover:bg-[#E8F0FB] text-slate-600 hover:text-[#497AB7] border border-slate-200 font-semibold px-2.5 py-1 rounded-lg transition-colors">
+                                    className="text-xs bg-slate-50 hover:bg-[#EAF1E1] text-slate-600 hover:text-[#426D36] border border-slate-200 font-semibold px-2.5 py-1 rounded-lg transition-colors">
                                     {s}
                                 </Link>
                             ))}
@@ -210,19 +211,19 @@ export default async function SubjectHubPage({ params }: Props) {
                 <nav className="flex flex-wrap gap-2 mb-6">
                     {HUB_SUBJECTS.filter((s) => s !== subject).map((s) => (
                         <Link key={s} href={`/subject/${encodeURIComponent(s)}`}
-                            className="text-xs bg-white border border-slate-200 hover:border-[#497AB7] text-slate-600 hover:text-[#497AB7] font-bold px-3 py-2 rounded-lg transition-colors">
+                            className="text-xs bg-white border border-slate-200 hover:border-[#426D36] text-slate-600 hover:text-[#426D36] font-bold px-3 py-2 rounded-lg transition-colors">
                             {s} 기출 →
                         </Link>
                     ))}
                 </nav>
 
-                <div className="bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-6 text-center text-white">
+                <div className="library-cta bg-[#20354F] rounded-2xl p-6 text-center text-white">
                     <p className="font-bold break-keep">{subject} 기출로 나만의 시험지를 만들어 보세요</p>
                     <p className="text-sm text-white/80 mt-1.5 break-keep">
                         단원·난이도로 문항을 골라 한글(HWP)·PDF로 받을 수 있습니다. 현재 무료입니다.
                     </p>
-                    <Link href="/question-bank"
-                        className="inline-block mt-4 bg-white text-[#497AB7] font-black px-6 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <Link href={questionBankHref({subject,origin:'subject'})}
+                        className="inline-block mt-4 bg-white text-[#426D36] font-black px-6 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
                         시험지 만들러 가기 →
                     </Link>
                 </div>

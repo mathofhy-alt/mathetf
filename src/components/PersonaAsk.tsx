@@ -57,9 +57,9 @@ export default function PersonaAsk({ visible, onDone }: { visible: boolean; onDo
 
     return (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-md">
-            <div className="bg-white rounded-2xl border border-[#B7D1EA] shadow-xl p-4">
+            <div className="bg-white rounded-2xl border border-[#C5D8B5] shadow-xl p-4">
                 <div className="flex items-start gap-2">
-                    <p className="flex-1 text-sm font-bold text-[#1E2D4F] break-keep">
+                    <p className="flex-1 text-sm font-bold text-[#294437] break-keep">
                         어느 쪽이신가요? 자료를 그쪽에 맞춰 보여드립니다.
                     </p>
                     <button onClick={dismiss} aria-label="닫기" className="text-slate-300 hover:text-slate-500 shrink-0">
@@ -69,13 +69,13 @@ export default function PersonaAsk({ visible, onDone }: { visible: boolean; onDo
                 <div className="flex gap-2 mt-3">
                     <button
                         onClick={() => choose('teacher')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#3AADA9] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#638747] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
                     >
                         <PencilRuler size={15} /> 선생님·강사
                     </button>
                     <button
                         onClick={() => choose('student')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#497AB7] hover:bg-[#3A6599] text-white text-sm font-extrabold rounded-xl transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#426D36] hover:bg-[#31572E] text-white text-sm font-extrabold rounded-xl transition-colors"
                     >
                         <GraduationCap size={15} /> 학생·학부모
                     </button>

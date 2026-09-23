@@ -14,25 +14,25 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
     if (!question) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onWheel={(e) => e.stopPropagation()}>
+        <div role="dialog" aria-modal="true" aria-label="문항 해설" className="product-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onWheel={(e) => e.stopPropagation()}>
             <div className="bg-white w-full max-w-md max-h-[90vh] rounded-2xl shadow-2xl flex flex-col">
                 {/* Header */}
-                <div className="p-4 border-b flex justify-between items-center bg-green-50/50 flex-shrink-0">
+                <div className="p-4 border-b flex justify-between items-center bg-brand-50/50 flex-shrink-0">
                     <div className="flex items-center gap-2">
-                        <span className="bg-green-100 text-green-700 p-2 rounded-lg">
+                        <span className="bg-brand-100 text-brand-700 p-2 rounded-lg">
                             <BookOpen size={20} />
                         </span>
                         <div>
-                            <h2 className="font-bold text-lg text-green-900">
+                            <h2 className="font-bold text-lg text-brand-900">
                                 해설 보기
                             </h2>
-                            <p className="text-sm text-green-700/70">
-                                {question.school} {question.exam_year} #{question.question_number || '?'}
+                            <p className="text-sm text-brand-700/70">
+                                {question.school} {question.year||question.exam_year} #{question.question_number || '?'}
                             </p>
                         </div>
                     </div>
                     <button
-                        onClick={onClose}
+                        aria-label="해설 닫기" onClick={onClose}
                         className="p-2 hover:bg-slate-200 rounded-full transition-colors"
                     >
                         <X size={24} className="text-slate-500" />

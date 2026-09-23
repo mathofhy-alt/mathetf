@@ -4,18 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, BookOpen } from 'lucide-react';
 
-// 실제 유튜브 브랜드 로고 (빨간 라운드 사각형 + 흰 재생 삼각형)
-const YouTubeLogo = ({ size = 22 }: { size?: number }) => (
-    <svg viewBox="0 0 28 20" width={size} height={size * 20 / 28} aria-hidden="true" className="shrink-0">
-        <rect width="28" height="20" rx="6" fill="#FF0000" />
-        <path d="M11.3 5.7v8.6L18.7 10z" fill="#fff" />
-    </svg>
-);
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
-import DepositModal from './payments/DepositModal';
 
 interface HeaderProps {
     user?: User | null;
@@ -33,10 +25,15 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const supabase = createClient();
     const router = useRouter();
     const pathname = usePathname();
-    const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+    let activePath=pathname;try{activePath=decodeURIComponent(pathname);}catch{}
+    activePath=activePath.replace(/^\/mock(?=\/|$)/,'/모의고사');
+    const [authNext,setAuthNext] = useState('');
+    useEffect(()=>{const query=new URLSearchParams(window.location.search);if(pathname==='/question-bank')query.set('resume','1');setAuthNext(encodeURIComponent(pathname+(query.toString()?'?'+query.toString():'')));},[pathname]);
+
     const { cartCount } = useCart();
     const isAdmin = user?.email === 'mathofhy@naver.com';
 
+    useEffect(()=>{if(!mobileMenuOpen)return;const close=(e:KeyboardEvent)=>{if(e.key==='Escape'){setMobileMenuOpen(false);document.querySelector<HTMLButtonElement>('[aria-controls="mobile-navigation"]')?.focus();}};document.addEventListener('keydown',close);return()=>document.removeEventListener('keydown',close);},[mobileMenuOpen]);
     // Close mobile menu on route change
     useEffect(() => {
         setMobileMenuOpen(false);
@@ -94,7 +91,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
             // [2026-09-08] '시험지 출제' 자식을 뺐다 — 부모와 같은 /question-bank 라 한 화면에
             //   같은 곳으로 가는 링크가 두 줄이었다(외부 감사 지적). 부모는 데스크톱·모바일 모두
             //   실제 Link 라 도달성 손실은 없다.
-            href: '/question-bank', label: '10초 시험지제작', children: [
+            href: '/question-bank', label: '시험지 만들기', children: [
                 { href: '/predict', label: '예상문제 뽑기' },
                 { href: '/print-transform', label: '학교프린트 변형', badge: 'NEW' },
             ]
@@ -112,7 +109,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
     return (
         <>
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+            <header className="site-header bg-white border-b border-slate-200 sticky top-0 z-50">
                 <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between gap-4">
                     {/* Logo */}
                     <div className="flex items-center gap-6 min-w-0">
@@ -124,13 +121,13 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         <nav className="hidden lg:flex items-center gap-1 text-sm font-bold text-slate-600">
                             {navItems.map(item => item.children ? (
                                 <div key={item.href} className="relative group">
-                                    <Link href={item.href} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
+                                    <Link href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
                                         {item.label}
                                         {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
                                         <ChevronDown size={13} className="text-slate-400 transition-transform duration-200 group-hover:rotate-180" />
                                     </Link>
                                     {/* 드롭다운 (호버) — pt-1 로 트리거와 패널 사이 틈 없이 연결 */}
-                                    <div className="absolute left-0 top-full pt-2 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
+                                    <div className="absolute left-0 top-full pt-2 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 transition-all duration-150 z-50">
                                         <div className="min-w-[180px] bg-white border border-slate-200 rounded-xl shadow-xl ring-1 ring-black/5 py-1.5">
                                             {item.children.map(c => (
                                                 <Link key={c.href} href={c.href} className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors whitespace-nowrap">
@@ -142,16 +139,16 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                     </div>
                                 </div>
                             ) : (
-                                <Link key={item.href} href={item.href} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
+                                <Link key={item.href} href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
                                     {item.label}
                                     {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
                                 </Link>
                             ))}
                             {/* 유튜브 사용법 가이드 (외부 채널) */}
-                            <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
+                            <a href="/guide"
                                 onClick={() => { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'header' }) }).catch(() => { }); }}
-                                className="px-2 py-2 rounded-lg text-slate-600 hover:text-[#FF0000] hover:bg-red-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
-                                <YouTubeLogo size={20} /> 사용법
+                                className="px-2 py-2 rounded-lg text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
+                                <BookOpen size={20} /> 사용법
                             </a>
                             {isAdmin && (
                                 <Link href="/admin/inventory" className="px-2 py-2 text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
@@ -172,7 +169,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* Shopping Cart Icon */}
                         {user && (
-                            <Link href="/cart" className="relative p-2 text-slate-600 hover:text-brand-600 transition-colors">
+                            <Link aria-label="장바구니" href="/cart" className="relative p-2 text-slate-600 hover:text-brand-600 transition-colors">
                                 <ShoppingCart size={20} />
                                 {cartCount > 0 && (
                                     <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4">
@@ -194,7 +191,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 </Link>
                                 <button
                                     onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-                                    className="flex items-center gap-1 px-3 py-1.5 border-l border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    className="flex items-center gap-1 px-3 py-1.5 border-l border-slate-200 text-slate-500 hover:text-red-500 hover:bg-slate-50 transition-colors"
                                     title="로그아웃"
                                 >
                                     <LogOut size={14} />
@@ -204,8 +201,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         ) : (
                             !mobileMenuOpen && !['/login', '/signup'].includes(pathname) && (
                                 <div className="hidden lg:flex items-center gap-2">
-                                    <Link href="/login" className="px-4 py-1.5 text-slate-600 font-bold text-sm hover:bg-slate-50 border border-slate-200 rounded">로그인</Link>
-                                    <Link href="/signup" className="px-4 py-1.5 bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 rounded">회원가입</Link>
+                                    <Link href={`/login?next=${authNext}`} className="px-4 py-1.5 text-slate-600 font-bold text-sm hover:bg-slate-50 border border-slate-200 rounded">로그인</Link>
+                                    <Link href={`/signup?next=${authNext}`} className="px-4 py-1.5 bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 rounded">회원가입</Link>
                                 </div>
                             )
                         )}
@@ -213,7 +210,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {/* 비로그인 모바일: 무료 시작 버튼 상시 노출 */}
                         {!user && !mobileMenuOpen && !['login', 'signup'].some(p => pathname.includes(p)) && (
                             <Link
-                                href="/signup"
+                                href={`/signup?next=${authNext}`}
                                 className="lg:hidden px-3 py-3 sm:py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg hover:bg-brand-700 transition-colors whitespace-nowrap"
                             >
                                 무료 시작 →
@@ -224,7 +221,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         <button
                             className="lg:hidden p-3 sm:p-2 rounded-lg hover:bg-slate-100 transition-colors"
                             onClick={() => setMobileMenuOpen(prev => !prev)}
-                            aria-label="메뉴 열기"
+                            aria-label={mobileMenuOpen?'메뉴 닫기':'메뉴 열기'} aria-controls="mobile-navigation" aria-expanded={mobileMenuOpen}
                         >
                             {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
                         </button>
@@ -232,13 +229,13 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                 </div>
 
                 {/* Mobile Menu Dropdown */}
-                <div className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div id="mobile-navigation" hidden={!mobileMenuOpen} className={`mobile-navigation lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="bg-white border-t border-slate-100 px-4 py-3 space-y-1 shadow-lg">
                         {/* Nav Links */}
                         {navItems.map(item => (
                             <div key={item.href}>
                                 <Link
-                                    href={item.href}
+                                    href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined}
                                     className={`flex items-center gap-1.5 py-3 px-4 rounded-xl text-sm font-bold transition-colors ${pathname === item.href ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {item.label}
@@ -261,11 +258,11 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             </div>
                         ))}
                         {/* 유튜브 사용법 가이드 (외부 채널) */}
-                        <a href="https://www.youtube.com/@mathetf" target="_blank" rel="noopener noreferrer"
+                        <a href="/guide"
                             onClick={() => { setMobileMenuOpen(false); fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'header_mobile' }) }).catch(() => { }); }}
-                            className="flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-red-50 transition-colors">
-                            <YouTubeLogo size={22} /> 사용법 가이드
-                            <span className="text-[10px] text-slate-400 font-semibold ml-auto">유튜브 ↗</span>
+                            className="flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                            <BookOpen size={22} /> 사용법 가이드
+                            <span className="text-[10px] text-slate-400 font-semibold ml-auto">이용 안내</span>
                         </a>
                         {isAdmin && (
                             <Link href="/admin/inventory" className="block py-3 px-4 rounded-xl text-sm font-bold text-purple-600 hover:bg-purple-50">
@@ -296,26 +293,19 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                         <div className="text-sm font-bold text-slate-700">마이페이지 · {earnedPoints.toLocaleString()}P</div>
                                     </div>
                                 </Link>
+                                <button onClick={()=>supabase.auth.signOut().then(()=>window.location.reload())} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50"><LogOut size={17}/>로그아웃</button>
                             </>
                         ) : (
                             !['/login', '/signup'].includes(pathname) && (
                                 <div className="flex gap-2 pt-1">
-                                    <Link href="/login" className="flex-1 py-3 text-center text-slate-600 font-bold text-sm border border-slate-200 rounded-xl hover:bg-slate-50">로그인</Link>
-                                    <Link href="/signup" className="flex-1 py-3 text-center bg-brand-600 text-white font-bold text-sm rounded-xl hover:bg-brand-700">회원가입</Link>
+                                    <Link href={`/login?next=${authNext}`} className="flex-1 py-3 text-center text-slate-600 font-bold text-sm border border-slate-200 rounded-xl hover:bg-slate-50">로그인</Link>
+                                    <Link href={`/signup?next=${authNext}`} className="flex-1 py-3 text-center bg-brand-600 text-white font-bold text-sm rounded-xl hover:bg-brand-700">회원가입</Link>
                                 </div>
                             )
                         )}
                     </div>
                 </div>
             </header>
-            <DepositModal
-                isOpen={isDepositModalOpen}
-                onClose={() => setIsDepositModalOpen(false)}
-                user={user}
-                onSuccess={(addedPoints) => {
-                    setPurchasedPoints(prev => prev + addedPoints);
-                }}
-            />
         </>
     );
 }

@@ -1,5 +1,8 @@
 "use client";
 
+import PageHeading from "@/components/PageHeading";
+import { payOrder } from '@/lib/payments/client';
+import PendingOrderNotice from '@/components/payments/PendingOrderNotice';
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/components/providers/CartProvider';
 import { ShoppingCart, Trash2, CreditCard } from 'lucide-react';
@@ -8,7 +11,7 @@ import Header from '@/components/Header';
 import type { User } from '@supabase/supabase-js';
 
 export default function CartPage() {
-    const { items, cartCount, totalPrice, isLoading, removeFromCart, fetchCart, clearCart } = useCart();
+    const { items, cartCount, totalPrice, isLoading, removeFromCart, fetchCart } = useCart();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [earnedPoints, setEarnedPoints] = useState(0);
@@ -37,109 +40,11 @@ export default function CartPage() {
     const handleCheckout = async () => {
         if (!user || cartCount === 0) return;
         setIsCheckingOut(true);
-
-        const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-        const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
-
-        if (!(window as any).PortOne) {
-            alert('결제 모듈이 로드되지 않았습니다.');
-            setIsCheckingOut(false);
-            return;
-        }
-
-        const paymentId = `cart-pay-${crypto.randomUUID().replace(/-/g, '').substring(0, 29)}`;
-        const orderName = items.length === 1 ? items[0].title : `${items[0].title} 외 ${items.length - 1}건`;
-
         try {
-            // 0원 결제 (포인트 전액 결제) 처리
-            if (finalAmount === 0) {
-                // PG 호출 스킵, 바로 API 전송
-                const verifyRes = await fetch('/api/cart/checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        paymentId: paymentId,
-                        amount: 0,
-                        originalTotalAmount: totalPrice,
-                        usedPoints: usedPoints,
-                        userId: user.id,
-                        items: items
-                    })
-                });
-
-                const verifyData = await verifyRes.json();
-
-                if (verifyData.success) {
-                    // Google Ads 전환 추적
-                    if (typeof window !== 'undefined' && (window as any).gtag) {
-                        (window as any).gtag('event', 'conversion', {'send_to': 'AW-17263917467/Rs-WCNjnvOgaEJvziahA'});
-                    }
-                    alert(`포인트 결제가 성공적으로 완료되었습니다.`);
-                    await clearCart();
-                    window.location.href = '/mypage';
-                } else {
-                    alert(`주문 처리 실패: ${verifyData.message}`);
-                }
-                setIsCheckingOut(false);
-                return;
-            }
-
-            const response = await (window as any).PortOne.requestPayment({
-                storeId,
-                paymentId,
-                orderName: orderName,
-                totalAmount: finalAmount,
-                currency: 'CURRENCY_KRW',
-                channelKey,
-                payMethod: 'CARD', // 장바구니 모델이므로 간편결제, 네이버페이, 카드 등 모두 가능
-                isEscrow: false,   // 3만원 이하, 환금성 아니므로 에스크로 면제 가능
-                customer: {
-                    fullName: user.email?.split('@')[0] || 'User',
-                    email: user.email,
-                    id: user.id,
-                    phoneNumber: user.user_metadata?.phone || user.phone || '010-0000-0000',
-                }
-            });
-
-            if (response.code != null) {
-                alert(`결제 실패: ${response.message}`);
-                setIsCheckingOut(false);
-                return;
-            }
-
-            // Verify Cart Checkout
-            const verifyRes = await fetch('/api/cart/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    paymentId: response.paymentId,
-                    amount: finalAmount,
-                    originalTotalAmount: totalPrice,
-                    usedPoints: usedPoints,
-                    userId: user.id,
-                    items: items
-                })
-            });
-
-            const verifyData = await verifyRes.json();
-
-            if (verifyData.success) {
-                // Google Ads 전환 추적
-                if (typeof window !== 'undefined' && (window as any).gtag) {
-                    (window as any).gtag('event', 'conversion', {'send_to': 'AW-17263917467/Rs-WCNjnvOgaEJvziahA'});
-                }
-                alert(`결제가 성공적으로 완료되었습니다.`);
-                await clearCart();
-                // Optionally redirect to My Page or Library
-                window.location.href = '/mypage';
-            } else {
-                alert(`주문 처리 실패: ${verifyData.message}`);
-            }
-        } catch (error: any) {
-            alert(`결제 중 오류가 발생했습니다: ${error.message}`);
-        } finally {
-            setIsCheckingOut(false);
-        }
+            await payOrder(user, {kind:'cart',items,usedPoints});
+            window.location.href='/mypage';
+        } catch(e:any) { alert(e.message); }
+        finally { setIsCheckingOut(false); }
     };
 
     if (isLoading) {
@@ -147,14 +52,12 @@ export default function CartPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD]">
+        <div className="min-h-screen bg-[#F2F3F0]">
             <Header />
         <div className="max-w-[1000px] mx-auto p-6 md:p-12 w-full">
-            <h1 className="text-3xl font-bold flex items-center gap-3 mb-8 text-slate-800">
-                <ShoppingCart size={32} className="text-brand-600" />
-                장바구니
-            </h1>
+            <PageHeading eyebrow="YOUR SELECTION" title="선택한 자료." description="필요한 자료를 한곳에 모았습니다. 구매할 항목을 확인해 주세요."/>
 
+            <PendingOrderNotice userId={user?.id} kind="cart" />
             {cartCount === 0 ? (
                 <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-100">
                     <ShoppingCart size={48} className="mx-auto text-slate-300 mb-4" />
@@ -261,7 +164,7 @@ export default function CartPage() {
                             ) : (
                                 <>
                                     <CreditCard size={20} />
-                                    결제하기
+                                    결제 / 결과 확인
                                 </>
                             )}
                         </button>

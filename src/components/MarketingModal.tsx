@@ -25,7 +25,7 @@ export default function MarketingModal({ isOpen, onClose, onAgree, readonly = fa
                             <h3 className="font-bold text-base mb-2">1. 수집 및 이용 목적</h3>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li><span className="font-bold">신규 콘텐츠 알림:</span> 관심 학교의 최신 기출 자료 업로드 소식 안내.</li>
-                                <li><span className="font-bold">혜택 제공:</span> 포인트 충전 이벤트, 할인 쿠폰 발급, 무료 자료 증정 소식 전달.</li>
+                                <li><span className="font-bold">혜택 제공:</span> 할인 쿠폰 발급, 무료 자료 증정 소식 전달.</li>
                                 <li><span className="font-bold">서비스 맞춤화:</span> 사용자 이용 패턴에 따른 맞춤형 학습 콘텐츠 추천 및 서비스 개선 안내.</li>
                             </ul>
                         </section>

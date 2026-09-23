@@ -1,4 +1,6 @@
 "use client";
+import FeatureExplanation from '@/components/FeatureExplanation';
+import {sendToExamCart} from '@/lib/questions/handoff';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Crop, Loader2, Upload, Wand2, Check, Download, Trash2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
@@ -159,21 +161,16 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
             <main className="max-w-2xl mx-auto px-4 py-16 text-center">
                 {/* 화면 제목은 h2 — 이 페이지의 h1 은 page.tsx 의 sr-only 하나뿐이다.
                     여기까지 h1 이면 거의 같은 문장의 h1 이 한 페이지에 둘이 된다. */}
-                <h2 className="text-2xl font-black mb-3">학교프린트 변형만들기</h2>
+                <h2 className="text-2xl font-black mb-3">프린트와 비슷한 기출 찾기</h2>
                 <p className="text-slate-500 mb-6">회원가입 후 이용할 수 있어요 (런칭 기념 무료).</p>
-                <Link href="/signup" className="inline-block bg-[#497AB7] text-white font-extrabold px-6 py-3 rounded-xl">무료로 가입하기 →</Link>
+                <Link href="/signup" className="inline-block bg-[#426D36] text-white font-extrabold px-6 py-3 rounded-xl">무료로 가입하기 →</Link>
             </main>
         );
     }
 
     return (
         <main className="max-w-6xl mx-auto px-4 py-8">
-            <div className="mb-5">
-                <div className="inline-flex items-center gap-1.5 bg-[#2E9E5B]/12 border border-[#2E9E5B]/30 text-[#2E9E5B] text-xs font-bold px-3 py-1 rounded-full mb-2"><Crop size={12} /> 학교프린트 변형만들기</div>
-                <h2 className="text-2xl sm:text-3xl font-black">학교 프린트로 변형문제 만들기</h2>
-                <p className="text-slate-600 text-base mt-2 break-keep">프린트(PDF)를 올리고 문제를 <strong className="text-[#2E9E5B]">드래그로 잘라내면</strong>, 같은 유형 변형문제를 찾아 한글파일로 만들어 드려요. <strong className="text-[#2E9E5B]">🎉 런칭 기념 무료</strong></p>
-            </div>
-
+            <section className="suite-tool-intro"><p className="suite-eyebrow">FROM YOUR CLASSROOM</p><h2>한 장의 프린트에서,<br/>새로운 연습으로.</h2><p className="suite-description">PDF를 올리고 연습할 문제를 잘라내세요. 비슷한 유형의 기존 기출문항을 찾아 시험지로 이어갑니다.</p><div className="suite-tool-actions"><span>런칭 기간 회원 무료</span><button className="suite-button" disabled={!totalSelected} onClick={()=>sendToExamCart(crops.flatMap(c=>c.selected),'프린트 유사 기출','print')}>선택 문항으로 시험지 만들기 →</button></div><FeatureExplanation/></section>
             {/* 업로드 */}
             <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-2xl py-8 cursor-pointer hover:border-[#2E9E5B] transition-colors bg-white">
                 <Upload size={18} className="text-slate-400" />
@@ -244,7 +241,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                                             비슷한 문제를 찾지 못했어요. 영역을 다시 잘라보거나, 다른 문제로 시도해 주세요.
                                         </p>
                                     )}
-                                    <p className="text-[11px] text-slate-500 mb-1.5">채택할 변형문제를 고르세요 ({c.selected.length}개 선택)</p>
+                                    <p className="text-[11px] text-slate-500 mb-1.5">채택할 유사 기출문제를 고르세요 ({c.selected.length}개 선택)</p>
                                     {/* 예전엔 후보 전체가 하나의 <button> 이라, 문제를 읽으려고 누르면
                                         선택이 토글돼 버렸다. 게다가 미리보기가 max-h-28 로 잘려 문제 아래가
                                         아예 안 보였다 → 선택 버튼과 본문을 분리하고 펼치기를 붙인다. */}

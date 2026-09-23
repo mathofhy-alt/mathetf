@@ -7,6 +7,8 @@ import { CONCEPT_MAP } from '@/lib/concept-map';
 import { SUBJECT_UNITS, CURRICULA } from '@/lib/curriculum';
 
 export interface FilterState {
+    curriculum?: string;
+    mockSlug?: string;
     units: string[];
     concepts: string[];
     difficulty: string[];
@@ -42,6 +44,7 @@ interface TreeNode {
 }
 
 interface FilterSidebarProps {
+    initialFilters?: Partial<FilterState> | null;
     dbFilter?: any; // Legacy simple filter (optional)
     selectedDbIds?: string[]; // List of selected personal DBs
     purchasedDbs?: any[]; // Full DB objects to cross-reference IDs if needed
@@ -60,23 +63,24 @@ const buildDefaultTree = (): TreeNode[] => {
     }).filter(node => node.unitNodes.length > 0);
 };
 
-export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, onFilterChange }: FilterSidebarProps) {
+export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, onFilterChange, initialFilters }: FilterSidebarProps) {
     const [treeData, setTreeData] = useState<TreeNode[]>(() => buildDefaultTree());
     const [loadingUnits, setLoadingUnits] = useState(false);
     // 캐시 맵: 같은 DB 조합은 두 번째부터 즉시 반환 (DB 조회 0회)
     const treeCache = useRef<Record<string, TreeNode[]>>({});
 
     // Filter States
-    const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
-    const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
-    const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([]); // Strings "1".."10"
+    const [selectedSubjects,setSelectedSubjects]=useState<string[]>(initialFilters?.subjects||[]);
+    const [selectedUnits, setSelectedUnits] = useState<string[]>(initialFilters?.units || []);
+    const [selectedConcepts, setSelectedConcepts] = useState<string[]>(initialFilters?.concepts || []);
+    const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>(initialFilters?.difficulty || []); // Strings "1".."10"
     const [keywordInput, setKeywordInput] = useState('');
-    const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
+    const [activeKeywords, setActiveKeywords] = useState<string[]>(initialFilters?.keywords || []);
     // selectedTypes removed
     // [교과외] 옛 회차의 폐지 단원(부등식의 영역·이중근호·이항연산 등) 포함 여부. 기본은 숨김.
-    const [includeOffCurriculum, setIncludeOffCurriculum] = useState(false);
+    const [includeOffCurriculum, setIncludeOffCurriculum] = useState(initialFilters?.includeOffCurriculum === true);
     // 교육과정 선택 (기본: 현 교육과정 2022). 선택한 과정 과목만 표시.
-    const [curriculum, setCurriculum] = useState<string>('2022');
+    const [curriculum, setCurriculum] = useState<string>(initialFilters?.curriculum || '2022');
     const curSubjects = (CURRICULA.find(c => c.id === curriculum)?.subjects || []) as readonly string[];
 
     const supabase = createClient();
@@ -165,7 +169,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     const facetRes = await fetch('/api/questions/facets', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ selectedDbs, purchasedDbsCount: purchasedDbs?.length || 0, includeOffCurriculum }),
+                        body: JSON.stringify({ selectedDbs, purchasedDbsCount: purchasedDbs?.length || 0, includeOffCurriculum, mockSlug:initialFilters?.mockSlug }),
                     });
                     const facetJson = await facetRes.json().catch(() => ({ data: [] }));
                     const data = facetJson?.data;
@@ -243,11 +247,11 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
             units: selectedUnits,
             concepts: selectedConcepts.map(c => c.startsWith('#') ? c : `#${c}`), // DB는 #태그 형식으로 저장
             difficulty: selectedDifficulty,
-            subjects: [],
+            subjects: selectedSubjects,
             keywords: activeKeywords,
-            includeOffCurriculum,
+            includeOffCurriculum, curriculum, ...(initialFilters?.mockSlug?{mockSlug:initialFilters.mockSlug}:{}),
         });
-    }, [selectedUnits, selectedConcepts, selectedDifficulty, activeKeywords, includeOffCurriculum]);
+    }, [selectedSubjects, selectedUnits, selectedConcepts, selectedDifficulty, activeKeywords, includeOffCurriculum, curriculum]);
 
     const toggleSelection = (list: string[], item: string, setList: (L: string[]) => void) => {
         if (list.includes(item)) {
@@ -258,7 +262,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     };
 
     return (
-        <div className="w-full md:w-64 bg-white md:border-r flex flex-col md:h-full">
+        <div className="w-full min-w-0 bg-white flex flex-col md:h-full">
             {/* 헤더는 작게 — 이 자리를 크게 쓰면 아래 키워드 검색이 첫 화면 밖으로 밀린다 (9/4) */}
             <div className="hidden md:block px-4 py-2.5 border-b">
                 <h2 className="font-bold text-[13px] text-slate-500 flex items-center gap-1.5">
@@ -274,7 +278,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">키워드 검색</h3>
                     <div className="space-y-2">
                         <input
-                            type="text"
+                            type="text" aria-label="문항 키워드"
                             value={keywordInput}
                             onChange={(e) => setKeywordInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -288,7 +292,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                 }
                             }}
                             placeholder="예: 삼각함수 (Enter)"
-                            className="w-full text-base md:text-sm p-2.5 md:p-2 border border-slate-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                            className="w-full text-base md:text-sm p-2.5 md:p-2 border border-slate-200 rounded focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
                         />
 
                         {activeKeywords.length > 0 && (
@@ -297,7 +301,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                     <span
                                         key={keyword}
                                         onClick={() => setActiveKeywords(activeKeywords.filter(k => k !== keyword))}
-                                        className="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded border border-indigo-100 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center gap-1"
+                                        className="bg-brand-50 text-brand-700 text-xs px-2 py-1 rounded border border-brand-100 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center gap-1"
                                     >
                                         #{keyword}
                                         <Check size={10} className="opacity-50" />
@@ -311,6 +315,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     </div>
                 </div>
 
+                {selectedSubjects.length>0&&<div className="text-sm">진입 과목: {selectedSubjects.join(', ')} <button className="underline" onClick={()=>setSelectedSubjects([])}>과목 제한 해제</button></div>}
                 {/* 0. Subject / Unit Tree */}
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">과목 및 단원</h3>
@@ -319,8 +324,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         {CURRICULA.map((c) => (
                             <button
                                 key={c.id}
-                                onClick={() => setCurriculum(c.id)}
-                                className={`flex-1 text-[12px] md:text-[11px] font-bold py-1.5 rounded-md transition-colors ${curriculum === c.id ? 'bg-white text-[#497AB7] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                aria-pressed={curriculum===c.id} onClick={() => {setCurriculum(c.id);setSelectedSubjects([]);setSelectedUnits([]);setSelectedConcepts([]);}}
+                                className={`flex-1 text-[12px] md:text-[11px] font-bold py-1.5 rounded-md transition-colors ${curriculum === c.id ? 'bg-white text-[#285CE6] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 {c.label.replace(' 교육과정', '')}
                             </button>
@@ -331,7 +336,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     <label className="flex items-start gap-2 mb-3 px-2 py-2 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer">
                         <button
                             type="button"
-                            onClick={() => setIncludeOffCurriculum(v => !v)}
+                            aria-label="교과외 문항 포함" aria-pressed={includeOffCurriculum} onClick={() => setIncludeOffCurriculum(v => !v)}
                             className={`mt-px w-5 h-5 md:w-3.5 md:h-3.5 shrink-0 border rounded flex items-center justify-center transition-colors ${includeOffCurriculum ? 'bg-amber-500 border-amber-500' : 'border-amber-300 bg-white'}`}
                         >
                             {includeOffCurriculum && <Check size={10} className="text-white" />}
@@ -357,7 +362,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                     {/* Level 1: Subject Header */}
                                     <div className="flex items-center justify-between group py-1.5 md:py-0">
                                         <div className="flex items-center gap-2.5 md:gap-2">
-                                            <button
+                                            <button aria-label={`${node.subject} 전체 단원 선택`} aria-pressed={allUnitsSelected}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     if (allUnitsSelected) {
@@ -368,29 +373,29 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                         setSelectedUnits(Array.from(newUnits));
                                                     }
                                                 }}
-                                                className={`w-6 h-6 md:w-4 md:h-4 border rounded flex items-center justify-center transition-colors ${allUnitsSelected ? 'bg-indigo-600 border-indigo-600' :
-                                                    someUnitsSelected ? 'bg-indigo-50 border-indigo-400' : 'border-slate-300'
+                                                className={`w-6 h-6 md:w-4 md:h-4 border rounded flex items-center justify-center transition-colors ${allUnitsSelected ? 'bg-brand-600 border-brand-600' :
+                                                    someUnitsSelected ? 'bg-brand-50 border-brand-400' : 'border-slate-300'
                                                     }`}
                                             >
                                                 {allUnitsSelected && <Check size={12} className="text-white" />}
-                                                {!allUnitsSelected && someUnitsSelected && <div className="w-2 h-2 bg-indigo-500 rounded-sm" />}
+                                                {!allUnitsSelected && someUnitsSelected && <div className="w-2 h-2 bg-brand-500 rounded-sm" />}
                                             </button>
 
                                             <button
                                                 onClick={() => {
                                                     setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
                                                 }}
-                                                className="text-base md:text-sm font-bold text-slate-800 hover:text-indigo-600 transition-colors"
+                                                className="text-base md:text-sm font-bold text-slate-800 hover:text-brand-600 transition-colors"
                                             >
                                                 {node.subject}
                                             </button>
                                         </div>
 
-                                        <button
+                                        <button aria-label={`${node.subject} 단원 펼치기`} aria-expanded={node.isExpanded}
                                             onClick={() => {
                                                 setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
                                             }}
-                                            className="text-slate-400 hover:text-indigo-500 p-2 -m-2 md:p-0 md:m-0"
+                                            className="text-slate-400 hover:text-brand-500 p-2 -m-2 md:p-0 md:m-0"
                                         >
                                             {node.isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                         </button>
@@ -412,7 +417,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                     onClick={() => {
                                                                         toggleSelection(selectedUnits, uNode.name, setSelectedUnits);
                                                                     }}
-                                                                    className={`w-5 h-5 md:w-3.5 md:h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'}`}
+                                                                    className={`w-5 h-5 md:w-3.5 md:h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-brand-500 border-brand-500' : 'border-slate-300'}`}
                                                                 >
                                                                     {isUnitSelected && <Check size={10} className="text-white" />}
                                                                 </button>
@@ -423,7 +428,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             unitNodes: n.unitNodes.map(un => un.name === uNode.name ? { ...un, isExpanded: !un.isExpanded } : un)
                                                                         } : n));
                                                                     }}
-                                                                    className={`text-sm md:text-xs flex-1 text-left ${isUnitSelected ? 'text-indigo-700 font-bold' : 'text-slate-600'} hover:text-indigo-500 transition-colors`}
+                                                                    className={`text-sm md:text-xs flex-1 text-left ${isUnitSelected ? 'text-brand-700 font-bold' : 'text-slate-600'} hover:text-brand-500 transition-colors`}
                                                                 >
                                                                     {uNode.name}
                                                                     {uNode.offCurriculum && (
@@ -441,7 +446,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             unitNodes: n.unitNodes.map(un => un.name === uNode.name ? { ...un, isExpanded: !un.isExpanded } : un)
                                                                         } : n));
                                                                     }}
-                                                                    className="text-slate-300 hover:text-indigo-400"
+                                                                    className="text-slate-300 hover:text-brand-400"
                                                                 >
                                                                     {uNode.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                                                 </button>
@@ -453,7 +458,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                             <div className="pl-5 space-y-1 border-l border-slate-50 ml-1.5 mb-2">
                                                                 {uNode.concepts.map(concept => (
                                                                     <label key={concept} className="flex items-center gap-2 cursor-pointer group py-0.5">
-                                                                        <div className={`w-3 h-3 border rounded flex items-center justify-center transition-colors ${selectedConcepts.includes(concept) ? 'bg-blue-500 border-blue-500' : 'border-slate-200 group-hover:border-blue-400'}`}>
+                                                                        <div className={`w-3 h-3 border rounded flex items-center justify-center transition-colors ${selectedConcepts.includes(concept) ? 'bg-brand-500 border-brand-500' : 'border-slate-200 group-hover:border-brand-400'}`}>
                                                                             {selectedConcepts.includes(concept) && <Check size={8} className="text-white" />}
                                                                         </div>
                                                                         <input
@@ -462,7 +467,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             checked={selectedConcepts.includes(concept)}
                                                                             onChange={() => toggleSelection(selectedConcepts, concept, setSelectedConcepts)}
                                                                         />
-                                                                        <span className={`text-[12px] md:text-[11px] ${selectedConcepts.includes(concept) ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>
+                                                                        <span className={`text-[12px] md:text-[11px] ${selectedConcepts.includes(concept) ? 'text-brand-600 font-medium' : 'text-slate-500'}`}>
                                                                             #{concept}
                                                                         </span>
                                                                     </label>
@@ -484,7 +489,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase mb-4 flex justify-between">
                         <span>난이도</span>
-                        <span className="text-indigo-600 font-normal">
+                        <span className="text-brand-600 font-normal">
                             {selectedDifficulty.length > 0 ? (
                                 selectedDifficulty.length === 10 ? '전체' :
                                     `${Math.min(...selectedDifficulty.map(Number))} ~ ${Math.max(...selectedDifficulty.map(Number))}`
@@ -500,8 +505,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                     key={num}
                                     onClick={() => toggleSelection(selectedDifficulty, strNum, setSelectedDifficulty)}
                                     className={`h-8 text-xs rounded border transition-all font-bold ${isSelected
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
+                                        ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300'
                                         }`}
                                 >
                                     {num}

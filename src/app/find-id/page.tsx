@@ -110,7 +110,7 @@ export default function FindIdPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+        <div className="min-h-screen bg-[#f2f3f0] flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-md max-w-md w-full p-8 border border-slate-200 relative">
                 <Link
                     href="/login"
@@ -128,7 +128,7 @@ export default function FindIdPage() {
 
                 {foundEmails !== null ? (
                     <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
-                        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                        <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
                             🔎
                         </div>
                         <h2 className="text-xl font-bold text-slate-800 mb-2">조회된 아이디</h2>

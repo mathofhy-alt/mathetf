@@ -32,7 +32,7 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans flex items-center justify-center px-4">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans flex items-center justify-center px-4">
             <div className="bg-white max-w-md w-full rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
                 {state === 'ok' && (
                     <>
@@ -64,7 +64,7 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
                         </p>
                     </>
                 )}
-                <Link href="/" className="inline-block mt-6 text-sm font-bold text-[#497AB7] hover:underline">
+                <Link href="/" className="inline-block mt-6 text-sm font-bold text-[#426D36] hover:underline">
                     수학ETF 홈으로 →
                 </Link>
             </div>

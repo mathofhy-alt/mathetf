@@ -36,20 +36,20 @@ export default async function RegionHubPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
             <main className="max-w-5xl mx-auto px-4 py-8">
                 <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
+                    <Link href="/" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
                     <span className="mx-1.5">/</span>
                     <span className="text-slate-500 font-semibold">지역별 기출</span>
                 </nav>
 
                 <h1 className="text-2xl sm:text-3xl font-black break-keep">지역별 고등학교 수학 기출</h1>
                 <p className="text-slate-500 mt-2 break-keep">
-                    전국 <strong className="text-[#1E2D4F]">{totalSchools}개 고등학교</strong>의 수학 내신 기출{' '}
-                    <strong className="text-[#1E2D4F]">{totalExams}회차</strong>를 시·도와 구·군으로 묶었습니다.
+                    전국 <strong className="text-[#294437]">{totalSchools}개 고등학교</strong>의 수학 내신 기출{' '}
+                    <strong className="text-[#294437]">{totalExams}회차</strong>를 시·도와 구·군으로 묶었습니다.
                     지역을 고르면 그 지역 학교의 중간고사·기말고사 기출을 한눈에 볼 수 있어요.
                 </p>
 
@@ -58,9 +58,9 @@ export default async function RegionHubPage() {
                         <section key={s.sido} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                             <div className="flex items-center justify-between gap-3 mb-3">
                                 <div className="flex items-center gap-2">
-                                    <MapPin size={17} className="text-[#497AB7]" />
+                                    <MapPin size={17} className="text-[#426D36]" />
                                     {s.hasPage ? (
-                                        <Link href={`/지역/${s.sido}`} className="text-lg font-extrabold hover:text-[#497AB7] transition-colors">
+                                        <Link href={`/지역/${s.sido}`} className="text-lg font-extrabold hover:text-[#426D36] transition-colors">
                                             {s.sido}
                                         </Link>
                                     ) : (
@@ -71,7 +71,7 @@ export default async function RegionHubPage() {
                                     </span>
                                 </div>
                                 {s.hasPage && (
-                                    <Link href={`/지역/${s.sido}`} className="group inline-flex items-center gap-1 text-sm font-bold text-[#497AB7] hover:text-[#3A6CAE] shrink-0 py-3 pl-2 -my-3 -ml-2 sm:p-0 sm:m-0">
+                                    <Link href={`/지역/${s.sido}`} className="group inline-flex items-center gap-1 text-sm font-bold text-[#426D36] hover:text-[#31572E] shrink-0 py-3 pl-2 -my-3 -ml-2 sm:p-0 sm:m-0">
                                         전체보기 <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                     </Link>
                                 )}
@@ -83,7 +83,7 @@ export default async function RegionHubPage() {
                                         <Link
                                             key={d.gu}
                                             href={`/지역/${s.sido}/${d.gu}`}
-                                            className="text-sm font-bold text-[#497AB7] bg-[#EEF4FB] border border-[#B7D1EA]/60 px-3 py-2.5 sm:py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors"
+                                            className="text-sm font-bold text-[#426D36] bg-[#EAF1E1] border border-[#C5D8B5]/60 px-3 py-2.5 sm:py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors"
                                         >
                                             {d.gu} <span className="font-normal text-[#5b7ea8]">{d.schools.length}</span>
                                         </Link>
@@ -95,7 +95,7 @@ export default async function RegionHubPage() {
                                             {d.schools.map((sc, i) => (
                                                 <span key={sc.name}>
                                                     {i > 0 && ' · '}
-                                                    <Link href={`/school/${encodeURIComponent(sc.name)}`} className="font-bold text-slate-600 hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">
+                                                    <Link href={`/school/${encodeURIComponent(sc.name)}`} className="font-bold text-slate-600 hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">
                                                         {sc.name.replace('등학교', '')}
                                                     </Link>
                                                 </span>
@@ -115,8 +115,8 @@ export default async function RegionHubPage() {
                 )}
 
                 <div className="mt-8 flex flex-wrap gap-2">
-                    <Link href="/schools" className="text-sm font-bold text-[#497AB7] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#497AB7] transition-colors">학교명으로 찾기 →</Link>
-                    <Link href="/question-bank" className="text-sm font-bold text-white bg-[#497AB7] px-4 py-2 rounded-xl hover:bg-[#3A6CAE] transition-colors">기출로 시험지 만들기 →</Link>
+                    <Link href="/schools" className="text-sm font-bold text-[#426D36] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#426D36] transition-colors">학교명으로 찾기 →</Link>
+                    <Link href="/question-bank" className="text-sm font-bold text-white bg-[#426D36] px-4 py-2 rounded-xl hover:bg-[#31572E] transition-colors">기출로 시험지 만들기 →</Link>
                 </div>
             </main>
         </div>

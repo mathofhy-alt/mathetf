@@ -34,7 +34,7 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
                             <h3 className="font-bold text-base mb-2">2. 개인정보의 수집 및 이용 목적</h3>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li><span className="font-bold">회원 관리:</span> 회원 식별, 가입 의사 확인, <span className="font-bold">휴대폰 번호를 통한 본인 확인 및 중복·부정 가입 방지</span>, 불량 회원 부정 이용 방지.</li>
-                                <li><span className="font-bold">서비스 제공:</span> 기출자료 다운로드, 포인트 충전 및 결제 서비스 제공, 콘텐츠 구매 내역 관리.</li>
+                                <li><span className="font-bold">서비스 제공:</span> 기출자료 다운로드, 자료 결제 서비스 제공, 콘텐츠 구매 내역 관리.</li>
                                 <li><span className="font-bold">고객 지원:</span> 서비스 관련 공지사항 전달, 민원 처리 및 고객 상담.</li>
                             </ul>
                         </section>

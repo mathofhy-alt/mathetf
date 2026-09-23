@@ -1,3 +1,4 @@
+import {readAllPages} from '@/lib/questions/catalog';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import Link from 'next/link';
 import { Metadata } from 'next';
@@ -172,16 +173,16 @@ function buildSchoolNarrative(
 ): string[] {
     const paras: string[] = [];
     if (specialIntro) {
-        paras.push(`${specialIntro} 현재 ${examCount}개 회차의 문제와 해설을 제공하며, 문제 미리보기와 워터마크 없는 PDF·한글(HWP)은 회원가입 시 무료로 받을 수 있습니다.`);
+        paras.push(`${specialIntro} 현재 ${examCount}개 회차의 문제와 해설을 제공하며, 제공되는 문제 PDF는 회원 무료로 하루 10회까지 받을 수 있으며, 해설·원본 파일 가격은 자료마다 다릅니다.`);
     } else {
-        const yearStr = years.length > 0 ? `${years[years.length - 1]}년부터 ${years[0]}년까지 ` : '';
+        const yearStr = years.length === 1 ? `${years[0]}년 ` : years.length > 0 ? `${years[years.length - 1]}년부터 ${years[0]}년까지 ` : '';
         const subjStr = subjects.length > 0 ? `${subjects.join('·')} 등 ` : '';
         // 축약명을 첫 문장에 한 번 병기 — 실제 검색어('창덕여고 수학기출')와 페이지를 잇는다
         const sn = shortSchoolName(schoolName);
         paras.push(
             `${schoolName}${sn ? `(${sn})` : ''}${region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다. ` +
             `${yearStr}${subjStr}총 ${examCount}개 시험지의 문제와 해설을 제공하며, ` +
-            `문제 미리보기와 워터마크 없는 문제 PDF는 회원가입 시 무료로 받을 수 있습니다.`
+            `미리보기와 무료 문제 PDF는 준비된 회차에서 제공됩니다. 무료 PDF는 회원당 하루 10회까지이며, 해설 PDF·HWP 가격은 자료별로 확인하세요.`
         );
     }
     if (subjUnits.length > 0) {
@@ -195,9 +196,9 @@ function buildSchoolNarrative(
     }
     const sn2 = specialIntro ? null : shortSchoolName(schoolName);
     paras.push(
-        `원본 기출뿐 아니라 같은 유형의 변형문제도 함께 제공하므로, 기출로 출제 경향을 익힌 뒤 변형문제로 한 번 더 실전 연습할 수 있습니다. ` +
+        `기출의 단원과 난이도를 살펴보고, 배운 범위에 맞는 문항을 골라 반복 연습할 수 있습니다. ` +
         (sn2 ? `${sn2} 중간고사·기말고사 대비 자료를 찾는다면 ` : '') +
-        `필요한 회차를 골라 나만의 시험지로 구성해 PDF·한글(HWP)로 받아보세요.`
+        `필요한 회차를 골라 나만의 시험지로 구성해 한글에서 여는 HML 파일로 저장해보세요.`
     );
     return paras;
 }
@@ -278,7 +279,7 @@ export default async function SchoolPage({ params }: Props) {
     // 단원 분포는 '과목별'로 분리 (학년·과목 다른 시험을 한 표로 합치면 의미 없음)
     let subjUnits: { subject: string; total: number; units: { unit: string; count: number }[] }[] = [];
     try {
-        const { data: qs } = await supabase.from('questions').select('subject, unit').eq('school', schoolName);
+        const qs=await readAllPages<any>((from,to)=>supabase.from('questions').select('subject,unit').eq('school',schoolName).eq('work_status','sorted').order('id').range(from,to));
         if (qs && qs.length) {
             const bySubj: Record<string, Record<string, number>> = {};
             qs.forEach((q: any) => {
@@ -327,12 +328,12 @@ export default async function SchoolPage({ params }: Props) {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
+            <main className="library-page max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 {/* 브레드크럼 */}
-                <Link href="/schools" className="text-sm text-[#497AB7] hover:underline mb-4 inline-flex items-center gap-1">
+                <Link href="/schools" className="text-sm text-[#426D36] hover:underline mb-4 inline-flex items-center gap-1">
                     ← 학교별 기출 목록
                 </Link>
 
@@ -340,9 +341,9 @@ export default async function SchoolPage({ params }: Props) {
                 <div className="mb-6">
                     <h1 className="text-2xl sm:text-3xl font-black break-keep">
                         {schoolName} 수학 기출문제
-                    </h1>
+                    </h1><p className="mt-4 text-sm leading-relaxed text-slate-600">보유 기출의 회차와 단원을 확인하고 필요한 문항만 골라 출제할 수 있습니다. <Link className="underline" href="/guide">만드는 순서·무료 범위·결과물 보기</Link> · <Link className="underline" href="/question-bank?demo=1&origin=content">5문항 체험</Link></p>
                     <p className="text-slate-500 mt-2 text-sm">
-                        총 <span className="font-bold text-[#497AB7]">{examList.length}개</span>의 시험 자료 · 문제 미리보기 무료 · 해설은 시험지 출제에서 무료
+                        총 <span className="font-bold text-[#426D36]">{examList.length}개</span>의 시험 자료 · 제공 형식과 이용 조건은 회차별로 확인하세요
                     </p>
                 </div>
 
@@ -360,11 +361,11 @@ export default async function SchoolPage({ params }: Props) {
                             <h3 className="text-xs font-bold text-slate-700">📊 과목별 출제 단원</h3>
                             {subjUnits.map((s) => (
                                 <div key={s.subject}>
-                                    <p className="text-xs font-bold text-[#497AB7] mb-1.5">{s.subject} <span className="text-slate-400 font-normal">({s.total}문항)</span></p>
+                                    <p className="text-xs font-bold text-[#426D36] mb-1.5">{s.subject} <span className="text-slate-400 font-normal">({s.total}문항)</span></p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {s.units.map((u) => (
-                                            <span key={u.unit} className="text-[11px] bg-[#EEF4FB] text-[#1E2D4F] border border-[#B7D1EA]/60 px-2 py-0.5 rounded-full">
-                                                {u.unit} <span className="text-[#497AB7] font-bold">{u.count}</span>
+                                            <span key={u.unit} className="text-[11px] bg-[#EAF1E1] text-[#294437] border border-[#C5D8B5]/60 px-2 py-0.5 rounded-full">
+                                                {u.unit} <span className="text-[#426D36] font-bold">{u.count}</span>
                                             </span>
                                         ))}
                                     </div>
@@ -384,7 +385,7 @@ export default async function SchoolPage({ params }: Props) {
                     {locations.map((loc) => (
                     <div key={loc.key} className={multiRegion ? 'space-y-2 pt-2' : 'space-y-2'}>
                     {multiRegion && (
-                        <h2 className="text-sm font-black text-[#1E2D4F] px-1 pt-2">
+                        <h2 className="text-sm font-black text-[#294437] px-1 pt-2">
                             {loc.label} <span className="font-bold text-slate-400">· {loc.items.length}개</span>
                         </h2>
                     )}
@@ -392,6 +393,7 @@ export default async function SchoolPage({ params }: Props) {
                         const isMock = group.examType === '모의고사' || group.examType === '수능';
                         const semLabel = isMock ? `${group.semester}월` : `${group.semester}학기`;
                         const hasPdf = group.files.some((f: any) => f.file_type === 'PDF');
+                        const hasFreePdf=group.files.some((f:any)=>!!f.free_pdf_url);
                         const hasHwp = group.files.some((f: any) => f.file_type === 'HWP');
                         const hasDb = group.files.some((f: any) => f.file_type === 'DB');
                         // 상세페이지(/exam/[id]) 앵커 = 해설 PDF 행
@@ -402,21 +404,21 @@ export default async function SchoolPage({ params }: Props) {
                             <Link
                                 key={idx}
                                 href={href}
-                                className="group flex items-center justify-between gap-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-[#497AB7] border border-slate-100 px-4 sm:px-5 py-4"
+                                className="group flex items-center justify-between gap-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-[#426D36] border border-slate-100 px-4 sm:px-5 py-4"
                             >
                                 <div className="min-w-0">
-                                    <p className="font-bold text-base text-[#1E2D4F] group-hover:text-[#497AB7] transition-colors break-keep leading-snug">
+                                    <p className="font-bold text-base text-[#294437] group-hover:text-[#426D36] transition-colors break-keep leading-snug">
                                         {group.year}년 {group.grade}학년 {semLabel} {group.examType}
-                                        {group.subject && <span className="ml-1 text-[#497AB7]">{group.subject}</span>}
+                                        {group.subject && <span className="ml-1 text-[#426D36]">{group.subject}</span>}
                                     </p>
                                     <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                        {hasPdf && <span className="text-[11px] sm:text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2 py-0.5 rounded-full">문제 무료</span>}
+                                        {hasFreePdf && <span className="text-[11px] sm:text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2 py-0.5 rounded-full">문제 무료</span>}
                                         {hasPdf && <span className="text-[11px] sm:text-[10px] bg-red-50 text-red-500 border border-red-100 font-bold px-2 py-0.5 rounded-full">PDF</span>}
-                                        {hasHwp && <span className="text-[11px] sm:text-[10px] bg-[#E0F7F6] text-[#3AADA9] border border-teal-100 font-bold px-2 py-0.5 rounded-full">HWP</span>}
-                                        {hasDb && <span className="text-[11px] sm:text-[10px] bg-[#E8F0FB] text-[#497AB7] border border-blue-100 font-bold px-2 py-0.5 rounded-full">개인DB</span>}
+                                        {hasHwp && <span className="text-[11px] sm:text-[10px] bg-[#E7EFD9] text-[#638747] border border-teal-100 font-bold px-2 py-0.5 rounded-full">HWP</span>}
+                                        {hasDb && <span className="text-[11px] sm:text-[10px] bg-[#EAF1E1] text-[#426D36] border border-brand-100 font-bold px-2 py-0.5 rounded-full">개인DB</span>}
                                     </div>
                                 </div>
-                                <span className="flex-shrink-0 text-[#497AB7] group-hover:translate-x-0.5 transition-transform">
+                                <span className="flex-shrink-0 text-[#426D36] group-hover:translate-x-0.5 transition-transform">
                                     <ChevronRight size={20} />
                                 </span>
                             </Link>
@@ -429,14 +431,14 @@ export default async function SchoolPage({ params }: Props) {
                 {/* [강사 유입구] 선생님·강사 대상 섹션 — 학교 페이지 121개가 각각 강사 착지점이 되도록 */}
                 <section className="mt-8 bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 sm:p-6">
                     <div className="flex items-start gap-3">
-                        <span className="shrink-0 w-10 h-10 rounded-xl bg-[#E0F7F6] text-[#3AADA9] flex items-center justify-center">
+                        <span className="shrink-0 w-10 h-10 rounded-xl bg-[#E7EFD9] text-[#638747] flex items-center justify-center">
                             <PencilRuler size={20} />
                         </span>
                         <div className="min-w-0">
-                            <h2 className="text-lg sm:text-xl font-black text-[#1E2D4F] break-keep">
+                            <h2 className="text-lg sm:text-xl font-black text-[#294437] break-keep">
                                 {schoolName} 대비 수학 시험지 만들기
                             </h2>
-                            <p className="text-xs font-bold text-[#3AADA9] mt-0.5">선생님·강사님을 위한 기능</p>
+                            <p className="text-xs font-bold text-[#638747] mt-0.5">선생님·강사님을 위한 기능</p>
                         </div>
                     </div>
 
@@ -444,8 +446,8 @@ export default async function SchoolPage({ params }: Props) {
                         {totalQuestionCount > 0
                             ? `${schoolName} 기출 ${totalQuestionCount}문항이 단원·난이도별로 정리되어 있습니다. `
                             : `${schoolName} 기출이 단원·난이도별로 정리되어 있습니다. `}
-                        출제 단원을 골라 <strong className="text-[#1E2D4F]">같은 유형의 유사문제로 나만의 시험지</strong>를 만들고,
-                        완성본을 <strong className="text-[#1E2D4F]">한글(HWP)·PDF</strong>로 받아 수업에 바로 쓸 수 있어요.
+                        출제 단원을 골라 <strong className="text-[#294437]">같은 유형의 유사문제로 나만의 시험지</strong>를 만들고,
+                        완성본을 <strong className="text-[#294437]">한글용 HML 파일</strong>로 받아 수업에 바로 쓸 수 있어요.
                         {topUnitNames && ` 이 학교는 ${topUnitNames} 단원 출제 비중이 높습니다.`}
                     </p>
 
@@ -453,11 +455,11 @@ export default async function SchoolPage({ params }: Props) {
                         {[
                             { n: '1', t: '기출 DB 선택', d: `${schoolName} 회차를 담기` },
                             { n: '2', t: '조건 검색', d: '단원·난이도로 문항 고르기' },
-                            { n: '3', t: 'HWP 다운로드', d: '시험지 완성 후 편집·인쇄' },
+                            { n: '3', t: 'HML 다운로드', d: '시험지 완성 후 편집·인쇄' },
                         ].map((s) => (
-                            <li key={s.n} className="bg-[#F8FAFD] border border-slate-100 rounded-xl px-3 py-2.5">
-                                <p className="text-xs font-black text-[#497AB7]">STEP {s.n}</p>
-                                <p className="text-sm font-bold text-[#1E2D4F] mt-0.5 break-keep">{s.t}</p>
+                            <li key={s.n} className="bg-[#F2F3F0] border border-slate-100 rounded-xl px-3 py-2.5">
+                                <p className="text-xs font-black text-[#426D36]">STEP {s.n}</p>
+                                <p className="text-sm font-bold text-[#294437] mt-0.5 break-keep">{s.t}</p>
                                 <p className="text-[11px] text-slate-500 mt-0.5 break-keep">{s.d}</p>
                             </li>
                         ))}
@@ -466,29 +468,29 @@ export default async function SchoolPage({ params }: Props) {
                     <div className="flex flex-col sm:flex-row gap-2 mt-4">
                         <Link
                             href={`/question-bank?school=${encodeURIComponent(schoolName)}`}
-                            className="flex-1 text-center bg-[#3AADA9] hover:bg-[#2E948F] text-white font-extrabold px-5 py-3 rounded-xl transition-colors"
+                            className="flex-1 text-center bg-[#638747] hover:bg-[#2E948F] text-white font-extrabold px-5 py-3 rounded-xl transition-colors"
                         >
                             {schoolName} 기출로 시험지 만들기 →
                         </Link>
                         <a
-                            href="https://www.youtube.com/watch?v=2Yt94Ps8rk8&t=5s"
+                            href="/guide"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold px-4 py-3 rounded-xl text-sm transition-colors whitespace-nowrap"
                         >
-                            ▶ 1분 사용법 영상
+                            출제 사용법 보기 →
                         </a>
                     </div>
                 </section>
 
                 {/* CTA (브랜드 그라데이션) */}
-                <div className="mt-8 bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-6 text-center text-white shadow-md">
+                <div className="mt-8 library-cta bg-[#20354F] rounded-2xl p-6 text-center text-white shadow-md">
                     <p className="font-bold text-lg mb-1">다른 학교 기출도 찾아보세요</p>
                     <p className="text-white/85 text-sm mb-4 break-keep">전국 중·고등학교 수학 내신 기출을 한 곳에서</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-2.5">
                         <Link
                             href="/schools"
-                            className="inline-block bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
+                            className="inline-block bg-white text-[#426D36] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
                         >
                             학교별 기출 목록
                         </Link>

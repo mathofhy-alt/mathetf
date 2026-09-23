@@ -5,7 +5,7 @@ import { PencilRuler, X, PlayCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // 사용법 영상 — 시험지출제에서 학교 시험지 다운로드하는 법 (사용자 제공, 7/24)
-const GUIDE_VIDEO_URL = 'https://www.youtube.com/watch?v=2Yt94Ps8rk8&t=5s';
+const GUIDE_VIDEO_URL = '/guide#teacher';
 
 const DISMISS_KEY = 'mathetf_teacher_cta_dismissed';
 
@@ -56,17 +56,17 @@ export default function TeacherExamCTA({ school, variant, visible, onClose }: {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[150] w-[calc(100%-2rem)] max-w-md">
             <div className="bg-white rounded-2xl border border-[#9BD4D2] shadow-xl p-4">
                 <div className="flex items-start gap-2.5">
-                    <span className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-[#E0F7F6] flex items-center justify-center">
-                        <PencilRuler size={15} className="text-[#3AADA9]" />
+                    <span className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-[#E7EFD9] flex items-center justify-center">
+                        <PencilRuler size={15} className="text-[#638747]" />
                     </span>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#1E2D4F] break-keep">
+                        <p className="text-sm font-bold text-[#294437] break-keep">
                             {variant === 'download' && school
-                                ? `${school} 기출로 시험지 만드는 법, 1분이면 됩니다.`
-                                : '수학ETF로 시험지 만드는 법, 1분이면 됩니다.'}
+                                ? `${school} 기출로 시험지 만드는 법, 순서대로 안내합니다.`
+                                : '수학ETF로 시험지 만드는 법, 순서대로 안내합니다.'}
                         </p>
                         <p className="text-xs text-slate-400 mt-0.5 break-keep">
-                            기출과 같은 유형의 문항을 골라 담아 한글(HWP)로 받는 과정을 영상으로 보여드려요.
+                            기출과 같은 유형의 문항을 골라 담아 한글 호환 HML로 받는 과정을 영상으로 보여드려요.
                         </p>
                     </div>
                     <button onClick={dismiss} aria-label="닫기" className="text-slate-300 hover:text-slate-500 shrink-0">
@@ -76,9 +76,9 @@ export default function TeacherExamCTA({ school, variant, visible, onClose }: {
                 <div className="flex gap-2 mt-3">
                     <button
                         onClick={openVideo}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#3AADA9] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#638747] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
                     >
-                        <PlayCircle size={16} /> 1분 사용법 보기
+                        <PlayCircle size={16} /> 사용법 보기
                     </button>
                     <button
                         onClick={goMake}

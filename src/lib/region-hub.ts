@@ -1,3 +1,4 @@
+import {NOT_A_SCHOOL} from '@/lib/stats';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { countExamGroupsBySchool, examGroupKey, examYearOf } from '@/lib/exam-groups';
 
@@ -85,7 +86,7 @@ export async function buildRegionTree(): Promise<SidoNode[]> {
 
     // /schools 와 같은 기준: 해설 PDF 가 있는 학교만 '내신 학교'로 본다.
     const hasSolutionPdf = new Set(
-        exams.filter((r) => r.file_type === 'PDF' && r.content_type === '해설').map((r) => r.school)
+        exams.filter((r) => !NOT_A_SCHOOL.has(r.school)&&(r.content_type==='해설'||r.content_type==='개인DB')).map((r) => r.school)
     );
     const kept = exams.filter((r) => hasSolutionPdf.has(r.school));
     const counts = countExamGroupsBySchool(kept);

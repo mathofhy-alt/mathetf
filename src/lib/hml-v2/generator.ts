@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { escapeXml } from './validate';
 /**
  * HML V2 Generator (Surgical String Splicing Implementation)
  * 
@@ -23,11 +25,12 @@ export function generateHmlFromTemplate(
     if (options) {
         if (options.title) {
             // Simple replaceAll equivalent
-            templateContent = templateContent.split('{{TITLE}}').join(options.title);
+            templateContent = templateContent.split('{{TITLE}}').join(escapeXml(options.title));
+            templateContent = templateContent.replace(/<TITLE>[\s\S]*?<\/TITLE>/, () => `<TITLE>${escapeXml(options.title!)}</TITLE>`);
             console.log(`[HML-V2 Generator] Injected Title: ${options.title}`);
         }
         if (options.date) {
-            templateContent = templateContent.split('{{DATE}}').join(options.date);
+            templateContent = templateContent.split('{{DATE}}').join(escapeXml(options.date));
             console.log(`[HML-V2 Generator] Injected Date: ${options.date}`);
         }
     }
@@ -708,7 +711,7 @@ export function generateHmlFromTemplate(
             // [FIX] Deduplication Re-Enabled
             // base64의 처음 100자 + 길이를 key로 사용하여 메모리 효율 최적화
             const isValidData = imgData.length > 100;
-            const dedupKey = isValidData ? imgData.substring(0, 100) + ':' + imgData.length : '';
+            const dedupKey = isValidData ? createHash('sha256').update(String(img.format)+'|'+String(img.compressed)+'|'+imgData.replace(/^data:[^,]*,/, '').replace(/\s/g, '')).digest('hex') : '';
             if (isValidData && imageHashMap.has(dedupKey)) {
                 newId = parseInt(imageHashMap.get(dedupKey)!, 10);
             } else {

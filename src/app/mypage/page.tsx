@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/components/Header";
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -356,12 +357,12 @@ export default function MyPage() {
     if (loading) return <div className="min-h-screen flex items-center justify-center">로딩중...</div>;
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6]">
-            <header className="bg-white border-b border-slate-200">
+        <div className="min-h-screen bg-[#f2f3f0]">
+            <Header/><div className="suite-local-header">
                 <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
-                        <h1 className="text-xl font-bold text-slate-800">마이페이지</h1>
+                        <h1 className="text-xl font-bold text-slate-800">나의 수학 서재.</h1>
                     </div>
                     {user && (
                         <div className="flex items-center gap-2">
@@ -375,10 +376,10 @@ export default function MyPage() {
                         </div>
                     )}
                 </div>
-            </header>
+            </div>
 
-            <main className="max-w-[1200px] mx-auto px-4 py-8">
-                <div className="flex gap-2 sm:gap-4 mb-6 border-b border-slate-200 overflow-x-auto">
+            <main className="account-dashboard max-w-[1200px] mx-auto px-4 py-8">
+                <div className="account-tabs flex gap-2 sm:gap-4 mb-6 border-b border-slate-200 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('purchases')}
                         className={`pb-3 px-2 font-bold text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'purchases' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
@@ -430,7 +431,7 @@ export default function MyPage() {
                             </button>
                             <button
                                 onClick={() => setPurchaseTab('db')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${purchaseTab === 'db' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${purchaseTab === 'db' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 개인DB 소스 ({purchases.filter(p => p.exam?.file_type === 'DB' || p.exam?.content_type === '개인DB').length})
                             </button>
@@ -461,12 +462,12 @@ export default function MyPage() {
                                         return (
                                             <div key={p.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 flex items-center justify-center rounded ${file.file_type === 'DB' || file.content_type === '개인DB' ? 'bg-indigo-50 text-indigo-400' : 'bg-slate-100 text-slate-400'}`}>
+                                                    <div className={`w-10 h-10 flex items-center justify-center rounded ${file.file_type === 'DB' || file.content_type === '개인DB' ? 'bg-brand-50 text-brand-400' : 'bg-slate-100 text-slate-400'}`}>
                                                         {file.file_type === 'PDF' ? <PdfFileIcon size={20} /> : (file.file_type === 'DB' ? <Database size={20} /> : <HwpFileIcon size={20} />)}
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${file.file_type === 'DB' ? 'bg-indigo-100 text-indigo-600' : 'bg-brand-50 text-brand-600'}`}>
+                                                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${file.file_type === 'DB' ? 'bg-brand-100 text-brand-600' : 'bg-brand-50 text-brand-600'}`}>
                                                                 {file.school}
                                                             </span>
                                                             <span className="text-[11px] text-slate-500 font-medium">{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>
@@ -484,7 +485,7 @@ export default function MyPage() {
                                                 <div className="flex items-center gap-2">
                                                     {file.file_type === 'DB' || file.content_type === '개인DB' ? (
                                                         <div className="flex flex-col items-end gap-1">
-                                                            <span className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-extrabold border border-indigo-100 flex items-center gap-1.5">
+                                                            <span className="px-3 py-1.5 bg-brand-50 text-brand-600 rounded-lg text-xs font-extrabold border border-brand-100 flex items-center gap-1.5">
                                                                 <Database size={12} /> DB 소스용
                                                             </span>
                                                             <Link href="/" className="text-[10px] text-slate-400 hover:text-brand-600 underline font-medium">

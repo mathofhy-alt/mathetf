@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSiteStats } from '@/lib/stats';
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { buildDbOrConditions } from '@/lib/questions/dbFilter';
+import { availableCatalog } from '@/lib/questions/catalog';
+import { resolveScope } from '@/lib/questions/scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,39 +43,10 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    // [버그수정] search 라우트와 동일한 DB 필터 로직을 써야 사이드바 옵션 = 검색결과.
-    // - 전체선택(관리자) → 필터 스킵(전부)  - 21개 이상 → school IN  - 그 외 → orConditions
-    const isAllSelected = selectedDbs.length >= purchasedDbsCount && purchasedDbsCount > 0;
-    const buildQuery = () => {
-        let q = supabase.from('questions').select('subject, unit, key_concepts, is_off_curriculum').eq('work_status', 'sorted');
-        if (!includeOffCurriculum) q = q.eq('is_off_curriculum', false);
-        if (!isAllSelected) {
-            if (selectedDbs.length > 20) {
-                const schools = [...new Set(selectedDbs.map((db: any) => db.school))];
-                q = q.in('school', schools);
-            } else {
-                const orConditions = buildDbOrConditions(selectedDbs);
-                if (orConditions.length > 0) q = q.or(orConditions.join(','));
-            }
-        }
-        return q;
-    };
-
-    // [버그수정] range/limit 없으면 Supabase 기본 1000행만 옴 → 단원별 개념태그 누락.
-    // 전체 페이지를 받아 모든 단원의 key_concepts 를 빠짐없이 집계.
-    const PAGE = 1000;
-    const allRows: any[] = [];
-    let from = 0;
-    while (true) {
-        const { data, error } = await buildQuery().range(from, from + PAGE - 1);
-        if (error) {
-            console.error('[questions/facets POST] error:', error);
-            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-        }
-        if (!data || data.length === 0) break;
-        allRows.push(...data);
-        if (data.length < PAGE) break;
-        from += PAGE;
-    }
-    return NextResponse.json({ success: true, data: allRows });
+    let scope;
+    try { scope = resolveScope(await availableCatalog(), selectedDbs, body.mockSlug); }
+    catch (e) { return NextResponse.json({ success: false, error: (e as Error).message }, { status: 400 }); }
+    const {data,error}=await supabase.rpc('question_bank_facets',{p_scope:scope,p_include_off:includeOffCurriculum});
+    if(error) return NextResponse.json({success:false,error:'출제 가능한 단원을 불러오지 못했습니다.'},{status:503});
+    return NextResponse.json({success:true,data:data||[]});
 }

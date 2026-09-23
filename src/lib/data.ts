@@ -17,6 +17,7 @@
     filePath?: string;   // 홈 목록에는 싣지 않음 — 다운로드 시점에 조회
     contentType: string; // Added: '문제' or '문제+해설' or '개인DB'
     subject?: string;
+    hasPreview?: boolean;
     hasFreePdf?: boolean;  // 무료PDF 버튼 노출 판단용 (URL 은 다운로드 시점에 조회) // 회원가입 시 무료로 받는 '문제만 PDF' public URL (해설 PDF 행에만)
 };
 
@@ -34,7 +35,7 @@ export const sampleFiles: FileItem[] = [];
 export const HOME_FIELDS = [
     'id', 'school', 'grade', 'semester', 'subject', 'exam_type', 'exam_year',
     'file_type', 'content_type', 'created_at', 'price', 'uploader_name', 'region',
-    'district', 'is_verified', 'has_free_pdf',
+    'district', 'is_verified', 'has_free_pdf', 'has_preview',
 ] as const;
 
 export function packHomeRow(o: any): any[] {

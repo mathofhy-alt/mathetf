@@ -1,3 +1,4 @@
+import {availableCatalog,readAllPages} from '@/lib/questions/catalog';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
@@ -7,42 +8,9 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // 1. Fetch all purchased DBs (or ALL DBs if admin or free mode)
-    let dbPurchases: any[] = [];
-    const isAdmin = user.email === 'mathofhy@naver.com';
-
-    if (isAdmin || PERSONAL_DB_FREE_MODE) {
-        // [ADMIN / FREE MODE] Fetch ALL DBs regardless of purchase, EXCLUDE Mock Exams
-        const { data: allDBs, error: dbError } = await supabase
-            .from('exam_materials')
-            .select('id, title, file_type, content_type, exam_type')
-            .or('file_type.eq.DB,content_type.eq.개인DB')
-            .neq('exam_type', '모의고사');
-
-        if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
-
-        dbPurchases = (allDBs || []).map(db => ({
-            exam_materials: db
-        }));
-    } else {
-        // [PAID MODE] Only sync DBs the user has purchased
-        const { data: purchases, error: purchaseError } = await supabase
-            .from('purchases')
-            .select(`
-                *,
-                exam_materials!inner (
-                    id, title, file_type, content_type, exam_type
-                )
-            `)
-            .eq('user_id', user.id);
-
-        if (purchaseError) return NextResponse.json({ error: purchaseError.message }, { status: 500 });
-
-        dbPurchases = purchases?.filter(p =>
-            (p.exam_materials.file_type === 'DB' || p.exam_materials.content_type === '개인DB') &&
-            p.exam_materials.exam_type !== '모의고사'
-        ) || [];
-    }
+    let dbPurchases:any[];
+    try { dbPurchases=(await availableCatalog()).filter(db=>db.exam_type!=='모의고사' && !db.availability).map(db=>({exam_materials:db})); }
+    catch { return NextResponse.json({error:'자료 목록을 불러오지 못했습니다.'},{status:503}); }
 
     if (dbPurchases.length === 0) return NextResponse.json({ count: 0 });
 
@@ -90,11 +58,7 @@ export async function POST(req: NextRequest) {
     if (!targetFolder) return NextResponse.json({ error: 'Folder creation failed' }, { status: 500 });
 
     // 3. Fetch existing linked items
-    const { data: existingItems } = await supabase
-        .from('user_items')
-        .select('reference_id')
-        .eq('user_id', user.id)
-        .eq('type', 'personal_db');
+    const existingItems = await readAllPages<any>((from,to)=>supabase.from('user_items').select('id,reference_id').eq('user_id',user.id).eq('type','personal_db').order('id').range(from,to));
 
     const existingRefIds = new Set(existingItems?.map(i => i.reference_id) || []);
 
@@ -111,17 +75,6 @@ export async function POST(req: NextRequest) {
             name: p.exam_materials.title
         }));
 
-    // 5. Delete orphaned user_items (reference_id no longer in exam_materials)
-    const orphanedRefIds = [...existingRefIds].filter(id => !validRefIds.has(id));
-    if (orphanedRefIds.length > 0) {
-        await supabase
-            .from('user_items')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('type', 'personal_db')
-            .in('reference_id', orphanedRefIds);
-    }
-
     if (newItems.length > 0) {
         const { error: insertError } = await supabase
             .from('user_items')
@@ -130,6 +83,6 @@ export async function POST(req: NextRequest) {
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ count: newItems.length, removed: orphanedRefIds.length });
+    return NextResponse.json({ count: newItems.length, removed: 0 });
 
 }

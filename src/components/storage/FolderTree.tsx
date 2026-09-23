@@ -36,7 +36,7 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
     return (
         <div className="select-none">
             <div
-                className={`group flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors ${isSelected ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
+                className={`group flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors ${isSelected ? 'bg-brand-100 text-brand-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
                 style={{ paddingLeft: `${depth * 16 + 8}px` }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -70,9 +70,9 @@ const FolderTreeItem = ({ folder, allFolders, currentFolderId, onSelect, onMoveI
                         return <BookOpen size={16} className={isSelected ? 'text-orange-600' : 'text-orange-400 group-hover:text-orange-500'} />;
                     }
                     if (isNaesinFolder(folder.name)) {
-                        return <Database size={16} className={isSelected ? 'fill-indigo-200 text-indigo-600' : 'text-indigo-400 group-hover:text-indigo-500'} />;
+                        return <Database size={16} className={isSelected ? 'fill-indigo-200 text-brand-600' : 'text-brand-400 group-hover:text-brand-500'} />;
                     }
-                    return <Folder size={16} className={isSelected ? 'fill-blue-200 text-blue-600' : 'text-slate-400 group-hover:text-slate-500'} />;
+                    return <Folder size={16} className={isSelected ? 'fill-blue-200 text-brand-600' : 'text-slate-400 group-hover:text-slate-500'} />;
                 })()}
                 <span className="text-sm truncate flex-1">{folder.name}</span>
 
@@ -146,7 +146,7 @@ export default function FolderTree({ folders, currentFolderId, onFolderSelect, o
             }}
         >
             <div
-                className={`group flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors ${currentFolderId === null ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
+                className={`group flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors ${currentFolderId === null ? 'bg-brand-100 text-brand-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}
                 onClick={(e) => {
                     e.stopPropagation();
                     onFolderSelect(null);
@@ -169,7 +169,7 @@ export default function FolderTree({ folders, currentFolderId, onFolderSelect, o
                 >
                     {isRootOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 </button>
-                <Folder size={16} className={currentFolderId === null ? 'fill-blue-200 text-blue-600' : 'text-slate-400'} />
+                <Folder size={16} className={currentFolderId === null ? 'fill-blue-200 text-brand-600' : 'text-slate-400'} />
                 <span className="text-sm truncate flex-1">내 보관함 (Root)</span>
             </div>
 

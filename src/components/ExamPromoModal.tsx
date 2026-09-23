@@ -66,7 +66,7 @@ export default function ExamPromoModal({ onClose, src, school }: { onClose: () =
         >
             <div className="bg-white w-full sm:w-[440px] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
                 {/* 헤더 */}
-                <div className="relative bg-gradient-to-br from-[#497AB7] to-[#3AADA9] px-6 pt-6 pb-5 text-white text-center">
+                <div className="relative bg-gradient-to-br from-[#426D36] to-[#638747] px-6 pt-6 pb-5 text-white text-center">
                     <button
                         onClick={onClose}
                         aria-label="닫기"
@@ -88,34 +88,34 @@ export default function ExamPromoModal({ onClose, src, school }: { onClose: () =
                         {src ? (isTeacher ? (
                             <>
                                 방금 받으신 건 <strong>문제만</strong> 담긴 PDF예요.{' '}
-                                <strong className="text-[#497AB7]">시험지 출제</strong>로 가면 같은{school ? ` ${school}` : ''} 문항을{' '}
-                                <strong className="text-[#3AADA9]">해설까지 붙여 한글(HWP)</strong>로 받으실 수 있어요.
+                                <strong className="text-[#426D36]">시험지 출제</strong>로 가면 같은{school ? ` ${school}` : ''} 문항을{' '}
+                                <strong className="text-[#638747]">해설까지 붙여 한글(HWP)</strong>로 받으실 수 있어요.
                             </>
                         ) : (
                             <>
                                 방금 받으신 PDF에는 <strong>답이 없어요</strong>.{' '}
                                 같은{school ? ` ${school}` : ''} 문제 그대로{' '}
-                                <strong className="text-[#3AADA9]">해설이 붙은 한글파일</strong>을 무료로 받을 수 있어요.
-                                <strong className="text-[#497AB7]"> 문제는 이미 담겨 있어요.</strong>
+                                <strong className="text-[#638747]">해설이 붙은 한글파일</strong>을 무료로 받을 수 있어요.
+                                <strong className="text-[#426D36]"> 문제는 이미 담겨 있어요.</strong>
                             </>
                         )) : (
                             <>
-                                방금 받은 건 <strong>맛보기</strong>예요. <strong className="text-[#497AB7]">시험지 출제</strong>로 가면
+                                방금 받은 건 <strong>맛보기</strong>예요. <strong className="text-[#426D36]">시험지 출제</strong>로 가면
                                 훨씬 자유롭게 나만의 시험지를 만들 수 있어요.
                             </>
                         )}
                     </p>
                     <ul className="space-y-2.5 mb-5">
                         <li className="flex items-start gap-2.5 text-sm text-slate-700">
-                            <MousePointerClick size={18} className="text-[#3AADA9] shrink-0 mt-0.5" />
+                            <MousePointerClick size={18} className="text-[#638747] shrink-0 mt-0.5" />
                             <span>{src ? <><strong>해설(미주) 포함</strong> 한글파일로 저장</> : <><strong>문제를 직접 골라</strong> 원하는 것만 담기</>}</span>
                         </li>
                         <li className="flex items-start gap-2.5 text-sm text-slate-700">
-                            <Save size={18} className="text-[#3AADA9] shrink-0 mt-0.5" />
+                            <Save size={18} className="text-[#638747] shrink-0 mt-0.5" />
                             <span>{src ? <>방금 받은 회차가 <strong>이미 담긴 채로</strong> 열려요</> : <>만든 시험지를 <strong>저장하고 다시 편집</strong></>}</span>
                         </li>
                         <li className="flex items-start gap-2.5 text-sm text-slate-700">
-                            <FileEdit size={18} className="text-[#3AADA9] shrink-0 mt-0.5" />
+                            <FileEdit size={18} className="text-[#638747] shrink-0 mt-0.5" />
                             <span>{!src || isTeacher ? '문항 순서·난이도·구성까지 자유롭게' : '한글이 없으면 PDF로도 받을 수 있어요'}</span>
                         </li>
                     </ul>
@@ -123,7 +123,7 @@ export default function ExamPromoModal({ onClose, src, school }: { onClose: () =
                         <Link
                             href={href}
                             onClick={() => { try { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'promo_click', title: logTitle }) }); } catch { } }}
-                            className="w-full text-center bg-gradient-to-r from-[#497AB7] to-[#3AADA9] text-white font-extrabold py-3 rounded-xl hover:opacity-90 transition-opacity"
+                            className="w-full text-center bg-gradient-to-r from-[#426D36] to-[#638747] text-white font-extrabold py-3 rounded-xl hover:opacity-90 transition-opacity"
                         >
                             {!src ? '시험지 출제 가보기 →' : isTeacher ? '해설 포함 한글파일 만들기 →' : '이 시험지 해설 받기 →'}
                         </Link>

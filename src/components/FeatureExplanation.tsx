@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function FeatureExplanation(){return <aside className="my-4 rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm leading-relaxed"><strong>기존 기출에서 비슷한 유형을 찾는 기능입니다.</strong><p>새 문제를 창작하거나 다음 시험의 출제를 보장하지 않습니다. 결과의 출처·단원·난이도를 확인해 수업 범위에 맞게 골라주세요. 이미지 인식 결과는 원본과 대조해주세요.</p><Link className="underline" href="/question-bank?demo=1&origin=guide">시험지 제작 체험</Link></aside>;}

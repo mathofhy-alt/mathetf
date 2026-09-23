@@ -105,7 +105,7 @@ export default function UpdatePasswordPage() {
                                 {msg}
                             </div>
                         )}
-                        {msg && status !== 'error' && status !== 'success' && (
+                        {msg && status !== 'error' && (
                             <div className="text-red-500 text-sm font-bold">
                                 {msg}
                             </div>

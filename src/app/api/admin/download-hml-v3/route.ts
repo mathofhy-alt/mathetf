@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         // 2. Fetch images
         const { data: imgData, error: imgError } = await supabase
             .from('question_images')
+            .select('*')
             .in('question_id', ids);
 
         if (imgError) console.warn('[HML-V3-DOWNLOAD] Image fetch warning:', imgError.message);

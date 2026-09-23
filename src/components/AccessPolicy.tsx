@@ -1,0 +1,3 @@
+import Link from 'next/link';
+import {FREE_ACCESS_LABEL,FREE_PDF_DAILY_LIMIT,SAVED_EXAM_LIMIT,PERSONAL_DB_FREE_MODE} from '@/lib/config';
+export default function AccessPolicy({compact=false}:{compact?:boolean}){return <aside aria-label="이용 범위와 파일 형식" className={`access-policy ${compact?'compact':''}`}><p><strong>{PERSONAL_DB_FREE_MODE?FREE_ACCESS_LABEL:'구매한 출제 자료와 무료 공개 자료로 시험지를 만들 수 있습니다.'}</strong><span>미리보기는 로그인 없이 · 저장 후 편집용 HML 제공</span></p>{compact?<Link href="/guide#access">이용 범위 안내 ↗</Link>:<p>무료 문제 PDF는 제공되는 회차에 한해 회원당 하루 {FREE_PDF_DAILY_LIMIT}회. 완성된 해설 PDF·HWP는 자료별 별도 구매입니다. 시험지 보관은 최대 {SAVED_EXAM_LIMIT}개이며, 새 시험지의 PDF 변환은 한글에서 진행하세요.</p>}</aside>}

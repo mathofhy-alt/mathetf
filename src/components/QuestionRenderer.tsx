@@ -7,6 +7,8 @@ import { convertHwpEqToLatex } from '@/lib/hwp-to-latex';
 // html2canvas 는 다운로드(캡쳐) 시에만 동적 import → 초기 번들에서 제외 (~180KB)
 
 interface QuestionRendererProps {
+    loadError?: boolean;
+    onRetry?: () => void;
     xmlContent: string;
     showDownloadAction?: boolean;
     fileName?: string;
@@ -22,6 +24,8 @@ interface QuestionRendererProps {
 
 const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     xmlContent,
+    loadError = false,
+    onRetry,
     showDownloadAction = true,
     fileName = 'question',
     externalImages = [],
@@ -133,13 +137,13 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                                         alt={`${displayMode} capture`}
                                         loading="lazy"
                                         decoding="async"
-                                        className={`w-full h-auto object-contain rounded-xl ${displayMode === 'solution' ? '' : 'ring-4 ring-blue-500/5'}`}
+                                        className={`w-full h-auto object-contain rounded-xl ${displayMode === 'solution' ? '' : 'ring-4 ring-brand-500/5'}`}
                                     />
                                 ) : (
                                     <LazyImage
                                         lazyInfo={`LAZY_ID:${img.id}:${img.format || 'png'}`}
                                         alt={`${displayMode} capture`}
-                                        className={`w-full h-auto object-contain rounded-xl ${displayMode === 'solution' ? '' : 'ring-4 ring-blue-500/5'}`}
+                                        className={`w-full h-auto object-contain rounded-xl ${displayMode === 'solution' ? '' : 'ring-4 ring-brand-500/5'}`}
                                     />
                                 )}
                                 {onDeleteCapture && (
@@ -161,7 +165,6 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                             </div>
                         );
                     })}
-                    <div className={`mt-4 w-full h-[1px] ${displayMode === 'solution' ? 'bg-green-50' : 'bg-blue-50'}`} />
                 </div>
             );
         }
@@ -177,7 +180,12 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             );
         }
 
-        if (!cleanXml) return <div className="text-gray-400">No content</div>;
+        if (!cleanXml) return <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-600" data-question-unavailable="true">
+            <p className="font-semibold">{loadError ? '문항 이미지를 불러오지 못했습니다.' : process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' && process.env.NEXT_PUBLIC_REVIEW_ORIGINALS !== '1' ? '이 문항의 원본은 검토 환경에 없습니다.' : '문항 미리보기가 준비되지 않았습니다.'}</p>
+            {loadError && onRetry ? <button type="button" className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 font-semibold" onClick={e => { e.stopPropagation(); onRetry(); }}>다시 불러오기</button>
+                : process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' && process.env.NEXT_PUBLIC_REVIEW_ORIGINALS !== '1' ? <a className="mt-3 inline-block underline underline-offset-4" href="/question-bank?demo=1&origin=question-bank" onClick={e => e.stopPropagation()}>실제 기출 5문항 보기 →</a>
+                : <p className="mt-2 text-xs">다른 문항을 선택해 주세요.</p>}
+        </div>;
 
         // V28: Prioritize Whole-Question High-Fidelity Capture (Legacy/Auto)
         if (extractedImages.has('WHOLE_QUESTION_V28')) {
@@ -244,7 +252,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 if (isBox) {
                     className += " border-2 border-slate-300 bg-slate-50 p-4 my-4 rounded-md shadow-inner font-medium text-slate-800";
                     if (role === 'BOX_BOGI') className += " bg-gray-50 border-gray-400";
-                    if (role === 'BOX_JOKUN') className += " bg-blue-50/30 border-blue-200 dotted";
+                    if (role === 'BOX_JOKUN') className += " bg-brand-50/30 border-brand-200 dotted";
                 }
 
                 const style: React.CSSProperties = {};
@@ -282,7 +290,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             console.error("Render Error", e);
             return <div className="text-red-500">렌더링 중 오류가 발생했습니다.</div>;
         }
-    }, [cleanXml, extractedImages, externalImages, onDeleteCapture, displayMode]);
+    }, [cleanXml, extractedImages, externalImages, onDeleteCapture, displayMode, loadError, onRetry]);
 
     const handleDownload = async () => {
         if (!containerRef.current) return;
@@ -316,7 +324,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             {showDownloadAction && (
                 <button
                     onClick={handleDownload}
-                    className="absolute top-2 right-2 bg-blue-600 text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                    className="absolute top-2 right-2 bg-brand-600 text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
                     title="이미지로 저장"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

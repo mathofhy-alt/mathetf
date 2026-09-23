@@ -39,7 +39,7 @@ export default function LaunchPromoModal() {
         <div className="fixed inset-0 z-[290] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
             <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 {/* 헤더 */}
-                <div className="relative px-6 pt-8 pb-6 text-center bg-gradient-to-br from-[#497AB7] to-[#3AADA9]">
+                <div className="relative px-6 pt-8 pb-6 text-center bg-gradient-to-br from-[#426D36] to-[#638747]">
                     <button onClick={() => setOpen(false)} aria-label="닫기" className="absolute top-4 right-4 text-white/80 hover:text-white p-1 rounded-full hover:bg-white/15 transition-colors">
                         <X size={20} />
                     </button>
@@ -55,7 +55,7 @@ export default function LaunchPromoModal() {
                 <div className="p-6">
                     <p className="text-sm text-slate-600 leading-relaxed break-keep text-center mb-5">
                         <strong className="text-slate-800">시험지 출제</strong>에서 전국 학교 기출 문제를
-                        <strong className="text-[#3AADA9]"> 무제한으로</strong> 골라
+                        <strong className="text-[#638747]"> 무제한으로</strong> 골라
                         나만의 시험지를 만들 수 있어요.<br />
                         <span className="text-slate-400 text-xs">(PDF·HWP 완성파일 다운로드만 유료예요)</span>
                     </p>
@@ -63,7 +63,7 @@ export default function LaunchPromoModal() {
                     <div className="space-y-2.5">
                         <Link
                             href="/signup"
-                            className="block w-full py-3.5 bg-gradient-to-r from-[#497AB7] to-[#3AADA9] text-white rounded-2xl font-black text-base text-center hover:opacity-90 transition-opacity shadow-lg shadow-[#497AB7]/25"
+                            className="block w-full py-3.5 bg-gradient-to-r from-[#426D36] to-[#638747] text-white rounded-2xl font-black text-base text-center hover:opacity-90 transition-opacity shadow-lg shadow-[#426D36]/25"
                         >
                             무료 회원가입 하고 시작하기 →
                         </Link>

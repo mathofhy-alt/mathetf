@@ -120,7 +120,7 @@ export default function SchoolAutocomplete({
                             key={school.id || school.name}
                             onClick={() => handleSelect(school)}
                             onMouseEnter={() => setHighlightedIndex(index)}
-                            className={`px-4 py-2 cursor-pointer text-sm border-b last:border-0 ${index === highlightedIndex ? 'bg-indigo-100 text-indigo-900' : 'hover:bg-indigo-50'
+                            className={`px-4 py-2 cursor-pointer text-sm border-b last:border-0 ${index === highlightedIndex ? 'bg-brand-100 text-brand-900' : 'hover:bg-brand-50'
                                 }`}
                         >
                             <span className="font-bold">{school.name}</span>

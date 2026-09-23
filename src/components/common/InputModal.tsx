@@ -43,7 +43,7 @@ export default function InputModal({
             <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
                 <div className="p-4 border-b flex justify-between items-center bg-slate-50">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        {icon === 'folder' ? <FolderPlus size={18} className="text-indigo-600" /> : <Edit2 size={18} className="text-indigo-600" />}
+                        {icon === 'folder' ? <FolderPlus size={18} className="text-brand-600" /> : <Edit2 size={18} className="text-brand-600" />}
                         {title}
                     </h3>
                     <button onClick={onClose} className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
@@ -61,7 +61,7 @@ export default function InputModal({
                             value={value}
                             onChange={(e) => setValue(e.target.value)}
                             placeholder={placeholder}
-                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium bg-slate-50"
+                            className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-slate-800 font-medium bg-slate-50"
                             autoFocus
                         />
                         {description && (
@@ -82,7 +82,7 @@ export default function InputModal({
                         <button
                             type="submit"
                             disabled={!value.trim()}
-                            className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
+                            className="flex-1 py-3 px-4 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-brand-100 transition-all active:scale-[0.98]"
                         >
                             {confirmLabel}
                         </button>

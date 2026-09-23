@@ -49,11 +49,11 @@ export default function NoticeDetailPage() {
         fetchNotice();
     }, [id, supabase]);
 
-    if (loading) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">로딩중...</div>;
-    if (!notice) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">글을 찾을 수 없습니다.</div>;
+    if (loading) return <div className="min-h-screen bg-[#f2f3f0] flex items-center justify-center">로딩중...</div>;
+    if (!notice) return <div className="min-h-screen bg-[#f2f3f0] flex items-center justify-center">글을 찾을 수 없습니다.</div>;
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] text-slate-900 font-sans">
+        <div className="min-h-screen bg-[#f2f3f0] text-slate-900 font-sans">
             <Header />
             <div className="bg-white border-b border-slate-200">
                 <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center gap-4">

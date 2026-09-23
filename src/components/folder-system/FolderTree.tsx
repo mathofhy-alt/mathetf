@@ -85,7 +85,7 @@ export default function FolderTree({
         return (
             <div key={node.id} className="select-none">
                 <div
-                    className={`flex items-center py-1 px-2 hover:bg-gray-100 cursor-pointer ${isSelected ? 'bg-indigo-50 text-indigo-700 font-semibold' : ''}`}
+                    className={`flex items-center py-1 px-2 hover:bg-gray-100 cursor-pointer ${isSelected ? 'bg-brand-50 text-brand-700 font-semibold' : ''}`}
                     style={{ paddingLeft: `${depth * 15 + 8}px` }}
                     onClick={() => {
                         setSelectedId(node.id);
@@ -104,7 +104,7 @@ export default function FolderTree({
         <div className="border rounded bg-white h-full flex flex-col">
             <div className="p-2 border-b bg-gray-50 flex justify-between items-center text-xs font-semibold text-gray-600">
                 <span>나의 시험지함</span>
-                <button className="text-blue-600 hover:underline" onClick={() => setSelectedId(null)}>루트 선택</button>
+                <button className="text-brand-600 hover:underline" onClick={() => setSelectedId(null)}>루트 선택</button>
             </div>
 
             <div className="flex-1 overflow-y-auto py-2">
@@ -125,7 +125,7 @@ export default function FolderTree({
                     />
                     <button
                         onClick={() => createFolder(selectedId)}
-                        className="bg-indigo-600 text-white text-xs px-2 rounded"
+                        className="bg-brand-600 text-white text-xs px-2 rounded"
                     >
                         +
                     </button>

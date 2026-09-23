@@ -7,7 +7,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
     title: '예상문제 뽑아보기 — 우리 학교 중간·기말 예상문제 | 수학ETF',   // [2026-09-14] '기말' 고정이라 중간 시즌 검색을 놓쳤다
-    description: '학교와 시험범위를 고르면 전국 기출 DB에서 그 학교 출제 스타일과 같은 유형의 실제 기출을 모아 예상문제 세트를 만들어 드립니다. 문제 PDF·HWP 다운로드.',
+    description: '학교와 시험범위를 고르면 전국 기출 DB에서 조건과 유형이 맞는 실제 기출을 모아 예상문제 세트를 만들어 드립니다. 고른 문항을 출제 화면에 담아 한글용 HML로 저장합니다.',
     alternates: { canonical: '/predict' },
     openGraph: {
         title: '예상문제 뽑아보기 | 수학ETF',
@@ -38,7 +38,7 @@ export default async function PredictPage() {
 
     // [PERF] 로그인 여부는 PredictClient가 클라이언트에서 확인 — 쿠키를 읽지 않아야 revalidate(ISR)가 실제로 동작
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <Header />
             <PredictClient richSchools={richSchools} />
         </div>

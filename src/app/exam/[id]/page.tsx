@@ -1,3 +1,6 @@
+import {unavailableDbs} from '@/lib/questions/scope';
+import MaterialReady from '@/components/MaterialReady';
+import {schoolDestination} from '@/lib/discovery';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import Link from 'next/link';
 import { Metadata } from 'next';
@@ -96,7 +99,7 @@ async function getExam(id: string) {
     const { data: siblings } = await matchSubject(
         supabase
             .from('exam_materials')
-            .select('file_type, content_type')
+            .select('id,file_type,content_type')
             .eq('school', row.school)
             .eq('exam_year', row.exam_year)
             .eq('grade', row.grade)
@@ -221,7 +224,7 @@ export default async function ExamDetailPage({ params }: Props) {
 
     const hasPdf = siblings.some((f: any) => f.file_type === 'PDF');
     const hasHwp = siblings.some((f: any) => f.file_type === 'HWP');
-    const hasDb = siblings.some((f: any) => f.file_type === 'DB');
+    const hasDb = siblings.some((f: any) => f.file_type === 'DB'&&!unavailableDbs[f.id]);
 
     // [SEO] 서술 문단 — 제미나이 배치가 생성한 고유 분석글(ai_analysis) 우선, 없으면 템플릿 폴백
     const templateNarrative: string[] = composition ? buildNarrative(label, composition, concepts) : [];
@@ -253,30 +256,31 @@ export default async function ExamDetailPage({ params }: Props) {
             '@type': 'BreadcrumbList',
             itemListElement: [
                 { '@type': 'ListItem', position: 1, name: '전체 기출', item: 'https://mathetf.com/' },
-                { '@type': 'ListItem', position: 2, name: `${row.school} 수학 기출문제`, item: `https://mathetf.com/school/${encodeURIComponent(row.school)}` },
+                { '@type': 'ListItem', position: 2, name: `${row.school} 수학 기출문제`, item: `https://mathetf.com${schoolDestination(row.school)}` },
                 { '@type': 'ListItem', position: 3, name: `${label} 수학 기출문제 및 해설`, item: url },
             ],
         },
     ];
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
             <div className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 {/* 헤더 */}
                 <div className="mb-6">
-                    <Link href={`/school/${encodeURIComponent(row.school)}`} className="text-sm text-brand-600 hover:underline mb-3 inline-block">
+                    <Link href={schoolDestination(row.school)} className="text-sm text-brand-600 hover:underline mb-3 inline-block">
                         ← {row.school} 전체 시험지
                     </Link>
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 break-keep">
                         {label} 수학 기출문제 및 해설
                     </h1>
+                    <MaterialReady row={row} hasDb={hasDb}/>
                     <div className="flex flex-wrap gap-1.5 mt-3">
-                        <span className="text-[11px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2.5 py-1 rounded-full">문제 PDF 무료</span>
+                        {row.free_pdf_url&&<span className="text-[11px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2.5 py-1 rounded-full">문제 PDF 무료</span>}
                         {hasPdf && <span className="text-[11px] bg-red-50 text-red-500 border border-red-100 font-bold px-2.5 py-1 rounded-full">PDF (문제+해설)</span>}
-                        {hasHwp && <span className="text-[11px] bg-[#E0F7F6] text-[#3AADA9] border border-teal-100 font-bold px-2.5 py-1 rounded-full">HWP</span>}
-                        {hasDb && <span className="text-[11px] bg-[#E8F0FB] text-[#497AB7] border border-blue-100 font-bold px-2.5 py-1 rounded-full">개인DB</span>}
+                        {hasHwp && <span className="text-[11px] bg-[#E7EFD9] text-[#638747] border border-teal-100 font-bold px-2.5 py-1 rounded-full">HWP</span>}
+                        {hasDb && <span className="text-[11px] bg-[#EAF1E1] text-[#426D36] border border-brand-100 font-bold px-2.5 py-1 rounded-full">개인DB</span>}
                     </div>
                 </div>
 
@@ -343,7 +347,7 @@ export default async function ExamDetailPage({ params }: Props) {
                         <ol className="space-y-4">
                             {questionTexts.map((q) => (
                                 <li key={q.n} className="flex gap-2.5">
-                                    <span className="shrink-0 w-6 h-6 rounded-full bg-[#E8F0FB] text-[#497AB7] text-xs font-bold flex items-center justify-center mt-0.5">
+                                    <span className="shrink-0 w-6 h-6 rounded-full bg-[#EAF1E1] text-[#426D36] text-xs font-bold flex items-center justify-center mt-0.5">
                                         {q.n}
                                     </span>
                                     <p className="text-sm text-slate-600 leading-relaxed break-keep whitespace-pre-line flex-1">
@@ -362,17 +366,17 @@ export default async function ExamDetailPage({ params }: Props) {
                 {sourceKey && composition && composition.total > 0 && (
                     <Link
                         href={`/question-bank?src=${encodeURIComponent(sourceKey)}`}
-                        className="flex items-center justify-between gap-3 bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 mb-6 hover:border-[#3AADA9] transition-colors"
+                        className="flex items-center justify-between gap-3 bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 mb-6 hover:border-[#638747] transition-colors"
                     >
                         <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#1E2D4F] break-keep">
+                            <p className="text-sm font-bold text-[#294437] break-keep">
                                 이 시험지 {composition.total}문항으로 나만의 시험지 만들기
                             </p>
                             <p className="text-xs text-slate-400 mt-1 break-keep">
                                 문항이 담긴 채로 시작합니다. 빼고 더하고 순서를 바꿔 한글(HWP)로 받으세요. 현재 무료입니다.
                             </p>
                         </div>
-                        <span className="shrink-0 text-sm font-extrabold text-[#3AADA9]">만들기 →</span>
+                        <span className="shrink-0 text-sm font-extrabold text-[#638747]">만들기 →</span>
                     </Link>
                 )}
 
@@ -381,9 +385,9 @@ export default async function ExamDetailPage({ params }: Props) {
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
                         <h2 className="text-sm font-bold text-slate-700 mb-3">📊 시험 구성</h2>
                         <p className="text-sm text-slate-600 mb-4 break-keep">
-                            총 <strong className="text-[#1E2D4F]">{composition.total}문항</strong> · 출제 단원{' '}
-                            <strong className="text-[#1E2D4F]">{composition.byUnit.length}개</strong> · 평균 난이도{' '}
-                            <strong className="text-[#1E2D4F]">{composition.avg.toFixed(1)}/10</strong>
+                            총 <strong className="text-[#294437]">{composition.total}문항</strong> · 출제 단원{' '}
+                            <strong className="text-[#294437]">{composition.byUnit.length}개</strong> · 평균 난이도{' '}
+                            <strong className="text-[#294437]">{composition.avg.toFixed(1)}/10</strong>
                         </p>
 
                         {/* 단원별 문항수 */}
@@ -400,8 +404,8 @@ export default async function ExamDetailPage({ params }: Props) {
                                         <td className="py-2 text-slate-700">{u.unit}</td>
                                         <td className="py-2 text-right">
                                             <span className="inline-flex items-center gap-2 justify-end">
-                                                <span className="inline-block h-1.5 rounded-full bg-[#497AB7]/30" style={{ width: `${Math.max(8, (u.count / composition.total) * 80)}px` }} />
-                                                <span className="font-bold text-[#497AB7] w-5 text-right">{u.count}</span>
+                                                <span className="inline-block h-1.5 rounded-full bg-[#426D36]/30" style={{ width: `${Math.max(8, (u.count / composition.total) * 80)}px` }} />
+                                                <span className="font-bold text-[#426D36] w-5 text-right">{u.count}</span>
                                             </span>
                                         </td>
                                     </tr>
@@ -427,7 +431,7 @@ export default async function ExamDetailPage({ params }: Props) {
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                             {concepts.map((c: string) => (
-                                <span key={c} className="text-[12px] bg-[#EEF4FB] text-[#1E2D4F] border border-[#B7D1EA]/60 px-2.5 py-1 rounded-full">
+                                <span key={c} className="text-[12px] bg-[#EAF1E1] text-[#294437] border border-[#C5D8B5]/60 px-2.5 py-1 rounded-full">
                                     {c}
                                 </span>
                             ))}
@@ -436,7 +440,7 @@ export default async function ExamDetailPage({ params }: Props) {
                 )}
 
                 {/* 다운로드 CTA */}
-                <div className="bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-6 text-center text-white shadow-md">
+                <div className="library-cta bg-[#20354F] rounded-2xl p-6 text-center text-white shadow-md">
                     <p className="font-bold text-lg mb-1">문제 + 해설 전체 받기</p>
                     <p className="text-white/85 text-sm mb-4 break-keep">{label} 시험지의 전체 문제와 해설을 받아보세요.</p>
                     <Link
@@ -445,7 +449,7 @@ export default async function ExamDetailPage({ params }: Props) {
                         // /?school=학교명 URL 이 학교 수만큼 생겨 중복 문서가 된다
                         // (네이버 'description 중복' 45건이 전부 이 형태였다 · 8/18)
                         rel="nofollow"
-                        className="inline-block bg-white text-[#497AB7] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
+                        className="inline-block bg-white text-[#426D36] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
                     >
                         다운로드 하러 가기
                     </Link>
@@ -462,7 +466,7 @@ export default async function ExamDetailPage({ params }: Props) {
                                 <Link
                                     key={r.id}
                                     href={`/exam/${r.id}`}
-                                    className="text-sm font-bold text-[#497AB7] bg-[#EEF4FB] hover:bg-[#DCE9F8] px-3.5 py-2 rounded-lg transition-colors"
+                                    className="text-sm font-bold text-[#426D36] bg-[#EAF1E1] hover:bg-[#DCE9F8] px-3.5 py-2 rounded-lg transition-colors"
                                 >
                                     {r.exam_year}년 기출
                                 </Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/components/Header";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -58,13 +59,13 @@ export default function NoticeWritePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6]">
-            <header className="bg-white border-b border-slate-200">
+        <div className="min-h-screen bg-[#f2f3f0]">
+            <Header/><div className="suite-local-header">
                 <div className="max-w-[800px] mx-auto px-4 h-16 flex items-center gap-4">
                     <Link href="/notice" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
                     <h1 className="text-xl font-bold text-slate-800">공지사항 등록</h1>
                 </div>
-            </header>
+            </div>
 
             <main className="max-w-[800px] mx-auto px-4 py-8">
                 <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden p-8 space-y-6">

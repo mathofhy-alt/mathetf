@@ -10,7 +10,7 @@ const SLIDES: Slide[] = [
     // [2026-09-08] 문구 정정: 내신 회차의 해설 파일은 포인트가 든다(1,000~2,000P).
     //   '문제·해설까지 모두 무료' 는 같은 화면의 가격표와 모순이었다(삼자대면 감사).
     //   해설을 공짜로 얻는 길은 있다 — 시험지 출제(개인DB 무료, 2027-05-26까지). 그 길을 정확히 말한다.
-    { badge: 'EVENT', glyph: '∑', title: '런칭 기념 — 문제는 모두 무료', sub: '해설도 시험지 출제에서 무료로 만들 수 있어요', cta: '무료로 시작', href: '/signup', grad: 'from-[#3A6CAE] via-[#3E8FB0] to-[#3AADA9]' },
+    { badge: 'EVENT', glyph: '∑', title: '런칭 기념 — 문제는 모두 무료', sub: '해설도 시험지 출제에서 무료로 만들 수 있어요', cta: '무료로 시작', href: '/signup', grad: 'from-[#31572E] via-[#3E8FB0] to-[#638747]' },
     { badge: 'HOT', glyph: '∫', title: '예상문제 뽑아보기', sub: '우리 학교 출제 스타일로 같은 유형 기출을 한 세트로', cta: '예상문제 만들기', href: '/predict', grad: 'from-[#463F86] via-[#5A4FA6] to-[#6E5FB5]' },
     { badge: 'NEW', glyph: 'π', title: '학교프린트 변형만들기', sub: '받은 프린트를 올리고 잘라내면 같은 유형 기출을 모아드려요', cta: '써보기', href: '/print-transform', grad: 'from-[#1F7A47] via-[#269457] to-[#33AC63]' },
     { badge: '기출', glyph: '√', title: '전국 내신 기출 + 유사문제', sub: '검증된 실제 기출로 나만의 시험지를 1분에 완성', cta: '기출 보기', href: '#main-list', grad: 'from-[#2C7FB5] via-[#3597BE] to-[#46B0C7]' },
@@ -64,7 +64,7 @@ export default function PromoCarousel({ user }: { user: User | null }) {
                                     <p className="text-white/90 text-sm md:text-base mt-1.5 break-keep" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
                                         {s.sub}
                                     </p>
-                                    <Link href={s.href} className="inline-flex items-center gap-1.5 mt-4 bg-white text-[#1E2D4F] font-extrabold px-5 py-2.5 rounded-full text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                                    <Link href={s.href} className="inline-flex items-center gap-1.5 mt-4 bg-white text-[#294437] font-extrabold px-5 py-2.5 rounded-full text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
                                         {s.cta} <ArrowRight size={15} />
                                     </Link>
                                 </div>

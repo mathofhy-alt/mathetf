@@ -17,7 +17,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 // 학교가 아니라 시험 종류. '기출 보유 학교' 수에 넣으면 안 된다.
 // [2026-09-14] 학교 페이지·과목 허브도 같은 목록을 써야 한다. /school/전국연합 같은 가짜 학교 페이지가
 //   색인 가능 상태로 살아 있었다(410KB). export 해서 한 곳에서 관리한다.
-export const NOT_A_SCHOOL = new Set(['경찰대학교', '사관학교', '전국연합', '평가원', '수능', 'DELETED']);
+export const NOT_A_SCHOOL = new Set(['경찰대학교', '사관학교', '전국연합', '평가원', '수능', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교', 'DELETED']);
 
 const PAGE = 1000;
 
@@ -35,10 +35,10 @@ export async function getSiteStats(): Promise<SiteStats> {
 
         // range 로 끝까지. 1,565행이면 2번이면 끝난다.
         const bySchool: Record<string, number> = {};
-        for (let from = 0; from < 20000; from += PAGE) {
+        for (let from = 0; true; from += PAGE) {
             const { data, error } = await supabase
                 .from('exam_materials')
-                .select('school, content_type')
+                .select('school, content_type').order('id')
                 .neq('school', 'DELETED')
                 .range(from, from + PAGE - 1);
             if (error) throw error;

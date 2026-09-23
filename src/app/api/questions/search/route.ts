@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { buildDbOrConditions } from '@/lib/questions/dbFilter';
+import { availableCatalog } from '@/lib/questions/catalog';
+import { resolveScope } from '@/lib/questions/scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,11 +65,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, data: [], count: 0 });
     }
 
-    const targetPage = Math.max(1, Number(page) || 1);
+    const targetPage = Math.max(1, Math.min(10000, Math.floor(Number(page) || 1)));
     const from = (targetPage - 1) * PAGE_SIZE_MAX;
     const to = from + PAGE_SIZE_MAX - 1;
 
     const supabase = createAdminClient();
+    let scope;
+    try { scope = resolveScope(await availableCatalog(), selectedDbs, advancedFilters?.mockSlug); }
+    catch (e) { return NextResponse.json({ success: false, error: (e as Error).message }, { status: 400 }); }
 
     // [성능] 카드 표시는 캡쳐 이미지(question_images)로만 함 (sorted 문제 100% 캡쳐 보유).
     // content_xml/plain_text/equation_scripts 는 표시에 불필요 → 전송 제외 (payload ~74% 감소, 클라 XML 파싱 0).
@@ -80,39 +84,16 @@ export async function POST(req: NextRequest) {
     // 카드 골격은 이 메타데이터로 즉시 뜨고, 이미지는 /api/questions/images 가 청크로 따라간다.
     const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, is_off_curriculum';
     let query = supabase
-        .from('questions')
-        .select(SELECT_COLS, wantCount ? { count: 'exact' } : undefined)
+        .rpc('question_bank_candidates', { p_scope: scope, p_excluded: Array.isArray(excludedQuestionIds) ? excludedQuestionIds.filter((id:unknown)=>typeof id==='string' && /^[0-9a-f-]{36}$/i.test(id)) : [] }, wantCount ? {count:'exact'} : {})
+        .select(SELECT_COLS)
         .eq('work_status', 'sorted')
-        .order('question_number', { ascending: true })
+        .order('question_number', { ascending: true }).order('id', { ascending: true })
         .range(from, to);
 
     // [교과외] 옛 회차의 폐지 단원(부등식의 영역·이중근호·이항연산 등)은 기본 제외.
     // 사용자가 사이드바에서 "교과외 문항 포함"을 켰을 때만 함께 검색된다.
     if (!advancedFilters?.includeOffCurriculum) {
         query = query.eq('is_off_curriculum', false);
-    }
-
-    // 중복출제 방지
-    if (Array.isArray(excludedQuestionIds) && excludedQuestionIds.length > 0) {
-        const chunk = excludedQuestionIds.slice(0, 100);
-        query = query.not('id', 'in', `(${chunk.join(',')})`);
-    }
-
-    if (selectedDbs.length > 0) {
-        const isAllSelected = selectedDbs.length >= purchasedDbsCount && purchasedDbsCount > 0;
-
-        if (!isAllSelected) {
-            if (selectedDbs.length > 20) {
-                const schools = [...new Set(selectedDbs.map((db: any) => db.school))];
-                query = query.in('school', schools);
-            } else {
-                const orConditions = buildDbOrConditions(selectedDbs);
-                if (orConditions.length > 0) query = query.or(orConditions.join(','));
-            }
-        }
-    } else {
-        // 매칭 DB 없으면 결과 0건 보장
-        query = query.eq('id', '00000000-0000-0000-0000-000000000000');
     }
 
     // 고급 필터

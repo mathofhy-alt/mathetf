@@ -1,3 +1,4 @@
+import {FREE_PDF_DAILY_LIMIT} from '@/lib/config';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // 무료 PDF 는 가입 유도용이지 통째로 퍼가라는 게 아니다.
 // 예전엔 클라이언트가 exam_materials.free_pdf_url 을 직접 읽어 받았기 때문에
 // 화면에서 막아도 소용이 없었다. 그래서 URL 발급 자체를 서버로 옮긴다.
-const DAILY_LIMIT = 10;
+const DAILY_LIMIT = FREE_PDF_DAILY_LIMIT;
 
 // KST 기준 오늘 0시 (UTC ISO)
 function kstDayStartUtc(): string {

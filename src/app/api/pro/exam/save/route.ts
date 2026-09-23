@@ -1,3 +1,10 @@
+import {parseDraft} from '@/lib/questions/draft';
+import {createAdminClient} from '@/utils/supabase/server-admin';
+import {availableCatalog} from '@/lib/questions/catalog';
+import {resolveScope} from '@/lib/questions/scope';
+import {uuidPattern} from '@/lib/payments/order';
+import {productionSite} from '@/lib/analytics/server';
+import {validateHml,validateQuestionXml} from '@/lib/hml-v2/validate';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import fs from 'fs';
@@ -12,7 +19,8 @@ export async function POST(req: NextRequest) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return new NextResponse('Unauthorized', { status: 401 });
+    if (!user) return NextResponse.json({success:false,error:'로그인이 필요합니다.'},{status:401});
+    const admin = createAdminClient();
 
     // 저장 도중 실패하면 되돌릴 수 있도록, 업로드한 스토리지 경로를 추적한다. (고아 파일 방지)
     const uploadedPaths: string[] = [];
@@ -36,6 +44,18 @@ export async function POST(req: NextRequest) {
         console.log('[SaveAPI] Request received');
         const body = await req.json();
         const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
+        if (!Array.isArray(ids) || ids.length<1 || ids.length>50 || ids.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id)) || new Set(ids).size!==ids.length) return NextResponse.json({success:false,error:'서로 다른 문항을 1~50개 선택해주세요.'},{status:400});
+        if (typeof title!=='string' || !title.trim() || title.length>100 || ![1,2,3].includes(questionsPerColumn)) return NextResponse.json({success:false,error:'제목은 100자 이내, 열당 문항 수는 1~3개로 설정해주세요.'},{status:400});
+        if (folderId && folderId!=='root') {
+            if (!uuidPattern.test(folderId)) throw new Error('저장 폴더를 확인해주세요.');
+            const {data:folder,error:folderError}=await supabase.from('folders').select('id').eq('id',folderId).eq('user_id',user.id).single();
+            if(folderError || !folder) throw new Error('저장 폴더를 찾을 수 없습니다.');
+        }
+        const catalog = await availableCatalog();
+        const allowedDbIds=new Set(catalog.filter(d=>!d.availability).map(d=>d.id));
+        const savedDbIds=Array.isArray(dbIds)?Array.from(new Set(dbIds.filter((id:unknown)=>typeof id==='string'&&allowedDbIds.has(id)))):[];
+        const scope = resolveScope(catalog, catalog.filter(db=>!db.availability).map(db=>db.id));
+
 
         // [V74] Limit: Max 50 questions per exam
         const MAX_QUESTIONS_PER_EXAM = 50;
@@ -76,19 +96,20 @@ export async function POST(req: NextRequest) {
         if (ids && ids.length > 0) {
             console.log(`[SaveAPI] Fetching data for ${ids.length} IDs from DB...`);
 
-            const { data: qData, error: qError } = await supabase
-                .from('questions')
+            const { data: qData, error: qError } = await admin
+                .rpc('question_bank_candidates', {p_scope:scope})
                 .select('*')
-                .in('id', ids);
+                .in('id', ids).returns<any[]>();
 
-            if (qError) throw new Error("DB Questions Fetch Error: " + qError.message);
+            if (qError) throw new Error("문항 원본을 불러오지 못했습니다.");
+            if(!Array.isArray(qData) || qData.length!==ids.length) throw new Error("선택한 문항 중 이용할 수 없는 문항이 있습니다. 목록을 확인해주세요.");
 
-            const { data: imgData, error: imgError } = await supabase
+            const { data: imgData, error: imgError } = await admin
                 .from('question_images')
                 .select('*')
                 .in('question_id', ids);
 
-            if (imgError) console.warn('[SaveAPI] Image fetch warning:', imgError.message);
+            if (imgError) throw new Error('문항 그림을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
 
             // [BATCH OPTIMIZATION V3] Delegate Resizing to VPS
             if (imgData && imgData.length > 0) {
@@ -102,12 +123,12 @@ export async function POST(req: NextRequest) {
                     // Resolve URL to Buffer
                     if (img.data && (img.data.startsWith('http://') || img.data.startsWith('https://'))) {
                         try {
-                            const res = await fetch(img.data);
+                            const res = await fetch(img.data,{signal:AbortSignal.timeout(10000)});
                             if (res.ok) buffer = Buffer.from(await res.arrayBuffer());
                         } catch (e) { console.warn(`[SaveAPI] URL Fetch Fail: ${img.data}`, e); }
                     } else if (img.data && typeof img.data === 'string') {
                         try {
-                            buffer = Buffer.from(img.data, 'base64');
+                            buffer = Buffer.from(img.data.replace(/^data:[^,]*,/, ''), 'base64');
                             // Decompress if needed (but skip known image formats: PNG, JPEG, BMP, WebP/RIFF)
                             const headHex = buffer.subarray(0, 2).toString('hex');
                             if (headHex !== '8950' && headHex !== 'ffd8' && headHex !== '5249' && buffer.subarray(0, 2).toString('ascii') !== 'BM') {
@@ -118,7 +139,9 @@ export async function POST(req: NextRequest) {
                         } catch (e) { }
                     }
 
-                    if (!buffer) return;
+                    if (!buffer || !buffer.length) throw new Error('문항 그림 원본을 불러오지 못했습니다.');
+                    img.data = buffer.toString('base64');
+                    img.size_bytes = buffer.length;
 
                     // Filter for resizing (>50KB)
                     if (buffer.length > 50 * 1024) {
@@ -129,7 +152,7 @@ export async function POST(req: NextRequest) {
                     }
                 }));
 
-                if (resizeTasks.length > 0) {
+                if (resizeTasks.length > 0 && process.env.NEXT_PUBLIC_LOCAL_PREVIEW !== '1') {
                     console.log(`[SaveAPI] Sending ${resizeTasks.length} images to VPS for batch resize...`);
                     try {
                         const vpsUrl = process.env.MATH_PROXY_URL || process.env.NEXT_PUBLIC_MATH_PROXY_URL || 'http://127.0.0.1:5001';
@@ -181,7 +204,7 @@ export async function POST(req: NextRequest) {
 
             // Restore ordered questions
             if (qData) {
-                const qMap = new Map(qData.map(q => [q.id, q]));
+                const qMap = new Map<string,any>(qData.map((q:any) => [q.id, q]));
                 questions = ids.map((id: string) => {
                     const q = qMap.get(id);
                     if (q) {
@@ -198,8 +221,10 @@ export async function POST(req: NextRequest) {
         // 2. Prepare questions for HML
         questions.forEach((q, idx) => {
             if (!q.content_xml || q.content_xml.trim().length === 0) {
-                q.content_xml = q.fragment_xml || `<P ParaShape="0" Style="0"><TEXT CharShape="0">[Error] Content Missing</TEXT></P>`;
+                if(!q.fragment_xml?.trim()) throw new Error(`${idx+1}번 문항의 원본 내용이 없습니다.`);
+                q.content_xml = q.fragment_xml;
             }
+            validateQuestionXml(q.content_xml);
             q.question_number = idx + 1;
         });
 
@@ -229,7 +254,8 @@ export async function POST(req: NextRequest) {
             questionsPerColumn: questionsPerColumn || 2,
         });
 
-        if (!result) throw new Error("Generator failed");
+        if (!result || result.questionCount!==ids.length) throw new Error("시험지 문항 수가 일치하지 않습니다.");
+        validateHml(result.hmlContent);
 
         // 5. Upload to Storage
         const fileId = crypto.randomUUID();
@@ -252,43 +278,41 @@ export async function POST(req: NextRequest) {
         const avgDifficulty = Number((totalDifficulty / questions.length).toFixed(2));
 
         const metaData = {
-            source_db_ids: Array.isArray(dbIds) && dbIds.length > 0
-                ? dbIds  // 프론트에서 전달된 exam_materials UUID 배열 사용
+            source_db_ids: savedDbIds.length > 0
+                ? savedDbIds  // 프론트에서 전달된 exam_materials UUID 배열 사용
                 : Array.from(new Set(questions.map((q: any) => q.source_db_id).filter(Boolean))),  // fallback
             question_ids: questions.map((q: any) => q.id), // [V73] For re-editing
             question_count: questions.length,
+            questions_per_column:questionsPerColumn,
+            filters:parseDraft(JSON.stringify({version:1,updatedAt:Date.now(),cartIds:[],selectedDbIds:[],filters:body.filters}))?.filters||null,
+            file_bytes:Buffer.byteLength(result.hmlContent,'utf8'),
             average_difficulty: avgDifficulty,
             title: titleStr,
             created_at: new Date().toISOString()
         };
 
-        await supabase.storage
+        const {error:sidecarError} = await supabase.storage
             .from('exams')
             .upload(`${user.id}/${fileId}.json`, JSON.stringify(metaData), {
                 contentType: 'application/json',
                 upsert: false
             });
+        if(sidecarError) throw new Error('시험지 편집 정보를 저장하지 못했습니다.');
         uploadedPaths.push(`${user.id}/${fileId}.json`);
 
         // 7. DB Item
-        const { data: itemData, error: itemError } = await supabase
-            .from('user_items')
-            .insert({
-                user_id: user.id,
-                folder_id: folderId === 'root' ? null : folderId,
-                type: 'saved_exam',
-                name: titleStr,
-                reference_id: fileId,
-                details: metaData
-            })
-            .select()
-            .single();
+        const session = req.headers.get('x-qb-session-id') || '';
+        const {data:itemData,error:itemError} = await admin.rpc('save_exam_item',{
+            p_user_id:user.id,p_folder_id:folderId==='root'?null:(folderId||null),p_name:titleStr,p_reference_id:fileId,
+            p_details:{...metaData,file_format:'hml',analytics_session_id:uuidPattern.test(session)?session:null},
+            p_session_id:uuidPattern.test(session)?session:null,p_track:productionSite(req)&&user.email!=='mathofhy@naver.com',
+        });
 
         if (itemError) throw new Error(`Item creation failed: ${itemError.message}`);
 
         console.log('[SaveAPI] Success!');
         // savedTitle — 이름이 겹쳐 번호가 붙었으면 클라이언트가 그걸 알려줄 수 있게 돌려준다.
-        return NextResponse.json({ success: true, item: itemData, savedTitle: titleStr });
+        return NextResponse.json({ success: true, item: itemData, savedTitle: titleStr, fileBytes:Buffer.byteLength(result.hmlContent,'utf8') });
 
     } catch (e: any) {
         // 실패 시 이미 업로드된 .hml/.json 을 삭제해 '목록엔 없는데 파일만 남는' 고아를 방지한다.

@@ -1,0 +1,123 @@
+/* Independent home composition: a typographic opening, a book shelf and a
+   working archive. Cloud Dancer remains the neutral canvas. */
+.atelier-home{--atelier-ink:#1d2c45;--atelier-paper:#ffffff;--atelier-line:#e4e9f0;background:var(--atelier-paper);color:var(--atelier-ink)}
+.atelier-home .site-header{background:#ffffffed;border-color:#e4e9f0}
+.atelier-home .site-header>div:first-child{max-width:1440px;height:76px;padding-left:48px;padding-right:48px}
+.atelier-home .site-header a[href="/"]>div{background:none;color:#1d2c45;border:1px solid #1d2c45;border-radius:0;width:30px;height:32px;font-size:22px}
+.atelier-home .site-header a[href="/"]>span{font-size:20px;color:#1d2c45;letter-spacing:-1px}
+.atelier-home .site-header nav{font-size:12px;letter-spacing:-.03em;color:#526178;font-weight:400}
+.atelier-home .site-header a[href="/login"]{border-radius:4px;background:#1d2c45}
+.atelier-home .site-header>div>div:last-child>div{background:transparent;border:0;font-size:11px}
+.atelier-opening{position:relative;text-align:center;margin:0 auto;padding:64px 24px 46px;max-width:1200px}
+.atelier-edition{display:flex;align-items:center;justify-content:center;gap:23px;font-size:10px;letter-spacing:.11em;color:#526178;margin-bottom:26px}
+.atelier-edition>span:first-child{letter-spacing:.02em}
+.atelier-edition-mark{font-size:26px;line-height:1;color:#a7684c}
+.atelier-opening h1{font-size:clamp(52px,6.2vw,84px);line-height:1.18;letter-spacing:-.075em;font-weight:500;color:#1d2c45}
+.atelier-opening h1>span{font-weight:400;color:#526178}
+.atelier-opening h1 i{font-style:normal;position:relative;color:#1d2c45}
+.atelier-opening h1 i:after{content:"";position:absolute;left:-1%;right:3%;bottom:0;height:4px;background:#cad3df;transform:rotate(-3deg);z-index:0}
+.atelier-lead{font-size:14px;line-height:1.85;color:#526178;letter-spacing:-.025em;margin:24px 0 25px}
+.atelier-mobile-break{display:none}
+.atelier-search{display:flex;align-items:center;gap:14px;max-width:510px;margin:auto;border:1px solid #cad3df;padding:7px 7px 7px 21px;border-radius:5px;background:#fffefa;box-shadow:0 5px 18px #34435d10;text-align:left;transition:border .2s,box-shadow .2s}
+.atelier-search:focus-within{border-color:#34435d;box-shadow:0 0 0 3px #52617818}
+.atelier-search>svg{color:#526178;flex-shrink:0}
+.atelier-search input{min-width:0;width:100%;background:transparent;border:0;outline:none;font-size:14px;color:#34435d;min-height:42px;font-weight:400}
+.atelier-search input::placeholder{color:#6c7a90}
+.atelier-search button{height:44px;width:49px;flex-shrink:0;background:#1d2c45;color:#fff;border-radius:2px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.atelier-search button:hover{background:#1d2c45}
+.atelier-opening-links{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:23px;font-size:12px;color:#526178}
+.atelier-opening-links>a{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid transparent}.atelier-opening-links>a:hover{border-color:#6c7a90}
+.atelier-opening-links>a:first-child{font-weight:500;color:#34435d}.atelier-opening-links>span{height:12px;width:1px;background:#e4e9f0}
+.atelier-no-login{font-size:10px;color:#526178;margin-top:9px}
+.shelf-section{max-width:1220px;margin:0 auto;padding:0 44px 42px}
+.shelf-caption{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #cad3df;padding:18px 0 20px;font-size:9px;letter-spacing:.13em;color:#6c7a90}
+.shelf-caption p{font-size:12px;letter-spacing:-.025em;color:#526178}
+.shelf-stage{position:relative;padding:13px 37px 7px}
+.shelf-stage:before{content:"";position:absolute;top:33px;bottom:74px;left:-15px;right:-15px;background:radial-gradient(ellipse at 50% 90%,#e4e9f0a6,transparent 70%);pointer-events:none}
+.shelf-stage:after{content:"";position:absolute;height:1px;background:linear-gradient(90deg,transparent,#cad3df 10%,#cad3df 90%,transparent);left:0;right:0;bottom:72px;box-shadow:0 12px 18px 1px #52617820;z-index:0}
+.shelf-books{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:39px;position:relative;z-index:1;perspective:1400px}
+.shelf-item{min-width:0;display:block;outline-offset:8px}
+.shelf-book{position:relative;aspect-ratio:.69;transform-style:preserve-3d;transform:rotateY(-12deg) rotate(-3deg);transition:transform .5s cubic-bezier(.2,.8,.2,1),filter .5s;filter:drop-shadow(10px 12px 7px #1d2c4527)}
+.shelf-item:nth-child(2) .shelf-book{transform:rotateY(-10deg) rotate(2deg)}
+.shelf-item:nth-child(3) .shelf-book{transform:rotateY(-12deg) rotate(-2deg)}
+.shelf-item:nth-child(4) .shelf-book{transform:rotateY(-12deg) rotate(4deg)}
+.shelf-item:hover .shelf-book,.shelf-item:focus-visible .shelf-book{transform:translateY(-12px) rotateY(-4deg) rotate(0);filter:drop-shadow(5px 22px 12px #1d2c452a)}
+.shelf-book:before{content:"";position:absolute;top:3px;right:-7px;bottom:2px;width:8px;background:repeating-linear-gradient(to bottom,#e7e8dc 0px,#e7e8dc 1px,#fcfcf4 1px,#fcfcf4 3px);transform:skewY(9deg);border:1px solid #e4e9f0;border-left:0}
+.shelf-book:after{content:"";position:absolute;bottom:-4px;left:3px;right:-4px;height:5px;background:#cad3df;transform:skewX(24deg);opacity:.6}
+.shelf-book-cover{position:absolute;inset:0;padding:20px 20px 16px 27px;background:var(--book-bg);color:var(--book-ink);border-radius:1px 3px 3px 1px;overflow:hidden;border:1px solid #00000012;box-shadow:inset 1px 0 #ffffff25,inset 8px 0 7px -5px #00000020}
+.shelf-book-cover:before{content:"";position:absolute;left:8px;top:0;bottom:0;width:1px;background:#00000012;box-shadow:1px 0 #ffffff15}
+.shelf-book-cover:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,#ffffff08,transparent 45%,#00000007);pointer-events:none}
+.shelf-forest{--book-bg:#1d2c45;--book-ink:#e4e9f0}
+.shelf-cream{--book-bg:#eae6d9;--book-ink:#34435d}
+.shelf-clay{--book-bg:#b77a5d;--book-ink:#fff1de}
+.shelf-lime{--book-bg:#cad3df;--book-ink:#34435d}
+.shelf-book-top{display:flex;align-items:center;justify-content:space-between;font-size:7px;letter-spacing:.06em;opacity:.72}
+.shelf-book-top>span:first-child{font-size:9px;letter-spacing:-.05em}
+.shelf-book h2{font-size:clamp(19px,2.2vw,28px);font-weight:400;letter-spacing:-.06em;line-height:1.42;margin-top:25px}
+.shelf-cover-art{position:absolute;left:13%;width:78%;height:44%;bottom:24px;opacity:.8}
+.shelf-book-bottom{position:absolute;left:27px;right:20px;bottom:15px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid currentColor;padding-top:8px;opacity:.7}
+.shelf-book-bottom>span:first-child{font-size:5px;letter-spacing:.08em}.shelf-book-bottom>span:last-child{font-family:Georgia,serif;font-size:14px}
+.shelf-item-label{display:flex;align-items:center;justify-content:space-between;font-size:13px;letter-spacing:-.025em;margin-top:24px;font-weight:500;color:#34435d}
+.shelf-item>p{font-size:10px;color:#526178;line-height:1.7;margin-top:5px}
+.atelier-method{max-width:1132px;margin:13px auto 0;display:grid;grid-template-columns:1fr 2.15fr;gap:35px;border-top:1px solid #e4e9f0;border-bottom:1px solid #e4e9f0;padding:35px 0}
+.atelier-method-title>span{display:block;font-size:22px;font-weight:400;line-height:1.5;letter-spacing:-.06em;color:#526178}.atelier-method-title strong{font-weight:500;color:#34435d}
+.atelier-method-title>a{display:flex;align-items:center;gap:8px;font-size:11px;color:#526178;margin-top:16px}
+.atelier-method ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:center}
+.atelier-method li{display:flex;gap:13px;align-items:start}.atelier-method li>span{font-family:Georgia,serif;font-size:12px;color:#6c7a90;margin-top:4px}.atelier-method li strong{font-size:15px;color:#34435d;font-weight:500;letter-spacing:-.035em}.atelier-method li p{font-size:11px;line-height:1.85;margin-top:11px;color:#526178}
+.atelier-access{max-width:1132px;margin:22px auto 50px;display:flex;align-items:center;gap:12px;color:#6c7a90}.atelier-access>.access-policy{width:100%;font-size:10px;color:#526178}.atelier-access>.access-policy strong{color:#34435d}.atelier-access>.access-policy a{color:#526178}
+.atelier-home .home-catalog{max-width:1132px;margin:0 auto;padding:0 0 64px}
+.atelier-home .catalog-heading{border:0;padding:35px 0 24px;margin:0;align-items:end}.atelier-home .catalog-heading h2{font-size:39px;font-weight:400;letter-spacing:-.065em;color:#1d2c45;margin-top:10px}.atelier-home .catalog-heading .eyebrow{font-size:9px;letter-spacing:.18em;color:#526178}.atelier-home .catalog-heading>a{font-size:11px;color:#526178;border-color:#cad3df}
+.atelier-catalog-layout{display:grid;grid-template-columns:246px minmax(0,1fr);gap:31px;align-items:start}
+.atelier-home [data-tour="search-filter"]{position:sticky;top:100px;background:#f8fafc;border:0;border-radius:5px;padding:22px 18px}
+.atelier-home [data-tour="search-filter"]>p{font-size:12px;letter-spacing:-.02em;color:#34435d;margin-bottom:18px}
+.atelier-home [data-tour="search-filter"] .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.atelier-home [data-tour="search-filter"] .grid>div{grid-column:span 1/span 1}
+.atelier-home [data-tour="search-filter"] .grid>div:last-child{grid-column:1/-1}
+.atelier-home [data-tour="search-filter"] .grid>select{grid-column:span 1/span 1}
+.atelier-home [data-tour="search-filter"] .form-select,.atelier-home [data-tour="search-filter"] input{background-color:#ffffff;border-color:#e4e9f0;font-size:12px;color:#34435d;min-height:44px;border-radius:3px;padding-left:9px}
+.atelier-home [data-tour="search-filter"] input{padding-left:31px}
+.atelier-home [data-tour="search-filter"] input::placeholder{font-size:11px;color:#526178}
+.atelier-results{min-width:0}.atelier-results .cloud-results-summary{font-size:11px;margin:0 0 15px;color:#526178;padding:0}.atelier-results .cloud-results-summary strong{color:#34435d;font-weight:500}
+.atelier-results #main-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:start}
+.atelier-results #main-list>div{margin:0}.atelier-results #main-list>div:not(.cloud-exam-card){grid-column:1/-1}
+.atelier-results .cloud-exam-card{background:#ffffff;border:1px solid #e4e9f0;border-radius:5px;min-width:0;box-shadow:none;position:relative}
+.atelier-results .cloud-exam-card:before{content:"";position:absolute;top:23px;left:0;width:3px;height:26px;background:#526178}
+.atelier-results .cloud-exam-card:hover{border-color:#cad3df;box-shadow:0 7px 22px #34435d09}
+.atelier-results .cloud-exam-card>div{padding:21px 21px 20px}
+.atelier-results .cloud-exam-card>div>div{flex-direction:column;align-items:stretch;gap:20px}
+.atelier-results .cloud-exam-heading{display:flex;gap:4px;margin-bottom:10px}
+.atelier-results .cloud-exam-region{font-size:10px;color:#526178;margin-bottom:5px}
+.atelier-results .cloud-exam-heading>a{display:block;width:100%;font-size:21px;font-weight:500;color:#34435d;letter-spacing:-.04em}
+.atelier-results .cloud-exam-detail{width:100%;font-size:11px;color:#526178;font-weight:400;line-height:1.8;margin-top:3px}
+.atelier-results .cloud-exam-meta{gap:6px}.atelier-results .cloud-exam-meta>span{font-size:9px}.atelier-results .cloud-exam-meta>span:first-child[class*="bg-teal"]{font-size:8px;padding:1px 5px}
+.atelier-results .cloud-exam-actions{border-top:1px solid #f8fafc;padding-top:14px;max-width:none;gap:5px}
+.atelier-results .cloud-exam-actions>p{font-size:9px;line-height:1.7;margin-bottom:8px;color:#526178;min-height:31px}
+.atelier-results .cloud-exam-actions>button,.atelier-results .cloud-exam-actions>div>button{border-radius:3px;min-height:35px;font-size:10px;padding:8px 9px;background:#ffffff;border-color:#e4e9f0;color:#526178}
+.atelier-results .cloud-exam-actions>div.group\/db{margin-top:3px;width:100%}
+.atelier-results .cloud-exam-actions>div.group\/db>button{background:#f8fafc;color:#34435d;border-color:#e4e9f0;justify-content:center;width:100%;font-size:11px;font-weight:500;min-height:39px;gap:8px}
+.atelier-results .cloud-exam-actions>div.group\/db>button:hover{background:#e4e9f0}
+.atelier-results .cloud-exam-actions>div.group\/db>div{width:160px;right:0}
+.atelier-finale{border-top:1px solid #cad3df;max-width:1132px;margin:0 auto;padding:55px 0 65px;display:flex;justify-content:space-between;align-items:center;gap:24px}
+.atelier-finale p{font-size:9px;letter-spacing:.16em;color:#6c7a90}.atelier-finale h2{font-size:45px;font-weight:400;letter-spacing:-.065em;color:#34435d;margin-top:10px}.atelier-finale>a{display:flex;align-items:center;gap:28px;background:#34435d;color:#ffffff;border-radius:3px;min-height:55px;padding:17px 24px;font-size:13px;white-space:nowrap;transition:background .2s}.atelier-finale>a:hover{background:#1d2c45}
+body:has(.atelier-home) footer{background:#f8fafc!important;border-color:#e4e9f0!important}body:has(.atelier-home) footer>div{max-width:1164px!important}
+.atelier-home :is(.atelier-opening,.shelf-section,.atelier-method,.home-catalog,.atelier-finale) a:focus-visible,.atelier-home :is(.atelier-opening,.home-catalog) button:focus-visible{outline:2px solid #526178;outline-offset:5px}
+@media(min-width:1500px){.atelier-opening{padding-top:77px;padding-bottom:53px}.atelier-opening h1{font-size:88px}.shelf-section{max-width:1290px}.shelf-books{gap:45px}.shelf-book h2{font-size:30px}}
+@media(max-width:1200px){.atelier-home .site-header>div:first-child{padding:0 25px}.atelier-method,.atelier-access,.atelier-home .home-catalog,.atelier-finale{margin-left:44px;margin-right:44px}.atelier-catalog-layout{grid-template-columns:220px minmax(0,1fr);gap:23px}.atelier-results .cloud-exam-card>div{padding:19px 17px}.atelier-results .cloud-exam-heading>a{font-size:19px}.shelf-books{gap:29px}.shelf-stage{padding-left:18px;padding-right:18px}.shelf-book-cover{padding:17px 16px 13px 22px}.shelf-book h2{font-size:24px;margin-top:21px}.shelf-book-bottom{left:22px;right:16px}.shelf-book-bottom>span:first-child{font-size:4.5px}.atelier-method{grid-template-columns:.85fr 2.15fr;gap:25px}.atelier-method li{gap:9px}.atelier-method li p{font-size:10px}}
+@media(max-width:950px){.atelier-opening{padding-top:49px}.atelier-opening h1{font-size:66px}.atelier-catalog-layout{grid-template-columns:200px minmax(0,1fr);gap:20px}.atelier-results #main-list{grid-template-columns:1fr}.atelier-results .cloud-exam-actions>div.group\/db{width:auto;margin:0}.atelier-results .cloud-exam-actions>p{min-height:0}.shelf-books{gap:23px}.shelf-book h2{font-size:21px}.shelf-book-cover{padding:14px 12px 11px 18px}.shelf-book-top{font-size:5px}.shelf-book-top>span:first-child{font-size:7px}.shelf-book-bottom{left:18px;right:12px;bottom:11px}.shelf-book-bottom>span:first-child{font-size:4px}.shelf-cover-art{bottom:22px}.shelf-item-label{font-size:12px}.shelf-item>p{font-size:9px}.atelier-method-title>span{font-size:20px}.atelier-method li>span{display:none}.atelier-method ol{gap:17px}.atelier-method li strong{font-size:14px}.atelier-access>.access-policy{font-size:9px}}
+@media(max-width:767px){.atelier-home .site-header>div:first-child{height:62px;padding:0 22px}.atelier-opening{padding:39px 23px 35px}.atelier-edition{font-size:8px;gap:15px;margin-bottom:24px}.atelier-edition-mark{font-size:21px}.atelier-opening h1{font-size:clamp(43px,10.3vw,64px);line-height:1.23;letter-spacing:-.075em}.atelier-opening h1 i:after{height:3px;bottom:1px}.atelier-lead{font-size:12px;line-height:1.9;margin:21px 0 23px;letter-spacing:-.04em}.atelier-mobile-break{display:block}.atelier-search{padding:6px 6px 6px 14px;gap:11px;max-width:420px}.atelier-search>svg{width:17px}.atelier-search input{font-size:12px;min-height:40px}.atelier-search button{height:40px;width:41px}.atelier-opening-links{font-size:10px;gap:13px;margin-top:18px}.atelier-opening-links a{gap:4px}.atelier-no-login{font-size:9px;margin-top:6px}.shelf-section{padding:0 24px 28px}.shelf-caption{font-size:7px;letter-spacing:.08em;padding:16px 0}.shelf-caption p{font-size:10px}.shelf-stage{padding:8px 10px 0}.shelf-stage:after{display:none}.shelf-stage:before{inset:30px -9px 64px}.shelf-books{grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 30px;max-width:480px;margin:auto}.shelf-book{aspect-ratio:.72}.shelf-book h2{font-size:clamp(20px,5.3vw,27px);margin-top:19px;line-height:1.4}.shelf-book-cover{padding:15px 13px 12px 18px}.shelf-book-top{font-size:5px}.shelf-book-top>span:first-child{font-size:7px}.shelf-book-bottom>span:first-child{font-size:4px}.shelf-book-bottom>span:last-child{font-size:12px}.shelf-book-bottom{bottom:12px;left:18px;right:13px;padding-top:7px}.shelf-cover-art{height:43%;bottom:23px}.shelf-item-label{font-size:12px;margin-top:17px}.shelf-item>p{font-size:9px;margin-top:4px;line-height:1.7;word-break:keep-all}.atelier-method{margin:12px 24px 0;display:block;padding:27px 0}.atelier-method-title{display:flex;justify-content:space-between;align-items:center;gap:20px}.atelier-method-title>span{font-size:22px}.atelier-method-title>a{font-size:10px;margin:0;gap:5px}.atelier-method ol{margin-top:28px;gap:15px}.atelier-method li{display:block}.atelier-method li>span{display:block;font-size:10px;margin:0 0 11px}.atelier-method li strong{font-size:13px}.atelier-method li p{font-size:9px;line-height:1.9;word-break:keep-all;margin-top:8px}.atelier-access{margin:18px 24px 20px;align-items:flex-start;gap:7px}.atelier-access>svg{margin-top:2px;flex-shrink:0}.atelier-access>.access-policy{font-size:9px}.atelier-home .home-catalog{margin:0 24px;padding-bottom:40px;scroll-margin-top:78px}.atelier-home .catalog-heading{padding:27px 0 22px;display:flex;align-items:end;gap:13px}.atelier-home .catalog-heading h2{font-size:30px;margin:8px 0 0;white-space:nowrap}.atelier-home .catalog-heading .eyebrow{font-size:8px}.atelier-home .catalog-heading>a{font-size:9px;white-space:normal;text-align:right;line-height:1.7}.atelier-catalog-layout{grid-template-columns:1fr;gap:23px}.atelier-home [data-tour="search-filter"]{position:static;padding:20px;border-radius:4px}.atelier-home [data-tour="search-filter"]>p{font-size:11px;margin-bottom:14px}.atelier-home [data-tour="search-filter"] .form-select,.atelier-home [data-tour="search-filter"] input{font-size:13px;min-height:43px}.atelier-home [data-tour="search-filter"] input::placeholder{font-size:12px}.atelier-results #main-list{gap:12px}.atelier-results .cloud-results-summary{font-size:10px}.atelier-results .cloud-exam-card>div{padding:22px}.atelier-results .cloud-exam-heading>a{font-size:21px}.atelier-results .cloud-exam-actions>p{font-size:10px}.atelier-results .cloud-exam-actions>button,.atelier-results .cloud-exam-actions>div>button{min-height:40px;font-size:11px}.atelier-results .cloud-exam-actions>div.group\/db{width:100%;margin-top:4px}.atelier-results .cloud-exam-actions>div.group\/db>button{min-height:42px}.atelier-finale{display:block;padding:33px 0 40px;margin:0 24px}.atelier-finale h2{font-size:36px;line-height:1.4}.atelier-finale>a{margin-top:25px;justify-content:space-between;font-size:12px;min-height:52px}.atelier-finale p{font-size:8px}}
+@media(max-width:370px){.atelier-edition{gap:10px;font-size:7px}.atelier-opening-links{font-size:9px;gap:10px}.shelf-books{gap:26px 24px}.shelf-stage{padding-left:6px;padding-right:6px}.shelf-book h2{font-size:19px}.shelf-book-cover{padding-left:16px;padding-right:10px}.shelf-book-bottom{left:16px;right:10px}.shelf-book-bottom>span:first-child{font-size:3.5px}.shelf-item-label{font-size:11px}.shelf-item>p{font-size:8px}.atelier-method-title>span{font-size:20px}.atelier-method-title>a{font-size:9px}.atelier-home .catalog-heading h2{font-size:28px}}
+@media(prefers-reduced-motion:no-preference){.atelier-opening{animation:atelier-enter .8s both}.shelf-item{animation:atelier-enter .8s both}.shelf-item:nth-child(1){animation-delay:.05s}.shelf-item:nth-child(2){animation-delay:.13s}.shelf-item:nth-child(3){animation-delay:.21s}.shelf-item:nth-child(4){animation-delay:.29s}@keyframes atelier-enter{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}}
+@media(prefers-reduced-motion:reduce){.atelier-home *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.atelier-home .home-catalog:focus{outline:none}
+.atelier-edition-mark{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+@media(min-width:768px){.atelier-opening{padding-top:40px;padding-bottom:26px}.atelier-edition{margin-bottom:18px}.atelier-lead{margin:18px 0}.atelier-opening-links{margin-top:15px}}
+@media(max-width:767px){.atelier-edition-mark svg{width:21px;height:21px}.shelf-cover-art{height:34%;bottom:27px}.shelf-book h2{margin-top:17px;line-height:1.3}}
+.atelier-results #main-list>div:not(.cloud-exam-card){min-width:0;flex-wrap:wrap;row-gap:8px}
+@media(max-width:950px){.atelier-results #main-list{grid-template-columns:minmax(0,1fr)}}
+
+/* Keep the free problem PDF action distinct from paid formats. */
+.atelier-results .cloud-exam-actions>button[data-free-pdf]{background:#e4e9f0;color:#1d2c45;border:1px solid #526178;font-weight:700;font-size:12px;min-height:40px}.atelier-results .cloud-exam-actions>button[data-free-pdf]:hover{background:#e4e9f0;border-color:#34435d}
+
+.atelier-season{display:inline-flex;align-items:center;justify-content:center;gap:13px;margin:22px auto 0;padding:13px 18px;border:1px solid #e4e9f0;border-radius:4px;color:#34435d;background:#f8fafc;font-size:12px}.atelier-season>span{font-size:10px;color:#526178;padding-right:13px;border-right:1px solid #cad3df}.atelier-season>strong{font-weight:500}.atelier-season:hover{background:#e4e9f0;border-color:#6c7a90}.atelier-season:focus-visible{outline:2px solid #34435d;outline-offset:4px}@media(max-width:767px){.atelier-season{font-size:11px;gap:10px;padding:12px 14px;margin-top:19px}.atelier-season>span{font-size:10px;padding-right:10px}}
+
+.atelier-home .free-pdf-filter{display:flex;align-items:center;gap:9px;padding:13px 11px;margin-top:15px;border:1px solid #6c7a90;border-radius:4px;background:#f8fafc;color:#1d2c45;cursor:pointer;font-size:12px;font-weight:600;line-height:1.6}.atelier-home .free-pdf-filter input[type="checkbox"]{width:17px;height:17px;min-height:0;flex-shrink:0;accent-color:#34435d}.atelier-home .free-pdf-filter:has(input:checked){background:#e4e9f0;border-color:#526178}.atelier-home .free-pdf-filter-note{font-size:11px;line-height:1.8;color:#526178;margin:9px 2px 0}.atelier-results .cloud-exam-actions>button[data-free-pdf="pending"]{display:inline-flex;align-items:center;gap:6px;background:#f8fafc;border:1px dashed #cad3df;color:#526178;opacity:1;font-weight:400;font-size:11px;cursor:not-allowed}.atelier-results .cloud-exam-actions>button[data-free-pdf="pending"]:hover{background:#f8fafc;border-color:#cad3df}

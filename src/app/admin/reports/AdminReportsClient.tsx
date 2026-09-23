@@ -53,7 +53,7 @@ export default function AdminReportsClient() {
         <div className="p-6">
             <div className="mb-6 flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-900">신고 관리 ({reports.length}건)</h1>
-                <button onClick={fetchReports} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                <button onClick={fetchReports} className="text-sm text-brand-600 hover:text-brand-800 font-medium">
                     새로고침
                 </button>
             </div>

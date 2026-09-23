@@ -31,92 +31,12 @@ export function getStoredRole(): UserRole | null {
  * - 학생·학부모 / 선생님·강사 를 골라 localStorage 에 저장 (다음 방문엔 안 뜸).
  * - onSelect 로 선택 역할을 넘겨, 이후 역할별 튜토리얼/기본화면 분기에 사용.
  */
-export default function RoleOnboardingModal({ onSelect, onClose }: { onSelect?: (role: UserRole) => void; onClose?: () => void }) {
-    const [open, setOpen] = useState(false);
 
-    useEffect(() => {
-        // 이미 선택했거나 '둘러보기'로 닫은 적 있으면 안 띄움
-        const seen = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY + '_dismissed');
-        if (seen) return;
-        // [모바일] 폰에서는 t=0 에 전체화면 모달이 첫 화면을 통째로 덮었다(9/7 모바일 감사).
-        //   검색으로 막 들어온 사람이 내용을 보기도 전에 선택을 강요받는다.
-        //   첫 스크롤(=관심 신호) 또는 6초 뒤에 연다. 데스크톱은 원래대로 즉시.
-        if (window.innerWidth >= 768) { setOpen(true); return; }
-        let done = false;
-        const fire = () => { if (done) return; done = true; setOpen(true); cleanup(); };
-        const t = setTimeout(fire, 6000);
-        const cleanup = () => { clearTimeout(t); window.removeEventListener('scroll', fire); };
-        window.addEventListener('scroll', fire, { passive: true, once: true });
-        return cleanup;
-    }, []);
-
-    const choose = (role: UserRole) => {
-        localStorage.setItem(STORAGE_KEY, role);
-        void syncRoleToProfile(role);
-        setOpen(false);
-        onSelect?.(role);
-        onClose?.();
-    };
-
-    const dismiss = () => {
-        localStorage.setItem(STORAGE_KEY + '_dismissed', '1');
-        setOpen(false);
-        onClose?.();
-    };
-
-    if (!open) return null;
-
-    return (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
-            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                {/* 상단 */}
-                <div className="relative px-6 pt-7 pb-5 text-center bg-gradient-to-br from-[#497AB7] to-[#5CC6C3]">
-                    <button onClick={dismiss} aria-label="닫기" className="absolute top-4 right-4 text-white/80 hover:text-white p-1 rounded-full hover:bg-white/15 transition-colors">
-                        <X size={20} />
-                    </button>
-                    <h2 className="text-2xl font-black text-white">환영합니다</h2>
-                    <p className="text-white/85 text-sm mt-1.5">어떤 목적으로 오셨나요? 맞춤 안내를 보여드릴게요.</p>
-                    <p className="inline-block mt-3 text-xs font-extrabold text-[#1E2D4F] bg-yellow-300 px-3 py-1.5 rounded-full">
-                        {/* [2026-09-08] 무료 범위 문구 통일 — 다른 화면과 같은 말로 (해설 파일은 포인트) */}
-                        🎉 런칭 기념 — 문제는 모두 무료, 해설도 시험지 출제에서 무료
-                    </p>
-                </div>
-
-                {/* 두 갈래 선택 */}
-                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                        onClick={() => choose('student')}
-                        className="group text-left rounded-2xl border-2 border-slate-200 hover:border-[#497AB7] hover:bg-[#F4F8FD] p-5 transition-all"
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-[#E8F0FB] text-[#497AB7] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                            <GraduationCap size={26} />
-                        </div>
-                        <p className="font-extrabold text-[#1E2D4F] text-lg">학생 · 학부모</p>
-                        <p className="text-sm text-slate-500 mt-1 break-keep leading-relaxed">
-                            전국 학교별 <strong className="text-[#497AB7]">기출 시험지(문제+해설)</strong>를 PDF로 받아 공부해요.
-                        </p>
-                    </button>
-
-                    <button
-                        onClick={() => choose('teacher')}
-                        className="group text-left rounded-2xl border-2 border-slate-200 hover:border-[#3AADA9] hover:bg-[#F1FBFA] p-5 transition-all"
-                    >
-                        <div className="w-12 h-12 rounded-2xl bg-[#E0F7F6] text-[#3AADA9] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                            <PencilRuler size={24} />
-                        </div>
-                        <p className="font-extrabold text-[#1E2D4F] text-lg">선생님 · 강사</p>
-                        <p className="text-sm text-slate-500 mt-1 break-keep leading-relaxed">
-                            기출 기반 <strong className="text-[#3AADA9]">유사문제로 나만의 시험지</strong>를 만들어요 (HWP·개인DB).
-                        </p>
-                    </button>
-                </div>
-
-                <div className="px-5 pb-5 text-center">
-                    <button onClick={dismiss} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
-                        그냥 둘러볼게요
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
+export default function RoleOnboardingModal({ onSelect }: { onSelect?: (role: UserRole) => void; onClose?: () => void }) {
+ const [role,setRole]=useState<UserRole|null>(null);
+ useEffect(()=>{try{setRole(getStoredRole());}catch{}},[]);
+ const choose=(value:UserRole)=>{setRole(value);try{localStorage.setItem(STORAGE_KEY,value);}catch{} void syncRoleToProfile(value);onSelect?.(value);};
+ return <div aria-label="이용 목적 선택" className="text-sm"><p className="text-slate-500 mb-2">어떤 목적으로 이용하시나요? 선택하지 않아도 시작할 수 있습니다.</p>
+ <div className="flex flex-wrap gap-2">{([['student','내 시험 대비'],['teacher','수업용 출제']] as const).map(([value,label])=><button key={value} type="button" aria-pressed={role===value} onClick={()=>choose(value)} className={`rounded-lg px-4 py-2 border ${role===value?'bg-brand-100 border-brand-400':'border-slate-200'}`}>{label}</button>)}</div>
+ {role&&<p className="mt-2 text-slate-600">{role==='student'?'배운 단원에서 문제를 고르고, 틀린 문항을 다시 모아 연습하세요.':'수업 범위·난이도로 문항을 고르고, 기존 시험지를 복제해 반별로 편집하세요.'} <a className="underline" href={`/guide?audience=${role}`}>목적별 사용법</a></p>}</div>;
 }

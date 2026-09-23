@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 // Force Rebuild: Optimized Image Resize Logic Active
 const nextConfig = {
+    distDir: process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' ? '.next-review' : '.next',
     eslint: {
         ignoreDuringBuilds: true,
     },

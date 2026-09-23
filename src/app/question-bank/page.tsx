@@ -2,10 +2,14 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { PERSONAL_DB_FREE_MODE } from '@/lib/config';
+import { PERSONAL_DB_FREE_MODE, SAVED_EXAM_LIMIT } from '@/lib/config';
+import { questionBankLoginUrl } from '@/lib/auth-return';
+import { DRAFT_KEY, parseDraft, draftContext, shouldRestoreDraft, shouldSearchRestoredDraft } from '@/lib/questions/draft';
+import { logQuestionBankEvent, questionBankSession } from '@/lib/analytics/question-bank';
 import SaveLocationModal from '@/components/storage/SaveLocationModal';
 import AutoGenModal from '@/components/question-bank/AutoGenModal';
 import FolderExplorer from '@/components/storage/FolderExplorer';
+import SourceCatalog from '@/components/storage/SourceCatalog';
 import FilterSidebar from '@/components/question-bank/FilterSidebar';
 import GuidedTour, { TourStep } from '@/components/GuidedTour';
 
@@ -16,15 +20,13 @@ const TEACHER_TOUR_STEPS: TourStep[] = [
     {
         target: '[data-tour="qb-pool"]',
         title: '① 문제 범위 선택',
-        body: PERSONAL_DB_FREE_MODE
-            ? '시험지에 쓸 문제 풀이에요. 런칭 기념 무료라 전국 기출 전체 DB가 이미 선택돼 있어요. (직접 고르려면 "DB 문제"·"만든 시험지" 버튼)'
-            : '"DB 문제"에서 시험지에 쓸 학교 기출을, "만든 시험지"에서 기존 시험지를 불러와요.',
+        body: '출제 자료에서 학교와 시험 회차를 고르세요. 특정 기출에서 들어왔다면 해당 회차가 선택되어 있습니다. 만든 시험지에서는 기존 시험지를 불러올 수 있습니다.',
         placement: 'right',
     },
     { target: '[data-tour="qb-filter"]', title: '② 조건으로 좁히기', body: '과목·단원·난이도·키워드로 원하는 문제만 골라낼 수 있어요.', placement: 'right' },
     { target: '[data-tour="qb-search"]', title: '③ 조건 검색', body: '고른 조건에 맞는 기출 문제를 불러와요. 결과에서 원하는 문제를 담으면 돼요.', placement: 'right' },
-    { target: '[data-tour="qb-auto"]', title: '④ 유사문제 자동생성', body: '단원·난이도만 정하면 유사 유형 문제를 자동으로 골라 시험지를 채워줘요.', placement: 'bottom' },
-    { target: '[data-tour="qb-generate"]', title: '⑤ 시험지 만들기', body: '담은 문제로 나만의 시험지를 만들어요. 완성본은 HWP·개인DB로 받아 편집·인쇄할 수 있어요.', placement: 'bottom' },
+    { target: '[data-tour="qb-auto"]', title: '④ 범위에 맞춰 자동 출제', body: '선택 자료의 단원·난이도에 맞는 문항을 자동으로 고릅니다. 이미 담은 문항은 제외하며, 부족하면 범위를 넓히지 않고 안내합니다.', placement: 'bottom' },
+    { target: '[data-tour="qb-generate"]', title: '⑤ 시험지 만들기', body: '담은 문제로 나만의 시험지를 만들어요. 완성본은 한글에서 열 수 있는 HML 파일로 받아 편집·인쇄할 수 있어요.', placement: 'bottom' },
 ];
 import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 
@@ -32,6 +34,10 @@ import ConfigModal from '@/components/question-bank/ConfigModal';
 import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsModal';
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
 import Header from '@/components/Header';
+import AccessPolicy from '@/components/AccessPolicy';
+import RecentExams from '@/components/question-bank/RecentExams';
+import { hasEntryContext } from '@/lib/questions/entry';
+import { formatFileSize } from '@/lib/discovery';
 import UploadModal from '@/components/UploadModal';
 import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
@@ -49,32 +55,17 @@ function examFormLabel(sourceDbId?: string | null): string {
 /**
  * [시험지출제 퍼널 로깅] 2026-08-26.
  * 그전까지는 저장 성공(saved_exam)만 남아, 몇 명이 만들려다 그만뒀는지 알 수 없었다.
- * 한 세션에 같은 단계가 여러 번 일어나도 첫 1회만 남긴다 —
+ * 행동 횟수와 이용 세션 수를 별도로 집계한다 —
  * 검색·담기는 수십 번 반복되므로 그대로 두면 로그가 행동이 아니라 클릭 수를 세게 된다.
  */
-const qbLogged = new Set<string>();
-// [2026-09-14 전수조사] 비로그인 방문자의 qb_enter 가 매번 401 로 튕기고 있었다(서버가 버린다).
-//   콘솔 오류 + 서버리스 호출만 남기므로 세션이 없으면 아예 보내지 않는다. 세션 확인은 로컬 쿠키라 왕복이 없다.
-async function hasSession(): Promise<boolean> {
-    try { const { data: { session } } = await createClient().auth.getSession(); return !!session; }
-    catch { return false; }
-}
-function logQb(step: string, title?: string) {
-    if (typeof window === 'undefined' || qbLogged.has(step)) return;
-    qbLogged.add(step);
-    hasSession().then((ok) => { if (ok) fetch('/api/log/feature', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feature: step, title: title?.slice(0, 200) || null }),
-    }).catch(() => { }); });
-}
+function logQb(step: string, title?: string) { logQuestionBankEvent(step, { detail: title?.slice(0, 200) }); }
 
 export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [runTeacherTour, setRunTeacherTour] = useState(false);
 
-    // [퍼널] 페이지 진입 (로그인 사용자만 — 서버가 비로그인은 401 로 버린다)
+    // 로그인 전후의 같은 브라우저 세션을 연결한다.
     useEffect(() => { logQb('qb_enter'); }, []);
 
     // ?tour=1 강제 진입 또는 이 페이지 첫 방문이면 투어 시작 (1회)
@@ -85,7 +76,7 @@ export default function QuestionBankPage() {
         // [모바일] 투어가 바텀시트를 자동으로 열고 그 위에 카드를 겹쳐 첫 화면이 이중 오버레이가 됐다(9/7 감사 ③).
         //   폰에서는 자동 시작하지 않는다. ?tour=1 로 직접 부른 경우만 연다.
         if (!forced && window.innerWidth < 768) return;
-        if (forced || !seen) {
+        if (forced) {
             // DOM/요소 준비 후 시작
             const t = setTimeout(() => setRunTeacherTour(true), 600);
             return () => clearTimeout(t);
@@ -94,7 +85,18 @@ export default function QuestionBankPage() {
 
     // ?school=○○고등학교 → 그 학교 개인DB만 자동 선택 (학교 페이지 '시험지 만들기'에서 진입)
     const schoolPrefillDone = useRef(false);
+    const [savedCount,setSavedCount]=useState(0);
+    const [filterVersion,setFilterVersion]=useState(0);
+    const [entryLabel,setEntryLabel]=useState('');
+    const [entryFailure,setEntryFailure]=useState(false);
+    const [zoomQuestion,setZoomQuestion]=useState<any>(null);
     const [cart, setCart] = useState<any[]>([]);
+    const [draftReady, setDraftReady] = useState(false);
+    const restoredDraftRef=useRef(false);
+    const searchedRestoredDraft=useRef(false);
+    const resumeSearchRef=useRef(false);
+    const [catalogNotice, setCatalogNotice] = useState('');
+    const [savedExam, setSavedExam] = useState<{ id: string; name: string; bytes?:number; count?:number } | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalQuestions, setTotalQuestions] = useState(0);
@@ -114,53 +116,9 @@ export default function QuestionBankPage() {
     // Derived State for performance (O(1) lookup)
     const cartIdSet = useMemo(() => new Set((cart || []).filter(item => item && item.id).map(item => item.id)), [cart]);
 
-    // Load Cart from LocalStorage + DB에서 실제 데이터 복원
-    useEffect(() => {
-        const savedCartIds = localStorage.getItem('exam_cart_ids');
-        if (savedCartIds && savedCartIds !== 'undefined' && savedCartIds !== 'null') {
-            try {
-                const parsedIds = JSON.parse(savedCartIds);
-                if (Array.isArray(parsedIds) && parsedIds.length > 0) {
-                    // 먼저 스켈레톤으로 빠르게 표시
-                    setCart(parsedIds.map(id => ({ id })));
-                    // 서버 경유로 실제 데이터 복원 (RLS 잠금으로 클라이언트 직접 조회 불가)
-                    fetch('/api/questions/by-ids', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: parsedIds }),
-                    })
-                        .then(res => res.json())
-                        .then(({ data }) => {
-                            if (data && data.length > 0) {
-                                const qMap = new Map(data.map((q: any) => [q.id, q]));
-                                // 원래 순서 유지
-                                const restored = parsedIds
-                                    .map((id: string) => qMap.get(id))
-                                    .filter(Boolean);
-                                setCart(restored);
-                            }
-                        })
-                        .catch(e => console.error('cart restore failed', e));
-                }
-            } catch (e) {
-                console.error("Failed to load cart", e);
-                setCart([]);
-            }
-        }
-    }, []);
-
-    // Save Cart to LocalStorage (Store ONLY IDs to save space and prevent Quota errors)
-    useEffect(() => {
-        try {
-            const idsOnly = (cart || []).filter(item => item && item.id).map(item => item.id);
-            localStorage.setItem('exam_cart_ids', JSON.stringify(idsOnly));
-            // Cleanup legacy storage if exists
-            localStorage.removeItem('exam_cart');
-        } catch (e) {
-            console.error("Failed to save cart to localStorage", e);
-        }
-    }, [cart]);
     const [isGenerating, setIsGenerating] = useState(false);
+    const saveInFlight=useRef(false);
+    const [recentOpen,setRecentOpen]=useState(false);
     const [isAutoAdding, setIsAutoAdding] = useState(false);
     const [selectedReviewIds, setSelectedReviewIds] = useState<Set<string>>(new Set());
     const [showSaveModal, setShowSaveModal] = useState(false);
@@ -170,6 +128,8 @@ export default function QuestionBankPage() {
     const [viewMode, setViewMode] = useState<'search' | 'review'>('search');
     // 검색 결과 카드 열 수 (3=크게, 4=많이) — 사용자 선택, localStorage 유지
     const [searchCols, setSearchCols] = useState<3 | 4>(3);
+    const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
+    const desktopFilterToggleRef = useRef<HTMLButtonElement>(null);
     useEffect(() => {
         const v = localStorage.getItem('qb_search_cols');
         if (v === '3' || v === '4') setSearchCols(Number(v) as 3 | 4);
@@ -178,6 +138,7 @@ export default function QuestionBankPage() {
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const dragOrderRef = useRef<any[]>([]); // 드래그 중 순서를 ref에만 저장 (re-render 최소화)
     const [showAutoModal, setShowAutoModal] = useState(false);
+    const [regenerateItem,setRegenerateItem]=useState<any>(null);
     const [user, setUser] = useState<any>(null);
     const [isDbInitialized, setIsDbInitialized] = useState(false);
     const isAdmin = user?.email === 'mathofhy@naver.com';
@@ -231,7 +192,7 @@ export default function QuestionBankPage() {
     };
 
     useEffect(() => {
-        if (srcLoaded.current) return;
+        if (srcLoaded.current || new URLSearchParams(window.location.search).has('resume') || hasEntryContext(new URLSearchParams(window.location.search))) return;
         const src = new URLSearchParams(window.location.search).get('src');
         if (!src) return;
         srcLoaded.current = true;
@@ -260,8 +221,9 @@ export default function QuestionBankPage() {
 
     // [강사 유입] ?school= 로 들어오면 그 학교 DB만 선택된 상태로 시작 (학교 페이지 → 시험지 만들기 동선)
     useEffect(() => {
-        if (schoolPrefillDone.current || purchasedDbs.length === 0) return;
+        if (schoolPrefillDone.current || purchasedDbs.length === 0 || hasEntryContext(new URLSearchParams(window.location.search))) return;
         schoolPrefillDone.current = true;
+        if (new URLSearchParams(window.location.search).has('resume')) return;
         const raw = new URLSearchParams(window.location.search).get('school');
         if (!raw) return;
         const target = decodeURIComponent(raw);
@@ -288,17 +250,18 @@ export default function QuestionBankPage() {
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                if (solutionTarget) setSolutionTarget(null);
+                if (zoomQuestion) setZoomQuestion(null);
+                else if (solutionTarget) setSolutionTarget(null);
                 else if (similarTarget) setSimilarTarget(null);
                 else if (showConfigModal) setShowConfigModal(false);
-                else if (showSaveModal) setShowSaveModal(false);
-                else if (showAutoModal) setShowAutoModal(false);
+                else if (showSaveModal) {if(!saveInFlight.current)setShowSaveModal(false);}
+                else if (showAutoModal) {setShowAutoModal(false);setRegenerateItem(null);}
                 else if (showStorageModal) setShowStorageModal(false);
             }
         };
         document.addEventListener('keydown', handleEsc);
         return () => document.removeEventListener('keydown', handleEsc);
-    }, [solutionTarget, similarTarget, showConfigModal, showSaveModal, showAutoModal, showStorageModal]);
+    }, [zoomQuestion, solutionTarget, similarTarget, showConfigModal, showSaveModal, showAutoModal, showStorageModal]);
 
     // Pre-fetch Storage Data for Instant Feel — DB/시험지 모달 데이터를 미리 받아 열자마자 표시
     // (storageRefreshKey 변경 시 재프리페치 → 저장 직후에도 최신 유지)
@@ -375,78 +338,18 @@ export default function QuestionBankPage() {
     }, []);
 
     const fetchPurchasedDbs = async (userId: string, userEmail?: string) => {
-        const isAdmin = userEmail === 'mathofhy@naver.com';
-
-        // Admin: 구매 여부 무관하게 전체 DB 조회
-        if (isAdmin) {
-            const { data: allData } = await supabase
-                .from('exam_materials')
-                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
-                .eq('file_type', 'DB');
-            if (allData) setPurchasedDbs(allData);
-            return;
+        try {
+            const response = await fetch('/api/questions/catalog');
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || '자료 목록을 불러오지 못했습니다.');
+            const ready = result.data.filter((db: any) => !db.availability);
+            const pending = result.data.filter((db: any) => db.availability);
+            setPurchasedDbs(ready);
+            setCatalogNotice(pending.length ? `${pending.length}개 자료는 문항 검수 또는 학년 정보 확인 중입니다. 준비된 자료만 선택할 수 있습니다.` : '');
+            if (!restoredDraftRef.current && !new URLSearchParams(window.location.search).has('resume') && !hasEntryContext(new URLSearchParams(window.location.search))) setSelectedDbIds(ready.map((db: any) => db.id));
+        } catch (error) {
+            setCatalogNotice(error instanceof Error ? error.message : '자료 목록을 불러오지 못했습니다.');
         }
-
-        // [FREE MODE] 무료 기간 중에는 구매 여부 무관하게 전체 개인DB 허용
-        if (PERSONAL_DB_FREE_MODE) {
-            const { data: allData } = await supabase
-                .from('exam_materials')
-                .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
-                .eq('file_type', 'DB');
-            if (allData) {
-                setPurchasedDbs(allData);
-                // 비로그인 유저에게는 전체 DB 자동 선택으로 바로 검색 가능하게
-                if (!userId) {
-                    setSelectedDbIds(allData.map((d: any) => d.id));
-                }
-            }
-            return;
-        }
-
-        // [V105.1] Modification for Free Mock Exams
-        // 1. Get user's purchased DBs
-        const { data: purchasedData, error: purchaseError } = await supabase
-            .from('purchases')
-            .select(`
-                *,
-                exam_materials!inner (
-                    id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id
-                )
-            `)
-            .eq('user_id', userId)
-            .eq('exam_materials.file_type', 'DB');
-
-        // 2. Get all Mock Exams (Free for everyone)
-        const { data: mockData, error: mockError } = await supabase
-            .from('exam_materials')
-            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
-            .eq('exam_type', '모의고사')
-            .eq('file_type', 'DB');
-
-        // 3. Get all Police Academy & Military Academy DBs (Free for everyone)
-        const FREE_SCHOOLS = ['경찰대학교', '육군사관학교', '해군사관학교', '공군사관학교', '국군간호사관학교'];
-        const { data: freeSpecialData } = await supabase
-            .from('exam_materials')
-            .select('id, title, school, grade, semester, exam_type, subject, file_type, exam_year, source_db_id')
-            .in('school', FREE_SCHOOLS)
-            .eq('file_type', 'DB');
-
-        let dbs: any[] = [];
-        
-        if (purchasedData) {
-            dbs = [...dbs, ...purchasedData.map((p: any) => p.exam_materials)];
-        }
-        if (mockData) {
-            dbs = [...dbs, ...mockData];
-        }
-        if (freeSpecialData) {
-            dbs = [...dbs, ...freeSpecialData];
-        }
-
-        // Remove duplicates just in case (e.g., if someone actually bought a mock exam)
-        const uniqueDbs = Array.from(new Map(dbs.map(item => [item.id, item])).values());
-        setPurchasedDbs(uniqueDbs);
-
     };
 
     // [2단계 로딩 대응] 이미지 도착 전에 담긴 장바구니 항목의 이미지 보충
@@ -496,10 +399,24 @@ export default function QuestionBankPage() {
             // 실패한 청크는 빈 배열로 채워 스켈레톤이 영원히 남지 않게 함
             setQuestions(prev => prev.map(q =>
                 chunk.includes(q.id)
-                    ? { ...q, question_images: (imagesMap && imagesMap[q.id]) || [] }
+                    ? { ...q, question_images: (imagesMap && imagesMap[q.id]) || [], imageLoadError: imagesMap === null }
                     : q
             ));
         }
+    };
+
+    const retryQuestionImages = async (id: string) => {
+        const update = (images: any[] | null, failed: boolean) => {
+            const patch = (items: any[]) => items.map(q => q.id === id ? { ...q, question_images: images, imageLoadError: failed } : q);
+            setQuestions(patch); setCart(patch);
+        };
+        update(null, false);
+        try {
+            const res = await fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id] }) });
+            const result = await res.json();
+            if (!res.ok || !result.success) throw new Error('이미지 요청 실패');
+            update(result.images?.[id] || [], false);
+        } catch { update([], true); }
     };
 
     const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1) => {
@@ -543,12 +460,14 @@ export default function QuestionBankPage() {
             if (result.count !== null && result.count !== undefined) setTotalQuestions(result.count);
             if (targetPage === 1) setHasSearched(true);
             if (data.length === 0 && targetPage === 1) {
+                setIsFilterCollapsed(false);
                 // [퍼널] 검색 15명 → 장바구니 7명(53% 이탈)의 원인이
                 // '결과가 0건' 인지 '찾았는데 안 담음' 인지 지금 로그로는 구분이 안 된다.
                 logQb('qb_search_empty', `f:${Object.keys(advancedFilters || {}).filter(k => (advancedFilters as any)[k]?.length).join(',') || 'none'}`);
                 showToast('해당 조건에 일치하는 문항이 없습니다. (0건)', 'info');
             }
         } catch (err: any) {
+            if (targetPage === 1) setIsFilterCollapsed(false);
             console.error("fetchQuestions error:", err);
             showToast(`검색 실패: ${err.message || '오류가 발생했습니다.'}`, 'error');
             setQuestions([]);
@@ -559,6 +478,7 @@ export default function QuestionBankPage() {
     };
 
     const handleSearch = () => {
+        if(entryFailure&&!selectedDbIds.length){showToast('진입한 범위에 출제 자료가 없습니다. 자료를 직접 선택하거나 전체 검색으로 전환해주세요.','error');return;}
         // [퍼널 2026-08-29] 예전엔 DB 미선택이면 토스트만 띄우고 막았다.
         // 로그를 붙여 재보니 도구 진입 29명 중 8명(28%)이 첫 동작에서 여기서 튕겼다.
         // 게다가 화면 제목은 이 상태에서 '전체 문제 검색' 이라고 써 있어 앞뒤가 안 맞았다.
@@ -582,6 +502,8 @@ export default function QuestionBankPage() {
         logQb('qb_db_select', `dbs:${effectiveDbIds.length}`);
         logQb('qb_search', selectedDbIds.length > 0 ? `dbs:${effectiveDbIds.length}` : `all:${effectiveDbIds.length}`);
         setHasSearched(false);
+        setIsFilterCollapsed(true);
+        if (window.innerWidth >= 768) window.requestAnimationFrame(() => desktopFilterToggleRef.current?.focus());
         lastSearchDbIds.current = effectiveDbIds;
         fetchQuestions(effectiveDbIds, filterState, 1);
     };
@@ -616,7 +538,7 @@ export default function QuestionBankPage() {
     // [비로그인 카탈로그] 전체 DB(purchasedDbs)를 보관함 아이템(UserItem) 모양으로 매핑해
     // 기존 FolderExplorer 디자인 그대로 보여준다. (선택은 reference_id 기반 기존 로직 그대로 작동)
     const guestDbInitialData = useMemo(() => {
-        if (user || purchasedDbs.length === 0) return undefined;
+        if (user) return undefined;
         const items = [...purchasedDbs]
             .sort((a: any, b: any) =>
                 (a.school || '').localeCompare(b.school || '', 'ko')
@@ -624,8 +546,9 @@ export default function QuestionBankPage() {
             .map((db: any) => {
                 // FileGrid 그룹핑 규칙(고N / N학기 중간·기말 / 연도)에 맞춰 이름 구성
                 const isMock = db.exam_type === '모의고사' || db.exam_type === '수능';
+                const isAdmission = db.exam_type === '입학시험';
                 const gradePart = db.grade ? `고${String(db.grade).replace('고', '')}` : '';
-                const examPart = isMock
+                const examPart = isAdmission ? '입학시험' : isMock
                     ? `${db.semester ? db.semester + '월 ' : ''}${db.exam_type}`
                     : `${db.semester ? db.semester + '학기 ' : ''}${db.exam_type?.includes('중간') ? '중간' : db.exam_type?.includes('기말') ? '기말' : (db.exam_type || '')}`;
                 return {
@@ -1060,6 +983,92 @@ export default function QuestionBankPage() {
     const [examTitle, setExamTitle] = useState('');
     const [questionsPerColumn, setQuestionsPerColumn] = useState(2);
 
+    useEffect(() => {
+        let active = true;
+        const restore = async () => {
+            try {
+                const resuming = new URLSearchParams(window.location.search).has('resume');
+                const savedDraft=parseDraft(localStorage.getItem(DRAFT_KEY));
+                const draft=shouldRestoreDraft(savedDraft,new URLSearchParams(window.location.search))?savedDraft:null;
+                let ids: string[] = [];
+                if (draft) {
+                    restoredDraftRef.current=true;
+                    resumeSearchRef.current=shouldSearchRestoredDraft(draft,new URLSearchParams(window.location.search));
+                    setEntryLabel(resumeSearchRef.current ? '저장 전 작업을 이어서 만들고 있습니다.' : '이전 출제 조건을 복원했습니다. 조건 검색하기를 눌러 문항을 확인하세요.');
+                    ids = draft.cartIds;
+                    setSelectedDbIds(draft.selectedDbIds);
+                    setExcludedQuestionIds(draft.excludedQuestionIds);
+                    setSelectedExamIds(draft.selectedExamIds);
+                    setFilterState(draft.filters);
+                    setExamTitle(draft.title);
+                    setQuestionsPerColumn(draft.questionsPerColumn);
+                    setViewMode(draft.viewMode);
+                    setShowAutoModal(draft.autoOpen);
+                } else if (!new URLSearchParams(window.location.search).has('src') && !hasEntryContext(new URLSearchParams(window.location.search))) {
+                    const legacy = JSON.parse(localStorage.getItem('exam_cart_ids') || '[]');
+                    if (Array.isArray(legacy)) ids = legacy.filter(x => typeof x === 'string').slice(0, 50);
+                }
+                if (ids.length) {
+                    const response = await fetch('/api/questions/by-ids', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !Array.isArray(result.data)) throw new Error('이전 문제를 불러오지 못했습니다. 새로고침하면 다시 시도합니다.');
+                    const map = new Map(result.data.map((q: any) => [q.id, q]));
+                    if (active) {
+                        setCart(ids.map(id => map.get(id)).filter(Boolean));
+                        if (result.data.length !== ids.length) showToast('일부 문항을 복원하지 못했습니다. 저장 전에 문항 수를 확인해주세요.', 'info');
+                    }
+                }
+                if (active) {setDraftReady(true);if(resuming)logQb('qb_resume');}
+            } catch (error) { if (active) showToast((error as Error).message, 'error'); }
+        };
+        restore();
+        return () => { active = false; };
+    }, [showToast]);
+
+    useEffect(() => {
+        if (!draftReady) return;
+        try {
+            const ids = cart.map(q => q.id);
+            localStorage.setItem('exam_cart_ids', JSON.stringify(ids));
+            localStorage.setItem(DRAFT_KEY, JSON.stringify({ version: 1, updatedAt: Date.now(), entryContext:draftContext(new URLSearchParams(window.location.search)), cartIds: ids,
+                selectedDbIds, excludedQuestionIds, selectedExamIds, filters: filterState, title: examTitle,
+                questionsPerColumn, viewMode, autoOpen: showAutoModal && !regenerateItem }));
+        } catch { showToast('이 브라우저에서 작업을 임시 보관할 수 없습니다.', 'info'); }
+    }, [draftReady, cart, selectedDbIds, excludedQuestionIds, selectedExamIds, filterState, examTitle, questionsPerColumn, viewMode, showAutoModal, regenerateItem, showToast]);
+
+
+    const entryStarted=useRef(false);
+    useEffect(()=>{
+      const params=new URLSearchParams(window.location.search);
+      if(!draftReady||!isDbInitialized||restoredDraftRef.current||entryStarted.current||params.has('resume')||!hasEntryContext(params))return;
+      entryStarted.current=true;
+      fetch(`/api/questions/entry?${params}`).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);
+       setSelectedDbIds(d.dbIds);setFilterState(d.filters);setFilterVersion(v=>v+1);setEntryLabel(d.label);
+       if(d.demo){const detail=await fetch('/api/questions/by-ids',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:d.data.map((q:any)=>q.id)})}).then(r=>r.json());
+        if(detail.data?.length!==5)throw Error('예시 문항을 불러오지 못했습니다.');setCart(d.data.map((q:any)=>detail.data.find((x:any)=>x.id===q.id)));setExamTitle('기출 5문항 체험');setViewMode('review');logQb('qb_demo');}
+       else{setQuestions(d.data.map((q:any)=>({...q,question_images:null})));loadImagesProgressively(d.data.map((q:any)=>q.id));lastSearchDbIds.current=d.dbIds;setHasSearched(true);setTotalQuestions(d.total??d.data.length);setCurrentPage(1);}
+      }).catch(e=>{setEntryFailure(true);setSelectedDbIds([]);setQuestions([]);setTotalQuestions(0);setHasSearched(true);setEntryLabel((e as Error).message);showToast((e as Error).message,'error');});
+    },[draftReady,isDbInitialized]);
+    useEffect(()=>{
+      if(!draftReady||!isDbInitialized||!restoredDraftRef.current||searchedRestoredDraft.current)return;
+      searchedRestoredDraft.current=true;
+      if(resumeSearchRef.current&&viewMode==='search'&&selectedDbIds.length)handleSearch();
+    },[draftReady,isDbInitialized,viewMode,selectedDbIds]);
+    const restoreRecent=async(item:any,fresh:boolean)=>{
+      if(cart.length&&!confirm('현재 담은 문항을 이 시험지로 바꾸시겠습니까?'))return;
+      const allowed=new Set(purchasedDbs.filter(d=>!d.availability).map(d=>d.id));
+      const scope=(item.dbIds||[]).filter((id:string)=>allowed.has(id));
+      if(fresh&&(!scope.length||scope.length!==item.dbIds.length)){showToast('이전 시험지의 자료 범위를 모두 이용할 수 없습니다. 자료를 직접 선택해주세요.','error');return;}
+      if(fresh){setRegenerateItem({...item,dbIds:scope});setShowAutoModal(true);return;}
+      let restored:any[]=[];
+      if(!fresh){try{const r=await fetch('/api/questions/by-ids',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:item.ids})});const d=await r.json();if(!r.ok||d.data?.length!==item.ids.length)throw Error();const map=new Map(d.data.map((q:any)=>[q.id,q]));restored=item.ids.map((id:string)=>map.get(id));}catch{showToast('전체 문항을 불러오지 못했습니다. 기존 작업은 유지됩니다.','error');return;}}
+      setSelectedDbIds(scope);setFilterState(item.filters);setFilterVersion(v=>v+1);setQuestionsPerColumn(item.questionsPerColumn);setExamTitle(`${item.name} 다시 만들기`.slice(0,100));setEntryLabel(`${item.name}에서 이어서 출제`);setEntryFailure(false);
+      setRecentOpen(false);setCart(restored);setExcludedQuestionIds([]);setViewMode('review');showToast('시험지를 불러왔습니다. 수정 후 저장하면 새 시험지로 남습니다.');
+      logQb('qb_clone');
+    };
+
     // Config Confirmed -> Open Save Modal
     const handleConfigConfirm = (title: string, qpc: number) => {
         setExamTitle(title);
@@ -1070,18 +1079,21 @@ export default function QuestionBankPage() {
 
     // Save Location Confirmed -> Execute Save
     const handleSaveConfirm = async (folderId: string | null) => {
-        setIsGenerating(true);
+        if(saveInFlight.current)return;
+        if(savedCount>=SAVED_EXAM_LIMIT){showToast('보관함이 가득 찼습니다. 파일을 받은 뒤 기존 시험지를 정리해주세요.','error');return;}
+        saveInFlight.current=true;setIsGenerating(true);
 
         try {
             const response = await fetch('/api/pro/exam/save', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'x-qb-session-id': questionBankSession() },
                 body: JSON.stringify({
                     ids: cart.map(q => q.id),
                     title: examTitle,
                     folderId: folderId || 'root',
                     dbIds: selectedDbIds,  // 현재 선택된 DB UUID들 전달
                     questionsPerColumn: questionsPerColumn,
+                    filters:filterState,
                 }),
             });
 
@@ -1093,16 +1105,17 @@ export default function QuestionBankPage() {
                 throw new Error(result.error || 'Save failed');
             }
 
-            logQb('qb_save', `q:${cart.length}`);
+            logQuestionBankEvent('qb_save', { exam_id: result.item.id, question_count: cart.length });
+            setSavedExam({ id: result.item.id, name: result.savedTitle || examTitle,bytes:result.fileBytes,count:cart.length });
             // 이름이 겹쳐 번호가 붙었으면 그대로 알려준다. 조용히 바꾸면 보관함에서 못 찾는다.
             const saved = result.savedTitle as string | undefined;
             showToast(
                 saved && saved !== examTitle
-                    ? `같은 이름이 있어 "${saved}" 로 저장했어요. "내 보관함"에서 확인 및 다운로드 가능합니다.`
-                    : '보관함에 저장되었습니다! "내 보관함"에서 확인 및 다운로드 가능합니다.',
+                    ? `같은 이름이 있어 "${saved}" 로 저장했어요. 아래 파일 받기 버튼을 눌러주세요.`
+                    : '보관함에 저장되었습니다! 아래 파일 받기 버튼을 눌러주세요.',
                 'success');
             setCart([]);
-            localStorage.removeItem('exam_cart');
+            try{localStorage.removeItem('exam_cart');}catch{}
             setShowSaveModal(false);
             setViewMode('search');
 
@@ -1117,7 +1130,7 @@ export default function QuestionBankPage() {
             const errorMessage = e instanceof Error ? e.message : String(e);
             showToast('저장 실패: ' + errorMessage, 'error');
         } finally {
-            setIsGenerating(false);
+            saveInFlight.current=false;setIsGenerating(false);
         }
     };
 
@@ -1154,7 +1167,7 @@ export default function QuestionBankPage() {
             onClose={() => { setRunTeacherTour(false); setShowMobileSidebar(false); try { localStorage.setItem('mathetf_qb_tour_seen', '1'); } catch {} }}
         />
         {/* [모바일] h-screen(100vh)은 iOS 주소창 높이를 포함해 하단 60~80px이 잘린다 → dvh. 미지원 브라우저는 h-screen 폴백 */}
-        <div className="flex flex-col h-screen bg-[#F2F3F0] overflow-hidden" style={{ height: '100dvh' }}>
+        <div data-question-bank="true" className="flex flex-col h-screen bg-[#F7F9FC] overflow-hidden" style={{ height: process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' ? 'calc(100dvh - 28px)' : '100dvh' }}>
             <Header
                 user={user}
                 purchasedPoints={purchasedPoints}
@@ -1162,67 +1175,23 @@ export default function QuestionBankPage() {
                 onUploadClick={handleUploadClick}
             />
 
+            <div className="workbench-title"><div><p>THE MATH STUDIO</p><h2>시험지 편집실</h2></div><div className="workbench-tabs" aria-label="편집 화면"><button aria-pressed={viewMode==='search'} onClick={()=>setViewMode('search')}>문항 찾기</button><button disabled={!cart.length} aria-pressed={viewMode==='review'} onClick={()=>{setViewMode('review');setShowMobileSidebar(false);}}>선택한 문항 {cart.length}</button></div></div>
+            <div className="qb-context px-3 py-2 bg-white border-b text-xs shrink-0 flex flex-wrap gap-2 items-center"><a href="/guide" className="hover:text-brand-700">사용법·이용 범위 ↗</a><button className="hover:text-brand-700" onClick={()=>{setViewMode('search');setShowMobileSidebar(true);setRunTeacherTour(true);}}>화면 안내</button>{catalogNotice&&<details className="relative"><summary className="cursor-pointer">자료 안내</summary><p className="absolute top-6 left-0 z-40 w-60 rounded-xl border bg-white p-4 shadow-lg">{catalogNotice}</p></details>}<span>HML 저장 · 보관함 {savedCount}/{SAVED_EXAM_LIMIT}</span>{entryLabel&&<span role="status" className="text-brand-800">{entryLabel}</span>}{filterState?.mockSlug&&<button className="underline" onClick={()=>{setFilterState((f:any)=>f?{...f,mockSlug:undefined}:null);setFilterVersion(v=>v+1);setEntryLabel('자료 범위에서 검색');}}>모의고사 회차 제한 해제</button>}{entryFailure&&<button className="underline" onClick={()=>{setEntryFailure(false);setEntryLabel('전체 자료에서 검색');setFilterState(null);setFilterVersion(v=>v+1);}}>전체 검색으로 전환</button>}</div>
+            <nav aria-label="출제 단계" className="md:hidden grid grid-cols-3 shrink-0 border-b bg-white text-xs"><button className="p-3" onClick={()=>setShowMobileSidebar(true)}>1. 범위 선택</button><button className="p-3" onClick={()=>{setViewMode('search');setShowMobileSidebar(false);}}>2. 문항 확인</button><button className="p-3" disabled={!cart.length} onClick={()=>{setViewMode('review');setShowMobileSidebar(false);}}>3. 완성 ({cart.length})</button></nav>
             <div className="flex flex-1 overflow-hidden relative">
 
                 {/* 로그인 게이트 모달 - 비로그인 유저가 시험지 생성 클릭 시 */}
-                {showLoginGate && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" onClick={() => setShowLoginGate(false)}>
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-                            {/* 상단 그라데이션 배너 */}
-                            <div className="bg-gradient-to-br from-[#497AB7] to-[#5CC6C3] px-6 py-8 text-center">
-                                <div className="text-4xl mb-3">📄</div>
-                                <h2 className="text-xl font-black text-white">방금 만든 시험지,</h2>
-                                <h2 className="text-xl font-black text-white">저장하려면 회원가입!</h2>
-                                <p className="text-white/80 text-sm mt-2">가입은 무료이며 30초면 충분해요!</p>
-                            </div>
-                            <div className="px-6 py-5 space-y-3">
-                                <div className="flex items-center gap-3 bg-blue-50 rounded-xl p-3">
-                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <Database size={16} className="text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black text-slate-700">런칭 기념 전체 무료</p>
-                                        <p className="text-xs text-slate-400">전국 기출 DB를 지금 바로 무료 이용</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 bg-teal-50 rounded-xl p-3">
-                                    <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <FileText size={16} className="text-teal-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black text-slate-700">시험지 저장 &amp; 다운로드</p>
-                                        <p className="text-xs text-slate-400">선택한 문제로 나만의 시험지 생성</p>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* 버튼 */}
-                            <div className="px-6 pb-6 flex flex-col gap-2">
-                                <a
-                                    href="/login"
-                                    className="w-full py-3.5 bg-[#497AB7] text-white rounded-2xl font-black text-base text-center hover:bg-[#3A6599] transition-colors shadow-lg shadow-[#497AB7]/30"
-                                >
-                                    무료 회원가입 / 로그인 →
-                                </a>
-                                <button
-                                    onClick={() => setShowLoginGate(false)}
-                                    className="w-full py-2.5 text-slate-400 text-sm font-medium hover:text-slate-600 transition-colors"
-                                >
-                                    계속 둘러보기
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {showLoginGate && <div role="dialog" aria-modal="true" aria-label="로그인 안내" className="product-modal fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-5" onClick={e=>{if(e.target===e.currentTarget)setShowLoginGate(false);}}><div className="w-full max-w-sm rounded-3xl bg-white p-8"><FileText size={30} className="text-brand-600 mb-5"/><h2 className="text-2xl font-bold">고른 문제를<br/>시험지로 간직하세요.</h2><p className="text-sm text-slate-500 leading-6 mt-4">로그인하면 저장하고 한글 파일로 받을 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p><a className="product-button primary w-full mt-7" href={questionBankLoginUrl()}>로그인하고 이어서 만들기</a><button className="product-button secondary w-full mt-2" onClick={()=>setShowLoginGate(false)}>계속 둘러보기</button></div></div>}
 
                 {/* Storage Modal - Persistent Rendering for 0s Loading (visibility 전환으로 열림 애니메이션) */}
                 <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-150 ${showStorageModal ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'}`} aria-hidden={!showStorageModal}>
                     <div className={`bg-white w-full sm:max-w-5xl sm:mx-4 max-h-[90dvh] sm:h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-transform duration-200 ${showStorageModal ? 'translate-y-0 sm:scale-100' : 'translate-y-4 sm:scale-[0.98]'}`}>
                         <div className="px-4 py-3 border-b flex justify-between items-center bg-white">
-                            <h3 className="font-extrabold text-lg flex items-center gap-2.5 text-[#1E2D4F]">
+                            <h3 className="font-extrabold text-lg flex items-center gap-2.5 text-[#1D2C45]">
                                 {storageModalMode === 'db' ? (
-                                    <><span className="w-9 h-9 rounded-xl bg-[#EEF4FB] border border-[#B7D1EA]/60 flex items-center justify-center"><Database size={18} className="text-[#497AB7]" /></span> DB 문제 선택</>
+                                    <><span className="w-9 h-9 rounded-xl bg-[#F0F5FF] border border-[#C9D9FF]/60 flex items-center justify-center"><Database size={18} className="text-[#285CE6]" /></span> 기출 자료 선택</>
                                 ) : storageModalMode === 'exam' ? (
-                                    <><span className="w-9 h-9 rounded-xl bg-[#E0F7F6] border border-[#5CC6C3]/40 flex items-center justify-center"><FolderIcon size={18} className="text-[#3AADA9]" /></span> 만든 시험지 선택</>
+                                    <><span className="w-9 h-9 rounded-xl bg-[#EDF3FF] border border-[#285CE6]/40 flex items-center justify-center"><FolderIcon size={18} className="text-[#204BC3]" /></span> 만든 시험지 선택</>
                                 ) : (
                                     <><span className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center"><FolderIcon size={18} className="text-slate-500" /></span> 내 보관함</>
                                 )}
@@ -1234,12 +1203,21 @@ export default function QuestionBankPage() {
                         <div className="flex-1 overflow-hidden p-4 bg-slate-100 flex flex-col">
                             {!user && storageModalMode === 'exam' && (
                                 /* 비로그인 '만든 시험지': 아직 만든 게 없음 — 안내 */
-                                <div className="mb-3 px-4 py-3 bg-[#EEF4FB] border border-[#B7D1EA] rounded-xl text-sm text-[#3A5A82] break-keep shrink-0">
+                                <div className="mb-3 px-4 py-3 bg-[#F0F5FF] border border-[#C9D9FF] rounded-xl text-sm text-[#3A5A82] break-keep shrink-0">
                                     시험지를 만들어 <strong>저장하면 이곳에 모여요.</strong> 저장에는 로그인이 필요해요.
                                 </div>
                             )}
                             <div className="flex-1 min-h-0">
-                            <FolderExplorer
+                            {!user && storageModalMode === 'db' ? <SourceCatalog
+                                items={guestDbInitialData?.items || []}
+                                selectedIds={selectedDbIds}
+                                onItemSelect={handleStorageItemSelect}
+                                onGroupSelect={(items, select) => {
+                                    const ids = items.map(i => i.reference_id || i.id);
+                                    setSelectedDbIds(prev => select ? [...new Set([...prev, ...ids])] : prev.filter(id => !ids.includes(id)));
+                                }}
+                                onGetViewItems={setCurrentExamItems}
+                            /> : <FolderExplorer
                                 // [비로그인] 전체 DB 카탈로그 주입 / [로그인] 프리페치 주입 → 열자마자 목록 표시
                                 initialData={!user
                                     ? (storageModalMode === 'db' ? guestDbInitialData : undefined)
@@ -1282,7 +1260,7 @@ export default function QuestionBankPage() {
                                 filterType={storageModalMode}
                                 refreshKey={storageRefreshKey}
                                 onGetViewItems={(items) => setCurrentExamItems(items)}
-                            />
+                            />}
                             </div>
                         </div>
                         <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
@@ -1302,14 +1280,14 @@ export default function QuestionBankPage() {
                                                 }}
                                                 className={`px-4 py-2 font-bold rounded-lg transition flex items-center gap-2 border ${
                                                     allSelected
-                                                        ? 'bg-[#497AB7] text-white border-[#3A6BA0] hover:bg-[#3A6BA0]'
+                                                        ? 'bg-[#285CE6] text-white border-[#3A6BA0] hover:bg-[#3A6BA0]'
                                                         : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
                                                 }`}
                                             >
                                                 <CheckSquare size={16} />
                                                 {allSelected ? '전체 해제' : '전체 선택'}
                                                 {selectedDbIds.length > 0 && (
-                                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${allSelected ? 'bg-white/30 text-white' : 'bg-[#497AB7] text-white'}`}>
+                                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${allSelected ? 'bg-white/30 text-white' : 'bg-[#285CE6] text-white'}`}>
                                                         {selectedDbIds.length}
                                                     </span>
                                                 )}
@@ -1336,7 +1314,7 @@ export default function QuestionBankPage() {
                                     <>
                                         <button
                                             onClick={handleBulkDownloadExams}
-                                            className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition flex items-center gap-2 border border-indigo-200"
+                                            className="px-4 py-2 bg-brand-50 text-brand-700 font-bold rounded-lg hover:bg-brand-100 transition flex items-center gap-2 border border-brand-200"
                                         >
                                             <FileText size={16} /> 선택 다운로드 ({selectedExamIds.length})
                                         </button>
@@ -1359,8 +1337,13 @@ export default function QuestionBankPage() {
                             <button
                                 onClick={() => {
                                     if (storageModalMode === 'db') {
-                                        setShowStorageModal(false); // StorageModal 먼저 닫기 (필터 버튼 정상 작동)
-                                        setShowDuplicateModal(true);
+                                        setShowStorageModal(false);
+                                        const chosen = purchasedDbs.filter(db => selectedDbIds.includes(db.id));
+                                        setEntryLabel(chosen.length === 1 ? chosen[0].title : chosen.length ? `선택한 자료 ${chosen.length}개` : '전체 자료에서 검색');
+                                        setEntryFailure(false);
+                                        if (filterState?.mockSlug) { setFilterState((f:any) => ({...f, mockSlug:undefined})); setFilterVersion(v => v + 1); }
+                                        if (user) setShowDuplicateModal(true);
+                                        else setExcludedQuestionIds([]);
                                     } else {
                                         setShowStorageModal(false);
                                         setSelectedExamIds([]); // Reset selection on close
@@ -1384,12 +1367,14 @@ export default function QuestionBankPage() {
                     />
                 )}
                 {/* Sidebar for Filters - Hidden in Review Mode */}
-                <div className={`${
+                <div id="qb-filter-sidebar" className={`workbench-sidebar ${
                     viewMode === 'review'
                         ? 'hidden'
                         : showMobileSidebar
                             ? 'fixed bottom-0 left-0 right-0 z-50 bg-white border-t rounded-t-2xl shadow-2xl flex flex-col w-full max-h-[85dvh] md:relative md:bottom-auto md:z-20 md:border-t-0 md:border-r md:rounded-none md:shadow-none md:w-64 md:max-h-full'
-                            : 'hidden md:flex md:flex-col md:w-64 md:bg-white md:border-r md:z-20'
+                            : isFilterCollapsed
+                                ? 'hidden'
+                                : 'hidden md:flex md:flex-col md:w-64 md:bg-white md:border-r md:z-20'
                 }`}>
                     {/* Mobile bottom-sheet handle */}
                     <div className="flex items-center justify-between px-4 pt-3 pb-0 md:hidden">
@@ -1400,7 +1385,7 @@ export default function QuestionBankPage() {
                         >×</button>
                     </div>
                     <div data-tour="qb-pool" className="px-4 py-2.5 md:p-4 border-b space-y-2">
-                        <h2 className="hidden md:block font-bold text-lg text-slate-800">문제 풀(Pool)</h2>
+                        <h2 className="hidden md:block font-bold text-lg text-slate-800">출제 범위</h2>
                         {/* ... existing DB selectors ... */}
                         <div className="flex gap-2 mb-2">
                             {/* 비로그인도 열람 가능 (맛보기 — 게이트는 시험지 저장에서만) */}
@@ -1410,10 +1395,10 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-2 md:py-3 px-3 bg-[#E8F0FB] text-[#497AB7] border border-[#B7D1EA] rounded-xl hover:bg-[#D4E4F7] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-2 md:py-3 px-3 bg-[#F0F5FF] text-[#285CE6] border border-[#C9D9FF] rounded-xl hover:bg-[#E5EDFF] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <Database size={16} />
-                                DB 문제
+                                출제 자료
                             </button>
                             <button
                                 onClick={() => {
@@ -1421,7 +1406,7 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-2 md:py-3 px-3 bg-[#E0F7F6] text-[#3AADA9] border border-[#5CC6C3]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-2 md:py-3 px-3 bg-[#EDF3FF] text-[#204BC3] border border-[#285CE6]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <FolderIcon size={16} />
                                 만든 시험지
@@ -1431,7 +1416,7 @@ export default function QuestionBankPage() {
                             /* 비로그인: 전체 DB 자동 선택 안내 (한 줄) */
                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                전체 DB 자동 선택됨 ({purchasedDbs.length}개)
+                                {!isDbInitialized ? '자료 목록을 불러오는 중…' : selectedDbIds.length > 0 ? `선택한 자료 ${selectedDbIds.length}개에서 검색` : `자료 미선택 · 전체 ${purchasedDbs.length}개에서 검색`}
                             </div>
                         )}
                         {/* 관리자 전체 DB 선택 버튼 */}
@@ -1461,15 +1446,17 @@ export default function QuestionBankPage() {
                         </div>
                         <div data-tour="qb-filter" className="flex-1 overflow-y-auto">
                             <FilterSidebar
+                                key={(draftReady ? 'restored' : 'loading')+filterVersion}
+                                initialFilters={filterState}
                                 dbFilter={null}
                                 selectedDbIds={selectedDbIds}
                                 purchasedDbs={purchasedDbs}
                                 onFilterChange={(filters) => {
-                                    setFilterState(filters);
+                                    if (draftReady) setFilterState(filters);
                                 }}
                             />
                         </div>
-                        <div className="p-4 border-t bg-[#F2F3F0]">
+                        <div className="p-4 border-t bg-[#F7F9FC]">
                             <button
                                 data-tour="qb-search"
                                 onClick={() => {
@@ -1477,7 +1464,7 @@ export default function QuestionBankPage() {
                                     setShowMobileSidebar(false);
                                     setShowStorageModal(false);
                                 }}
-                                className="w-full py-3 bg-[#497AB7] text-white font-bold rounded-xl shadow-md hover:bg-[#3A6599] transition flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-[#285CE6] text-white font-bold rounded-xl shadow-md hover:bg-[#204BC3] transition flex items-center justify-center gap-2"
                             >
                                 <span>조건 검색하기</span>
                             </button>
@@ -1487,8 +1474,10 @@ export default function QuestionBankPage() {
 
                 {/* Main List Area */}
                 <div ref={mainScrollRef} id="main-scroll" className="flex-1 overflow-y-auto overflow-x-hidden relative">
+                    {user&&<details className="m-3 rounded-xl bg-white border p-3" open={recentOpen} onToggle={e=>setRecentOpen(e.currentTarget.open)}><summary className="cursor-pointer text-sm">최근 시험지 · 수정·재출제</summary><RecentExams refresh={storageRefreshKey} onRestore={restoreRecent} onCount={setSavedCount}/></details>}
+
                     {viewMode === 'search' ? (
-                        <header className="sticky top-0 z-10 flex justify-between items-center px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#B7D1EA]/60 shadow-sm">
+                        <header className="sticky top-0 z-10 flex justify-between items-center px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#C9D9FF]/60 shadow-sm">
                             <div className="flex items-center gap-2 min-w-0">
                                 <button
                                     className="md:hidden flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 flex-shrink-0"
@@ -1497,11 +1486,21 @@ export default function QuestionBankPage() {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
                                     필터
                                 </button>
+                                <button
+                                    ref={desktopFilterToggleRef}
+                                    type="button"
+                                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 flex-shrink-0"
+                                    aria-controls="qb-filter-sidebar"
+                                    aria-expanded={!isFilterCollapsed}
+                                    onClick={() => setIsFilterCollapsed(value => !value)}
+                                >
+                                    {isFilterCollapsed ? '조건 펼치기' : '조건 접기'}
+                                </button>
                                 {/* 화면 제목은 h2 — 이 페이지의 h1 은 layout.tsx 의 sr-only 하나뿐이다.
                                     전체화면 툴이라 화면에 본문이 없어 크롤러·스크린리더용 h1 을 layout 에 뒀는데,
                                     여기까지 h1 이면 한 페이지에 h1 이 둘이 된다(2026-09-03 전수검사에서 확인). */}
                                 <h2 className="hidden sm:block sm:text-2xl font-bold text-gray-800 truncate">
-                                    {selectedDbIds.length > 0 ? 'DB 문제 목록' : '전체 문제 검색'}
+                                    {selectedDbIds.length > 0 ? '문항 고르기' : '전체 문제 검색'}
                                 </h2>
                             </div>
                             <div className="flex gap-1.5 sm:gap-2 items-center">
@@ -1510,14 +1509,14 @@ export default function QuestionBankPage() {
                                     <button
                                         onClick={() => changeSearchCols(3)}
                                         title="카드 크게 (3열)"
-                                        className={`px-2.5 py-2 transition-colors ${searchCols === 3 ? 'bg-[#497AB7] text-white' : 'bg-white text-slate-400 hover:bg-slate-50'}`}
+                                        className={`px-2.5 py-2 transition-colors ${searchCols === 3 ? 'bg-[#285CE6] text-white' : 'bg-white text-slate-400 hover:bg-slate-50'}`}
                                     >
                                         크게
                                     </button>
                                     <button
                                         onClick={() => changeSearchCols(4)}
                                         title="카드 작게 (4열)"
-                                        className={`px-2.5 py-2 transition-colors ${searchCols === 4 ? 'bg-[#497AB7] text-white' : 'bg-white text-slate-400 hover:bg-slate-50'}`}
+                                        className={`px-2.5 py-2 transition-colors ${searchCols === 4 ? 'bg-[#285CE6] text-white' : 'bg-white text-slate-400 hover:bg-slate-50'}`}
                                     >
                                         작게
                                     </button>
@@ -1525,7 +1524,7 @@ export default function QuestionBankPage() {
                                 {questions.length > 0 && (
                                     <button
                                         onClick={handleSelectAllToggle}
-                                        className="border border-[#B7D1EA] text-[#497AB7] px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#EEF4FB] shadow-sm transition font-bold text-xs sm:text-sm whitespace-nowrap"
+                                        className="border border-[#C9D9FF] text-[#285CE6] px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#F0F5FF] shadow-sm transition font-bold text-xs sm:text-sm whitespace-nowrap"
                                     >
                                         {questions.every(q => q && cartIdSet.has(q.id)) ? '전체 해제' : '전체 선택'}
                                     </button>
@@ -1534,7 +1533,7 @@ export default function QuestionBankPage() {
                                     data-tour="qb-generate"
                                     onClick={handleGenerate}
                                     disabled={cart.length === 0 || isGenerating}
-                                    className="bg-[#497AB7] disabled:bg-slate-300 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#3A6599] shadow-sm transition font-bold flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm"
+                                    className="bg-[#285CE6] disabled:bg-slate-300 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#204BC3] shadow-sm transition font-bold flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm"
                                 >
                                     <span className="hidden sm:inline">시험지 생성 ({cart.length}/{MAX_CART_SIZE})</span>
                                     <span className="sm:hidden">생성 ({cart.length})</span>
@@ -1549,16 +1548,16 @@ export default function QuestionBankPage() {
                                         }
                                         setShowAutoModal(true);
                                     }}
-                                    className="bg-[#5CC6C3] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-[#3AADA9] shadow-sm transition font-bold whitespace-nowrap text-xs sm:text-sm"
+                                    className="bg-[#285CE6] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-[#204BC3] shadow-sm transition font-bold whitespace-nowrap text-xs sm:text-sm"
                                 >
-                                    자동생성
+                                    자동 출제
                                 </button>
                             </div>
                         </header>
                     ) : (
-                        <header className="sticky top-0 z-10 flex flex-col gap-2 sm:gap-4 px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#B7D1EA]/60 shadow-sm">
+                        <header className="sticky top-0 z-10 flex flex-col gap-2 sm:gap-4 px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#C9D9FF]/60 shadow-sm">
                             {/* 모바일: 컴팩트 단일 행 / 데스크탑: 2행 */}
-                            <div className="flex justify-between items-center gap-2">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                                 <div className="min-w-0">
                                     <h2 className="text-base sm:text-2xl font-black text-slate-800 whitespace-nowrap">시험지 문항 검토</h2>
                                     <p className="hidden sm:block text-sm text-slate-500 mt-1">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
@@ -1571,8 +1570,8 @@ export default function QuestionBankPage() {
                                         ← <span className="hidden sm:inline">검색으로 </span>돌아가기
                                     </button>
                                     <button
-                                        onClick={() => { if (!user) { setShowLoginGate(true); return; } setShowConfigModal(true); }}
-                                        className="px-3 sm:px-8 py-2 sm:py-2.5 bg-[#497AB7] text-white rounded-xl font-bold hover:bg-[#3A6599] shadow-lg shadow-[#497AB7]/20 transition-all text-xs sm:text-sm whitespace-nowrap"
+                                        onClick={() => { if (!draftReady) return; if (!user) { setShowLoginGate(true); return; } setShowConfigModal(true); }}
+                                        className="px-3 sm:px-8 py-2 sm:py-2.5 bg-[#285CE6] text-white rounded-xl font-bold hover:bg-[#204BC3] shadow-lg shadow-[#285CE6]/20 transition-all text-xs sm:text-sm whitespace-nowrap"
                                     >
                                         최종 생성 ({cart.length})
                                     </button>
@@ -1601,7 +1600,7 @@ export default function QuestionBankPage() {
                                                     const deduped = next.slice(0, idx + 1);
                                                     applySortKeys(deduped);
                                                 }}
-                                                className="text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg px-2 py-1.5 outline-none cursor-pointer hover:bg-indigo-100 transition-colors"
+                                                className="text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200 rounded-lg px-2 py-1.5 outline-none cursor-pointer hover:bg-brand-100 transition-colors"
                                             >
                                                 {Object.entries(SORT_OPTIONS).map(([k, v]) => (
                                                     <option key={k} value={k} disabled={
@@ -1621,7 +1620,7 @@ export default function QuestionBankPage() {
                                                 const nextKey = Object.keys(SORT_OPTIONS).find(k => !used.has(k) && !conflicted.has(k));
                                                 if (nextKey) applySortKeys([...sortKeys, nextKey]);
                                             }}
-                                            className="px-2 py-1 rounded-lg text-xs font-bold text-slate-400 border border-dashed border-slate-200 hover:border-indigo-300 hover:text-indigo-500 transition-all"
+                                            className="px-2 py-1 rounded-lg text-xs font-bold text-slate-400 border border-dashed border-slate-200 hover:border-brand-300 hover:text-brand-500 transition-all"
                                         >
                                             + 기준 추가
                                         </button>
@@ -1640,7 +1639,7 @@ export default function QuestionBankPage() {
                                     <button
                                         onClick={handleAutoAddSimilar}
                                         disabled={isAutoAdding || cart.length === 0}
-                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#5CC6C3] text-white hover:bg-[#3AADA9] disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap flex-shrink-0"
+                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#285CE6] text-white hover:bg-[#204BC3] disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap flex-shrink-0"
                                     >
                                         {isAutoAdding ? (
                                             <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
@@ -1683,7 +1682,22 @@ export default function QuestionBankPage() {
                                 return (
                                     <div
                                         key={`${viewMode}-${q.id}`}
-                                        onClick={() => viewMode === 'search' && toggleCart(q)}
+                                        role="checkbox"
+                                        tabIndex={0}
+                                        aria-label={`${idx+1}번 문항 ${viewMode==='search'?'담기':'선택'}`}
+                                        aria-checked={viewMode==='search'?inCart:selectedReviewIds.has(q.id)}
+                                        onClick={(e) => {
+                                            if ((e.target as HTMLElement).closest('button,a,input,label')) return;
+                                            if(viewMode==='search')toggleCart(q);
+                                            else setSelectedReviewIds(prev=>{const next=new Set(prev);next.has(q.id)?next.delete(q.id):next.add(q.id);return next;});
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if(e.target!==e.currentTarget||!['Enter',' '].includes(e.key))return;
+                                            e.preventDefault();
+                                            if(viewMode==='search')toggleCart(q);
+                                            else setSelectedReviewIds(prev=>{const next=new Set(prev);next.has(q.id)?next.delete(q.id):next.add(q.id);return next;});
+                                        }}
+
                                         draggable={viewMode === 'review'}
                                         onDragStart={(e) => {
                                             if (viewMode !== 'review') return;
@@ -1697,14 +1711,14 @@ export default function QuestionBankPage() {
                                         }}
                                         onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
                                         onDragEnd={() => viewMode === 'review' && handleDragEnd()}
-                                        className={`relative rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group sm:h-[630px]
+                                        className={`qb-card relative h-[300px] rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
                                             ${viewMode === 'review'
                                                 ? draggingIndex === idx
-                                                    ? 'opacity-40 scale-95 border-[#497AB7] border-dashed'
+                                                    ? 'opacity-40 scale-95 border-[#285CE6] border-dashed'
                                                     : selectedReviewIds.has(q.id)
-                                                        ? 'bg-[#E0F7F6] border-[#5CC6C3] ring-2 ring-[#5CC6C3] cursor-move hover:shadow-md'
-                                                        : 'bg-white border-slate-200 cursor-move hover:border-[#B7D1EA] hover:shadow-md'
-                                                : inCart ? 'bg-[#EEF4FB] border-[#497AB7] ring-2 ring-[#497AB7] shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
+                                                        ? 'bg-[#EDF3FF] border-[#285CE6] ring-2 ring-[#285CE6] cursor-move hover:shadow-md'
+                                                        : 'bg-white border-slate-200 cursor-move hover:border-[#C9D9FF] hover:shadow-md'
+                                                : inCart ? 'bg-[#F0F5FF] border-[#285CE6] ring-2 ring-[#285CE6] shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
                                         `}
                                     >
                                         {/* Header */}
@@ -1730,12 +1744,12 @@ export default function QuestionBankPage() {
                                                     className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition-colors select-none
                                                         ${viewMode === 'review' && !q._similarOf ? 'cursor-pointer' : ''}
                                                         ${selectedReviewIds.has(q.id)
-                                                            ? 'bg-[#5CC6C3] text-white ring-2 ring-[#5CC6C3]/50'
-                                                            : viewMode === 'review' ? 'bg-[#497AB7] text-white hover:bg-[#5CC6C3]' : 'bg-slate-200 text-slate-500'
+                                                            ? 'bg-[#285CE6] text-white ring-2 ring-[#285CE6]/50'
+                                                            : viewMode === 'review' ? 'bg-[#285CE6] text-white hover:bg-[#285CE6]' : 'bg-slate-200 text-slate-500'
                                                         }`}
                                                     title={viewMode === 'review' && !q._similarOf ? '클릭하여 선택' : ''}
                                                 >
-                                                    {selectedReviewIds.has(q.id) ? '✓' : idx + 1}
+                                                    {(viewMode==='search'?inCart:selectedReviewIds.has(q.id)) ? '✓' : idx + 1}
                                                 </span>
                                                 {/* [유사문제 뱃지] _similarOf가 있으면 원본 문제 번호 표시 */}
                                                 {viewMode === 'review' && q._similarOf && (() => {
@@ -1746,7 +1760,7 @@ export default function QuestionBankPage() {
                                                         </span>
                                                     ) : null;
                                                 })()}
-                                                <span className="bg-[#E8F0FB] text-[#497AB7] text-xs px-2 py-0.5 rounded-md font-bold">
+                                                <span className="bg-[#F0F5FF] text-[#285CE6] text-xs px-2 py-0.5 rounded-md font-bold">
                                                     {q.unit || '단원 미정'}
                                                 </span>
                                                 {/* [교과외] 현행 교육과정에서 삭제된 단원 — 시험지에 담기 전에 눈에 띄어야 함 */}
@@ -1768,7 +1782,7 @@ export default function QuestionBankPage() {
                                                 {Number(q.difficulty) >= 5 && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate(true); return; } void buildLadder(q); }}
-                                                        className="px-2 py-1 bg-[#5CC6C3] hover:bg-[#3AADA9] text-white rounded-md shadow-sm transition-all flex items-center gap-1 whitespace-nowrap"
+                                                        className="px-2 py-1 bg-[#285CE6] hover:bg-[#204BC3] text-white rounded-md shadow-sm transition-all flex items-center gap-1 whitespace-nowrap"
                                                         title="이 문항까지 올라가는 3단 사다리(기초→유형→목표)를 담습니다"
                                                     >
                                                         <span className="text-[10px] font-bold">사다리</span>
@@ -1794,7 +1808,7 @@ export default function QuestionBankPage() {
                                                 </span>
                                                 {viewMode === 'review' && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); toggleCart(q); }}
+                                                        aria-label={`${idx+1}번 문항 삭제`} onClick={(e) => { e.stopPropagation(); toggleCart(q); }}
                                                         className="p-1 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-md transition-all"
                                                     >
                                                         <Trash2 size={16} />
@@ -1803,8 +1817,8 @@ export default function QuestionBankPage() {
                                             </div>
                                         </div>
 
-                                        {/* Content */}
-                                        <div className="p-4 sm:p-5 bg-white flex-1 sm:min-h-[160px] overflow-y-auto scrollbar-thin">
+ {/* Content */}
+                                        <div className="p-3 bg-white flex-1 min-h-0 overflow-y-auto scrollbar-thin">
                                             {q.question_images === null ? (
                                                 // 이미지 로딩 중 스켈레톤
                                                 <div className="space-y-2 animate-pulse">
@@ -1817,17 +1831,19 @@ export default function QuestionBankPage() {
                                                 <QuestionRenderer
                                                     xmlContent={q.content_xml}
                                                     externalImages={q.question_images}
+                                                    loadError={q.imageLoadError}
+                                                    onRetry={() => retryQuestionImages(q.id)}
                                                     displayMode="question"
                                                     showDownloadAction={false}
-                                                    className="border-none shadow-none p-0 !text-base"
+                                                    className="border-none shadow-none !p-0 !text-base"
                                                 />
                                             )}
                                         </div>
 
                                         {/* Meta/Actions Footer */}
-                                        <div className="px-4 py-3 bg-slate-50 border-t flex items-center justify-between">
+                                        <div className="px-4 py-3 bg-white border-t flex flex-wrap gap-2 items-center justify-between">
                                             <div className="text-[12px] sm:text-[10px] text-slate-400 font-medium truncate flex-1 pr-2">
-                                                {q.school} {q.exam_year}
+                                                {q.school} {q.year||q.exam_year}
                                             </div>
                                             {/* [모바일 ②] 순서 이동 — 헤더에 두면 390px 에서 뱃지가 줄바꿈되어 푸터(검토 모드엔 비어 있음)에 둔다. 데스크톱은 드래그. */}
                                             {viewMode === 'review' && (
@@ -1836,10 +1852,11 @@ export default function QuestionBankPage() {
                                                     <button onClick={(e) => { e.stopPropagation(); moveInCart(idx, 1); }} disabled={idx === cart.length - 1} aria-label="아래로" className="w-10 h-9 rounded-lg bg-white border border-slate-200 text-slate-600 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"><ChevronDown size={16} /></button>
                                                 </div>
                                             )}
+                                            <button aria-label={`${idx+1}번 문항 상세보기`} className="question-action" onClick={e=>{e.stopPropagation();setZoomQuestion(q);}}><FileText size={14} aria-hidden="true"/>상세보기</button>
                                             {viewMode === 'search' && (
-                                                <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-2 transition-opacity">
                                                     <button
-                                                        className="text-[10px] font-bold text-slate-500 hover:text-[#497AB7] bg-white border border-slate-200 hover:border-[#B7D1EA] hover:bg-[#EEF4FB] px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
+                                                        className="question-action"
                                                         onClick={(e) => { e.stopPropagation(); setSolutionTarget(q); }}
                                                     >
                                                         <FileText size={12} />
@@ -1864,7 +1881,7 @@ export default function QuestionBankPage() {
                                         <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
                                             <Search size={48} className="text-slate-200" />
                                             <p className="text-lg font-medium text-slate-500">조건에 맞는 문제가 없습니다 (0건)</p>
-                                            <p className="text-sm text-slate-400">필터 조건을 조정하거나 다른 DB를 선택해보세요.</p>
+                                            <p className="text-sm text-slate-400">필터 조건을 조정하거나 다른 출제 자료를 선택해보세요.</p>
                                         </div>
                                     ) : selectedDbIds.length > 0 ? (
                                         /* DB 선택됨, 아직 검색 안 함 */
@@ -1873,10 +1890,10 @@ export default function QuestionBankPage() {
                                                 아무것도 누르지 않고 나갔는데, 그중 대부분이 무료PDF 를 받아본 사람이었다.
                                                 고를 것을 주는 대신, 이미 고른 것을 되돌려준다. */}
                                             {resumeItem && (
-                                                <div className="rounded-2xl border-2 border-[#3AADA9]/40 bg-[#F2FBFA] p-4 flex flex-wrap items-center justify-between gap-3">
+                                                <div className="rounded-2xl border-2 border-[#204BC3]/40 bg-[#F2FBFA] p-4 flex flex-wrap items-center justify-between gap-3">
                                                     <div className="min-w-0">
                                                         <p className="text-[11px] font-black text-[#2A8C89] tracking-wide">직전에 받아가신 회차예요</p>
-                                                        <p className="font-extrabold text-[#1E2D4F] mt-1 break-keep">{resumeItem.label}</p>
+                                                        <p className="font-extrabold text-[#1D2C45] mt-1 break-keep">{resumeItem.label}</p>
                                                         <p className="text-xs text-slate-500 mt-0.5">{resumeItem.count}문항 · 담은 뒤 빼거나 더 채우실 수 있어요</p>
                                                     </div>
                                                     <button
@@ -1892,19 +1909,19 @@ export default function QuestionBankPage() {
                                                             }
                                                             setResumeBusy(false);
                                                         }}
-                                                        className="shrink-0 px-5 py-3 bg-[#3AADA9] hover:bg-[#2A8C89] disabled:opacity-60 text-white font-black rounded-xl shadow-sm transition-colors active:scale-95"
+                                                        className="shrink-0 px-5 py-3 bg-[#204BC3] hover:bg-[#2A8C89] disabled:opacity-60 text-white font-black rounded-xl shadow-sm transition-colors active:scale-95"
                                                     >
                                                         {resumeBusy ? '담는 중…' : '이 회차로 시작하기 →'}
                                                     </button>
                                                 </div>
                                             )}
                                         <div className="text-center py-20 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                                                <Search size={24} className="text-indigo-500" />
+                                            <div className="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center">
+                                                <Search size={24} className="text-brand-500" />
                                             </div>
-                                            <p className="text-base font-semibold text-slate-600"><span className="hidden md:inline">왼쪽 필터 조건 설정 후 </span><span className="md:hidden">위 「필터」에서 조건을 고른 뒤 </span><span className="text-indigo-600">「조건 검색하기」</span>를 눌러주세요.</p>
+                                            <p className="text-base font-semibold text-slate-600"><span className="hidden md:inline">왼쪽 필터 조건 설정 후 </span><span className="md:hidden">위 「필터」에서 조건을 고른 뒤 </span><span className="text-brand-600">「조건 검색하기」</span>를 눌러주세요.</p>
                                             {/* [모바일] 폰에는 "왼쪽 필터"가 없다 — 시트를 여는 버튼을 바로 준다 (9/7 모바일 감사 ④) */}
-                                            <button onClick={() => setShowMobileSidebar(true)} className="md:hidden mt-3 inline-flex items-center gap-2 px-5 py-3 bg-[#497AB7] text-white font-bold rounded-xl shadow-md active:scale-95 transition">필터 열기</button>
+                                            <button onClick={() => setShowMobileSidebar(true)} className="md:hidden mt-3 inline-flex items-center gap-2 px-5 py-3 bg-[#285CE6] text-white font-bold rounded-xl shadow-md active:scale-95 transition">필터 열기</button>
                                             <p className="text-sm text-slate-400">단원, 난이도, 키워드를 조합해 원하는 문제를 찾을 수 있어요.</p>
                                             {/* [퍼널] 이 화면은 수동 경로만 안내하고 있었다. 같은 화면 상단에 한 번에 채워주는
                                                 '자동생성' 버튼이 이미 있는데 처음 온 사람은 그걸 쓸 생각을 못 한다.
@@ -1917,7 +1934,7 @@ export default function QuestionBankPage() {
                                                     }
                                                     setShowAutoModal(true);
                                                 }}
-                                                className="mt-2 bg-[#5CC6C3] hover:bg-[#3AADA9] text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
+                                                className="mt-2 bg-[#285CE6] hover:bg-[#204BC3] text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors"
                                             >
                                                 고르기 어렵다면 — 단원·난이도만 정하고 자동생성 →
                                             </button>
@@ -1936,324 +1953,7 @@ export default function QuestionBankPage() {
                                             ))}
                                         </div>
                                     ) : (
-                                        /* 초기 상태 — 전체 사용법 안내 */
-                                        <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-100/80">
-                                            {/* 비로그인 유저 전용 CTA — 강화 */}
-                                            {!user && (
-                                                <div className="relative mx-4 mt-4 rounded-2xl p-4 flex items-center justify-between gap-3 overflow-hidden animate-border-glow border-2 border-transparent">
-                                                    {/* Animated gradient BG */}
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-[#497AB7] via-[#5CC6C3] to-[#818cf8] animate-gradient-shift rounded-2xl" style={{ backgroundSize: '200% 200%' }}></div>
-                                                    <div className="relative min-w-0">
-                                                        <p className="font-black text-white text-sm flex items-center gap-1.5">
-                                                            <span className="inline-flex w-5 h-5 items-center justify-center bg-white/20 rounded-full text-[10px]">🎉</span>
-                                                            런칭 기념 전체 무료 개방 중!
-                                                        </p>
-                                                        <p className="text-xs text-white/80 mt-0.5">회원가입 후 전국 기출 DB 바로 이용하세요</p>
-                                                    </div>
-                                                    <a
-                                                        href="/login"
-                                                        className="relative flex-shrink-0 px-5 py-2.5 bg-white text-[#497AB7] rounded-xl font-black text-sm whitespace-nowrap shadow-lg shadow-black/10 hover:shadow-xl hover:scale-[1.03] transition-all duration-300"
-                                                    >
-                                                        무료 시작 →
-                                                    </a>
-                                                </div>
-                                            )}
-
-                                            {/* 처음 온 사용자용: 사용법 영상 + 화면 안내 투어 (강사 사다리 Step 1) */}
-                                            <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
-                                                <p className="text-xs font-bold text-slate-500">처음이신가요? 1분이면 흐름이 잡혀요.</p>
-                                                <div className="flex gap-2">
-                                                    <a
-                                                        href="https://www.youtube.com/watch?v=2Yt94Ps8rk8&t=5s" target="_blank" rel="noopener noreferrer"
-                                                        onClick={() => { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'youtube_guide', title: 'qb_intro' }) }).catch(() => { }); }}
-                                                        className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#FF0000] hover:border-red-200 transition-colors"
-                                                    >
-                                                        ▶ 사용법 영상
-                                                    </a>
-                                                    <button
-                                                        onClick={() => setRunTeacherTour(true)}
-                                                        className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#497AB7] hover:border-[#B7D1EA] transition-colors"
-                                                    >
-                                                        🧭 화면 안내 보기
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* ══════════════════════════════════════
-                                                 히어로 섹션 — Premium Parallax
-                                               ══════════════════════════════════════ */}
-                                            <div
-                                                ref={heroRef}
-                                                onMouseMove={handleHeroMouse}
-                                                className="relative overflow-hidden"
-                                            >
-                                                {/* Deep dark base */}
-                                                <div className="absolute inset-0 bg-[#0a0a1a]"></div>
-
-                                                {/* Animated mesh gradient overlay */}
-                                                <div className="absolute inset-0 mesh-gradient-bg opacity-90"></div>
-
-                                                {/* 3D Parallax Orbs */}
-                                                <div
-                                                    className="absolute top-4 right-8 w-80 h-80 rounded-full animate-float-3d"
-                                                    style={{
-                                                        background: 'radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, rgba(99, 102, 241, 0.08) 60%, transparent 80%)',
-                                                        filter: 'blur(40px)',
-                                                        transform: `translate3d(${mousePos.x * 20}px, ${mousePos.y * 15}px, 0)`,
-                                                        transition: 'transform 0.3s ease-out',
-                                                    }}
-                                                ></div>
-                                                <div
-                                                    className="absolute -bottom-12 left-8 w-64 h-64 rounded-full"
-                                                    style={{
-                                                        background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.08) 60%, transparent 80%)',
-                                                        filter: 'blur(35px)',
-                                                        transform: `translate3d(${mousePos.x * -15}px, ${mousePos.y * -12}px, 0)`,
-                                                        transition: 'transform 0.4s ease-out',
-                                                        animation: 'float-3d 10s ease-in-out 2s infinite',
-                                                    }}
-                                                ></div>
-                                                <div
-                                                    className="absolute top-1/3 left-1/4 w-48 h-48 rounded-full"
-                                                    style={{
-                                                        background: 'radial-gradient(circle, rgba(236, 72, 153, 0.12) 0%, transparent 70%)',
-                                                        filter: 'blur(30px)',
-                                                        transform: `translate3d(${mousePos.x * 10}px, ${mousePos.y * -8}px, 0)`,
-                                                        transition: 'transform 0.5s ease-out',
-                                                        animation: 'float-3d 12s ease-in-out 4s infinite',
-                                                    }}
-                                                ></div>
-
-                                                {/* Dot grid pattern */}
-                                                <div className="absolute inset-0 opacity-[0.04]" style={{
-                                                    backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
-                                                    backgroundSize: '24px 24px',
-                                                }}></div>
-
-                                                {/* Subtle noise */}
-                                                <div className="absolute inset-0 opacity-[0.02]" style={{
-                                                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
-                                                }}></div>
-
-                                                {/* Content */}
-                                                <div className="relative px-6 sm:px-10 pt-8 sm:pt-10 pb-6 sm:pb-8">
-                                                    <div className="max-w-2xl">
-                                                        {/* Badge */}
-                                                        <div className="animate-entrance delay-100">
-                                                            <div className="inline-flex items-center gap-2 glass-card text-white/90 text-[11px] font-bold px-3 py-1.5 rounded-full mb-4">
-                                                                <span className="relative flex h-2 w-2">
-                                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-                                                                </span>
-                                                                시험지 출제 시스템
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Headline */}
-                                                        <div className="animate-entrance delay-200">
-                                                            <h2 className="text-2xl sm:text-4xl font-black text-white leading-[1.15] tracking-tight" style={{wordBreak:'keep-all'}}>
-                                                                기출 문제를 골라담으면,<br/>
-                                                                <span className="bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-300 bg-clip-text text-transparent">
-                                                                    유사문항까지 자동으로
-                                                                </span>{' '}
-                                                                <span className="relative inline-block">
-                                                                    채워드려요
-                                                                    <svg className="absolute -bottom-1.5 left-0 w-full" height="8" viewBox="0 0 200 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                        <path d="M0 4 Q40 1 80 4 T160 4 T200 4" stroke="url(#ug2)" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.5" className="line-draw"/>
-                                                                        <defs><linearGradient id="ug2" x1="0" y1="0" x2="200" y2="0"><stop offset="0%" stopColor="#67e8f9"/><stop offset="50%" stopColor="#818cf8"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
-                                                                    </svg>
-                                                                </span>
-                                                            </h2>
-                                                        </div>
-
-                                                        {/* Subtext */}
-                                                        <div className="animate-entrance delay-300">
-                                                            <p className="text-xs sm:text-sm text-white/40 mt-3 leading-relaxed max-w-lg" style={{wordBreak:'keep-all'}}>
-                                                                전국 기출 문제를 단원·난이도로 검색하고, 원하는 문제를 골라 시험지를 만드세요. 비슷한 유형의 문제를 자동으로 추천받을 수 있습니다.
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Stats Counter Row */}
-                                                        <div className="animate-entrance delay-400">
-                                                            <div className="flex items-center gap-5 sm:gap-8 mt-5 sm:mt-6">
-                                                                {[
-                                                                    { label: '기출문제 보유', value: heroStats.questionCount > 0 ? heroStats.questionCount.toLocaleString() : '—', suffix: heroStats.questionCount > 0 ? '+' : '', color: 'from-cyan-400 to-cyan-300' },
-                                                                    { label: '학교 기출', value: heroStats.schoolCount > 0 ? heroStats.schoolCount.toLocaleString() : '—', suffix: heroStats.schoolCount > 0 ? '+' : '', color: 'from-indigo-400 to-blue-300' },
-                                                                    { label: 'HML 시험지 생성', value: '무제한', suffix: '', color: 'from-violet-400 to-purple-300' },
-                                                                ].map((stat, i) => (
-                                                                    <div key={i} className="group">
-                                                                        <div className={`text-lg sm:text-xl font-black bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
-                                                                            {stat.value}<span className="text-sm">{stat.suffix}</span>
-                                                                        </div>
-                                                                        <div className="text-[10px] sm:text-xs text-white/30 font-medium mt-0.5 group-hover:text-white/50 transition-colors">{stat.label}</div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* CTA Glow Button */}
-                                                        <div className="animate-entrance delay-500 mt-5 sm:mt-6 flex items-center gap-4">
-                                                            <button
-                                                                onClick={() => {
-                                                                    if (!user) {
-                                                                        setStorageModalMode('db');
-                                                                        setShowStorageModal(true);
-                                                                    } else {
-                                                                        setStorageModalMode('db');
-                                                                        setShowStorageModal(true);
-                                                                    }
-                                                                }}
-                                                                className="glow-button px-6 py-2.5 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.03] hover:shadow-lg hover:shadow-indigo-500/20"
-                                                            >
-                                                                <span className="relative z-10 flex items-center gap-2">
-                                                                    지금 시작하기
-                                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                                                                </span>
-                                                            </button>
-                                                            <span className="text-xs text-white/20 font-medium hidden sm:inline">가입 없이 바로 검색 가능</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Bottom glow line */}
-                                                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
-                                            </div>
-
-                                            {/* ══════════════════════════════════════
-                                                 피처 카드 — Liquid Glass
-                                               ══════════════════════════════════════ */}
-                                            <div className="relative px-4 sm:px-6 -mt-1 pb-4 pt-4 space-y-2 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-3 bg-gradient-to-b from-slate-50/80 to-white">
-                                                {/* Ambient gradient behind cards */}
-                                                <div className="absolute inset-0 opacity-40" style={{
-                                                    background: 'radial-gradient(ellipse 60% 40% at 20% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 70% 50%, rgba(6, 182, 212, 0.06) 0%, transparent 60%)'
-                                                }}></div>
-
-                                                {/* Card 1: 조건 검색 */}
-                                                <div className="animate-entrance delay-200 relative group glass-card-light rounded-2xl p-4 sm:p-5 cursor-default" style={{perspective: '800px'}}>
-                                                    <div className="relative group-hover:rotate-x-1 group-hover:rotate-y-1 transition-transform duration-500">
-                                                        {/* Icon with glow */}
-                                                        <div className="relative mb-3">
-                                                            <div className="absolute inset-0 w-10 h-10 bg-indigo-500/20 rounded-xl blur-xl group-hover:blur-2xl group-hover:bg-indigo-500/30 transition-all duration-500"></div>
-                                                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200/50 group-hover:scale-110 group-hover:shadow-indigo-300/70 group-hover:rotate-3 transition-all duration-500">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                                                            </div>
-                                                        </div>
-                                                        <p className="text-sm font-black text-slate-800 mb-1">조건 검색</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed" style={{wordBreak:'keep-all'}}>과목·단원·난이도·키워드로 원하는 문제를 정밀하게 찾으세요</p>
-                                                        {/* Mini visual */}
-                                                        <div className="mt-3 flex gap-1">
-                                                            {['과목', '단원', '난이도'].map((tag, i) => (
-                                                                <span key={i} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-500 border border-indigo-100/60 group-hover:bg-indigo-100 group-hover:border-indigo-200 transition-all duration-300" style={{animationDelay: `${0.1*i}s`}}>
-                                                                    {tag}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Card 2: 유사문항 추천 (HOT) */}
-                                                <div className="animate-entrance delay-300 relative group glass-card-light rounded-2xl p-4 sm:p-5 cursor-default" style={{perspective: '800px'}}>
-                                                    {/* HOT badge */}
-                                                    <div className="absolute -top-2.5 right-3 z-10">
-                                                        <div className="relative">
-                                                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full blur-md opacity-50 animate-pulse-ring"></div>
-                                                            <div className="relative bg-gradient-to-r from-cyan-500 to-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg shadow-cyan-500/30">HOT</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="relative group-hover:rotate-x-1 group-hover:-rotate-y-1 transition-transform duration-500">
-                                                        <div className="relative mb-3">
-                                                            <div className="absolute inset-0 w-10 h-10 bg-cyan-500/20 rounded-xl blur-xl group-hover:blur-2xl group-hover:bg-cyan-500/30 transition-all duration-500"></div>
-                                                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-200/50 group-hover:scale-110 group-hover:shadow-cyan-300/70 group-hover:rotate-3 transition-all duration-500">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1"/><rect x="9" y="3" width="13" height="13" rx="2"/></svg>
-                                                            </div>
-                                                        </div>
-                                                        <p className="text-sm font-black text-slate-800 mb-1">유사문항 추천</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed" style={{wordBreak:'keep-all'}}>담은 문제와 비슷한 유형을 자동으로 찾아서 추천해드려요</p>
-                                                        {/* Mini animated demo */}
-                                                        <div className="mt-3 flex items-center gap-1.5">
-                                                            <div className="flex -space-x-1">
-                                                                {[0,1,2].map(i => (
-                                                                    <div key={i} className="w-6 h-6 rounded bg-gradient-to-br from-cyan-100 to-teal-50 border-2 border-white flex items-center justify-center text-[8px] font-black text-cyan-600 group-hover:scale-110 transition-transform duration-300" style={{transitionDelay: `${i*50}ms`}}>
-                                                                        {i+1}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
-                                                            <div className="w-6 h-6 rounded bg-gradient-to-br from-emerald-100 to-emerald-50 border-2 border-white flex items-center justify-center group-hover:scale-110 transition-transform duration-300 delay-150">
-                                                                <span className="text-[8px] font-black text-emerald-600">AI</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Card 3: HML 시험지 */}
-                                                <div className="animate-entrance delay-400 relative group glass-card-light rounded-2xl p-4 sm:p-5 cursor-default" style={{perspective: '800px'}}>
-                                                    <div className="relative group-hover:-rotate-x-1 group-hover:rotate-y-1 transition-transform duration-500">
-                                                        <div className="relative mb-3">
-                                                            <div className="absolute inset-0 w-10 h-10 bg-violet-500/20 rounded-xl blur-xl group-hover:blur-2xl group-hover:bg-violet-500/30 transition-all duration-500"></div>
-                                                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200/50 group-hover:scale-110 group-hover:shadow-violet-300/70 group-hover:rotate-3 transition-all duration-500">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                                            </div>
-                                                        </div>
-                                                        <p className="text-sm font-black text-slate-800 mb-1">HML 시험지</p>
-                                                        <p className="text-xs text-slate-400 leading-relaxed" style={{wordBreak:'keep-all'}}>한글 호환 HML 파일로 바로 출력 가능한 시험지를 생성해요</p>
-                                                        {/* Mini file preview */}
-                                                        <div className="mt-3">
-                                                            <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg p-2 border border-violet-100/60 group-hover:border-violet-200 transition-all duration-300">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <div className="w-5 h-6 bg-violet-200 rounded flex items-center justify-center">
-                                                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="3"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/></svg>
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="text-[9px] font-bold text-violet-700 truncate">수학_중간고사.hml</div>
-                                                                        <div className="w-full h-0.5 bg-violet-100 rounded-full mt-0.5 overflow-hidden">
-                                                                            <div className="h-full bg-gradient-to-r from-violet-400 to-purple-400 rounded-full" style={{width: '75%'}}></div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* ══════════════════════════════════════
-                                                 스텝 인디케이터 — Interactive Timeline
-                                               ══════════════════════════════════════ */}
-                                            <div className="px-4 sm:px-6 pb-4 bg-white">
-                                                <div className="relative flex items-stretch gap-0 text-xs overflow-x-auto pb-1 pt-1">
-                                                    {/* Background connection line */}
-                                                    <div className="absolute top-1/2 left-6 right-6 h-[2px] -translate-y-1/2 hidden sm:block">
-                                                        <div className="h-full bg-gradient-to-r from-indigo-200/60 via-cyan-200/60 via-violet-200/60 to-emerald-200/60 rounded-full"></div>
-                                                        {/* Animated overlay */}
-                                                        <div className="absolute inset-0 h-full bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 rounded-full opacity-30 line-draw" style={{animationDelay: '0.5s', animationDuration: '2s'}}></div>
-                                                    </div>
-
-                                                    {[
-                                                        { num: '1', label: 'DB 선택', desc: '보유한 기출 DB를 선택', icon: '📦', gradient: 'from-indigo-500 to-indigo-600', bgLight: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200' },
-                                                        { num: '2', label: '조건 검색', desc: '단원·난이도로 필터링', icon: '🔍', gradient: 'from-cyan-500 to-teal-500', bgLight: 'bg-cyan-50', textColor: 'text-cyan-600', borderColor: 'border-cyan-200' },
-                                                        { num: '3', label: '문제 담기', desc: '원하는 문제를 장바구니에', icon: '🛒', gradient: 'from-violet-500 to-purple-500', bgLight: 'bg-violet-50', textColor: 'text-violet-600', borderColor: 'border-violet-200' },
-                                                        { num: '4', label: '시험지 저장', desc: 'HML로 자동 생성', icon: '✅', gradient: 'from-emerald-500 to-green-500', bgLight: 'bg-emerald-50', textColor: 'text-emerald-600', borderColor: 'border-emerald-200' },
-                                                    ].map((step, i) => (
-                                                        <div key={step.num} className="flex-1 relative animate-entrance" style={{ animationDelay: `${0.6 + i * 0.12}s` }}>
-                                                            <div className="group flex flex-col items-center text-center cursor-default px-1 py-2 rounded-xl hover:bg-slate-50/80 transition-all duration-300">
-                                                                {/* Step circle */}
-                                                                <div className={`relative w-8 h-8 rounded-lg bg-gradient-to-br ${step.gradient} flex items-center justify-center text-white font-black text-xs shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300 z-10`}>
-                                                                    <span className="group-hover:hidden">{step.num}</span>
-                                                                    <span className="hidden group-hover:block text-sm">{step.icon}</span>
-                                                                    {/* Pulse ring on hover */}
-                                                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-40 group-hover:animate-pulse-ring transition-opacity duration-300" style={{background: `linear-gradient(135deg, var(--tw-gradient-stops))`}}></div>
-                                                                </div>
-                                                                {/* Label */}
-                                                                <span className={`mt-1.5 font-bold ${step.textColor} text-[11px] group-hover:font-black transition-all duration-300`}>{step.label}</span>
-                                                                {/* Expandable description */}
-                                                                <span className="text-[10px] text-slate-300 font-medium mt-0.5 max-h-0 overflow-hidden group-hover:max-h-8 transition-all duration-500 ease-out">{step.desc}</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <div className="workbench-start"><div><p className="suite-eyebrow">A PAGE OF POSSIBILITIES</p><h2>어떤 문제로<br/>시작할까요?</h2><p>범위를 고르고, 마음에 드는 문항을 눌러 담으세요.<br/>선택한 문제들이 나만의 시험지가 됩니다.</p><div className="workbench-start-actions"><a className="suite-button" href="/question-bank?demo=1&origin=question-bank">기출 5문항으로 시작 →</a><button className="suite-button secondary" onClick={()=>{setStorageModalMode('db');setShowStorageModal(true);setShowMobileSidebar(false);}}>내 시험지 불러오기</button></div><a href="/guide">시험지 만들기 가이드 ↗</a></div><div className="workbench-empty-paper" aria-hidden="true"><span>MY WORKSHEET / MATH ETF</span><strong>나의 수학 시험지</strong><div/><div/><div/><small>좋은 문제를 고르는 일부터,<br/>새로운 배움이 시작됩니다.</small></div></div>
                                     )}
                                 </div>
                             )}
@@ -2308,8 +2008,24 @@ export default function QuestionBankPage() {
 
 
 
+
+                {zoomQuestion&&<div role="dialog" aria-modal="true" aria-label="문항 상세보기" className="fixed inset-0 z-[150] bg-black/60 p-3 flex items-center justify-center" onClick={e=>{if(e.target===e.currentTarget)setZoomQuestion(null);}}><div className="bg-white rounded-xl p-4 max-w-3xl w-full max-h-[90dvh] overflow-auto"><button autoFocus className="sticky top-0 ml-auto block p-3 bg-white border rounded-lg" onClick={()=>setZoomQuestion(null)}>상세보기 닫기</button><QuestionRenderer xmlContent={zoomQuestion.content_xml} externalImages={zoomQuestion.question_images} displayMode="question" showDownloadAction={false}/></div></div>}
+                {savedExam && (
+                    <div role="dialog" aria-modal="true" aria-labelledby="saved-exam-title" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+                        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                            <h2 id="saved-exam-title" className="text-xl font-bold text-slate-800">시험지가 완성되었습니다</h2>
+                            <p className="mt-3 break-words text-slate-600">{savedExam.name}</p><p className="mt-2 text-sm text-slate-500">{savedExam.count}문항 · {formatFileSize(savedExam.bytes)}</p>{(savedExam.bytes||0)>20*1024*1024&&<p className="text-sm text-amber-800">큰 파일입니다. 모바일에서는 안정적인 연결에서 받아주세요.</p>}
+                            <p className="mt-2 text-sm text-slate-500">한글에서 열어 편집할 수 있는 HML 파일입니다. PDF가 필요하면 한글에서 PDF로 저장해주세요.</p>
+                            <a className="mt-5 block rounded-xl bg-[#285CE6] p-3 text-center font-bold text-white" href={`/api/storage/download?id=${savedExam.id}`} download onClick={() => window.setTimeout(() => setSavedExam(null), 400)}>시험지 파일 받기 (.hml)</a>
+                            <button className="mt-3 w-full rounded-xl border p-3 text-slate-700" onClick={() => setSavedExam(null)}>계속 출제하기</button>
+                        </div>
+                    </div>
+                )}
                 {showConfigModal && (
                     <ConfigModal
+                        onDraftChange={(title,qpc)=>{setExamTitle(title);setQuestionsPerColumn(qpc);}}
+                        initialTitle={examTitle}
+                        initialQuestionsPerColumn={questionsPerColumn}
                         onClose={() => setShowConfigModal(false)}
                         onConfirm={handleConfigConfirm}
                         isGenerating={isGenerating}
@@ -2327,9 +2043,18 @@ export default function QuestionBankPage() {
 
                 {showAutoModal && (
                     <AutoGenModal
-                        onClose={() => setShowAutoModal(false)}
-                        maxCount={Math.max(1, MAX_CART_SIZE - cart.length)}
-                        onGenerate={(newQuestions) => {
+                        initialFilters={regenerateItem?.filters||filterState}
+                        onClose={() => {setShowAutoModal(false);setRegenerateItem(null);}}
+                        selectedDbs={purchasedDbs.filter(db => (regenerateItem?.dbIds||selectedDbIds).includes(db.id))}
+                        excludedQuestionIds={regenerateItem?regenerateItem.ids:[...excludedQuestionIds, ...cart.map(q => q.id)]}
+                        includeOffCurriculum={(regenerateItem?.filters||filterState)?.includeOffCurriculum === true}
+                        maxCount={regenerateItem?MAX_CART_SIZE:Math.max(0, MAX_CART_SIZE - cart.length)}
+                        sourceName={regenerateItem?.name}
+                        initialCount={regenerateItem?.ids.length}
+                        ignoreSavedDraft={!!regenerateItem}
+                        onGenerate={(newQuestions,notice) => {
+                            setRecentOpen(false);
+                            if(regenerateItem){setSelectedDbIds(regenerateItem.dbIds);setFilterState(regenerateItem.filters);setFilterVersion(v=>v+1);setQuestionsPerColumn(regenerateItem.questionsPerColumn);setExamTitle(`${regenerateItem.name} 재출제`.slice(0,100));setEntryLabel(`${regenerateItem.name}과 같은 범위 · 이전 ${regenerateItem.ids.length}문항 제외`);setEntryFailure(false);setExcludedQuestionIds(regenerateItem.ids);setCart(newQuestions);setRegenerateItem(null);setViewMode('review');showToast(notice||`이전 문항과 겹치지 않는 ${newQuestions.length}문항을 담았습니다.`);return;}
                             // [퍼널] 자동생성이 실제로 쓰이는지 기록이 없었다.
                             // '프리셋 10문항 원클릭' 을 새로 만들지 말지는 이 수를 보고 정한다 —
                             // 이미 '단원·난이도만 정하면 채워주는' 기능이 여기 있는데 안 쓰이는 것인지,
@@ -2346,7 +2071,7 @@ export default function QuestionBankPage() {
                             if (dropped > 0) {
                                 showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${kept.length}개만 담았습니다. (${dropped}개 제외)`, 'info');
                             }
-                            setShowConfigModal(true);
+                            setViewMode('review');showToast(notice||`${kept.length}문항을 담았습니다. 문항을 확인한 뒤 저장하세요.`);
                         }}
                     />
                 )}

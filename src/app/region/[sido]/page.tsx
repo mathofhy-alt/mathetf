@@ -1,3 +1,4 @@
+import {questionBankHref} from '@/lib/discovery';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -46,22 +47,22 @@ export default async function SidoPage({ params }: Props) {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="max-w-5xl mx-auto px-4 py-8">
+            <main className="library-page max-w-5xl mx-auto px-4 py-8">
                 <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
+                    <Link href="/" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
                     <span className="mx-1.5">/</span>
-                    <Link href="/지역" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">지역별 기출</Link>
+                    <Link href="/지역" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">지역별 기출</Link>
                     <span className="mx-1.5">/</span>
                     <span className="text-slate-500 font-semibold">{sido}</span>
                 </nav>
 
                 <h1 className="text-2xl sm:text-3xl font-black break-keep">{sido} 고등학교 수학 기출</h1>
                 <p className="text-slate-500 mt-2 break-keep">
-                    {sido}의 <strong className="text-[#1E2D4F]">{node.schoolCount}개 고등학교</strong>, 수학 내신 기출{' '}
-                    <strong className="text-[#1E2D4F]">{node.examCount}회차</strong>가 등록되어 있습니다.
+                    {sido}의 <strong className="text-[#294437]">{node.schoolCount}개 고등학교</strong>, 수학 내신 기출{' '}
+                    <strong className="text-[#294437]">{node.examCount}회차</strong>가 등록되어 있습니다.
                     {node.subjects.length > 0 && (
                         <> 과목별로는 {node.subjects.slice(0, 3).map((s) => `${s.subject} ${s.count}회차`).join(', ')} 순으로 많습니다.</>
                     )}
@@ -73,9 +74,9 @@ export default async function SidoPage({ params }: Props) {
                         <section key={d.gu} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                             <div className="flex items-center justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2 min-w-0">
-                                    <MapPin size={16} className="text-[#497AB7] shrink-0" />
+                                    <MapPin size={16} className="text-[#426D36] shrink-0" />
                                     {d.hasPage ? (
-                                        <Link href={`/지역/${sido}/${d.gu}`} className="font-extrabold hover:text-[#497AB7] transition-colors truncate">{d.gu}</Link>
+                                        <Link href={`/지역/${sido}/${d.gu}`} className="font-extrabold hover:text-[#426D36] transition-colors truncate">{d.gu}</Link>
                                     ) : (
                                         <span className="font-extrabold truncate">{d.gu}</span>
                                     )}
@@ -84,7 +85,7 @@ export default async function SidoPage({ params }: Props) {
                                     </span>
                                 </div>
                                 {d.hasPage && (
-                                    <Link href={`/지역/${sido}/${d.gu}`} className="text-[#497AB7] hover:text-[#3A6CAE] shrink-0 p-2.5 -m-2.5 sm:p-0 sm:m-0" aria-label={`${d.gu} 전체보기`}>
+                                    <Link href={`/지역/${sido}/${d.gu}`} className="text-[#426D36] hover:text-[#31572E] shrink-0 p-2.5 -m-2.5 sm:p-0 sm:m-0" aria-label={`${d.gu} 전체보기`}>
                                         <ChevronRight size={16} />
                                     </Link>
                                 )}
@@ -92,7 +93,7 @@ export default async function SidoPage({ params }: Props) {
                             <ul className="space-y-1">
                                 {d.schools.slice(0, 6).map((sc) => (
                                     <li key={sc.name} className="flex items-center justify-between gap-2 text-sm">
-                                        <Link href={`/school/${encodeURIComponent(sc.name)}`} className="text-slate-600 hover:text-[#497AB7] font-semibold truncate inline-block py-2 -my-2 sm:p-0 sm:m-0">
+                                        <Link href={`/school/${encodeURIComponent(sc.name)}`} className="text-slate-600 hover:text-[#426D36] font-semibold truncate inline-block py-2 -my-2 sm:p-0 sm:m-0">
                                             {sc.name}
                                         </Link>
                                         <span className="text-xs text-slate-400 shrink-0 tabular-nums">{sc.count}회차</span>
@@ -100,7 +101,7 @@ export default async function SidoPage({ params }: Props) {
                                 ))}
                             </ul>
                             {d.schools.length > 6 && d.hasPage && (
-                                <Link href={`/지역/${sido}/${d.gu}`} className="inline-block mt-2 text-xs font-bold text-[#497AB7] hover:underline">
+                                <Link href={`/지역/${sido}/${d.gu}`} className="inline-block mt-2 text-xs font-bold text-[#426D36] hover:underline">
                                     + {d.schools.length - 6}개교 더 보기
                                 </Link>
                             )}
@@ -109,8 +110,8 @@ export default async function SidoPage({ params }: Props) {
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-2">
-                    <Link href="/지역" className="text-sm font-bold text-[#497AB7] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#497AB7] transition-colors">← 다른 지역</Link>
-                    <Link href="/question-bank" className="text-sm font-bold text-white bg-[#497AB7] px-4 py-2 rounded-xl hover:bg-[#3A6CAE] transition-colors">기출로 시험지 만들기 →</Link>
+                    <Link href="/지역" className="text-sm font-bold text-[#426D36] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#426D36] transition-colors">← 다른 지역</Link>
+                    <Link href={questionBankHref({region:sido,origin:'region'})} className="text-sm font-bold text-white bg-[#426D36] px-4 py-2 rounded-xl hover:bg-[#31572E] transition-colors">기출로 시험지 만들기 →</Link>
                 </div>
             </main>
         </div>

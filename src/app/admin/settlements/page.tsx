@@ -196,7 +196,7 @@ export default function AdminSettlementsPage() {
                                                 <button
                                                     onClick={() => handleApprove(req.id)}
                                                     disabled={isProccessing}
-                                                    className="px-3 py-1.5 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 disabled:opacity-50"
+                                                    className="px-3 py-1.5 bg-brand-600 text-white rounded font-bold hover:bg-brand-700 disabled:opacity-50"
                                                 >
                                                     승인 (입금완료)
                                                 </button>

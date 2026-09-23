@@ -34,17 +34,17 @@ export default function NotifyOptIn({ school, visible, onClose }: { school: stri
 
     return (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[150] w-[calc(100%-2rem)] max-w-md">
-            <div className="bg-white rounded-2xl border border-[#B7D1EA] shadow-xl p-4">
+            <div className="bg-white rounded-2xl border border-[#C5D8B5] shadow-xl p-4">
                 {state === 'done' ? (
-                    <p className="text-sm font-bold text-[#3AADA9] text-center py-1">✅ 알림 설정 완료! 새 기출이 올라오면 알려드릴게요.</p>
+                    <p className="text-sm font-bold text-[#638747] text-center py-1">✅ 알림 설정 완료! 새 기출이 올라오면 알려드릴게요.</p>
                 ) : (
                     <>
                         <div className="flex items-start gap-2.5">
-                            <span className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-[#EEF4FB] flex items-center justify-center">
-                                <Bell size={15} className="text-[#497AB7]" />
+                            <span className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-[#EAF1E1] flex items-center justify-center">
+                                <Bell size={15} className="text-[#426D36]" />
                             </span>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-[#1E2D4F] break-keep">
+                                <p className="text-sm font-bold text-[#294437] break-keep">
                                     {school ? `${school} 새 기출이 올라오면 알려드릴까요?` : '새 기출이 올라오면 알려드릴까요?'}
                                 </p>
                                 {/* 이 배너의 동의도 marketing_consent_version 을 남긴다(=이메일·문자 모두).
@@ -59,7 +59,7 @@ export default function NotifyOptIn({ school, visible, onClose }: { school: stri
                             <button
                                 onClick={agree}
                                 disabled={state === 'saving'}
-                                className="flex-1 py-2 bg-[#497AB7] hover:bg-[#3A6599] text-white text-sm font-extrabold rounded-xl transition-colors disabled:opacity-60"
+                                className="flex-1 py-2 bg-[#426D36] hover:bg-[#31572E] text-white text-sm font-extrabold rounded-xl transition-colors disabled:opacity-60"
                             >
                                 {state === 'saving' ? '설정 중…' : '알림 받기'}
                             </button>

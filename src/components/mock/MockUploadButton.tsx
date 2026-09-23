@@ -90,11 +90,11 @@ export function MockUploadModal({ onClose, initial }: { onClose: () => void; ini
     };
 
     const FileRow = ({ k, label }: { k: string; label: string }) => (
-        <label className="flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm cursor-pointer hover:border-[#497AB7]/50">
+        <label className="flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm cursor-pointer hover:border-[#426D36]/50">
             <span className="font-semibold text-slate-600">{label}</span>
             <span className="text-xs truncate max-w-[160px] text-right">
                 {files[k]?.name
-                    ? <span className="text-[#497AB7] font-bold">{files[k]!.name}</span>
+                    ? <span className="text-[#426D36] font-bold">{files[k]!.name}</span>
                     : existing[k]
                         ? <span className="text-emerald-600">현재 있음 · 교체하려면 선택</span>
                         : <span className="text-slate-400">파일 선택</span>}
@@ -107,7 +107,7 @@ export function MockUploadModal({ onClose, initial }: { onClose: () => void; ini
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
-                    <h3 className="font-extrabold text-[#1E2D4F]">{isEdit ? '모의고사 자료 수정' : '모의고사 자료 업로드'}</h3>
+                    <h3 className="font-extrabold text-[#294437]">{isEdit ? '모의고사 자료 수정' : '모의고사 자료 업로드'}</h3>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
                 </div>
 
@@ -150,9 +150,9 @@ export function MockUploadModal({ onClose, initial }: { onClose: () => void; ini
                         </div>
                     </div>
 
-                    {msg && <p className="text-sm text-center font-semibold text-[#497AB7]">{msg}</p>}
+                    {msg && <p className="text-sm text-center font-semibold text-[#426D36]">{msg}</p>}
 
-                    <button onClick={submit} disabled={busy} className="w-full bg-[#3A6CAE] hover:bg-[#2B3A67] disabled:opacity-50 text-white font-extrabold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                    <button onClick={submit} disabled={busy} className="w-full bg-[#31572E] hover:bg-[#2B3A67] disabled:opacity-50 text-white font-extrabold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
                         {busy ? <><Loader2 size={16} className="animate-spin" /> 처리 중…</> : <><Upload size={16} /> {isEdit ? '수정 저장' : '업로드'}</>}
                     </button>
                 </div>

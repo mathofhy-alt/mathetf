@@ -89,14 +89,14 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
     }, [baseQuestion, basis]);
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div role="dialog" aria-modal="true" aria-label="유사 문항 검색" className="product-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white w-[95vw] h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="p-4 border-b flex justify-between items-center bg-indigo-50/50 shrink-0">
+                <div className="p-4 border-b flex justify-between items-center bg-brand-50/50 shrink-0">
                     <div>
-                        <h2 className="font-bold text-lg text-indigo-900 flex items-center gap-2">
+                        <h2 className="font-bold text-lg text-brand-900 flex items-center gap-2">
                             <span>🔍 유사 문항 검색</span>
-                            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+                            <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full">
                                 {baseQuestion.school} {baseQuestion.exam_year}
                             </span>
                         </h2>
@@ -105,7 +105,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                 ? '문제(발문)가 비슷한 문항을 찾습니다 — 묻는 내용이 닮은 문제.'
                                 : '풀이가 비슷한 문항을 찾습니다 — 해결 방법이 닮은 문제.'}
                         </p>
-                        <div className="mt-2 inline-flex bg-white border border-indigo-200 rounded-lg p-0.5">
+                        <div className="mt-2 inline-flex bg-white border border-brand-200 rounded-lg p-0.5">
                             {([
                                 ['statement', '문제 유사'],
                                 ['solution', '풀이 유사'],
@@ -115,8 +115,8 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                     onClick={() => setBasis(key)}
                                     disabled={loading}
                                     className={`px-3.5 py-1.5 text-xs font-bold rounded-md transition-colors disabled:opacity-60 ${basis === key
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'text-slate-500 hover:text-indigo-700'}`}
+                                        ? 'bg-brand-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-brand-700'}`}
                                 >
                                     {label}
                                 </button>
@@ -141,17 +141,17 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                 <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                     {/* Left Panel - Fixed Original Question */}
                     <div className="w-full md:w-[450px] max-h-[40vh] md:max-h-none border-b md:border-b-0 md:border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10 shrink-0">
-                        <div className="p-4 border-b bg-indigo-50/30">
-                            <h3 className="font-bold text-indigo-900 flex items-center gap-2">
+                        <div className="p-4 border-b bg-brand-50/30">
+                            <h3 className="font-bold text-brand-900 flex items-center gap-2">
                                 <span className="text-xl">🎯</span>
                                 원본 문제
                             </h3>
                         </div>
                         <div data-modal-scroll className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                            <div className="bg-white rounded-xl shadow-sm border border-indigo-100 p-1">
+                            <div className="bg-white rounded-xl shadow-sm border border-brand-100 p-1">
                                 <QuestionRenderer
                                     xmlContent={baseQuestion.content_xml}
-                                    externalImages={baseImages}
+                                    externalImages={baseImages || undefined}
                                     showDownloadAction={false}
                                     className="border-none shadow-none p-0"
                                 />
@@ -163,7 +163,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                     <div data-modal-scroll className="flex-1 overflow-y-auto bg-slate-50 p-6">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
-                                <Loader2 size={40} className="animate-spin text-indigo-500" />
+                                <Loader2 size={40} className="animate-spin text-brand-500" />
                                 <p>유사한 문제를 분석하고 있습니다...</p>
                             </div>
                         ) : error ? (
@@ -212,8 +212,8 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                                         onClick={() => onToggleCart(q)}
                                                         className={`px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors whitespace-nowrap
                                                             ${inCart
-                                                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                                                : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                                                                ? 'bg-brand-600 text-white hover:bg-brand-700'
+                                                                : 'bg-white border border-brand-200 text-brand-600 hover:bg-brand-50'
                                                             }`}
                                                     >
                                                         {inCart ? (
@@ -248,7 +248,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                                 <div className="px-4 py-2 bg-slate-50 border-t flex justify-end items-center">
                                                     <button
                                                         onClick={() => onViewSolution(q)}
-                                                        className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
+                                                        className="text-[10px] font-bold text-slate-500 hover:text-brand-600 bg-white border border-slate-200 hover:border-brand-300 hover:bg-brand-50 px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
                                                     >
                                                         해설보기
                                                     </button>

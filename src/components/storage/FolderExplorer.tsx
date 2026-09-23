@@ -249,7 +249,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
             <div className="hidden md:flex w-64 bg-slate-50 border-r border-slate-200 flex-col">
                 <div className="p-3 border-b flex items-center justify-between bg-slate-100">
                     <span className="font-bold text-slate-700 text-sm">탐색기</span>
-                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="text-slate-400 hover:text-blue-600">
+                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="text-slate-400 hover:text-brand-600">
                         <RefreshCw size={14} />
                     </button>
                 </div>
@@ -274,11 +274,11 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
                         onClick={() => setMobileTreeOpen(true)}
                         className="flex items-center gap-2 flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-left hover:bg-slate-50 active:bg-slate-100"
                     >
-                        <FolderIcon size={15} className="text-blue-500 flex-shrink-0" />
+                        <FolderIcon size={15} className="text-brand-500 flex-shrink-0" />
                         <span className="font-medium text-slate-700 truncate">{currentFolderName}</span>
                         <ChevronRight size={14} className="text-slate-400 flex-shrink-0 ml-auto" />
                     </button>
-                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="p-2 text-slate-400 hover:text-blue-600 flex-shrink-0">
+                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="p-2 text-slate-400 hover:text-brand-600 flex-shrink-0">
                         <RefreshCw size={15} />
                     </button>
                 </div>
@@ -290,13 +290,13 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
                             {breadcrumbs.map((crumb, idx) => (
                                 <React.Fragment key={crumb.id || 'root'}>
                                     {idx > 0 && <span className="text-slate-300 flex-shrink-0">/</span>}
-                                    <button className={`hover:text-blue-600 truncate max-w-[120px] ${crumb.id === currentFolderId ? 'font-bold text-slate-900' : ''}`} onClick={() => setCurrentFolderId(crumb.id)}>{crumb.name}</button>
+                                    <button className={`hover:text-brand-600 truncate max-w-[120px] ${crumb.id === currentFolderId ? 'font-bold text-slate-900' : ''}`} onClick={() => setCurrentFolderId(crumb.id)}>{crumb.name}</button>
                                 </React.Fragment>
                             ))}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <button onClick={handleSync} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium transition-colors"><DownloadCloud size={16} /> 가져오기</button>
-                            <button onClick={handleCreateFolder} className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors"><FolderPlus size={16} /> 새 폴더</button>
+                            <button onClick={handleCreateFolder} className="flex items-center gap-1 px-3 py-1.5 bg-brand-50 text-brand-600 rounded-lg hover:bg-brand-100 text-sm font-medium transition-colors"><FolderPlus size={16} /> 새 폴더</button>
                         </div>
                     </div>
                 </div>
@@ -310,7 +310,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             placeholder="학교명, 연도 등으로 검색..."
-                            className="w-full pl-8 pr-8 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 bg-slate-50"
+                            className="w-full pl-8 pr-8 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-brand-400 bg-slate-50"
                         />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -359,12 +359,12 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
                         <div className="flex items-center justify-between px-4 py-3 border-b">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-1 bg-slate-200 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2" />
-                                <FolderIcon size={16} className="text-blue-500" />
+                                <FolderIcon size={16} className="text-brand-500" />
                                 <span className="font-bold text-slate-800 text-sm">폴더 선택</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button onClick={handleSync} className="text-xs text-slate-500 border border-slate-200 px-2 py-1 rounded-lg flex items-center gap-1"><DownloadCloud size={12} /> 가져오기</button>
-                                <button onClick={handleCreateFolder} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg flex items-center gap-1"><FolderPlus size={12} /> 새 폴더</button>
+                                <button onClick={handleCreateFolder} className="text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded-lg flex items-center gap-1"><FolderPlus size={12} /> 새 폴더</button>
                                 <button onClick={() => setMobileTreeOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100">
                                     <X size={16} className="text-slate-500" />
                                 </button>

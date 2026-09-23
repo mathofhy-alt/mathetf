@@ -1,3 +1,4 @@
+import {questionBankHref} from '@/lib/discovery';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -47,24 +48,24 @@ export default async function DistrictPage({ params }: Props) {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="max-w-4xl mx-auto px-4 py-8">
+            <main className="library-page max-w-4xl mx-auto px-4 py-8">
                 <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
+                    <Link href="/" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
                     <span className="mx-1.5">/</span>
-                    <Link href="/지역" className="hover:text-[#497AB7] inline-block py-2 -my-2 sm:p-0 sm:m-0">지역별 기출</Link>
+                    <Link href="/지역" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">지역별 기출</Link>
                     <span className="mx-1.5">/</span>
-                    <Link href={`/지역/${sido}`} className="hover:text-[#497AB7]">{sido}</Link>
+                    <Link href={`/지역/${sido}`} className="hover:text-[#426D36]">{sido}</Link>
                     <span className="mx-1.5">/</span>
                     <span className="text-slate-500 font-semibold">{gu}</span>
                 </nav>
 
                 <h1 className="text-2xl sm:text-3xl font-black break-keep">{gu} 고등학교 수학 기출</h1>
                 <p className="text-slate-500 mt-2 break-keep">
-                    {sido} {gu}의 <strong className="text-[#1E2D4F]">{node.schools.length}개 고등학교</strong>, 수학 내신 기출{' '}
-                    <strong className="text-[#1E2D4F]">{node.examCount}회차</strong>가 등록되어 있습니다.
+                    {sido} {gu}의 <strong className="text-[#294437]">{node.schools.length}개 고등학교</strong>, 수학 내신 기출{' '}
+                    <strong className="text-[#294437]">{node.examCount}회차</strong>가 등록되어 있습니다.
                     {node.subjects.length > 0 && (
                         <> 과목별로는 {node.subjects.slice(0, 3).map((s) => `${s.subject} ${s.count}회차`).join(', ')} 순으로 많고,</>
                     )}
@@ -76,7 +77,7 @@ export default async function DistrictPage({ params }: Props) {
                         <h2 className="text-sm font-extrabold text-slate-700 mb-3">{gu} 기출 과목 분포</h2>
                         <div className="flex flex-wrap gap-2">
                             {node.subjects.map((s) => (
-                                <span key={s.subject} className="text-xs font-bold text-[#2F5A92] bg-[#EEF4FB] border border-[#B7D1EA]/60 px-3 py-1.5 rounded-full">
+                                <span key={s.subject} className="text-xs font-bold text-[#2F5A92] bg-[#EAF1E1] border border-[#C5D8B5]/60 px-3 py-1.5 rounded-full">
                                     {s.subject} <span className="font-normal tabular-nums">{s.count}회차</span>
                                 </span>
                             ))}
@@ -90,9 +91,9 @@ export default async function DistrictPage({ params }: Props) {
                         <Link
                             key={sc.name}
                             href={`/school/${encodeURIComponent(sc.name)}`}
-                            className="flex items-center justify-between gap-3 bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3.5 hover:border-[#497AB7] transition-colors"
+                            className="flex items-center justify-between gap-3 bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3.5 hover:border-[#426D36] transition-colors"
                         >
-                            <span className="font-bold text-[#1E2D4F] truncate">{sc.name}</span>
+                            <span className="font-bold text-[#294437] truncate">{sc.name}</span>
                             <span className="text-xs font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
                                 {sc.count}회차
                             </span>
@@ -101,8 +102,8 @@ export default async function DistrictPage({ params }: Props) {
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-2">
-                    <Link href={`/지역/${sido}`} className="text-sm font-bold text-[#497AB7] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#497AB7] transition-colors">← {sido} 전체</Link>
-                    <Link href="/question-bank" className="text-sm font-bold text-white bg-[#497AB7] px-4 py-2 rounded-xl hover:bg-[#3A6CAE] transition-colors">기출로 시험지 만들기 →</Link>
+                    <Link href={`/지역/${sido}`} className="text-sm font-bold text-[#426D36] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#426D36] transition-colors">← {sido} 전체</Link>
+                    <Link href={questionBankHref({region:sido,district:gu,origin:'region'})} className="text-sm font-bold text-white bg-[#426D36] px-4 py-2 rounded-xl hover:bg-[#31572E] transition-colors">기출로 시험지 만들기 →</Link>
                 </div>
             </main>
         </div>

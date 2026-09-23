@@ -1,67 +1,33 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
+import { availableCatalog } from '@/lib/questions/catalog';
+import { resolveScope } from '@/lib/questions/scope';
+import {uuidPattern} from '@/lib/payments/order';
 
 export async function POST(req: NextRequest) {
+    const { data: { user } } = await createClient().auth.getUser();
+    if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    const body = await req.json().catch(() => null);
+    if (!body || !Number.isInteger(body.count) || body.count < 1 || body.count > 50 ||
+        !Number.isInteger(body.minDifficulty) || !Number.isInteger(body.maxDifficulty) ||
+        body.minDifficulty < 1 || body.maxDifficulty > 10 || body.minDifficulty > body.maxDifficulty) {
+        return NextResponse.json({ error: '문항 수와 난이도 범위를 확인해주세요.' }, { status: 400 });
+    }
     try {
-        const supabase = createClient();
-
-        // ✅ 인증 확인 (기존: 인증 없음 → 누구나 호출 가능)
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-        }
-
-        // ✅ 파라미터명 클라이언트와 일치 (기존: difficulty 단일값 → minDifficulty/maxDifficulty 범위)
-        const { subject, unit, minDifficulty, maxDifficulty, count } = await req.json();
-
-        // [성능] content_xml/embedding 대신 표시에 필요한 메타데이터 + 캡쳐 이미지만 조회.
-        // (카드는 이미지로 표시, 저장은 ID로 서버 재조회 → content_xml 불필요. 풀 150행이 훨씬 가벼워짐)
-        let query = supabase
-            .from('questions')
-            .select('id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)')
-            .eq('work_status', 'sorted'); // ✅ 검수 완료 문제만 (기존: 필터 없음)
-
-        if (subject) query = query.eq('subject', subject);
-
-        if (unit && Array.isArray(unit) && unit.length > 0) {
-            query = query.in('unit', unit);
-        } else if (unit && typeof unit === 'string') {
-            query = query.eq('unit', unit);
-        }
-
-        // ✅ 난이도 범위 필터 (기존: 단일 difficulty ±1 퍼지 매칭)
-        if (minDifficulty !== undefined && maxDifficulty !== undefined) {
-            const min = Number(minDifficulty);
-            const max = Number(maxDifficulty);
-            if (!isNaN(min) && !isNaN(max)) {
-                // difficulty 컬럼이 문자열이므로 in() 으로 처리
-                const diffs = Array.from(
-                    { length: max - min + 1 },
-                    (_, i) => String(min + i)
-                );
-                query = query.in('difficulty', diffs);
-            }
-        }
-
-        // 후보 풀 가져오기 (count의 3배 여유분)
-        const poolSize = Math.min((count || 10) * 3, 150);
-        const { data, error } = await query.limit(poolSize);
-
-        if (error) throw error;
-        if (!data || data.length === 0) return NextResponse.json({ questions: [] });
-
-        // ✅ Fisher-Yates 셔플 (기존: sort(() => Math.random()) - 수학적으로 편향됨)
-        const arr = [...data];
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        const selected = arr.slice(0, count || 10);
-
-        return NextResponse.json({ questions: selected });
-
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        const scope = resolveScope(await availableCatalog(), body.selectedDbs, body.mockSlug);
+        if (!scope.length) return NextResponse.json({ error: '먼저 출제할 자료를 선택해주세요.' }, { status: 400 });
+        const sb = createAdminClient();
+        const excluded=Array.isArray(body.excludedQuestionIds)?body.excludedQuestionIds:[];
+        if(excluded.length>5000 || excluded.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id))) throw new Error('제외할 문항 정보를 확인해주세요.');
+        if(body.unit!==undefined && (!Array.isArray(body.unit)||body.unit.length>300||body.unit.some((u:unknown)=>typeof u!=='string'))) throw new Error('출제 단원을 확인해주세요.');
+        const {data,error}=await sb.rpc('question_bank_random',{
+            p_scope:scope,p_excluded:excluded,p_subject:typeof body.subject==='string'?body.subject:'',p_units:body.unit||[],
+            p_min:body.minDifficulty,p_max:body.maxDifficulty,p_count:body.count,p_include_off:body.includeOffCurriculum===true,
+        });
+        if(error) throw new Error('자동 출제를 완료하지 못했습니다. 잠시 후 다시 시도해주세요.');
+        return NextResponse.json({...data,requestedCount:body.count});
+    } catch (e) {
+        return NextResponse.json({ error: e instanceof Error ? e.message : '자동 출제를 완료하지 못했습니다.' }, { status: 400 });
     }
 }

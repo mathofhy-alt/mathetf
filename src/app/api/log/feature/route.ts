@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // 그전까지 기록되던 건 전부 '성공한 행동'뿐이라, 몇 명이 만들려다 그만뒀는지 알 수 없었다.
 // (98건이 저장된 건 알지만 몇 명이 시도했는지를 몰라, 유입을 늘려야 할지 화면을 고쳐야 할지
 //  정반대의 처방을 구분하지 못했다.) 진입→DB선택→검색→담기→저장 5단계를 남긴다.
-const QB_FUNNEL = ['qb_enter', 'qb_db_select', 'qb_search', 'qb_cart_add', 'qb_save', 'qb_save_fail'];
+const QB_FUNNEL = ['qb_enter', 'qb_db_select', 'qb_search', 'qb_cart_add', 'qb_save_fail'];
 // [2026-09-08] promo_view 누락 사고. 노출 로그를 넣었는데 이 목록에 이름을 안 올려서
 //   서버가 전부 버렸다(promo_click 6건인데 promo_view 0건 — 모달이 떠야 누르는데 모순).
 //   분모를 남기려고 만든 로그였으므로 이게 빠지면 수정 자체가 무의미했다.

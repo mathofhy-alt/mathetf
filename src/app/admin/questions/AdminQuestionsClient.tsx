@@ -998,7 +998,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                 <button
                     onClick={() => { setCurrentTab('unsorted'); setPage(1); }}
                     className={`px-4 py-2 text-sm font-bold rounded-md transition-all ${currentTab === 'unsorted'
-                        ? 'bg-white text-blue-600 shadow-sm'
+                        ? 'bg-white text-brand-600 shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
@@ -1041,7 +1041,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                         </p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold">
+                        <div className="px-3 py-1 bg-brand-50 text-brand-800 rounded-full text-xs font-bold">
                             {selectedIds.size}개 선택됨
                         </div>
                     </div>
@@ -1053,7 +1053,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                     <div className="flex flex-wrap gap-2 items-center text-sm">
                         <span className="font-bold text-gray-500 w-16">학교설정</span>
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                             value={selectedRegion}
                             onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); setSelectedSchool(''); }}
                         >
@@ -1062,7 +1062,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                         </select>
 
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                             value={selectedDistrict}
                             onChange={e => { setSelectedDistrict(e.target.value); setSelectedSchool(''); }}
                             disabled={!selectedRegion}
@@ -1072,7 +1072,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                         </select>
 
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 min-w-[160px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="border-slate-200 rounded-lg px-3 py-2 min-w-[160px] focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                             value={selectedSchool}
                             onChange={e => setSelectedSchool(e.target.value)}
                         >
@@ -1090,7 +1090,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                     <div className="flex flex-wrap gap-2 items-center text-sm">
                         <span className="font-bold text-gray-500 w-16">시험속성</span>
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 w-24 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-24 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                             value={year}
                             onChange={(e) => setYear(e.target.value)}
                         >
@@ -1101,7 +1101,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                         </select>
 
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-32 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                             value={examScope}
                             onChange={(e) => setExamScope(e.target.value)}
                         >
@@ -1128,7 +1128,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                         </label>
 
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 w-24 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-24 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                             value={grade}
                             onChange={(e) => setGrade(e.target.value)}
                         >
@@ -1139,7 +1139,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                         </select>
 
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 w-28 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-28 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                             value={subject}
                             onChange={(e) => { setSubject(e.target.value); setSelectedUnit(''); }}
                         >
@@ -1153,7 +1153,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
 
                         {/* Row 2.5: Unit Filter (Conditional) */}
                         <select
-                            className="border-slate-200 rounded-lg px-3 py-2 w-48 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 border-dashed"
+                            className="border-slate-200 rounded-lg px-3 py-2 w-48 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 border-dashed"
                             value={selectedUnit}
                             onChange={(e) => setSelectedUnit(e.target.value)}
                         >
@@ -1167,7 +1167,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <input
                                 type="text"
                                 placeholder="학교, 단원, 태그(#), 내용 검색..."
-                                className="border-slate-200 rounded-lg px-4 py-2 flex-grow min-w-[300px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                className="border-slate-200 rounded-lg px-4 py-2 flex-grow min-w-[300px] focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -1179,7 +1179,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     {filteredSchools.map((school, idx) => (
                                         <div
                                             key={school}
-                                            className={`px-4 py-2 cursor-pointer transition-colors ${idx === suggestionIndex ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-50'
+                                            className={`px-4 py-2 cursor-pointer transition-colors ${idx === suggestionIndex ? 'bg-brand-50 text-brand-700 font-medium' : 'hover:bg-slate-50'
                                                 }`}
                                             onClick={() => {
                                                 setSearch(school);
@@ -1197,7 +1197,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
 
                             <button
                                 type="submit"
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-sm"
+                                className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-sm"
                             >
                                 검색
                             </button>
@@ -1209,7 +1209,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-sm whitespace-nowrap
                                     ${!selectedSchool || !year || !grade || !examScope
                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-md'}
+                                        : 'bg-gradient-to-r from-brand-500 to-purple-600 text-white hover:from-brand-600 hover:to-purple-700 shadow-md'}
                                 `}
                             >
                                 {isActivating ? (
@@ -1244,7 +1244,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     <tr>
                                         <td colSpan={7} className="px-6 py-20 text-center">
                                             <div className="flex flex-col items-center gap-3">
-                                                <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                                                <div className="w-10 h-10 border-4 border-brand-100 border-t-blue-600 rounded-full animate-spin"></div>
                                                 <p className="text-gray-400 font-medium">개인DB 목록 로딩 중...</p>
                                             </div>
                                         </td>
@@ -1265,7 +1265,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 {db.school}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold text-xs border border-blue-100">
+                                                <span className="bg-brand-50 text-brand-700 px-2 py-1 rounded-md font-bold text-xs border border-brand-100">
                                                     {db.exam_year}년
                                                 </span>
                                             </td>
@@ -1277,11 +1277,11 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md font-bold text-xs border border-indigo-100">
+                                                <span className="bg-brand-50 text-brand-700 px-2 py-1 rounded-md font-bold text-xs border border-brand-100">
                                                     {db.subject}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 font-black text-blue-600">
+                                            <td className="px-6 py-4 font-black text-brand-600">
                                                 {db.price.toLocaleString()}P
                                             </td>
                                             <td className="px-6 py-4 text-center">
@@ -1309,7 +1309,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                 type="checkbox"
                                 checked={selectedIds.size > 0 && selectedIds.size === questions.length}
                                 onChange={toggleAll}
-                                className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                className="w-5 h-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
                             />
                             <span className="text-sm font-bold text-gray-700">전체 선택</span>
                         </div>
@@ -1415,7 +1415,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             {/* Math Fix Tool */}
                             <button
                                 onClick={handleCollectMathScripts}
-                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs font-bold border border-blue-200 transition-colors"
+                                className="bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded text-xs font-bold border border-brand-200 transition-colors"
                                 title="현재 페이지의 모든 수식 원본 스크립트를 복사합니다."
                             >
                                 📋 수식 데이터 수집
@@ -1451,7 +1451,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     // Horizontal Layout (Unsorted)
                                     <div
                                         key={q.id}
-                                        className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-row relative group ${selectedIds.has(q.id) ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/10' : 'border-gray-200'
+                                        className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-row relative group ${selectedIds.has(q.id) ? 'ring-2 ring-brand-500 border-brand-500 bg-brand-50/10' : 'border-gray-200'
                                             }`}
                                         onClick={() => toggleSelect(q.id)}
                                     >
@@ -1508,7 +1508,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                             <div className="p-4 border-b bg-white flex justify-between items-start">
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-black text-blue-600 text-lg">#{q.question_number}</span>
+                                                        <span className="font-black text-brand-600 text-lg">#{q.question_number}</span>
                                                         <span className="text-xs bg-gray-100 border px-2 py-0.5 rounded text-gray-600 font-bold">
                                                             {q.subject}
                                                         </span>
@@ -1521,7 +1521,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                     type="checkbox"
                                                     checked={selectedIds.has(q.id)}
                                                     onChange={() => toggleSelect(q.id)}
-                                                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer mt-1"
+                                                    className="w-5 h-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer mt-1"
                                                 />
                                             </div>
 
@@ -1530,7 +1530,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 <div>
                                                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">과목 (Subject)</label>
                                                     <select
-                                                        className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                                                        className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-brand-500 focus:border-brand-500"
                                                         value={q.subject || ''}
                                                         onChange={async (e) => {
                                                             const newSubject = e.target.value;
@@ -1556,7 +1556,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">단원 (Unit)</label>
                                                     {(UNIT_OPTIONS[q.subject] && UNIT_OPTIONS[q.subject].length > 0) ? (
                                                         <select
-                                                            className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                                                            className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-brand-500 focus:border-brand-500"
                                                             value={q.unit || ''}
                                                             onChange={async (e) => {
                                                                 const newVal = e.target.value;
@@ -1575,7 +1575,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                         </select>
                                                     ) : (
                                                         <input
-                                                            className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                                                            className="w-full border rounded px-2 py-1.5 text-sm bg-white focus:ring-brand-500 focus:border-brand-500"
                                                             value={q.unit || ''}
                                                             placeholder="단원명 입력..."
                                                             onChange={(e) => {
@@ -1596,10 +1596,10 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 </div>
 
                                                 <div>
-                                                    <div className="w-full border rounded px-1.5 py-1 text-sm bg-white focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500 min-h-[38px] flex flex-wrap gap-1 items-center">
+                                                    <div className="w-full border rounded px-1.5 py-1 text-sm bg-white focus-within:ring-1 focus-within:ring-brand-500 focus-within:border-brand-500 min-h-[38px] flex flex-wrap gap-1 items-center">
                                                         {/* Display current tags as pills */}
                                                         {((Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
-                                                            <span key={`${tag}-${idx}`} className="bg-blue-50 text-blue-600 text-[11px] px-1.5 py-0.5 rounded-md border border-blue-100 flex items-center gap-1 group cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                                                            <span key={`${tag}-${idx}`} className="bg-brand-50 text-brand-600 text-[11px] px-1.5 py-0.5 rounded-md border border-brand-100 flex items-center gap-1 group cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                                                                 onClick={() => {
                                                                     const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                                     const newTags = currentTags.filter((_: string, i: number) => i !== idx);
@@ -1612,7 +1612,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                 }}
                                                             >
                                                                 {tag}
-                                                                <X size={10} className="text-blue-400 group-hover:text-red-400" />
+                                                                <X size={10} className="text-brand-400 group-hover:text-red-400" />
                                                             </span>
                                                         ))}
                                                         <input
@@ -1666,7 +1666,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                                 body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newVal } })
                                                                             }).then(res => { if (res.ok) fetchConceptSuggestions(); });
                                                                         }}
-                                                                        className="text-[9px] px-1.5 py-0.5 rounded border bg-white text-blue-600 border-blue-100 hover:bg-blue-50 transition-colors"
+                                                                        className="text-[9px] px-1.5 py-0.5 rounded border bg-white text-brand-600 border-brand-100 hover:bg-brand-50 transition-colors"
                                                                     >
                                                                         + {tag}
                                                                     </button>
@@ -1757,7 +1757,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
 
                                                     <button
                                                         onClick={() => handleManualCapture(q, 'question')}
-                                                        className="bg-blue-50 border border-blue-200 text-blue-700 py-2 rounded text-xs font-bold hover:bg-blue-100"
+                                                        className="bg-brand-50 border border-brand-200 text-brand-700 py-2 rounded text-xs font-bold hover:bg-brand-100"
                                                     >
                                                         📸 문제 캡쳐
                                                     </button>
@@ -1771,13 +1771,13 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                     <button
                                                         onClick={() => handleGenerateSingleEmbedding(q)}
                                                         className={`col-span-2 border py-2 rounded text-xs font-bold transition-colors mt-2 flex items-center justify-center gap-2 ${q.embedding
-                                                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                                                            ? 'bg-brand-50 border-brand-200 text-brand-700 hover:bg-brand-100'
                                                             : 'bg-gray-50 border-gray-300 text-gray-500 hover:bg-gray-100'
                                                             }`}
                                                     >
                                                         <span>🤖 AI 데이터 생성</span>
                                                         {q.embedding ? (
-                                                            <span className="text-[10px] bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded-full">완료됨</span>
+                                                            <span className="text-[10px] bg-brand-200 text-brand-800 px-1.5 py-0.5 rounded-full">완료됨</span>
                                                         ) : (
                                                             <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">미생성</span>
                                                         )}
@@ -1800,7 +1800,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     // Vertical Layout (Sorted - Existing)
                                     <div
                                         key={q.id}
-                                        className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col relative group ${selectedIds.has(q.id) ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/10' : 'border-gray-200'
+                                        className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col relative group ${selectedIds.has(q.id) ? 'ring-2 ring-brand-500 border-brand-500 bg-brand-50/10' : 'border-gray-200'
                                             }`}
                                         onClick={() => toggleSelect(q.id)}
                                     >
@@ -1814,7 +1814,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                             완료
                                                         </span>
                                                     )}
-                                                    <span className="font-black text-blue-600 text-xl">#{q.question_number}</span>
+                                                    <span className="font-black text-brand-600 text-xl">#{q.question_number}</span>
                                                     <span className="text-sm bg-white border px-2 py-0.5 rounded text-gray-500 font-medium">
                                                         {q.subject}
                                                     </span>
@@ -1828,7 +1828,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                     type="checkbox"
                                                     checked={selectedIds.has(q.id)}
                                                     onChange={() => toggleSelect(q.id)}
-                                                    className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                    className="w-6 h-6 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
                                                 />
                                             </div>
                                         </div>
@@ -1868,9 +1868,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                         <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded truncate max-w-[80px] flex-shrink-0">
                                                             {q.unit || '단원 미분류'}
                                                         </span>
-                                                        <div className="flex-1 border border-blue-100 rounded px-1 py-0.5 text-[10px] bg-blue-50/30 flex flex-wrap gap-0.5 items-center min-h-[22px] focus-within:bg-white focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                                                        <div className="flex-1 border border-brand-100 rounded px-1 py-0.5 text-[10px] bg-brand-50/30 flex flex-wrap gap-0.5 items-center min-h-[22px] focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-500 transition-all">
                                                             {((Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
-                                                                <span key={`${tag}-${idx}`} className="bg-white text-blue-600 px-1 py-0 rounded border border-blue-100 flex items-center gap-0.5 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                                                                <span key={`${tag}-${idx}`} className="bg-white text-brand-600 px-1 py-0 rounded border border-brand-100 flex items-center gap-0.5 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                                                                     onClick={() => {
                                                                         const currentTags = (Array.isArray(q.key_concepts) ? q.key_concepts : String(q.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                                         const newTags = currentTags.filter((_: string, i: number) => i !== idx);
@@ -1938,7 +1938,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                                 body: JSON.stringify({ ids: [q.id], updates: { key_concepts: newVal } })
                                                                             }).then(res => { if (res.ok) fetchConceptSuggestions(); });
                                                                         }}
-                                                                        className="text-[10px] px-1.5 py-0.5 rounded border bg-white text-blue-600 border-blue-100 hover:bg-blue-50 transition-colors font-medium"
+                                                                        className="text-[10px] px-1.5 py-0.5 rounded border bg-white text-brand-600 border-brand-100 hover:bg-brand-50 transition-colors font-medium"
                                                                     >
                                                                         + {tag}
                                                                     </button>
@@ -2028,7 +2028,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                             </button>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleManualCapture(q, 'question'); }}
-                                                className="flex-1 bg-blue-50 border border-blue-100 text-blue-600 py-1.5 rounded text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+                                                className="flex-1 bg-brand-50 border border-brand-100 text-brand-600 py-1.5 rounded text-xs font-medium hover:bg-brand-100 transition-colors flex items-center justify-center gap-1"
                                             >
                                                 📸 문제
                                             </button>
@@ -2087,11 +2087,11 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                             <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
                                 <div className="flex items-center gap-3">
                                     <h3 className="font-bold text-lg text-gray-800">문제 정보 수정</h3>
-                                    <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                                        <span className="text-blue-600 font-black text-sm">#</span>
+                                    <div className="flex items-center gap-1 bg-brand-50 px-2 py-1 rounded border border-brand-100">
+                                        <span className="text-brand-600 font-black text-sm">#</span>
                                         <input
                                             type="number"
-                                            className="w-16 bg-transparent font-black text-blue-600 text-sm outline-none"
+                                            className="w-16 bg-transparent font-black text-brand-600 text-sm outline-none"
                                             value={selectedQuestion.question_number || ''}
                                             onChange={e => setSelectedQuestion({ ...selectedQuestion, question_number: parseInt(e.target.value) || 0 })}
                                         />
@@ -2223,7 +2223,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                                 onClick={() => {
                                                                     setSelectedQuestion({ ...selectedQuestion, key_concepts: [...currentTags, tag] });
                                                                 }}
-                                                                className="bg-gray-200 hover:bg-blue-100 hover:text-blue-700 text-gray-600 px-2 py-1 rounded text-xs transition-colors font-medium"
+                                                                className="bg-gray-200 hover:bg-brand-100 hover:text-brand-700 text-gray-600 px-2 py-1 rounded text-xs transition-colors font-medium"
                                                             >
                                                                 + {tag}
                                                             </button>
@@ -2232,9 +2232,9 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                 );
                                             })()}
                                         </div>
-                                        <div className="w-full border p-2 rounded text-sm bg-blue-50/20 border-blue-100 flex flex-wrap gap-1.5 items-center min-h-[42px] focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all">
+                                        <div className="w-full border p-2 rounded text-sm bg-brand-50/20 border-brand-100 flex flex-wrap gap-1.5 items-center min-h-[42px] focus-within:ring-2 focus-within:ring-brand-500 focus-within:bg-white transition-all">
                                             {((Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : String(selectedQuestion.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, idx: number) => (
-                                                <span key={`${tag}-${idx}`} className="bg-white text-blue-600 px-2 py-0.5 rounded border border-blue-100 flex items-center gap-1 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                                                <span key={`${tag}-${idx}`} className="bg-white text-brand-600 px-2 py-0.5 rounded border border-brand-100 flex items-center gap-1 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                                                     onClick={() => {
                                                         const currentTags = (Array.isArray(selectedQuestion.key_concepts) ? selectedQuestion.key_concepts : String(selectedQuestion.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean);
                                                         const newTags = currentTags.filter((_: string, i: number) => i !== idx);
@@ -2287,19 +2287,19 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     <div className="flex border-b">
                                         {/* Tabs */}
                                         <button
-                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'preview' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'preview' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
                                             onClick={() => setPreviewTab('preview')}
                                         >
                                             미리보기 (Image)
                                         </button>
                                         <button
-                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'text' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'text' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
                                             onClick={() => setPreviewTab('text')}
                                         >
                                             Plain Text
                                         </button>
                                         <button
-                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'xml' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            className={`px-4 py-2 text-sm font-medium ${previewTab === 'xml' ? 'border-b-2 border-brand-600 text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
                                             onClick={() => setPreviewTab('xml')}
                                         >
                                             Source XML
@@ -2357,7 +2357,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     </button>
                                     <button
                                         onClick={() => handleSaveQuestion(selectedQuestion)}
-                                        className="px-6 py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 shadow-sm"
+                                        className="px-6 py-2 bg-brand-600 text-white rounded text-sm font-bold hover:bg-brand-700 shadow-sm"
                                     >
                                         저장
                                     </button>
@@ -2458,7 +2458,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                                         {/* Tags Section */}
                                                         <div className="flex flex-wrap gap-1 mb-3">
                                                             {((Array.isArray(simQ.key_concepts) ? simQ.key_concepts : String(simQ.key_concepts || '').split(',')).map((t: string) => t.trim()).filter(Boolean)).map((tag: string, tidx: number) => (
-                                                                <span key={`${simQ.id}-tag-${tidx}`} className="bg-blue-50 text-blue-600 text-[10px] px-1.5 py-0.5 rounded border border-blue-100 font-bold">
+                                                                <span key={`${simQ.id}-tag-${tidx}`} className="bg-brand-50 text-brand-600 text-[10px] px-1.5 py-0.5 rounded border border-brand-100 font-bold">
                                                                     #{tag}
                                                                 </span>
                                                             ))}
@@ -2545,7 +2545,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
                                     </div>
                                 )}
 
-                                <div className="bg-blue-50 p-3 rounded text-[11px] text-blue-700 leading-relaxed">
+                                <div className="bg-brand-50 p-3 rounded text-[11px] text-brand-700 leading-relaxed">
                                     💡 <b>문제 해결 팁:</b><br />
                                     1. VPS에서 <code>python app.py</code>가 실행 중인지 확인하세요.<br />
                                     2. 브라우저 주소창의 <b>[사이트 설정]</b>에서 **'안전하지 않은 콘텐츠'**를 **[허용]**했는지 확인하세요.<br />

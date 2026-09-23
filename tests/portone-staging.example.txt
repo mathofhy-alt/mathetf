@@ -1,0 +1,6 @@
+# Copy the two test-project keys into a new .env.portone-staging.local at the isolated checkout root.
+# Existing PortOne store and server key are read locally from C:\dev\mathetf\.env.local.
+# Never copy production Supabase keys or put this file in GitHub.
+NEXT_PUBLIC_SUPABASE_URL=https://fnamfsijayavwakvgzaf.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=FILL_TEST_PROJECT_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=FILL_TEST_PROJECT_SERVICE_ROLE_KEY

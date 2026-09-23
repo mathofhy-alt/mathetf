@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
                                 if (dlError) {
                                     console.error(`[HML-V2-DOWNLOAD] Supabase Download FAILED for ${img.original_bin_id}:`, dlError);
                                 } else if (blob) {
-                                    let buffer = await blob.arrayBuffer();
+                                    let buffer: Buffer = Buffer.from(await blob.arrayBuffer());
 
                                     // [FIX] Apply Universal Resizing
                                     const resizeResult = tryResizeImage(Buffer.from(buffer), img.original_bin_id);
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
                 // Case 2: Native Compressed Data fallback
                 else if (img.data && typeof img.data === 'string') {
                     try {
-                        let buffer = Buffer.from(img.data, 'base64');
+                        let buffer: Buffer = Buffer.from(img.data, 'base64');
                         // [FIX] Always initialize size
                         img.size_bytes = buffer.length;
                         (img as any).image_size = buffer.length;

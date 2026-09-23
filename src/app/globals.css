@@ -317,3 +317,10 @@ body {
 /* 전광판 배너 진행바 */
 @keyframes promoProgress { from { width: 0%; } to { width: 100%; } }
 .promo-bar { animation: promoProgress 4s linear forwards; }
+
+/* The full-height editor owns scrolling; the global footer must not create a second page. */
+body:has([data-question-bank]) > main, body:has([data-question-bank]) { min-width: 0; }
+body:has([data-question-bank]) footer { display: none; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { outline: 3px solid #497ab7; outline-offset: 3px; }
+@media (max-width: 767px) { [data-question-bank] input, [data-question-bank] select { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

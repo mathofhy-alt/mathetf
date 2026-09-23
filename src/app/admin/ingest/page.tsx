@@ -133,25 +133,25 @@ export default function AdminIngestPage() {
             {/* Tabs */}
             <div className="flex mb-6 border-b">
                 <button
-                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'regular' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'regular' ? 'text-brand-600 border-b-2 border-brand-600 bg-brand-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     onClick={() => setActiveTab('regular')}
                 >
                     내신 (학교) 기출
                 </button>
                 <button
-                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'mock' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'mock' ? 'text-brand-600 border-b-2 border-brand-600 bg-brand-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     onClick={() => setActiveTab('mock')}
                 >
                     전국연합 모의고사
                 </button>
                 <button
-                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'police' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'police' ? 'text-brand-600 border-b-2 border-brand-600 bg-brand-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     onClick={() => setActiveTab('police')}
                 >
                     경찰대
                 </button>
                 <button
-                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'military' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                    className={`flex-1 py-3 text-center font-bold text-sm transition-colors ${activeTab === 'military' ? 'text-brand-600 border-b-2 border-brand-600 bg-brand-50/30' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                     onClick={() => setActiveTab('military')}
                 >
                     사관학교
@@ -343,7 +343,7 @@ export default function AdminIngestPage() {
 
                 {activeTab === 'police' && (
                     <>
-                        <div className="text-sm text-gray-500 bg-blue-50 border border-blue-200 rounded p-3 mb-2">
+                        <div className="text-sm text-gray-500 bg-brand-50 border border-brand-200 rounded p-3 mb-2">
                             🏫 학교: <strong>경찰대학교</strong> | 지역: <strong>경기 / 용인시</strong> | 시험: <strong>입학시험</strong> | 학년: <strong>고3</strong>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -496,7 +496,7 @@ export default function AdminIngestPage() {
                 <button
                     onClick={handleUpload}
                     disabled={!file || loading}
-                    className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                    className="w-full bg-brand-600 text-white py-2 rounded hover:bg-brand-700 disabled:opacity-50"
                 >
                     {loading ? '처리 중...' : '업로드 및 분석 시작'}
                 </button>

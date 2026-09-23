@@ -1,3 +1,5 @@
+import {recordDownload} from '@/lib/analytics/server';
+import {examFilename} from '@/lib/hml-v2/validate';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
         // Fetch item to get reference_id (UUID)
         const { data: item, error } = await supabase
             .from('user_items')
-            .select('reference_id, name, type')
+            .select('reference_id, name, type, details')
             .eq('id', id)
             .eq('user_id', user.id)
             .single();
@@ -42,13 +44,17 @@ export async function GET(req: NextRequest) {
         // Prepare response
         const buffer = await data.arrayBuffer();
         // RFC 5987 encoded filename
-        const filename = `${item.name}.hml`;
+        const filename = examFilename(item.name);
+        if(user.email!=='mathofhy@naver.com')await recordDownload(req,user.id,id,item.details?.analytics_session_id);
         const encodedFilename = encodeURIComponent(filename).replace(/['()]/g, escape).replace(/\*/g, '%2A');
 
         return new NextResponse(buffer, {
             status: 200,
             headers: {
-                'Content-Type': 'application/x-hwp',
+                'Content-Type': 'application/xml; charset=utf-8',
+                'Content-Length': String(buffer.byteLength),
+                'Cache-Control': 'private, no-store',
+                'X-Content-Type-Options': 'nosniff',
                 'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
             }
         });

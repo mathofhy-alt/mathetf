@@ -94,7 +94,7 @@ export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey,
             <p className="text-sm text-slate-600 break-keep mb-4">
                 회원가입만 하면 위 미리보기의{' '}
                 <strong className="text-emerald-700">워터마크 없는 깨끗한 문제 PDF{pageCount > 0 ? ` (${pageCount}페이지)` : ''}</strong>
-                를 무료로 받을 수 있어요. <span className="text-slate-400">해설은 시험지 출제에서 무료로 만들 수 있어요.</span>
+                를 회원당 하루 10회까지 무료로 받을 수 있어요. <span className="text-slate-400">해설은 시험지 출제에서 무료로 만들 수 있어요.</span>
             </p>
 
             {authed ? (
@@ -108,7 +108,7 @@ export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey,
             ) : (
                 <>
                     <Link
-                        href="/signup"
+                        href={`/signup?next=${encodeURIComponent(`/exam/${examId}`)}`}
                         onClick={() => logAnon('anon_cta_click', examId)}
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-6 py-3 rounded-xl transition-colors shadow-sm shadow-emerald-500/25"
                     >
@@ -117,11 +117,12 @@ export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey,
                     {authed === false && (
                         <p className="text-xs text-slate-400 mt-2.5">
                             이미 회원이신가요?{' '}
-                            <Link href="/login" className="text-emerald-600 font-bold hover:underline">로그인</Link>
+                            <Link href={`/login?next=${encodeURIComponent(`/exam/${examId}`)}`} className="text-emerald-600 font-bold hover:underline">로그인</Link>
                         </p>
                     )}
                 </>
             )}
+            <Link className="mt-3 block text-sm font-semibold underline" href={`/question-bank?material=${examId}&origin=free-pdf`}>이 회차로 시험지 만들기 →</Link>
             {showPromo && (
                 <ExamPromoModal
                     src={sourceKey || undefined}

@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/components/Header";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -59,19 +60,19 @@ export default function SuggestionWritePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6]">
-            <header className="bg-white border-b border-slate-200">
+        <div className="min-h-screen bg-[#f2f3f0]">
+            <Header/><div className="suite-local-header">
                 <div className="max-w-[800px] mx-auto px-4 h-16 flex items-center gap-4">
                     <Link href="/suggestion" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
                     <h1 className="text-xl font-bold text-slate-800">건의사항 등록</h1>
                 </div>
-            </header>
+            </div>
 
             <main className="max-w-[800px] mx-auto px-4 py-8">
                 <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden p-8 space-y-6">
-                    <div className="bg-blue-50 p-4 rounded text-sm text-blue-700 mb-6">
+                    <div className="bg-brand-50 p-4 rounded text-sm text-brand-700 mb-6">
                         <p className="font-bold mb-1">🔒 비밀글로 등록됩니다.</p>
-                        <p>작성하신 비밀번호를 통해 본인만 조회할 수 있으며, 관리자는 별도 확인 가능합니다.</p>
+                        <p>제목은 목록에 공개됩니다. 본문은 글 비밀번호로 확인하며, 관리자도 확인할 수 있습니다.</p>
                     </div>
 
                     <div>

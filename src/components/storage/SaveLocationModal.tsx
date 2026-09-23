@@ -18,21 +18,11 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
     const [folders, setFolders] = useState<FolderType[]>([]);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error,setError]=useState('');
     const [isInputModalOpen, setIsInputModalOpen] = useState(false);
 
-    useEffect(() => {
-        // Fetch all folders for the tree
-        fetch('/api/storage/folders?mode=all&folderType=exam')
-            .then(res => res.json())
-            .then(data => {
-                if (data.folders) setFolders(data.folders);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setLoading(false);
-            });
-    }, []);
+    const loadFolders=async()=>{setLoading(true);setError('');try{const res=await fetch('/api/storage/folders?mode=all&folderType=exam');if(!res.ok)throw Error();const data=await res.json();setFolders(data.folders||[]);}catch{setError('폴더 목록을 불러오지 못했습니다. 다시 불러오거나 기본 보관함에 저장하세요.');}finally{setLoading(false);}};
+    useEffect(()=>{void loadFolders();},[]);
 
     const handleCreateFolder = () => {
         setIsInputModalOpen(true);
@@ -51,13 +41,14 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
                 })
             });
 
+            if (!res.ok) throw new Error('폴더 생성 실패');
             if (res.ok) {
                 // Refresh list
                 const data = await fetch('/api/storage/folders?mode=all&folderType=exam').then(r => r.json());
                 if (data.folders) setFolders(data.folders);
             }
         } catch (e) {
-            alert('폴더 생성 실패');
+            setError('폴더를 만들지 못했습니다. 잠시 후 다시 시도해주세요.');
         }
     };
 
@@ -68,17 +59,17 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+        <div role="dialog" aria-modal="true" aria-label="시험지 저장 위치" className="product-modal fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
             <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
                 <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-                    <div>
-                        <h3 className="font-bold text-lg text-slate-800">저장 위치 선택</h3>
+                    <div className="min-w-0 flex-1">
+                        {error&&<p role="alert" className="text-sm text-amber-800">{error}<button onClick={()=>void loadFolders()}>다시 불러오기</button></p>}<h3 className="font-bold text-lg text-slate-800">저장 위치 선택</h3>
                         <p className="text-xs text-slate-500 font-medium truncate max-w-[300px]">
                             파일: {title}.hml
                         </p>
                     </div>
                     <button
-                        onClick={onClose}
+                        aria-label="저장 위치 닫기" onClick={onClose}
                         disabled={isSaving}
                         className="p-2 hover:bg-slate-200 rounded-full transition-colors"
                     >
@@ -89,11 +80,11 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
                 <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
                     <div className="flex justify-between items-center">
                         <span className="text-sm font-bold text-slate-600">
-                            현재 위치: <span className="text-indigo-600">{getCurrentFolderName()}</span>
+                            현재 위치: <span className="text-brand-600">{getCurrentFolderName()}</span>
                         </span>
                         <button
                             onClick={handleCreateFolder}
-                            className="text-xs flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 font-bold transition-colors"
+                            className="text-xs flex items-center gap-1 px-2 py-1 bg-brand-50 text-brand-600 rounded hover:bg-brand-100 font-bold transition-colors"
                         >
                             <FolderPlus size={14} /> 새 폴더
                         </button>
@@ -116,7 +107,7 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
 
                 <div className="p-4 border-t bg-white flex justify-end gap-2">
                     <button
-                        onClick={onClose}
+                        aria-label="저장 위치 닫기" onClick={onClose}
                         disabled={isSaving}
                         className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold transition-colors"
                     >
@@ -125,7 +116,7 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
                     <button
                         onClick={() => onConfirm(currentFolderId)}
                         disabled={isSaving}
-                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-indigo-200 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSaving ? (
                             <>

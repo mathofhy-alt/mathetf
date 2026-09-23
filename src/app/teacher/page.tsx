@@ -1,3 +1,5 @@
+import {FREE_ACCESS_LABEL} from '@/lib/config';
+import AccessPolicy from '@/components/AccessPolicy';
 import { getSiteStats } from '@/lib/stats';
 import Link from 'next/link';
 import { Metadata } from 'next';
@@ -10,8 +12,8 @@ export const revalidate = 3600;
 const PAGE_URL = 'https://mathetf.com/teacher';
 
 export const metadata: Metadata = {
-    title: '수학 시험지 만들기 | 학교 기출 유사문제로 1분 만에 — 수학ETF',
-    description: '전국 고등학교 내신 기출을 단원·난이도별로 골라 나만의 수학 시험지를 만드세요. 기출과 같은 유형의 유사문제 자동 추천, 한글(HWP)·PDF 다운로드. 수학 선생님·과외 강사를 위한 무료 문제은행.',
+    title: '수학 시험지 만들기 | 학교 기출 유사문제로 직접 — 수학ETF',
+    description: '전국 고등학교 내신 기출을 단원·난이도별로 골라 나만의 수학 시험지를 만드세요. 기출과 같은 유형의 유사문제 자동 추천, 편집용 HML 다운로드 · PDF는 한글에서 변환. 수학 선생님·과외 강사를 위한 무료 문제은행.',
     keywords: [
         '수학 시험지 만들기', '수학 시험지 제작', '내신 시험지 만들기', '수학 학습지 제작',
         '수학 문제은행', '학교별 기출 문제은행', '기출 유사문제', '수학 문제 출제',
@@ -19,8 +21,8 @@ export const metadata: Metadata = {
     ],
     alternates: { canonical: PAGE_URL },
     openGraph: {
-        title: '수학 시험지 만들기 — 학교 기출 유사문제로 1분 만에',
-        description: '전국 학교 내신 기출을 단원·난이도로 골라 나만의 시험지를 만들고 한글(HWP)로 받으세요. 선생님·강사 전용 기능, 현재 무료.',
+        title: '수학 시험지 만들기 — 학교 기출 유사문제로 직접',
+        description: '전국 학교 내신 기출을 단원·난이도로 골라 나만의 시험지를 만들고 한글 호환 HML로 받으세요. 학생·교사 모두 이용 가능, 현재 무료.',
         url: PAGE_URL,
         siteName: '수학ETF',
         locale: 'ko_KR',
@@ -33,11 +35,11 @@ export const metadata: Metadata = {
 const FAQ = [
     {
         q: '수학 시험지를 만드는 데 얼마나 걸리나요?',
-        a: '학교와 단원을 고르고 문항을 담으면 1~3분이면 완성됩니다. 담은 문제와 비슷한 유형을 자동으로 찾아주는 유사문제 추천 기능이 있어 빈 시험지를 처음부터 채울 필요가 없습니다.',
+        a: '학교와 단원을 고르고 문항을 담으면 문항을 고른 뒤 완성됩니다. 담은 문제와 비슷한 유형을 자동으로 찾아주는 유사문제 추천 기능이 있어 빈 시험지를 처음부터 채울 필요가 없습니다.',
     },
     {
-        q: '만든 시험지를 한글(HWP) 파일로 받을 수 있나요?',
-        a: '네. 완성한 시험지는 한글(HWP)과 PDF로 내려받아 수업 자료로 편집·인쇄할 수 있습니다. 수식과 그림이 원본 그대로 유지됩니다.',
+        q: '만든 시험지를 한글 호환 HML 파일로 받을 수 있나요?',
+        a: '네. 완성한 시험지는 HML 파일로 받습니다. 한글에서 열어 편집·인쇄하고 PDF로 저장할 수 있습니다. 내려받은 파일의 수식·그림·페이지 배치는 출력 전에 확인하세요.',
     },
     {
         q: '어떤 문제로 시험지를 만드나요?',
@@ -45,7 +47,7 @@ const FAQ = [
     },
     {
         q: '비용이 드나요?',
-        a: '현재 회원가입만 하면 기출 DB와 시험지 만들기 기능을 무료로 이용할 수 있습니다.',
+        a: FREE_ACCESS_LABEL,
     },
     {
         q: '모의고사나 사관학교·경찰대 문제도 있나요?',
@@ -64,7 +66,7 @@ export default async function TeacherLandingPage() {
             '@context': 'https://schema.org',
             '@type': 'WebPage',
             name: '수학 시험지 만들기',
-            description: '전국 학교 내신 기출 유사문제로 나만의 수학 시험지를 만들고 한글(HWP)로 받는 기능. 수학 선생님·강사용.',
+            description: '전국 학교 내신 기출 유사문제로 나만의 수학 시험지를 만들고 한글 호환 HML로 받는 기능. 수학 선생님·강사용.',
             url: PAGE_URL,
         },
         {
@@ -87,34 +89,34 @@ export default async function TeacherLandingPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F8FAFD] text-[#1E2D4F] font-sans">
+        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
             <main className="max-w-3xl mx-auto px-4 py-8 sm:py-10">
                 {/* 히어로 */}
                 <section className="text-center">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#3AADA9] bg-[#E0F7F6] px-3 py-1.5 rounded-full">
-                        <PencilRuler size={13} /> 선생님·강사 전용 기능
+                    <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#638747] bg-[#E7EFD9] px-3 py-1.5 rounded-full">
+                        <PencilRuler size={13} /> 학생·교사 모두 이용 가능
                     </span>
                     <h1 className="text-3xl sm:text-4xl font-black mt-4 break-keep leading-tight">
                         수학 시험지 만들기
-                    </h1>
+                    </h1><div className="mt-4"><AccessPolicy/></div><p className="mt-4 text-sm leading-relaxed text-slate-600">보유 기출의 회차와 단원을 확인하고 필요한 문항만 골라 출제할 수 있습니다. <Link className="underline" href="/guide">만드는 순서·무료 범위·결과물 보기</Link> · <Link className="underline" href="/question-bank?demo=1&origin=content">5문항 체험</Link></p>
                     <p className="text-base sm:text-lg text-slate-600 mt-3 break-keep leading-relaxed">
                         전국 학교 내신 기출을 단원·난이도로 골라<br className="hidden sm:block" />
-                        <strong className="text-[#1E2D4F]">나만의 시험지를 1분 만에</strong> 만들고 한글(HWP)로 받으세요.
+                        <strong className="text-[#294437]">나만의 시험지를 직접</strong> 만들고 한글 호환 HML로 받으세요.
                     </p>
 
                     {(questionCount > 0 || schoolCount > 0) && (
                         <div className="flex justify-center gap-3 mt-6">
                             {questionCount > 0 && (
                                 <div className="bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-sm">
-                                    <p className="text-2xl font-black text-[#497AB7]">{questionCount.toLocaleString()}</p>
+                                    <p className="text-2xl font-black text-[#426D36]">{questionCount.toLocaleString()}</p>
                                     <p className="text-[11px] font-bold text-slate-500 mt-0.5">분류된 기출 문항</p>
                                 </div>
                             )}
                             {schoolCount > 0 && (
                                 <div className="bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-sm">
-                                    <p className="text-2xl font-black text-[#3AADA9]">{schoolCount.toLocaleString()}</p>
+                                    <p className="text-2xl font-black text-[#638747]">{schoolCount.toLocaleString()}</p>
                                     <p className="text-[11px] font-bold text-slate-500 mt-0.5">기출 보유 학교</p>
                                 </div>
                             )}
@@ -124,7 +126,7 @@ export default async function TeacherLandingPage() {
                     <div className="flex flex-col sm:flex-row justify-center gap-2.5 mt-6">
                         <Link
                             href="/question-bank?tour=1"
-                            className="bg-[#3AADA9] hover:bg-[#2E948F] text-white font-extrabold px-7 py-3.5 rounded-xl transition-colors"
+                            className="bg-[#638747] hover:bg-[#2E948F] text-white font-extrabold px-7 py-3.5 rounded-xl transition-colors"
                         >
                             시험지 만들러 가기 →
                         </Link>
@@ -136,7 +138,7 @@ export default async function TeacherLandingPage() {
                             ▶ 1분 사용법 영상
                         </a>
                     </div>
-                    <p className="text-xs text-slate-400 mt-3">회원가입만 하면 현재 전부 무료</p>
+                    <p className="text-xs text-slate-400 mt-3">{FREE_ACCESS_LABEL}</p>
                 </section>
 
                 {/* 3단계 */}
@@ -146,14 +148,14 @@ export default async function TeacherLandingPage() {
                         {[
                             { icon: Database, n: 'STEP 1', t: '학교 기출 DB 선택', d: '가르치는 학교의 기출 회차를 담습니다. 여러 학교를 함께 담아도 됩니다.' },
                             { icon: Search, n: 'STEP 2', t: '단원·난이도로 검색', d: '출제 범위에 맞는 단원과 난이도를 지정해 문항을 골라냅니다. 유사문제 자동 추천도 있습니다.' },
-                            { icon: FileDown, n: 'STEP 3', t: 'HWP·PDF 다운로드', d: '완성한 시험지를 한글 파일로 받아 편집·인쇄합니다. 수식과 그림이 그대로 유지됩니다.' },
+                            { icon: FileDown, n: 'STEP 3', t: 'HML 다운로드 · PDF는 한글에서 변환', d: '완성한 시험지를 한글 파일로 받아 편집·인쇄합니다. 출력 전에 수식·그림과 페이지 배치를 확인하세요.' },
                         ].map((s) => (
                             <div key={s.n} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                                <span className="w-10 h-10 rounded-xl bg-[#EEF4FB] text-[#497AB7] flex items-center justify-center mb-3">
+                                <span className="w-10 h-10 rounded-xl bg-[#EAF1E1] text-[#426D36] flex items-center justify-center mb-3">
                                     <s.icon size={19} />
                                 </span>
-                                <p className="text-[11px] font-black text-[#497AB7]">{s.n}</p>
-                                <p className="font-bold text-[#1E2D4F] mt-0.5 break-keep">{s.t}</p>
+                                <p className="text-[11px] font-black text-[#426D36]">{s.n}</p>
+                                <p className="font-bold text-[#294437] mt-0.5 break-keep">{s.t}</p>
                                 <p className="text-xs text-slate-500 mt-1.5 leading-relaxed break-keep">{s.d}</p>
                             </div>
                         ))}
@@ -167,13 +169,13 @@ export default async function TeacherLandingPage() {
                         {[
                             ['실제 학교 기출이 원본입니다', '출판사 문제집이 아니라 전국 고등학교가 실제로 출제한 내신 시험지에서 문항을 뽑습니다. 학교별 출제 경향이 그대로 담깁니다.'],
                             ['학교 단위로 골라 담습니다', '가르치는 학생의 학교 기출만 모아 대비 시험지를 만들 수 있습니다. 최근 회차부터 과년도까지 함께 볼 수 있습니다.'],
-                            ['한글(HWP)로 받아 바로 편집합니다', '완성본을 HWP로 내려받아 학원·수업 양식에 맞게 고쳐 쓸 수 있습니다. 이미지 캡처가 아니라 편집 가능한 문서입니다.'],
+                            ['한글 호환 HML로 받아 바로 편집합니다', '완성본을 HML로 내려받아 학원·수업 양식에 맞게 고쳐 쓸 수 있습니다. 이미지 캡처가 아니라 편집 가능한 문서입니다.'],
                             ['학원 관리 시스템이 아닙니다', '영업·계약 없이, 검색해서 들어와 바로 만들고 받아 가면 됩니다.'],   // [2026-09-14] 가입은 필요하다 — '가입 없이'는 거짓이었다
                         ].map(([t, d]) => (
                             <li key={t} className="flex gap-2.5">
-                                <CheckCircle2 size={17} className="text-[#3AADA9] shrink-0 mt-0.5" />
+                                <CheckCircle2 size={17} className="text-[#638747] shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="font-bold text-sm text-[#1E2D4F] break-keep">{t}</p>
+                                    <p className="font-bold text-sm text-[#294437] break-keep">{t}</p>
                                     <p className="text-xs text-slate-500 mt-0.5 leading-relaxed break-keep">{d}</p>
                                 </div>
                             </li>
@@ -191,13 +193,13 @@ export default async function TeacherLandingPage() {
                                 <Link
                                     key={s}
                                     href={`/school/${encodeURIComponent(s)}`}
-                                    className="text-sm bg-white border border-slate-200 hover:border-[#497AB7] hover:text-[#497AB7] text-slate-600 font-bold px-3.5 py-2 rounded-lg transition-colors"
+                                    className="text-sm bg-white border border-slate-200 hover:border-[#426D36] hover:text-[#426D36] text-slate-600 font-bold px-3.5 py-2 rounded-lg transition-colors"
                                 >
                                     {s}
                                 </Link>
                             ))}
                         </div>
-                        <Link href="/schools" className="inline-flex items-center gap-1 text-sm text-[#497AB7] font-bold mt-4 hover:underline">
+                        <Link href="/schools" className="inline-flex items-center gap-1 text-sm text-[#426D36] font-bold mt-4 hover:underline">
                             전체 학교 목록 보기 <ChevronRight size={15} />
                         </Link>
                     </section>
@@ -209,7 +211,7 @@ export default async function TeacherLandingPage() {
                     <div className="space-y-2.5 mt-4">
                         {FAQ.map((f) => (
                             <div key={f.q} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                                <h3 className="font-bold text-[#1E2D4F] break-keep">{f.q}</h3>
+                                <h3 className="font-bold text-[#294437] break-keep">{f.q}</h3>
                                 <p className="text-sm text-slate-600 mt-2 leading-relaxed break-keep">{f.a}</p>
                             </div>
                         ))}
@@ -217,14 +219,14 @@ export default async function TeacherLandingPage() {
                 </section>
 
                 {/* 마무리 CTA */}
-                <section className="mt-12 bg-gradient-to-br from-[#497AB7] to-[#3AADA9] rounded-2xl p-7 text-center text-white shadow-md">
+                <section className="mt-12 bg-gradient-to-br from-[#426D36] to-[#638747] rounded-2xl p-7 text-center text-white shadow-md">
                     <p className="font-black text-xl break-keep">수업에 쓸 시험지, 지금 만들어보세요</p>
                     <p className="text-white/85 text-sm mt-2 break-keep">
                         {questionCount > 0 ? `${questionCount.toLocaleString()}개 기출 문항이 단원·난이도별로 준비돼 있습니다.` : '전국 학교 기출이 단원·난이도별로 준비돼 있습니다.'}
                     </p>
                     <Link
                         href="/question-bank?tour=1"
-                        className="inline-block bg-white text-[#497AB7] font-extrabold px-7 py-3.5 rounded-xl mt-5 hover:bg-slate-50 transition-colors"
+                        className="inline-block bg-white text-[#426D36] font-extrabold px-7 py-3.5 rounded-xl mt-5 hover:bg-slate-50 transition-colors"
                     >
                         시험지 만들기 시작 →
                     </Link>
