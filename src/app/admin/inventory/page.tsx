@@ -7,6 +7,9 @@ import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { Info } from 'lucide-react';
 
+// 등록 시점 경계 (KST 2026-09-16 00:00). 이보다 앞선 완료 칸은 빨강으로 표시한다.
+const RECENT_CUTOFF_MS = Date.parse('2026-09-15T15:00:00+00:00');
+
 export default function AdminInventory() {
     const supabase = createClient();
     const router = useRouter();
@@ -89,7 +92,7 @@ export default function AdminInventory() {
 
             const { data } = await supabase
                 .from('exam_materials')
-                .select('school, title, semester, exam_type, exam_year, file_type, content_type')
+                .select('school, title, semester, exam_type, exam_year, file_type, content_type, created_at, file_path')
                 .in('school', targetSchools)
                 .eq('grade', parseInt(selectedGrade))
                 .not('school', 'eq', 'DELETED');
@@ -111,8 +114,15 @@ export default function AdminInventory() {
                     let hasPdfProb = false;
                     let hasHwpSol = false;
                     let hasDb = false;
+                    // [2026-09-20] 등록 시점 구분 — 9/16 이후(새 파이프라인·그림 누락 수리 이후)면 초록, 그 전이면 빨강.
+                    //   한 회차의 행(PDF·HWP·DB) 중 가장 늦은 시각. 교체(id 유지) 회차는 행 created_at 이 옛것이지만
+                    //   판매파일이 새 경로로 재업로드되므로 file_path 에 박힌 ms 타임스탬프(…/1789506377459_xxx.pdf)도 같이 본다.
+                    let latestMs = 0;
 
                     materials.forEach(m => {
+                        if (m.created_at) latestMs = Math.max(latestMs, Date.parse(m.created_at) || 0);
+                        const ts = m.file_path?.match(/\/(\d{13})(?:[_.]|$)/)?.[1];
+                        if (ts) latestMs = Math.max(latestMs, parseInt(ts, 10));
                         if (m.content_type === '원본제보' || m.file_type?.toUpperCase() === 'PDF') hasPdfProb = true;
                         if (m.file_type?.toUpperCase() === 'HWP') hasHwpSol = true;
                         if (m.file_type?.toUpperCase() === 'DB') hasDb = true;
@@ -129,7 +139,9 @@ export default function AdminInventory() {
                         else status = 'partial';
                     }
 
-                    row.exams[extype] = { status, missing, hasPdfProb, hasHwpSol, hasDb };
+                    const isOld = latestMs > 0 && latestMs < RECENT_CUTOFF_MS;
+                    const latest = latestMs ? new Date(latestMs + 9 * 3600 * 1000).toISOString().slice(0, 10) : '';   // KST 날짜
+                    row.exams[extype] = { status, missing, hasPdfProb, hasHwpSol, hasDb, latest, isOld };
                 });
                 return row;
             });
@@ -143,8 +155,8 @@ export default function AdminInventory() {
 
     if (!user) return null;
 
-    const getStatusColor = (status: string) => {
-        if (status === 'complete') return 'bg-green-500 border-green-600';
+    const getStatusColor = (status: string, isOld?: boolean) => {
+        if (status === 'complete') return isOld ? 'bg-red-500 border-red-600' : 'bg-green-500 border-green-600';
         if (status === 'partial') return 'bg-yellow-400 border-yellow-500 cursor-help';
         return 'bg-slate-100 border-slate-200';
     };
@@ -157,7 +169,7 @@ export default function AdminInventory() {
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
                         🎯 기출 보유 현황판 (Admin)
                     </h1>
-                    <p className="text-sm text-slate-500 mt-1">학교별 지필고사 데이터베이스 보유/결측 현황 (초록: 완료, 노랑: 미완, 회색: 없음)</p>
+                    <p className="text-sm text-slate-500 mt-1">학교별 지필고사 데이터베이스 보유/결측 현황 (초록: 9/16 이후 등록 완료, 빨강: 9/15 이전 등록 완료, 노랑: 미완, 회색: 없음)</p>
                 </div>
 
                 <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-row flex-wrap items-center gap-4 mb-6">
@@ -206,8 +218,8 @@ export default function AdminInventory() {
                                                 return (
                                                     <td key={extype} className="py-2 px-2 text-center bg-white border-l border-slate-50">
                                                         <div className="flex justify-center group relative">
-                                                            <div className={`w-28 h-8 rounded border ${getStatusColor(cell.status)} shadow-inner flex items-center justify-center transition-all duration-200`}>
-                                                                {cell.status === 'complete' && <span className="text-white font-extrabold text-[11px] tracking-wide">완료</span>}
+                                                            <div className={`w-28 h-8 rounded border ${getStatusColor(cell.status, cell.isOld)} shadow-inner flex items-center justify-center transition-all duration-200`}>
+                                                                {cell.status === 'complete' && <span className="text-white font-extrabold text-[11px] tracking-wide" title={cell.latest ? `등록 ${cell.latest}` : ''}>완료</span>}
                                                                 {cell.status === 'partial' && <span className="text-yellow-900 font-extrabold text-[10px] tracking-wide flex items-center gap-1"><Info size={10}/>일부</span>}
                                                                 {cell.status === 'empty' && <span className="text-slate-300 font-bold">-</span>}
                                                             </div>
