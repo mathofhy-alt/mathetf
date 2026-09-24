@@ -14,7 +14,7 @@ import { logAnon } from '@/lib/anon-log';
  * - 로그인: 워터마크 없는 문제 PDF 즉시 다운로드.
  * 페이지는 ISR 정적 캐시라 로그인 여부는 클라이언트에서 판별한다.
  */
-export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey, school, compact = false }: { examId: string; filename: string; pageCount: number; sourceKey?: string | null; school?: string; compact?: boolean }) {
+export default function FreeProblemCTA({ examId, filename, sourceKey, school, compact = false }: { examId: string; filename: string; sourceKey?: string | null; school?: string; compact?: boolean }) {
     const [authed, setAuthed] = useState<boolean | null>(null);
     const [marketingAgreed, setMarketingAgreed] = useState(true); // 기본 true → 확인 전엔 배너 안 뜸
     const [showNotify, setShowNotify] = useState(false);
@@ -92,9 +92,7 @@ export default function FreeProblemCTA({ examId, filename, pageCount, sourceKey,
                 <p className={compact ? 'font-extrabold text-slate-900 text-sm break-keep' : 'font-extrabold text-slate-900 text-lg break-keep'}>문제 전체 PDF · 워터마크 없음</p>
             </div>
             <p className={compact ? 'text-xs leading-5 text-slate-600 break-keep mb-3' : 'text-sm text-slate-600 break-keep mb-4'}>
-                회원가입만 하면 위 미리보기의{' '}
-                <strong className="text-emerald-700">워터마크 없는 깨끗한 문제 PDF{pageCount > 0 ? ` (${pageCount}페이지)` : ''}</strong>
-                를 회원당 하루 10회까지 무료로 받을 수 있어요. <span className="text-slate-400">해설은 시험지 출제에서 무료로 만들 수 있어요.</span>
+                회원이면 <strong className="text-emerald-700">워터마크 없는 전체 문제 PDF</strong>를 하루 10회까지 무료로 받을 수 있어요. <span className="text-slate-500">해설은 포함되지 않습니다.</span>
             </p>
 
             {authed ? (

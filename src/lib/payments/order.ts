@@ -1,4 +1,4 @@
-export type OrderItem = { item_id: string; item_type: string; title: string; price: number; reward_user_id?: string; submission_id?: string };
+export type OrderItem = { item_id: string; item_type: string; title: string; price: number };
 export type OrderQuote = { kind: 'cart' | 'topup'; amount: number; total: number; used_points: number; points: number; items: OrderItem[]; name: string };
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function cartQuote(requested: unknown, materials: any[], usedPoints: unknown): OrderQuote {

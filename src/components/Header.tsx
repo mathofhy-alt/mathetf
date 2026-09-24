@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, BookOpen } from 'lucide-react';
@@ -114,7 +115,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                     {/* Logo */}
                     <div className="flex items-center gap-6 min-w-0">
                         <Link href="/" className="flex items-center gap-2 shrink-0">
-                            <div className="w-8 h-8 bg-brand-600 rounded flex items-center justify-center text-white font-bold text-xl">∑</div>
+                            <Image src="/icon.svg" alt="" width={32} height={32} className="h-8 w-8 shrink-0" />
                             <span className="text-2xl font-bold text-brand-600 tracking-tight whitespace-nowrap">수학ETF</span>
                         </Link>
                         {/* Desktop Nav */}

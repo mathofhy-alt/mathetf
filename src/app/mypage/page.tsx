@@ -7,27 +7,20 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileItem } from '@/lib/data';
-import { Download, FileText, User as UserIcon, Coins, ArrowLeft, RefreshCw, Edit, Trash2, Database, Gift, Settings } from 'lucide-react';
+import { Download, FileText, User as UserIcon, ArrowLeft, Trash2, Database, Settings, Edit } from 'lucide-react';
 import MarketingSettings from '@/components/MarketingSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
-import SettlementModal from '@/components/SettlementModal';
 import EditModal from '@/components/EditModal';
 import { deleteFile, deletePurchase, stopSelling } from './actions';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
-    const [activeTab, setActiveTab] = useState<'purchases' | 'sales' | 'submission_earnings' | 'settings'>('purchases');
+    const [activeTab, setActiveTab] = useState<'purchases' | 'sales' | 'settings'>('purchases');
     const [loading, setLoading] = useState(true);
     const [purchases, setPurchases] = useState<any[]>([]);
     const [uploads, setUploads] = useState<any[]>([]);
-    const [purchasedPoints, setPurchasedPoints] = useState(0);
     const [earnedPoints, setEarnedPoints] = useState(0);
-    const [opinionPoints, setOpinionPoints] = useState(0);
-    const [settlements, setSettlements] = useState<any[]>([]);
-    const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
-    const [submissionEarnings, setSubmissionEarnings] = useState<any[]>([]);
-    const [totalSubmissionEarnings, setTotalSubmissionEarnings] = useState(0);
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -51,11 +44,9 @@ export default function MyPage() {
             setUser(user);
 
             // Fetch Points
-            const { data: profile } = await supabase.from('profiles').select('purchased_points, earned_points, opinion_points').eq('id', user.id).single();
+            const { data: profile } = await supabase.from('profiles').select('earned_points').eq('id', user.id).single();
             if (profile) {
-                setPurchasedPoints(profile.purchased_points || 0);
                 setEarnedPoints(profile.earned_points || 0);
-                setOpinionPoints(profile.opinion_points || 0);
             }
 
             // Fetch Purchases (Old Point System)
@@ -127,23 +118,6 @@ export default function MyPage() {
 
             if (uploadData) setUploads(uploadData);
 
-            // Fetch Settlements
-            const { data: settlementData } = await supabase
-                .from('settlement_requests')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (settlementData) setSettlements(settlementData);
-
-            // Fetch Submission Earnings (제보 수익)
-            const earningsRes = await fetch('/api/submission-earnings');
-            if (earningsRes.ok) {
-                const earningsJson = await earningsRes.json();
-                const earnings = earningsJson.earnings || [];
-                setSubmissionEarnings(earnings);
-                setTotalSubmissionEarnings(earnings.reduce((acc: number, e: any) => acc + (e.earnings_amount || 0), 0));
-            }
 
             setLoading(false);
         };
@@ -370,7 +344,7 @@ export default function MyPage() {
                         <div className="flex items-center gap-2">
                             <div className="flex items-center text-sm font-medium text-slate-600 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                                 <span className="flex items-center gap-2 px-3 py-1.5 border-r border-slate-200">
-                                    <span className="text-xs text-slate-500">누적 수익</span>
+                                    <span className="text-xs text-slate-500">결제에 사용 가능한 포인트</span>
                                     <span className="font-bold text-brand-600">{earnedPoints.toLocaleString()} P</span>
                                 </span>
 
@@ -392,18 +366,7 @@ export default function MyPage() {
                         onClick={() => setActiveTab('sales')}
                         className={`pb-3 px-2 font-bold text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'sales' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
                     >
-                        판매 관리
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('submission_earnings')}
-                        className={`pb-3 px-2 font-bold text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${activeTab === 'submission_earnings' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-800'}`}
-                    >
-                        <Gift size={14} /> 제보 수익
-                        {totalSubmissionEarnings > 0 && (
-                            <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">
-                                {totalSubmissionEarnings.toLocaleString()}P
-                            </span>
-                        )}
+                        내 자료 관리
                     </button>
                     {/* [수신설정] 2026-09-05 배포한 마케팅 동의문이 "마이페이지 > 설정에서" 끄라고
                         안내하는데 그 화면이 없었다. 법이 요구하는 '수신 거부 방법'이기도 하다. */}
@@ -541,159 +504,8 @@ export default function MyPage() {
                     </div>
                 )}
 
-                {activeTab === 'submission_earnings' && (
-                    <div className="space-y-4">
-                        {/* 요약 카드 */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-sm">
-                                <div className="text-sm text-slate-500 mb-1">총 제보 건수</div>
-                                <div className="text-xl sm:text-2xl font-bold text-slate-800">
-                                    {new Set(submissionEarnings.map(e => e.submission?.id)).size}건
-                                </div>
-                            </div>
-                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-purple-100 shadow-sm bg-gradient-to-br from-purple-50 to-white">
-                                <div className="text-sm text-purple-600 mb-1">제보 수익 총 적립</div>
-                                <div className="text-xl sm:text-2xl font-bold text-purple-700">
-                                    {totalSubmissionEarnings.toLocaleString()} P
-                                </div>
-                                <div className="text-xs text-slate-400 mt-1">판매 수익의 70% 자동 적립</div>
-                            </div>
-                        </div>
-
-                        {/* 수익 내역 테이블 */}
-                        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                            <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                                <Gift size={15} className="text-purple-500" />
-                                <h3 className="font-bold text-slate-800 text-sm">제보 수익 상세 내역</h3>
-                            </div>
-                            {submissionEarnings.length === 0 ? (
-                                <div className="p-16 text-center">
-                                    <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-200">
-                                        <Gift size={32} />
-                                    </div>
-                                    <p className="text-slate-400 font-medium">제보 수익 내역이 없습니다.</p>
-                                    <p className="text-xs text-slate-400 mt-1">
-                                        '자료등록 → 원본 시험지 제보'로 시험지를 제보하면,<br />
-                                        해당 시험지 기반 개인DB 판매 시 70%가 적립됩니다.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                                            <tr>
-                                                <th className="px-4 py-3">적립일</th>
-                                                <th className="px-4 py-3">내 제보 (원본)</th>
-                                                <th className="px-4 py-3">판매된 DB 자료</th>
-                                                <th className="px-4 py-3">판매가</th>
-                                                <th className="px-4 py-3 text-purple-600">적립 포인트 (70%)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {submissionEarnings.map(e => (
-                                                <tr key={e.id} className="hover:bg-slate-50">
-                                                    <td className="px-4 py-3 text-slate-500 text-xs">
-                                                        {new Date(e.created_at).toLocaleDateString('ko-KR')}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <div className="font-medium text-slate-700 text-xs">
-                                                            {e.submission?.title || '-'}
-                                                        </div>
-                                                        <div className="text-[10px] text-slate-400">
-                                                            {e.submission?.school} · {e.submission?.exam_year}년 {e.submission?.grade}학년
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <div className="font-medium text-slate-700 text-xs">
-                                                            {e.db_item?.title || '-'}
-                                                        </div>
-                                                        <div className="text-[10px] text-slate-400">{e.db_item?.school}</div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-slate-600 font-medium">
-                                                        {e.sale_amount?.toLocaleString()}P
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <span className="font-black text-purple-600 text-base">
-                                                            +{e.earnings_amount?.toLocaleString()}P
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
                 {activeTab === 'sales' && (
                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-sm">
-                                <div className="text-sm text-slate-500 mb-1">총 판매 건수</div>
-                                <div className="text-xl sm:text-2xl font-bold text-slate-800">{uploads.reduce((acc, curr) => acc + (curr.sales_count || 0), 0)}건</div>
-                            </div>
-                            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden">
-                                <div className="relative z-10">
-                                    <div className="text-sm text-slate-500 mb-1">현재 보유 수익 포인트</div>
-                                    <div className="text-xl sm:text-2xl font-bold text-brand-600">
-                                        {Math.max(0, earnedPoints - opinionPoints).toLocaleString()} P
-                                    </div>
-                                    <div className="text-xs text-slate-400 mt-1">총 누적 수익: {(uploads.reduce((acc, curr) => acc + (Math.floor(curr.sales_count * curr.price * 0.7) || 0), 0)).toLocaleString()} P</div>
-                                </div>
-
-                            </div>
-                        </div>
-
-                        {/* Settlement History */}
-                        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-                            <h3 className="font-bold text-slate-800 mb-4 text-sm flex items-center gap-2">
-                                <RefreshCw size={14} /> 정산 내역
-                            </h3>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                                        <tr>
-                                            <th className="px-4 py-2">신청일</th>
-                                            <th className="px-4 py-2">금액</th>
-                                            <th className="px-4 py-2">은행/계좌</th>
-                                            <th className="px-4 py-2">상태</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {settlements.map(s => (
-                                            <tr key={s.id} className="hover:bg-slate-50">
-                                                <td className="px-4 py-2 text-slate-600">{new Date(s.created_at).toLocaleDateString()}</td>
-                                                <td className="px-4 py-2 font-bold text-slate-800">{s.amount.toLocaleString()} P</td>
-                                                <td className="px-4 py-2 text-slate-500">{s.bank_name} {s.account_number}</td>
-                                                <td className="px-4 py-2">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className={`px-2 py-1 rounded text-xs font-bold w-fit ${s.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                                            s.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                                                                'bg-yellow-100 text-yellow-600'
-                                                            }`}>
-                                                            {s.status === 'completed' ? '완료' : (s.status === 'rejected' ? '반려' : '대기중')}
-                                                        </span>
-                                                        {s.status === 'rejected' && s.admin_memo && (
-                                                            <span className="text-xs text-red-500 font-medium">
-                                                                사유: {s.admin_memo}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {settlements.length === 0 && (
-                                            <tr>
-                                                <td colSpan={4} className="px-4 py-8 text-center text-slate-400">정산 내역이 없습니다.</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
                         <div className="bg-white rounded-lg shadow-sm border border-slate-200 divide-y divide-slate-100">
                             {uploads.length === 0 ? (
                                 <div className="p-10 text-center text-slate-400">업로드한 자료가 없습니다.</div>
@@ -719,9 +531,6 @@ export default function MyPage() {
                                         <div className="flex items-center justify-between sm:justify-end sm:flex-col sm:items-end gap-2">
                                             <div>
                                                 <div className="text-sm font-bold text-slate-800">{file.sales_count || 0}회 판매</div>
-                                                <div className="text-xs text-brand-600 font-bold">
-                                                    +{Math.floor((file.sales_count || 0) * file.price * 0.7).toLocaleString()}P 수익
-                                                </div>
                                             </div>
                                             <div className="flex items-center gap-1.5">
                                                 <button
@@ -754,12 +563,6 @@ export default function MyPage() {
                         </div>
                     </div>
                 )}
-                <SettlementModal
-                    isOpen={isSettlementModalOpen}
-                    onClose={() => setIsSettlementModalOpen(false)}
-                    earnedPoints={Math.max(0, earnedPoints - opinionPoints)}
-                    userId={user?.id || ''}
-                />
                 <EditModal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}

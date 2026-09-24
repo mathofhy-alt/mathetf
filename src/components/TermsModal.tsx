@@ -28,7 +28,7 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                                 구매자는 다운로드한 콘텐츠를 본인의 학습 목적으로만 사용해야 하며, 회사의 사전 승인 없이 온/오프라인, SNS, 타 자료실 등에 무단 전재, 공유 또는 재판매할 수 없습니다.
                             </p>
                             <p className="mb-2">
-                                제1항의 위반행위가 적발될 경우, 회사는 해당 회원의 자격을 즉시 정지하고 적립된 모든 수익금을 몰수할 수 있습니다.
+                                제1항의 위반행위가 적발될 경우, 회사는 해당 회원의 자격을 정지할 수 있습니다.
                             </p>
                             <p>
                                 <span className="font-bold">위약벌 규정:</span> 무단 배포 및 상업적 재판매 등 심각한 부정 이용의 경우, 회원은 회사에 해당 콘텐츠 판매가의 100배에 해당하는 금액을 위약벌로 지급해야 합니다. 단, 산출된 금액이 회사의 실질적 손해액보다 적을 경우 회사는 실손해액을 기준으로 추가 배상을 청구할 수 있습니다.
@@ -45,22 +45,22 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                                     <span className="font-bold">청약철회:</span> 디지털 콘텐츠의 특성상 결제 후 열람(다운로드) 기록이 없는 경우에 한하여 7일 이내 환불이 가능합니다. 1회라도 다운로드/열람한 자료는 환불 대상에서 제외됩니다.
                                 </li>
                                 <li>
-                                    <span className="font-bold">회원 탈퇴:</span> 회원 탈퇴 시 구매 내역 및 다운로드 권한은 소멸되며, 이미 다운로드 받은 자료에 대한 환불은 불가합니다. (단, 자료 판매로 인한 수익금은 탈퇴 전 정산 신청을 완료해야 합니다.)
+                                    <span className="font-bold">회원 탈퇴:</span> 회원 탈퇴 시 구매 내역 및 다운로드 권한은 소멸되며, 이미 다운로드 받은 자료에 대한 환불은 불가합니다.
                                 </li>
                             </ul>
                         </section>
 
                         <section>
-                            <h3 className="font-bold text-base mb-2">제3조 (판매자 책임 및 품질 관리)</h3>
+                            <h3 className="font-bold text-base mb-2">제3조 (자료 제보 및 품질 관리)</h3>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>
-                                    <span className="font-bold">저작권 보증:</span> 판매자는 업로드하는 자료가 제3자의 저작권을 침해하지 않음을 보증해야 합니다. 이와 관련한 모든 법적 분쟁의 책임은 업로더(판매자) 본인에게 있으며, 회사는 플랫폼 제공자로서 이에 대해 책임을 지지 않습니다.
+                                    <span className="font-bold">저작권 보증:</span> 자료를 제보하는 회원은 업로드하는 자료가 제3자의 저작권을 침해하지 않음을 보증해야 합니다. 이와 관련한 모든 법적 분쟁의 책임은 업로더 본인에게 있으며, 회사는 플랫폼 제공자로서 이에 대해 책임을 지지 않습니다.
                                 </li>
                                 <li>
                                     <span className="font-bold">표준 양식 준수:</span> 모든 자료는 회사가 배포한 <span className="font-bold text-rose-500">&apos;수학ETF 전용 한글 양식&apos;</span>을 사용하여 작성되어야 합니다. 타 사이트의 워터마크가 포함되거나 양식을 무단 변형한 자료는 운영진 판단하에 즉시 판매가 중단될 수 있습니다.
                                 </li>
                                 <li>
-                                    <span className="font-bold">운영자 개입 권한:</span> 자료 내 치명적인 오타나 수식 오류가 다수(3개소 이상) 발견되어 학습에 부적합하다고 판단될 경우, 회사는 판매자의 별도 동의 없이 판매 정지 및 구매자에 대한 결제 취소 조치를 취할 수 있습니다.
+                                    <span className="font-bold">운영자 개입 권한:</span> 자료 내 치명적인 오타나 수식 오류가 다수(3개소 이상) 발견되어 학습에 부적합하다고 판단될 경우, 회사는 자료 제공을 중단하고 구매자에 대한 결제 취소 조치를 취할 수 있습니다.
                                 </li>
                             </ul>
                         </section>
@@ -79,7 +79,7 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                     </div>
 
                     <div className="mt-8 text-right text-sm text-foreground/60 border-t pt-4">
-                        <p>공고일자: 2025-12-31 / 시행일자: 2025-12-31</p>
+                        <p>최초 시행일자: 2025-12-31</p>
                     </div>
                 </div>
 

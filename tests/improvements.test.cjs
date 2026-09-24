@@ -12,7 +12,7 @@ const {generateHmlFromTemplate}=require('../src/lib/hml-v2/generator.ts');
 const fixture=JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname,'fixtures/question-scope.json.gz'))));
 const audit=require('./fixtures/source-link-audit.json');
 const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
-const migrations=['202609200001_question_scope.sql','202609200002_payment_orders.sql','202609200003_question_bank_events.sql','202609200004_growth_metrics.sql'];
+const migrations=['202609200001_question_scope.sql','202609200002_payment_orders.sql','202609200003_question_bank_events.sql','202609200004_growth_metrics.sql','20260926_retire_seller_settlements.sql'];
 async function database(){
  const db=new PGlite();
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
@@ -121,7 +121,7 @@ test('A material purchase opens an ordinary card payment without escrow',async()
   assert.equal(saved.size,0);
  }finally{global.fetch=originalFetch;global.window=originalWindow;global.localStorage=originalStorage;}
 });
-test('Local PostgreSQL transactions: replay, wrong owner, rollback, retry, points and rewards',async()=>{
+test('Local PostgreSQL transactions: replay, wrong owner, rollback, retry, points without seller rewards',async()=>{
  const db=await database();try{
   for(const n of [1,2,3]){await db.query('INSERT INTO auth.users VALUES($1)',[uid(n)]);await db.query('INSERT INTO profiles(id,earned_points) VALUES($1,1000)',[uid(n)]);}
   async function order(id,quote,user=uid(1)){await db.query('INSERT INTO payment_orders(payment_id,user_id,kind,amount,total,used_points,points,items,name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,user,quote.kind,quote.amount,quote.total,quote.used_points,quote.points,JSON.stringify(quote.items),quote.name]);}
@@ -133,6 +133,7 @@ test('Local PostgreSQL transactions: replay, wrong owner, rollback, retry, point
   assert.equal((await db.query('SELECT purchased_points::int n FROM profiles WHERE id=$1',[uid(1)])).rows[0].n,0);
   assert.equal((await db.query('SELECT count(*)::int n FROM payment_history')).rows[0].n,1);
   const cart=cartQuote([{item_id:uid(20)}],[{id:uid(20),file_type:'DB',title:'검증 자료',price:1000}],1000);
+  // Previously prepared orders may still carry reward fields. Completing them must not pay a seller.
   cart.items[0].reward_user_id=uid(2);cart.items[0].submission_id=uid(21);
   await db.query('INSERT INTO exam_materials(id,title) VALUES($1,$2),($3,$4)',[uid(20),'검증 자료',uid(21),'원본 제보']);
   await order('order-cart',cart);
@@ -143,10 +144,8 @@ test('Local PostgreSQL transactions: replay, wrong owner, rollback, retry, point
   assert.equal((await db.query("SELECT status FROM payment_orders WHERE payment_id='order-cart'")).rows[0].status,'pending');
   await db.exec('DROP TRIGGER fail_grant ON purchased_items');await complete('order-cart');await complete('order-cart');
   assert.equal((await db.query('SELECT earned_points::int n FROM profiles WHERE id=$1',[uid(1)])).rows[0].n,0);
-  assert.equal((await db.query('SELECT earned_points::int n FROM profiles WHERE id=$1',[uid(2)])).rows[0].n,1700);
-  assert.equal((await db.query('SELECT count(*)::int n FROM submission_earnings')).rows[0].n,1);
-  const earnings=await db.query('SELECT submission_id,db_item_id,purchase_id,buyer_id,submitter_id,sale_amount,earnings_amount FROM submission_earnings');
-  assert.deepEqual(earnings.rows[0],{submission_id:uid(21),db_item_id:uid(20),purchase_id:'order-cart',buyer_id:uid(1),submitter_id:uid(2),sale_amount:1000,earnings_amount:700});
+  assert.equal((await db.query('SELECT earned_points::int n FROM profiles WHERE id=$1',[uid(2)])).rows[0].n,1000);
+  assert.equal((await db.query('SELECT count(*)::int n FROM submission_earnings')).rows[0].n,0);
   await order('order-insufficient',cart);await assert.rejects(complete('order-insufficient'));
   await assert.rejects(db.exec(`SET ROLE authenticated; SELECT complete_payment_order('order-first','${uid(1)}');`));await db.exec('RESET ROLE');
  }finally{await db.close();}
@@ -252,7 +251,7 @@ test('Season entry retains the Korean calendar boundary and worksheet scope',()=
  }
 });
 
-test('All four migrations enforce RPC permissions, own-order visibility and the 20-exam cap',async()=>{
+test('Migrations enforce RPC permissions, retired earnings access and the 20-exam cap',async()=>{
  const db=await database();try{
   await db.exec("CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; GRANT USAGE ON SCHEMA auth TO authenticated;");
   for(const n of [1,2]){await db.query('INSERT INTO auth.users VALUES($1)',[uid(n)]);await db.query('INSERT INTO profiles(id) VALUES($1)',[uid(n)]);}
@@ -264,7 +263,7 @@ test('All four migrations enforce RPC permissions, own-order visibility and the 
   for(const n of [1,2])await db.query('INSERT INTO submission_earnings(submission_id,db_item_id,purchase_id,buyer_id,submitter_id,sale_amount,earnings_amount) VALUES($1,$2,$3,$4,$5,1000,700)',[uid(21),uid(20),'order-earning-'+n,uid(n===1?2:1),uid(n)]);
   await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[uid(1)]);await db.exec('SET ROLE authenticated');
   assert.deepEqual((await db.query('SELECT payment_id FROM payment_orders')).rows.map(r=>r.payment_id),['order-owner-1']);
-  assert.deepEqual((await db.query('SELECT purchase_id FROM submission_earnings')).rows.map(r=>r.purchase_id),['order-earning-1']);
+  await assert.rejects(db.query('SELECT purchase_id FROM submission_earnings'));
   await assert.rejects(db.exec("INSERT INTO submission_earnings(submission_id,db_item_id,purchase_id,buyer_id,submitter_id,sale_amount,earnings_amount) VALUES('00000000-0000-4000-8000-000000000021','00000000-0000-4000-8000-000000000020','forged','00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000001',1000,700)"));
   await assert.rejects(db.exec("UPDATE payment_orders SET status='completed'"));await db.exec('RESET ROLE');
   await db.query('INSERT INTO folders(id,user_id) VALUES($1,$2)',[uid(77),uid(2)]);

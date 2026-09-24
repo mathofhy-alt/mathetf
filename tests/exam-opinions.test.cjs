@@ -39,11 +39,6 @@ test('opinions reward once per exam, cap at two per Korean day, and allow edits 
         await db.query('UPDATE profiles SET earned_points=earned_points-500 WHERE id=$1', [id(10)]);
         await db.query("INSERT INTO point_transactions(user_id,type,amount) VALUES ($1,'purchase',-500)", [id(10)]);
         assert.deepEqual((await db.query('SELECT earned_points,opinion_points FROM profiles WHERE id=$1', [id(10)])).rows[0], { earned_points: 1000, opinion_points: 1000 });
-        await db.exec(`SET "request.jwt.claim.sub" = '${id(10)}'`);
-        assert.equal((await db.query("SELECT request_settlement($1,1,'bank','123','holder') result", [id(10)])).rows[0].result.success, false);
-        await db.query('UPDATE profiles SET earned_points=earned_points+700 WHERE id=$1', [id(10)]);
-        assert.equal((await db.query("SELECT request_settlement($1,700,'bank','123','holder') result", [id(10)])).rows[0].result.success, true);
-        assert.deepEqual((await db.query('SELECT earned_points,opinion_points FROM profiles WHERE id=$1', [id(10)])).rows[0], { earned_points: 1000, opinion_points: 1000 });
         await assert.rejects(db.exec('SET ROLE authenticated; SELECT public.submit_exam_opinion(NULL,NULL,1,NULL,NULL,1);'), /permission denied/);
     } finally { await db.close(); }
 });

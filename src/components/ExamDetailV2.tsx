@@ -47,7 +47,6 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-semibold text-[#62776F]">
             <span>{subject}</span><span aria-hidden="true" className="text-[#B7C8BE]">/</span>
             {questionCount ? <span>{questionCount}문항</span> : <span>문항 수 확인 중</span>}
-            {previews.length > 0 && <><span aria-hidden="true" className="text-[#B7C8BE]">/</span><span>미리보기 {previews.length}페이지</span></>}
           </div>
           <p className="mt-3 text-xs leading-5 text-[#7A8E83]">미리보기는 전체 공개 · {row.free_pdf_url ? '문제 PDF는 회원 무료' : '문제 PDF 제공 여부 확인 중'}{hasSolutionMaterial ? ' · 해설 포함 PDF·HWP는 유료' : ''}</p>
         </header>
@@ -67,7 +66,7 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
               <p className="text-xs font-extrabold tracking-[0.14em] text-[#9C7A4B]">이용 방법</p>
               <h2 className="mt-1 text-xl font-black text-[#193740]">필요한 자료를 선택하세요</h2>
               <div className="mt-5 space-y-4">
-                {row.free_pdf_url && <FreeProblemCTA compact examId={row.id} filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`} pageCount={previews.length} sourceKey={sourceKey} school={row.school} />}
+                {row.free_pdf_url && <FreeProblemCTA compact examId={row.id} filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`} sourceKey={sourceKey} school={row.school} />}
                 {hasSolutionMaterial && <Link href={paidPdfId ? `/#material=${paidPdfId}` : `/?school=${encodeURIComponent(row.school)}`} rel="nofollow" className="block rounded-2xl border border-[#E4DDCE] bg-[#FBF8F0] p-4 transition hover:border-[#BEA77C]"><span className="block text-[11px] font-extrabold tracking-[0.1em] text-[#9C7A4B]">해설이 필요하다면</span><strong className="mt-1 block text-sm text-[#4F493E]">해설 포함 PDF·HWP 보기 ↗</strong><span className="mt-1 block text-xs leading-5 text-[#847A68]">결제 완료 후 즉시 다운로드 · 30일간 이용</span></Link>}
                 {hasDb && <Link href={createHref} className="block rounded-2xl border border-[#CADCD1] bg-[#F0F6F1] p-4 transition hover:border-[#83AE95]"><span className="block text-[11px] font-extrabold tracking-[0.1em] text-[#497D5F]">직접 출제하려면</span><strong className="mt-1 block text-sm text-[#245442]">{canStartWithQuestions ? `${questionCount}문항으로 시험지 만들기 →` : '문항 출제 자료 확인하기 →'}</strong><span className="mt-1 block text-xs leading-5 text-[#698271]">문항을 골라 새 시험지로 편집</span></Link>}
                 {!row.free_pdf_url && !hasSolutionMaterial && !hasDb && <p className="rounded-2xl bg-[#F5F7F2] p-4 text-sm text-[#718079]">현재 이용할 수 있는 파일을 확인 중입니다.</p>}

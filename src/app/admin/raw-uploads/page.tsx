@@ -15,7 +15,6 @@ export default function RawUploadsAdmin() {
     const [dbItems, setDbItems] = useState<any[]>([]);  // 연결 가능한 DB 자료 목록
     const [isLoading, setIsLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
-    const [earningsMap, setEarningsMap] = useState<Record<string, number>>({});  // submission_id → 총 수익
     const [linkingId, setLinkingId] = useState<string | null>(null);  // 현재 연결 처리 중인 submission id
     const [selectedDbId, setSelectedDbId] = useState<string>('');
     const [rewardedIds, setRewardedIds] = useState<Set<string>>(new Set());  // 채택 보상 지급 완료된 제보
@@ -33,22 +32,6 @@ export default function RawUploadsAdmin() {
 
         if (!error && data) {
             setUploads(data);
-
-            // 각 제보의 총 수익 조회
-            const ids = data.map((d: any) => d.id);
-            if (ids.length > 0) {
-                const { data: earningsData } = await supabase
-                    .from('submission_earnings')
-                    .select('submission_id, earnings_amount');
-
-                if (earningsData) {
-                    const map: Record<string, number> = {};
-                    earningsData.forEach((e: any) => {
-                        map[e.submission_id] = (map[e.submission_id] || 0) + e.earnings_amount;
-                    });
-                    setEarningsMap(map);
-                }
-            }
         }
 
         // 채택 보상 지급 완료 목록
@@ -126,7 +109,7 @@ export default function RawUploadsAdmin() {
             alert('연결할 DB 자료를 선택해주세요.');
             return;
         }
-        if (!confirm('이 원본 제보를 해당 DB 자료와 연결하시겠습니까?\n이후 해당 DB 자료 판매 시 제보자에게 70% 포인트가 자동 적립됩니다.')) return;
+        if (!confirm('이 원본 제보를 해당 DB 자료의 출처로 연결하시겠습니까?')) return;
 
         setLinkingId(submissionId);
         try {
@@ -137,7 +120,7 @@ export default function RawUploadsAdmin() {
 
             if (error) throw error;
 
-            alert('✅ 연결 완료! 이제 해당 DB 구매 시 제보자에게 70%가 자동 적립됩니다.');
+            alert('원본 제보와 DB 자료를 연결했습니다.');
             setSelectedDbId('');
             await fetchData();
         } catch (err: any) {
@@ -185,7 +168,7 @@ export default function RawUploadsAdmin() {
                         </h1>
                         <p className="text-sm text-slate-500 mt-1">
                             사용자들이 '자료등록 - 원본 시험지 제보' 탭을 통해 업로드한 파일 목록입니다.
-                            <span className="ml-2 text-purple-600 font-bold">DB 자료 연결 시 판매 수익 70%가 제보자에게 자동 적립됩니다.</span>
+                            <span className="ml-2 text-purple-600 font-bold">DB 자료의 원본 출처를 확인하고 연결합니다.</span>
                         </p>
                     </div>
                     <button
@@ -206,7 +189,6 @@ export default function RawUploadsAdmin() {
                             )}
                             {uploads.map(file => {
                                 const linkedDbs = getLinkedDbs(file.id);
-                                const totalEarnings = earningsMap[file.id] || 0;
                                 const isExpanded = expandedId === file.id;
 
                                 return (
@@ -223,11 +205,6 @@ export default function RawUploadsAdmin() {
                                                         {linkedDbs.length > 0 && (
                                                             <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
                                                                 <Link2 size={10} /> DB 연결됨 ({linkedDbs.length}개)
-                                                            </span>
-                                                        )}
-                                                        {totalEarnings > 0 && (
-                                                            <span className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
-                                                                <Coins size={10} /> 총 {totalEarnings.toLocaleString()}P 적립됨
                                                             </span>
                                                         )}
                                                     </div>
@@ -309,14 +286,13 @@ export default function RawUploadsAdmin() {
                                                         </div>
                                                     </div>
                                                 )}
-
                                                 {/* 새 DB 연결 */}
                                                 <div>
                                                     <h4 className="text-xs font-bold text-purple-800 mb-2 flex items-center gap-1">
                                                         <AlertCircle size={12} /> DB 자료 새로 연결하기
                                                     </h4>
                                                     <p className="text-[11px] text-purple-700 mb-2">
-                                                        이 원본 제보를 바탕으로 생성한 개인DB 자료를 선택하면, 해당 DB 판매 시 제보자에게 <strong>70%</strong>가 자동 적립됩니다.
+                                                        이 원본 제보를 바탕으로 만든 개인DB 자료를 선택해 출처를 연결합니다.
                                                     </p>
                                                     <div className="flex gap-2">
                                                         <select
@@ -345,18 +321,6 @@ export default function RawUploadsAdmin() {
                                                     </div>
                                                 </div>
 
-                                                {/* 수익 내역 */}
-                                                {totalEarnings > 0 && (
-                                                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
-                                                        <div className="text-xs font-bold text-amber-800 flex items-center gap-1 mb-1">
-                                                            <Coins size={12} /> 수익 적립 현황
-                                                        </div>
-                                                        <div className="text-lg font-black text-amber-700">
-                                                            {totalEarnings.toLocaleString()} P
-                                                            <span className="text-xs font-normal text-amber-600 ml-1">제보자에게 적립됨</span>
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </div>
                                         )}
                                     </div>
