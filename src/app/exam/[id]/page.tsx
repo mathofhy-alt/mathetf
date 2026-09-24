@@ -7,7 +7,6 @@ import ExamDetailV2 from '@/components/ExamDetailV2';
 import { ExamOpinion } from '@/components/ExamOpinions';
 import { buildSourceDbId } from '@/lib/examKey';
 import { proxiedOgImage } from '@/lib/og-image';
-import { buildSeoPilotAnalysis, SEO_EXAM_PILOT_IDS } from '@/lib/seo-exam-pilot';
 import { reportForExam } from '@/lib/seo-insights';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
@@ -25,45 +24,16 @@ function buildLabel(row: any) {
     return `${row.school} ${row.exam_year}년 ${grade}${sem} ${row.exam_type || ''}${subject}`.replace(/\s+/g, ' ').trim();
 }
 
-const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+type Composition = { total: number; byUnit: { unit: string; count: number }[]; easy: number; mid: number; hard: number };
 
-type Composition = { total: number; byUnit: { unit: string; count: number }[]; avg: number; easy: number; mid: number; hard: number };
-
-// [SEO] 시험 구성 데이터를 고유 서술형 문단으로 변환 (얇은 콘텐츠 방지 — 표는 그대로 두고 글도 제공)
-function buildNarrative(label: string, comp: Composition, concepts: string[]): string[] {
-    const paras: string[] = [];
+// Show only statements that can be checked against the linked questions.
+function buildNarrative(label: string, comp: Composition): string[] {
     const top = comp.byUnit.slice(0, 3);
-    const topStr = top.map((u) => `${u.unit} ${u.count}문항(${pct(u.count, comp.total)}%)`).join(', ');
-    const diffLabel = comp.avg <= 3 ? '평이한 편' : comp.avg <= 5 ? '중간 수준' : '높은 편';
-
-    paras.push(
-        `${label} 수학 시험은 총 ${comp.total}문항으로, ${comp.byUnit.length}개 단원에 걸쳐 출제되었습니다. ` +
-        `평균 난이도는 10점 만점에 약 ${comp.avg.toFixed(1)}점으로 ${diffLabel}입니다. ` +
-        `아래에서 실제 시험지 문제 미리보기와 단원별·난이도별 출제 구성을 모두 확인할 수 있습니다.`
-    );
-
-    if (top.length > 0) {
-        paras.push(
-            `출제 비중이 가장 높은 단원은 ${topStr}입니다. ` +
-            `${top[0].unit} 단원의 비중이 가장 크므로, 이 단원의 개념과 대표 유형을 먼저 정리한 뒤 나머지 단원으로 넓혀가는 학습 순서가 효율적입니다.`
-        );
-    }
-
-    paras.push(
-        `난이도 분포는 쉬움 ${comp.easy}문항(${pct(comp.easy, comp.total)}%), 보통 ${comp.mid}문항(${pct(comp.mid, comp.total)}%), 어려움 ${comp.hard}문항(${pct(comp.hard, comp.total)}%)으로 구성됩니다. ` +
-        (comp.hard > 0
-            ? `어려움으로 분류된 ${comp.hard}문항이 등급을 가르는 변별 문항이므로, 기본기를 빠르게 확보한 뒤 이 상위 문항 유형에 시간을 집중하는 전략이 유효합니다.`
-            : `기본·중급 문항 위주라 개념과 대표 유형을 정확히 익히면 안정적으로 고득점을 노릴 수 있습니다.`)
-    );
-
-    if (concepts.length > 0) {
-        paras.push(
-            `주요 출제 개념·유형으로는 ${concepts.slice(0, 10).join(', ')} 등이 있습니다. ` +
-            `같은 유형의 변형문제로 반복 연습하면 실전에서 풀이 시간을 단축할 수 있습니다.`
-        );
-    }
-
-    return paras;
+    const topStr = top.map((u) => `${u.unit} ${u.count}문항`).join(', ');
+    return [
+        `${label}은 총 ${comp.total}문항이며 ${comp.byUnit.length}개 단원에서 출제되었습니다.${topStr ? ` 문항 수가 많은 단원은 ${topStr}입니다.` : ''}`,
+        `연결된 문항의 분류 난이도는 쉬움 ${comp.easy}문항, 보통 ${comp.mid}문항, 어려움 ${comp.hard}문항입니다. 이는 학생 성적이나 실제 정답률을 뜻하지 않습니다.`,
+    ];
 }
 
 async function getExam(id: string) {
@@ -88,7 +58,7 @@ async function getExam(id: string) {
     const { data: siblings } = await matchLocation(matchSubject(
         supabase
             .from('exam_materials')
-            .select('id,file_type,content_type')
+            .select('id,file_type,content_type,price')
             .eq('school', row.school)
             .eq('exam_year', row.exam_year)
             .eq('grade', row.grade)
@@ -135,7 +105,7 @@ async function getExam(id: string) {
         .slice(0, 4);
 
     // 시험 구성(단원별·난이도별 문항수) + 출제 개념/유형(key_concepts) — source_db_id 로 questions 조회
-    let composition: null | { total: number; byUnit: { unit: string; count: number }[]; avg: number; easy: number; mid: number; hard: number } = null;
+    let composition: Composition | null = null;
     let concepts: string[] = [];  // 유형/개념 태그 (문제 본문은 노출 안 함 — 롱테일 키워드용)
     const sourceKey = buildSourceDbId(row);
     if (sourceKey) {
@@ -145,24 +115,25 @@ async function getExam(id: string) {
             .eq('source_db_id', sourceKey);
         if (qs && qs.length > 0) {
             const unitMap: Record<string, number> = {};
-            const conceptSet = new Set<string>();
-            let diffSum = 0, easy = 0, mid = 0, hard = 0;
+            const conceptCounts = new Map<string, number>();
+            let easy = 0, mid = 0, hard = 0;
             for (const q of qs) {
                 const unit = (q.unit || '기타').toString();
                 unitMap[unit] = (unitMap[unit] || 0) + 1;
                 const d = Number(q.difficulty) || 0;
-                diffSum += d;
                 // 분류기가 1~3에 몰리는 하향 편향 → 실제 분포(≤2 41%/3-4 35%/≥5 24%) 기준으로 구간 보정
                 if (d <= 2) easy++; else if (d <= 4) mid++; else hard++;
                 const kc = q.key_concepts;
                 const arr = Array.isArray(kc) ? kc : (typeof kc === 'string' ? [kc] : []);
-                arr.forEach((c: any) => { const t = String(c).replace(/^#/, '').trim(); if (t) conceptSet.add(t); });
+                arr.forEach((c: any) => { const t = String(c).replace(/^#/, '').trim(); if (t) conceptCounts.set(t, (conceptCounts.get(t) || 0) + 1); });
             }
             const byUnit = Object.entries(unitMap)
                 .map(([unit, count]) => ({ unit, count }))
                 .sort((a, b) => b.count - a.count);
-            composition = { total: qs.length, byUnit, avg: diffSum / qs.length, easy, mid, hard };
-            concepts = Array.from(conceptSet);
+            composition = { total: qs.length, byUnit, easy, mid, hard };
+            concepts = Array.from(conceptCounts.entries())
+                .sort((a, b) => b[1] - a[1] || a[0].length - b[0].length || a[0].localeCompare(b[0], 'ko'))
+                .map(([concept]) => concept);
         }
     }
 
@@ -242,15 +213,10 @@ export default async function ExamDetailPage({ params }: Props) {
 
     const hasDb = siblings.some((f: any) => f.file_type === 'DB'&&!unavailableDbs[f.id]);
 
-    // [SEO] 서술 문단 — 제미나이 배치가 생성한 고유 분석글(ai_analysis) 우선, 없으면 템플릿 폴백
-    const templateNarrative: string[] = composition ? buildNarrative(label, composition, concepts) : [];
-    const aiParas: string[] = typeof row.ai_analysis === 'string' && row.ai_analysis.trim()
-        ? row.ai_analysis.trim().split(/\n{2,}|\r?\n/).map((s: string) => s.trim()).filter((s: string) => Boolean(s))
-        : [];
+    // Stored AI prose can mistake a question-difficulty score for student marks.
+    // Keep it in the database, but use a concise, verifiable summary on this screen.
+    const narrative: string[] = composition ? buildNarrative(label, composition) : [];
     const relatedReport = reportForExam(row);
-    const benchmark = relatedReport?.groups.find(group => group.label.includes(row.exam_type?.includes('중간') ? '중간' : '기말'));
-    const pilotAnalysis = composition && SEO_EXAM_PILOT_IDS.has(row.id) ? buildSeoPilotAnalysis(composition, benchmark) : [];
-    const narrative: string[] = pilotAnalysis.length > 0 ? pilotAnalysis : aiParas.length > 0 ? aiParas : templateNarrative;
     const url = `https://mathetf.com/exam/${params.id}`;
     const jsonLd = [
         {
@@ -281,6 +247,9 @@ export default async function ExamDetailPage({ params }: Props) {
     ];
 
     const paidPdfId = siblings.find((item: any) => item.file_type === 'PDF' && item.content_type === '해설')?.id || null;
+    const paidMaterials = (siblings || []).filter((item: any) => item.content_type === '해설' && (item.file_type === 'PDF' || item.file_type === 'HWP'))
+        .map((item: any) => ({ id: item.id as string, type: item.file_type as 'PDF' | 'HWP', price: Number(item.price) || 0 }))
+        .sort((a: { type: 'PDF' | 'HWP' }, b: { type: 'PDF' | 'HWP' }) => Number(a.type === 'HWP') - Number(b.type === 'HWP'));
     const hasSolutionMaterial = siblings.some((item: any) => item.content_type === '해설' && (item.file_type === 'PDF' || item.file_type === 'HWP'));
     const canStartWithQuestions = hasDb && !!sourceKey && !!composition?.total;
     const createHref = canStartWithQuestions
@@ -301,7 +270,7 @@ export default async function ExamDetailPage({ params }: Props) {
         <ExamDetailV2 row={row} previews={previews} questionCount={composition?.total || null}
             sourceKey={sourceKey} hasDb={hasDb} hasSolutionMaterial={hasSolutionMaterial}
             canStartWithQuestions={canStartWithQuestions} createHref={createHref}
-            otherYears={otherYears} paidPdfId={paidPdfId} opinionExamId={opinionExamId}
+            otherYears={otherYears} paidPdfId={paidPdfId} paidMaterials={paidMaterials} opinionExamId={opinionExamId}
             opinions={opinions} narrative={narrative} concepts={concepts} composition={composition}
             relatedExams={relatedExams} relatedReport={relatedReport} />
     </>;

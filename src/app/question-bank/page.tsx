@@ -162,9 +162,14 @@ export default function QuestionBankPage() {
     // Personal DB State
     const [purchasedDbs, setPurchasedDbs] = useState<any[]>([]);
     const [selectedDbIds, setSelectedDbIds] = useState<string[]>([]);
+    const sourceScopeLabel = selectedDbIds.length === 0 || (purchasedDbs.length > 100 && selectedDbIds.length / purchasedDbs.length >= 0.99)
+        ? '전체 출제자료' : `출제자료 ${selectedDbIds.length}개`;
     // 마지막 검색이 실제로 쓴 DB 범위. 미선택('전체 문제 검색')일 때 페이징이 범위를 잃지 않게 한다.
     const lastSearchDbIds = useRef<string[]>([]);
     const [filterState, setFilterState] = useState<any>(null); // Store filters locally for manual search
+    const activeFilterCount = ['subjects', 'units', 'concepts', 'difficulty', 'keywords'].reduce(
+        (count, key) => count + (Array.isArray(filterState?.[key]) ? filterState[key].length : 0), 0
+    ) + (filterState?.mockSlug ? 1 : 0);
     // Derived for legacy support or convenience if needed, but mainly use IDs
 
     // [퍼널 2026-08-30] ?src=<source_db_id> 로 들어오면 그 회차 문항을 장바구니에 담은 채로 시작한다.
@@ -1002,7 +1007,7 @@ export default function QuestionBankPage() {
                     setFilterState(draft.filters);
                     setExamTitle(draft.title);
                     setQuestionsPerColumn(draft.questionsPerColumn);
-                    setViewMode(draft.viewMode);
+                    setViewMode(draft.cartIds.length ? draft.viewMode : 'search');
                     setShowAutoModal(draft.autoOpen);
                 } else if (!new URLSearchParams(window.location.search).has('src') && !hasEntryContext(new URLSearchParams(window.location.search))) {
                     const legacy = JSON.parse(localStorage.getItem('exam_cart_ids') || '[]');
@@ -1016,7 +1021,9 @@ export default function QuestionBankPage() {
                     if (!response.ok || !Array.isArray(result.data)) throw new Error('이전 문제를 불러오지 못했습니다. 새로고침하면 다시 시도합니다.');
                     const map = new Map(result.data.map((q: any) => [q.id, q]));
                     if (active) {
-                        setCart(ids.map(id => map.get(id)).filter(Boolean));
+                        const restored = ids.map(id => map.get(id)).filter(Boolean);
+                        setCart(restored);
+                        if (!restored.length) setViewMode('search');
                         if (result.data.length !== ids.length) showToast('일부 문항을 복원하지 못했습니다. 저장 전에 문항 수를 확인해주세요.', 'info');
                     }
                 }
@@ -1416,7 +1423,7 @@ export default function QuestionBankPage() {
                             /* 비로그인: 전체 DB 자동 선택 안내 (한 줄) */
                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                {!isDbInitialized ? '자료 목록을 불러오는 중…' : selectedDbIds.length > 0 ? `선택한 자료 ${selectedDbIds.length}개에서 검색` : `자료 미선택 · 전체 ${purchasedDbs.length}개에서 검색`}
+                                {!isDbInitialized ? '자료 목록을 불러오는 중…' : `${sourceScopeLabel}에서 검색`}
                             </div>
                         )}
                         {/* 관리자 전체 DB 선택 버튼 */}
@@ -1502,6 +1509,7 @@ export default function QuestionBankPage() {
                                 <h2 className="hidden sm:block sm:text-2xl font-bold text-gray-800 truncate">
                                     {selectedDbIds.length > 0 ? '문항 고르기' : '전체 문제 검색'}
                                 </h2>
+                                {hasSearched && <span role="status" className="hidden sm:inline-flex shrink-0 rounded-full bg-[#EDF3FF] px-2.5 py-1 text-xs font-bold text-[#285CE6]">검색 결과 {totalQuestions.toLocaleString()}문항</span>}
                             </div>
                             <div className="flex gap-1.5 sm:gap-2 items-center">
                                 {/* 카드 크기(열 수) 토글 — lg 이상에서만 의미 있음 */}
@@ -1653,6 +1661,13 @@ export default function QuestionBankPage() {
                             </div>
                         </header>
                     )}
+
+                    {viewMode === 'search' && <div className="flex flex-wrap items-center gap-2 border-b border-[#E2E9F6] bg-[#F8FAFF] px-4 py-2 text-[11px] font-semibold text-[#52627D] sm:px-6">
+                        <span>① {sourceScopeLabel}</span><span className="text-[#A9B8D2]">→</span>
+                        <span>② 조건 {activeFilterCount > 0 ? `${activeFilterCount}개 적용` : '선택 사항'}</span><span className="text-[#A9B8D2]">→</span>
+                        <span>③ {hasSearched ? `결과 ${totalQuestions.toLocaleString()}문항에서 담기` : '검색 후 문항 담기'}</span>
+                        <a href="/guide" className="ml-auto underline underline-offset-2 hover:text-[#285CE6]">출제 방법</a>
+                    </div>}
 
                     {loading && viewMode === 'search' ? (
                         /* 검색 로딩: 문제 카드 모양 스켈레톤 (스피너보다 체감 빠름) */
@@ -1875,13 +1890,18 @@ export default function QuestionBankPage() {
                                             <Database size={48} className="text-slate-200" />
                                             <p className="text-lg font-medium text-slate-500">출제할 문항이 없습니다.</p>
                                             <p className="text-sm text-slate-400">검색으로 돌아가서 문제를 담아주세요.</p>
+                                            <button onClick={() => setViewMode('search')} className="rounded-xl bg-[#285CE6] px-5 py-2.5 text-sm font-bold text-white">문항 검색하기 →</button>
                                         </div>
                                     ) : hasSearched ? (
                                         /* 검색했지만 결과 없음 */
                                         <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3">
                                             <Search size={48} className="text-slate-200" />
                                             <p className="text-lg font-medium text-slate-500">조건에 맞는 문제가 없습니다 (0건)</p>
-                                            <p className="text-sm text-slate-400">필터 조건을 조정하거나 다른 출제 자료를 선택해보세요.</p>
+                                            <p className="text-sm text-slate-400">조건을 넓혀 다시 찾거나 다른 출제 자료를 선택해보세요.</p>
+                                            <div className="mt-2 flex flex-wrap justify-center gap-2">
+                                                <button onClick={() => { setFilterState(null); setFilterVersion(v => v + 1); fetchQuestions(lastSearchDbIds.current.length ? lastSearchDbIds.current : purchasedDbs.map((d: any) => d.id), null, 1); }} className="rounded-xl bg-[#285CE6] px-5 py-2.5 text-sm font-bold text-white">조건 지우고 다시 검색</button>
+                                                <button onClick={() => { setStorageModalMode('db'); setShowStorageModal(true); }} className="rounded-xl border border-[#C9D9FF] bg-white px-5 py-2.5 text-sm font-bold text-[#285CE6]">출제 자료 바꾸기</button>
+                                            </div>
                                         </div>
                                     ) : selectedDbIds.length > 0 ? (
                                         /* DB 선택됨, 아직 검색 안 함 */
@@ -1920,6 +1940,7 @@ export default function QuestionBankPage() {
                                                 <Search size={24} className="text-brand-500" />
                                             </div>
                                             <p className="text-base font-semibold text-slate-600"><span className="hidden md:inline">왼쪽 필터 조건 설정 후 </span><span className="md:hidden">위 「필터」에서 조건을 고른 뒤 </span><span className="text-brand-600">「조건 검색하기」</span>를 눌러주세요.</p>
+                                            <a href="/question-bank?demo=1&origin=question-bank" className="rounded-xl border border-[#C9D9FF] bg-[#F0F5FF] px-5 py-2.5 text-sm font-bold text-[#285CE6]">실제 기출 5문항으로 먼저 체험하기 →</a>
                                             {/* [모바일] 폰에는 "왼쪽 필터"가 없다 — 시트를 여는 버튼을 바로 준다 (9/7 모바일 감사 ④) */}
                                             <button onClick={() => setShowMobileSidebar(true)} className="md:hidden mt-3 inline-flex items-center gap-2 px-5 py-3 bg-[#285CE6] text-white font-bold rounded-xl shadow-md active:scale-95 transition">필터 열기</button>
                                             <p className="text-sm text-slate-400">단원, 난이도, 키워드를 조합해 원하는 문제를 찾을 수 있어요.</p>

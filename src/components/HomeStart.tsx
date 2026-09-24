@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowRight, ArrowUpRight, Search, Plus } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Search, Plus, School2, FileText, Files } from 'lucide-react';
 import AccessPolicy from './AccessPolicy';
 import { examSeason, questionBankHref } from '@/lib/discovery';
 
@@ -22,7 +22,7 @@ function CoverDrawing({ type }: { type: string }) {
   </svg>;
 }
 
-export default function HomeStart({ onSearch }: { onSearch: (keyword: string) => void }) {
+export default function HomeStart({ onSearch, onFindFreePdf }: { onSearch: (keyword: string) => void; onFindFreePdf: () => void }) {
   const [keyword, setKeyword] = useState('');
   const [season, setSeason] = useState<ReturnType<typeof examSeason> | null>(null);
   useEffect(() => {
@@ -45,8 +45,25 @@ export default function HomeStart({ onSearch }: { onSearch: (keyword: string) =>
         <input aria-label="찾고 싶은 학교" value={keyword} onChange={e=>setKeyword(e.target.value)} placeholder="어느 학교의 기출을 찾으세요?" autoComplete="off" maxLength={80}/>
         <button type="submit" aria-label="학교 기출 찾기"><ArrowRight size={21}/></button>
       </form>
-      <div className="atelier-opening-links"><Link href="/question-bank?demo=1&origin=home">기출 5문항으로 시작 <ArrowUpRight size={15}/></Link><span aria-hidden="true"/><Link href="/guide">처음이라면, 이용 가이드 <ArrowRight size={14}/></Link></div>
-      <p className="atelier-no-login">문항 미리보기는 로그인 없이.</p>
+      <div className="atelier-start-paths" aria-label="원하는 작업으로 바로 시작">
+        <Link href="/schools" className="atelier-start-path">
+          <span className="atelier-start-icon"><School2 size={19}/></span>
+          <span><strong>우리 학교 시험 찾기</strong><small>학교·학년·회차별 기출</small></span>
+          <ArrowUpRight size={17} className="atelier-start-arrow"/>
+        </Link>
+        <Link href="/question-bank?demo=1&origin=home" className="atelier-start-path">
+          <span className="atelier-start-icon"><Files size={19}/></span>
+          <span><strong>시험지 직접 만들기</strong><small>실제 기출 5문항으로 시작</small></span>
+          <ArrowUpRight size={17} className="atelier-start-arrow"/>
+        </Link>
+        <button type="button" onClick={onFindFreePdf} className="atelier-start-path">
+          <span className="atelier-start-icon"><FileText size={19}/></span>
+          <span><strong>무료 문제 PDF 찾기</strong><small>전체 문제·해설 제외·회원 무료</small></span>
+          <ArrowUpRight size={17} className="atelier-start-arrow"/>
+        </button>
+      </div>
+      <div className="atelier-opening-links"><Link href="/guide">처음이라면, 이용 가이드 <ArrowRight size={14}/></Link></div>
+      <p className="atelier-no-login">시험지 미리보기는 로그인 없이 볼 수 있습니다.</p>
       {season && <Link className="atelier-season" href={questionBankHref({semester:season.semester,exam:season.exam,origin:'home'})} aria-label={`${season.label} 문항 찾기`}><span>이번 시험 준비</span><strong>{season.label}</strong><ArrowUpRight size={15}/></Link>}
     </section>
     <section className="shelf-section" aria-label="수학 자료 컬렉션">

@@ -670,6 +670,15 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                     target?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
                     target?.focus({preventScroll:true});
                 });
+            }} onFindFreePdf={()=>{
+                setSelectedRegion('');setSelectedDistrict('');setSelectedSchool('');
+                setSelectedGrade('');setSelectedExamScope('');setSelectedYear('');setSelectedSubject('');
+                setSearchKeyword('');setFreePdfOnly(true);setCurrentPage(1);
+                requestAnimationFrame(()=>{
+                    const target=document.getElementById('catalog');
+                    target?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+                    target?.focus({preventScroll:true});
+                });
             }} />{catalogState!=='ready'&&<p role="status" className="max-w-[1200px] mx-auto px-4 text-sm">{catalogState==='loading'?'전체 기출 자료를 불러오는 중입니다.':'일부 자료만 표시됩니다. 새로고침하거나 학교별 자료 페이지를 이용해주세요.'}</p>}
 
 
@@ -803,8 +812,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
 
                                             {/* Download chips */}
                                             <div className="cloud-exam-actions flex items-center gap-2 flex-wrap flex-shrink-0">
+                                                <Link href={group.files.pdfSol ? `/exam/${group.files.pdfSol.id}` : `/school/${encodeURIComponent(group.school)}`} className="cloud-exam-view">시험지 전체 보기 <ArrowUpRight size={15}/></Link>
                                                 {/* 문제만 PDF (회원가입 시 무료) — 맨 앞 강조 */}
-                                                <p className="w-full text-xs text-slate-500">{group.files.pdfSol?.hasFreePdf?'무료 문제 PDF 제공':'무료 문제 PDF 준비 중'} · {Object.values(group.files).some((f:any)=>f?.hasPreview)?'미리보기 제공':'미리보기 준비 중'} · {group.files.db&&!unavailableDbs[group.files.db.id]?'문항별 출제 가능':'문항별 출제 준비 중'}</p>
+                                                <p className="cloud-exam-file-note">{group.files.pdfSol?.hasFreePdf?'전체 문제 PDF는 회원 무료 · 해설 제외':'무료 문제 PDF 준비 중'} · {Object.values(group.files).some((f:any)=>f?.hasPreview)?'미리보기 공개':'미리보기 준비 중'}</p>
                                                 {group.files.pdfSol?.hasFreePdf && (() => {
                                                     const st = dlState[freePdfDownloadKey(group.files.pdfSol!.id)];
                                                     return (
@@ -822,13 +832,16 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             ) : st === 'done' ? (
                                                                 <><Check size={13} /><span>받았어요</span></>
                                                             ) : (
-                                                                <><Download size={13} /><span>무료 PDF</span></>
+                                                                <><Download size={13} /><span>문제 PDF 무료</span></>
                                                             )}
                                                         </button>
                                                     );
                                                 })()}
-                                                {!group.files.pdfSol?.hasFreePdf && <button type="button" data-free-pdf="pending" disabled title="이 자료의 무료 문제 PDF는 아직 준비되지 않았습니다."><Download size={13}/><span>무료 PDF 준비 중</span></button>}
+                                                {!group.files.pdfSol?.hasFreePdf && <button type="button" data-free-pdf="pending" disabled title="이 자료의 무료 문제 PDF는 아직 준비되지 않았습니다."><Download size={13}/><span>문제 PDF 준비 중</span></button>}
 
+                                                {(group.files.pdfSol || group.files.hwpSol || group.files.db) && <details className="cloud-exam-more">
+                                                  <summary>{group.files.pdfSol || group.files.hwpSol ? '해설 포함 파일·자료 옵션' : '문항 자료 옵션'} <ChevronRight size={16}/></summary>
+                                                  <div className="cloud-exam-more-grid">
                                                 {/* PDF */}
                                                 {group.files.pdfSol ? (
                                                     <button
@@ -847,13 +860,9 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             : <PdfFileIcon size={13} purchased={checkAccess(group.files.pdfSol.id)} />}
                                                         <span>{dlState[group.files.pdfSol.id] === 'loading' ? '받는 중…'
                                                             : checkAccess(group.files.pdfSol.id) && dlState[group.files.pdfSol.id] === 'done' ? '받았어요'
-                                                            : checkAccess(group.files.pdfSol.id) ? 'PDF 다운' : cartItemIds.has(group.files.pdfSol.id) ? '장바구니' : `PDF ${group.files.pdfSol.price}원`}</span>
+                                                            : checkAccess(group.files.pdfSol.id) ? '해설 PDF 받기' : cartItemIds.has(group.files.pdfSol.id) ? 'PDF 장바구니에 담김' : `해설 PDF ${group.files.pdfSol.price}원`}</span>
                                                     </button>
-                                                ) : (
-                                                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
-                                                        <PdfFileIcon size={13} grayscale /> PDF
-                                                    </div>
-                                                )}
+                                                ) : null}
 
                                                 {/* HWP */}
                                                 {group.files.hwpSol ? (
@@ -872,18 +881,16 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             : <HwpFileIcon size={13} purchased={checkAccess(group.files.hwpSol.id)} />}
                                                         <span>{dlState[group.files.hwpSol.id] === 'loading' ? '받는 중…'
                                                             : dlState[group.files.hwpSol.id] === 'done' ? '받았어요'
-                                                            : checkAccess(group.files.hwpSol.id) ? 'HWP 다운' : cartItemIds.has(group.files.hwpSol.id) ? '장바구니' : `HWP ${group.files.hwpSol.price}원`}</span>
+                                                            : checkAccess(group.files.hwpSol.id) ? '해설 HWP 받기' : cartItemIds.has(group.files.hwpSol.id) ? 'HWP 장바구니에 담김' : `해설 HWP ${group.files.hwpSol.price}원`}</span>
                                                     </button>
-                                                ) : (
-                                                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
-                                                        <HwpFileIcon size={13} grayscale /> HWP
-                                                    </div>
-                                                )}
+                                                ) : null}
+                                                {group.files.db && <button type="button" onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }}><Info size={13}/> 문항 구성 확인</button>}
+                                                {group.files.db && !checkAccess(group.files.db.id) && <button type="button" onClick={(e) => { e.stopPropagation(); handleAddToCart(group.files.db!); }}><ShoppingCart size={13}/> {cartItemIds.has(group.files.db.id) ? '문항 자료 장바구니에 담김' : '문항 자료 장바구니'}</button>}
+                                                  </div>
+                                                </details>}
 
                                                 {/* DB */}
-                                                <div className="relative group/db">
-                                                    {group.files.db ? (
-                                                        <>
+                                                {group.files.db && <div className="relative group/db">
                                                             <button disabled={!!unavailableDbs[group.files.db.id]} onClick={()=>router.push(`/question-bank?material=${group.files.db!.id}&origin=home`)} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
                                                                 checkAccess(group.files.db.id)
                                                                     ? 'bg-[#EAF1E1] text-[#426D36] border-brand-200 hover:bg-brand-100'
@@ -894,37 +901,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                                 <DbFileIcon size={13} purchased={checkAccess(group.files.db.id)} />
                                                                 <span>{unavailableDbs[group.files.db.id]?'문항 연결 준비 중':'문항 골라 출제'}</span>
                                                             </button>
-                                                            <div className="absolute right-0 top-full mt-1 bg-white rounded-xl border border-[#C5D8B5] shadow-xl z-20 p-2 w-36 opacity-0 group-hover/db:opacity-100 pointer-events-none group-hover/db:pointer-events-auto transition-all duration-200">
-                                                                {/* 개인DB 는 내려받는 파일이 아니라 시험지출제에서 쓰는 문항 묶음이다.
-                                                                    file_path 가 db_access/… 자리표시자라 스토리지에 실물이 없는데(587건 전부)
-                                                                    보유자에게 뜨던 '열기' 가 handleDownload 를 불러
-                                                                    "다운로드 중 오류: Object not found" 를 띄우고 있었다.
-                                                                    마이페이지는 이미 다운로드 없이 'DB 소스용' 안내만 한다 — 홈만 어긋나 있었다.
-                                                                    이 버튼의 목적은 처음부터 문항 구성(단원·난이도) 확인뿐이다. */}
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }}
-                                                                    className={`w-full py-1.5 px-2 text-xs rounded-lg flex items-center gap-1 transition-colors ${checkAccess(group.files.db.id)
-                                                                        ? 'font-extrabold bg-[#426D36] text-white hover:bg-[#31572E] justify-center'
-                                                                        : 'font-bold text-slate-500 hover:text-[#426D36] hover:bg-brand-50'}`}
-                                                                >
-                                                                    <Info size={11} /> 구성 확인
-                                                                </button>
-                                                                {!checkAccess(group.files.db.id) && (
-                                                                    <button
-                                                                        onClick={(e) => { e.stopPropagation(); handleAddToCart(group.files.db!); }}
-                                                                        className="w-full mt-1 py-1.5 px-2 text-xs font-extrabold bg-[#426D36] text-white hover:bg-[#31572E] rounded-lg flex items-center gap-1 justify-center transition-colors"
-                                                                    >
-                                                                        <ShoppingCart size={11} /> 장바구니
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed">
-                                                            <DbFileIcon size={13} grayscale /> DB
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                </div>}
 
                                                 {/* Admin raw */}
                                                 {user?.email === 'mathofhy@naver.com' && group.files.raw && (
@@ -938,7 +915,8 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                 </div>
                             )) : (
                                 <div className="py-14 text-center bg-white rounded-xl shadow-sm px-6">
-                                    <p className="text-[#AAAAC4]">{targetMaterialId && catalogState === 'loading' ? '선택한 회차를 불러오는 중입니다.' : targetMaterialId && catalogState === 'error' ? '자료를 확인하지 못했습니다. 새로고침해 주세요.' : '검색 결과가 없습니다.'}</p>
+                                    <p className="text-[#66758B]">{targetMaterialId && catalogState === 'loading' ? '선택한 회차를 불러오는 중입니다.' : targetMaterialId && catalogState === 'error' ? '자료를 확인하지 못했습니다. 새로고침해 주세요.' : '검색 결과가 없습니다.'}</p>
+                                    {!(targetMaterialId && catalogState === 'loading') && <div className="mt-4 flex flex-wrap justify-center gap-2"><a href="/" className="rounded-xl bg-[#193740] px-4 py-2.5 text-sm font-bold text-white">전체 자료 보기 →</a><a href="/guide" className="rounded-xl border border-[#D6DDE3] px-4 py-2.5 text-sm font-bold text-[#365064]">자료 찾는 방법</a></div>}
                                 </div>
                             )}
 

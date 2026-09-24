@@ -414,6 +414,7 @@ export default function MyPage() {
                                     <p className="text-slate-400 font-medium">
                                         {purchaseTab === 'db' ? '구매한 개인DB 자료가 없습니다.' : '구매한 문항 자료가 없습니다.'}
                                     </p>
+                                    <a href="/#catalog" className="mt-4 inline-block rounded-xl bg-[#193740] px-5 py-2.5 text-sm font-bold text-white">출제자료 살펴보기 →</a>
                                 </div>
                             ) : (
                                 purchases
@@ -508,7 +509,7 @@ export default function MyPage() {
                     <div className="space-y-4">
                         <div className="bg-white rounded-lg shadow-sm border border-slate-200 divide-y divide-slate-100">
                             {uploads.length === 0 ? (
-                                <div className="p-10 text-center text-slate-400">업로드한 자료가 없습니다.</div>
+                                <div className="p-10 text-center text-slate-500">업로드한 자료가 없습니다.<p className="mt-2 text-xs">자료를 올리면 여기서 확인할 수 있어요.</p></div>
                             ) : (
                                 uploads.map(file => (
                                     <div key={file.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-slate-50">

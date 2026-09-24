@@ -8,6 +8,7 @@ import { useCart } from '@/components/providers/CartProvider';
 import { ShoppingCart, Trash2, CreditCard } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Header from '@/components/Header';
+import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
 
 export default function CartPage() {
@@ -62,6 +63,8 @@ export default function CartPage() {
                 <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-100">
                     <ShoppingCart size={48} className="mx-auto text-slate-300 mb-4" />
                     <p className="text-lg text-slate-500 font-medium">장바구니가 비어있습니다.</p>
+                    <p className="mt-2 text-sm text-slate-500">기출 시험지를 살펴보고 필요한 파일을 골라주세요.</p>
+                    <Link href="/#catalog" className="mt-5 inline-flex rounded-xl bg-[#193740] px-5 py-3 text-sm font-bold text-white">출제자료 살펴보기 →</Link>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

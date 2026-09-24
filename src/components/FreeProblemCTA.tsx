@@ -19,11 +19,16 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
     const [marketingAgreed, setMarketingAgreed] = useState(true); // 기본 true → 확인 전엔 배너 안 뜸
     const [showNotify, setShowNotify] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [resumeDownload, setResumeDownload] = useState(false);
     // [2026-09-07] 다운로드 직후 '해설 포함 한글파일' 안내. 예상문제·프린트변형엔 붙어 있었는데
     //   무료PDF 에만 연결이 없어서, 무료PDF 를 받은 308명은 이 안내를 한 번도 못 봤다.
     const [showPromo, setShowPromo] = useState(false);
 
     useEffect(() => {
+        if (new URLSearchParams(window.location.search).get('download') === 'free') {
+            setResumeDownload(true);
+            window.setTimeout(() => document.getElementById('free-problem-pdf')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
         const supabase = createClient();
         supabase.auth.getUser().then(({ data }) => {
             setAuthed(!!data.user);
@@ -60,6 +65,12 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
             document.body.appendChild(a);
             a.click();
             a.remove();
+            setResumeDownload(false);
+            if (new URLSearchParams(window.location.search).get('download') === 'free') {
+                const nextUrl = new URL(window.location.href);
+                nextUrl.searchParams.delete('download');
+                window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+            }
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(url), 40_000);
             // 로그는 /api/free-pdf 가 발급 시점에 남긴다(상한 계산의 근거라 누락되면 안 됨).
@@ -84,7 +95,8 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
     };
 
     return (
-        <div className={compact ? 'rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4' : 'bg-white rounded-2xl border-2 border-emerald-200 shadow-sm p-5 sm:p-6 mb-6'}>
+        <div id="free-problem-pdf" className={compact ? 'scroll-mt-24 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4' : 'scroll-mt-24 bg-white rounded-2xl border-2 border-emerald-200 shadow-sm p-5 sm:p-6 mb-6'}>
+            {resumeDownload && authed && <p role="status" className="mb-3 rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-800">로그인했습니다. 아래 버튼을 누르면 이 시험의 문제 PDF를 받을 수 있어요.</p>}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-extrabold px-2.5 py-1 rounded-full">
                     <Sparkles size={13} /> 무료
@@ -106,7 +118,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
             ) : (
                 <>
                     <Link
-                        href={`/signup?next=${encodeURIComponent(`/exam/${examId}`)}`}
+                        href={`/signup?next=${encodeURIComponent(`/exam/${examId}?download=free`)}`}
                         onClick={() => logAnon('anon_cta_click', examId)}
                         className={`${compact ? 'w-full text-center text-xs' : 'w-full sm:w-auto'} inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-4 py-3 rounded-xl transition-colors shadow-sm shadow-emerald-500/25`}
                     >
@@ -115,7 +127,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
                     {authed === false && (
                         <p className="text-xs text-slate-400 mt-2.5">
                             이미 회원이신가요?{' '}
-                            <Link href={`/login?next=${encodeURIComponent(`/exam/${examId}`)}`} className="text-emerald-600 font-bold hover:underline">로그인</Link>
+                            <Link href={`/login?next=${encodeURIComponent(`/exam/${examId}?download=free`)}`} className="text-emerald-600 font-bold hover:underline">로그인</Link>
                         </p>
                     )}
                 </>
