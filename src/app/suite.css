@@ -176,14 +176,12 @@ body footer,body:has(.atelier-home) footer{background:#f7f9fc!important;border-c
 .atelier-results .cloud-exam-actions>button[data-free-pdf]{order:1;grid-column:auto;min-height:42px;font-size:11px}
 .atelier-results .cloud-exam-actions>div.group\/db{order:2;grid-column:auto;width:100%;margin:0}
 .atelier-results .cloud-exam-actions>div.group\/db>button{min-height:42px;font-size:11px}
-.atelier-results .cloud-exam-more{order:3;grid-column:1/-1;min-width:0;border-top:1px solid #e9edf3;margin-top:3px;padding-top:9px}
-.atelier-results .cloud-exam-more>summary{display:flex;align-items:center;justify-content:space-between;min-height:33px;color:#526178;font-size:11px;font-weight:700;cursor:pointer;list-style:none}
-.atelier-results .cloud-exam-more>summary::-webkit-details-marker{display:none}
-.atelier-results .cloud-exam-more>summary svg{transition:transform .2s}
-.atelier-results .cloud-exam-more[open]>summary svg{transform:rotate(90deg)}
-.atelier-results .cloud-exam-more-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:6px}
+.atelier-results .cloud-exam-actions>div.cloud-exam-more{display:block;order:3;grid-column:1/-1;width:100%;min-width:0;min-height:0;border-top:1px solid #e9edf3;margin-top:3px;padding:9px 0 0;text-align:initial}
+.atelier-results .cloud-exam-more-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .atelier-results .cloud-exam-more-grid>button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:39px;min-width:0;padding:7px 8px;border:1px solid #e0e7f0;border-radius:8px;background:#fff;color:#34435d;font-size:10px;font-weight:700;line-height:1.4;text-align:center}
 .atelier-results .cloud-exam-more-grid>button:hover{background:#f3f6fb;border-color:#b9cbe5}
 .atelier-results .cloud-exam-more-grid>button svg{flex:none}
+.atelier-results .cloud-exam-more-grid>button:nth-child(3){grid-column:1/-1}
+.atelier-results .cloud-exam-more-grid>button:only-child{grid-column:1/-1}
 .atelier-results .cloud-exam-actions>button:last-child:not([data-free-pdf]){order:4}
 @container (max-width: 355px){.atelier-results .cloud-exam-actions{grid-template-columns:1fr}.atelier-results .cloud-exam-actions>div.group\/db{grid-column:1/-1}.atelier-results .cloud-exam-more-grid{grid-template-columns:1fr}}

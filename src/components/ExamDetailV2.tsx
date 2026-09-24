@@ -50,7 +50,7 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
             <span>{subject}</span><span aria-hidden="true" className="text-[#B7C8BE]">/</span>
             {questionCount ? <span>{questionCount}문항</span> : <span>문항 수 확인 중</span>}
           </div>
-          <p className="mt-3 text-xs leading-5 text-[#7A8E83]">미리보기는 전체 공개 · {row.free_pdf_url ? '문제 PDF는 회원 무료' : '문제 PDF 제공 여부 확인 중'}{hasSolutionMaterial ? ' · 해설 포함 PDF·HWP는 유료' : ''}</p>
+          <p className="mt-3 text-xs leading-5 text-[#7A8E83]">미리보기는 전체 공개 · {row.free_pdf_url ? '문제 PDF는 회원 무료' : '문제 PDF 제공 여부 확인 중'}{hasSolutionMaterial ? ' · 문제+해설 PDF·HWP는 유료' : ''}</p>
         </header>
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">

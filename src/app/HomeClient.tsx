@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem, unpackHomeRow } from '../lib/data';
-import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, ShoppingCart, AlertTriangle, Search, Loader2, Check, ArrowUpRight } from 'lucide-react';
+import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, AlertTriangle, Search, Loader2, Check, ArrowUpRight } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -839,8 +839,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                 })()}
                                                 {!group.files.pdfSol?.hasFreePdf && <button type="button" data-free-pdf="pending" disabled title="이 자료의 무료 문제 PDF는 아직 준비되지 않았습니다."><Download size={13}/><span>문제 PDF 준비 중</span></button>}
 
-                                                {(group.files.pdfSol || group.files.hwpSol || group.files.db) && <details className="cloud-exam-more">
-                                                  <summary>{group.files.pdfSol || group.files.hwpSol ? '해설 포함 파일·자료 옵션' : '문항 자료 옵션'} <ChevronRight size={16}/></summary>
+                                                {(group.files.pdfSol || group.files.hwpSol || group.files.db) && <div className="cloud-exam-more">
                                                   <div className="cloud-exam-more-grid">
                                                 {/* PDF */}
                                                 {group.files.pdfSol ? (
@@ -860,7 +859,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             : <PdfFileIcon size={13} purchased={checkAccess(group.files.pdfSol.id)} />}
                                                         <span>{dlState[group.files.pdfSol.id] === 'loading' ? '받는 중…'
                                                             : checkAccess(group.files.pdfSol.id) && dlState[group.files.pdfSol.id] === 'done' ? '받았어요'
-                                                            : checkAccess(group.files.pdfSol.id) ? '해설 PDF 받기' : cartItemIds.has(group.files.pdfSol.id) ? 'PDF 장바구니에 담김' : `해설 PDF ${group.files.pdfSol.price}원`}</span>
+                                                            : checkAccess(group.files.pdfSol.id) ? '문제+해설 PDF 받기' : cartItemIds.has(group.files.pdfSol.id) ? 'PDF 장바구니에 담김' : `문제+해설 PDF ${group.files.pdfSol.price}원`}</span>
                                                     </button>
                                                 ) : null}
 
@@ -881,13 +880,12 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                                                             : <HwpFileIcon size={13} purchased={checkAccess(group.files.hwpSol.id)} />}
                                                         <span>{dlState[group.files.hwpSol.id] === 'loading' ? '받는 중…'
                                                             : dlState[group.files.hwpSol.id] === 'done' ? '받았어요'
-                                                            : checkAccess(group.files.hwpSol.id) ? '해설 HWP 받기' : cartItemIds.has(group.files.hwpSol.id) ? 'HWP 장바구니에 담김' : `해설 HWP ${group.files.hwpSol.price}원`}</span>
+                                                            : checkAccess(group.files.hwpSol.id) ? '문제+해설 HWP 받기' : cartItemIds.has(group.files.hwpSol.id) ? 'HWP 장바구니에 담김' : `문제+해설 HWP ${group.files.hwpSol.price}원`}</span>
                                                     </button>
                                                 ) : null}
                                                 {group.files.db && <button type="button" onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }}><Info size={13}/> 문항 구성 확인</button>}
-                                                {group.files.db && !checkAccess(group.files.db.id) && <button type="button" onClick={(e) => { e.stopPropagation(); handleAddToCart(group.files.db!); }}><ShoppingCart size={13}/> {cartItemIds.has(group.files.db.id) ? '문항 자료 장바구니에 담김' : '문항 자료 장바구니'}</button>}
                                                   </div>
-                                                </details>}
+                                                </div>}
 
                                                 {/* DB */}
                                                 {group.files.db && <div className="relative group/db">
