@@ -22,6 +22,7 @@ export default function MyPage() {
     const [uploads, setUploads] = useState<any[]>([]);
     const [purchasedPoints, setPurchasedPoints] = useState(0);
     const [earnedPoints, setEarnedPoints] = useState(0);
+    const [opinionPoints, setOpinionPoints] = useState(0);
     const [settlements, setSettlements] = useState<any[]>([]);
     const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
@@ -50,10 +51,11 @@ export default function MyPage() {
             setUser(user);
 
             // Fetch Points
-            const { data: profile } = await supabase.from('profiles').select('purchased_points, earned_points').eq('id', user.id).single();
+            const { data: profile } = await supabase.from('profiles').select('purchased_points, earned_points, opinion_points').eq('id', user.id).single();
             if (profile) {
                 setPurchasedPoints(profile.purchased_points || 0);
                 setEarnedPoints(profile.earned_points || 0);
+                setOpinionPoints(profile.opinion_points || 0);
             }
 
             // Fetch Purchases (Old Point System)
@@ -636,7 +638,7 @@ export default function MyPage() {
                                 <div className="relative z-10">
                                     <div className="text-sm text-slate-500 mb-1">현재 보유 수익 포인트</div>
                                     <div className="text-xl sm:text-2xl font-bold text-brand-600">
-                                        {earnedPoints.toLocaleString()} P
+                                        {Math.max(0, earnedPoints - opinionPoints).toLocaleString()} P
                                     </div>
                                     <div className="text-xs text-slate-400 mt-1">총 누적 수익: {(uploads.reduce((acc, curr) => acc + (Math.floor(curr.sales_count * curr.price * 0.7) || 0), 0)).toLocaleString()} P</div>
                                 </div>
@@ -755,7 +757,7 @@ export default function MyPage() {
                 <SettlementModal
                     isOpen={isSettlementModalOpen}
                     onClose={() => setIsSettlementModalOpen(false)}
-                    earnedPoints={earnedPoints}
+                    earnedPoints={Math.max(0, earnedPoints - opinionPoints)}
                     userId={user?.id || ''}
                 />
                 <EditModal

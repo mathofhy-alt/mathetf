@@ -150,6 +150,7 @@ export default function CartPage() {
                                 <span className="font-black text-brand-600 text-2xl">{finalAmount.toLocaleString()}원</span>
                             </div>
                             <div className="mt-4 p-3 bg-brand-50 rounded-lg text-xs text-brand-700 flex flex-col gap-1">
+                                <p><strong>자료 제공:</strong> 유료 PDF·HWP는 결제 완료 후 즉시 다운로드할 수 있습니다.</p>
                                 <p><strong>유의사항:</strong> 구매하신 문서(PDF/HWP)는 결제일로부터 <strong>30일간</strong>만 다운로드 가능합니다. (개인DB 제외)</p>
                             </div>
                         </div>

@@ -751,6 +751,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
 
                         {/* 기출 자료 카드 목록 */}
                         <div className="atelier-results"><div className="cloud-results-summary" role="status"><span>{targetMaterialId ? '선택한 회차' : freePdfOnly?'무료 PDF 자료':'기출 자료'} <strong>{targetMaterialId && catalogState === 'loading' ? '확인 중' : `${filteredFiles.length.toLocaleString()}건`}</strong></span>{targetMaterialId ? <button type="button" onClick={() => { setTargetMaterialId(null); history.replaceState(null, '', `${location.pathname}${location.search}`); }} className="text-[#426D36] font-bold underline">전체 자료 보기</button> : <span>학교 · 학년 · 회차별로 살펴보세요.</span>}</div>
+                        <p className="mb-3 text-xs text-[#66776A]">해설 포함 유료 PDF·HWP는 결제 완료 후 즉시 다운로드할 수 있습니다.</p>
                         <div id="main-list" className="space-y-2">
                             {currentItems.length > 0 ? currentItems.map((group, idx) => (
                                 <div key={group.key} data-tour={idx === 0 ? 'exam-card' : undefined} className="cloud-exam-card">
