@@ -5,6 +5,7 @@ import ExamOpinions, { ExamOpinion } from '@/components/ExamOpinions';
 import FreeProblemCTA from '@/components/FreeProblemCTA';
 import PaidMaterialChoice from '@/components/PaidMaterialChoice';
 import { schoolDestination } from '@/lib/discovery';
+import { getSchoolAddress } from '@/lib/school-address';
 
 type Props = {
   row: any;
@@ -33,6 +34,7 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
   const title = `${row.school} ${row.exam_year}년 ${row.grade ? `${row.grade}학년 ` : ''}${period} ${row.exam_type || ''}`.replace(/\s+/g, ' ').trim();
   const subject = row.subject || '수학';
   const previewLabel = `${title} ${subject}`;
+  const schoolAddress = isMock ? null : getSchoolAddress(row.school, row.region, row.district);
 
   return (
     <div className="min-h-screen bg-[#F8F9F5] font-sans text-[#193740]">
@@ -46,6 +48,7 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
         <header className="mb-8 border-b border-[#DDE6DE] pb-8 sm:mb-10 sm:pb-10">
           <div className="mb-4 flex items-center gap-3 text-[11px] font-extrabold tracking-[0.17em] text-[#9C7A4B]"><span className="h-px w-8 bg-[#B99766]" /> 기출 시험지</div>
           <h1 className="max-w-[850px] text-[28px] font-black leading-[1.35] tracking-tight text-[#16353D] sm:text-[40px] lg:text-[46px] break-keep">{title}</h1>
+          {schoolAddress && <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-[#62776F]"><span className="shrink-0 font-semibold">학교 주소</span><span className="break-keep">{schoolAddress}</span></p>}
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-semibold text-[#62776F]">
             <span>{subject}</span><span aria-hidden="true" className="text-[#B7C8BE]">/</span>
             {questionCount ? <span>{questionCount}문항</span> : <span>문항 수 확인 중</span>}

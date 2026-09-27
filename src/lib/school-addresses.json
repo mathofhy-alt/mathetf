@@ -1,0 +1,1466 @@
+{
+  "source": "나이스 교육정보 개방 포털 학교기본정보",
+  "fetchedAt": "2026-09-27T18:13:27.310Z",
+  "records": [
+    {
+      "name": "가락고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 송이로 42",
+      "schoolCode": "7010057",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B0%80%EB%9D%BD%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "가재울고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서대문구 수색로 100-35",
+      "schoolCode": "7011169",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B0%80%EC%9E%AC%EC%9A%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "강서고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 목동중앙남로 27",
+      "schoolCode": "7010118",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B0%95%EC%84%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "개포고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 개포로 402",
+      "schoolCode": "7010058",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B0%9C%ED%8F%AC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "경기고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 영동대로 643",
+      "schoolCode": "7010059",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B2%BD%EA%B8%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "경기여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 삼성로 29",
+      "schoolCode": "7010060",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B2%BD%EA%B8%B0%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "경북고등학교",
+      "region": "대구광역시",
+      "address": "대구광역시 수성구 청호로 300",
+      "schoolCode": "7240054",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B2%BD%EB%B6%81%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "경신고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 종로구 혜화로 74",
+      "schoolCode": "7010125",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B2%BD%EC%8B%A0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "경신고등학교",
+      "region": "대구광역시",
+      "address": "대구광역시 수성구 달구벌대로504길 34",
+      "schoolCode": "7240073",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B2%BD%EC%8B%A0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "고양국제고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 일산동구 위시티4로 112",
+      "schoolCode": "7530977",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B3%A0%EC%96%91%EA%B5%AD%EC%A0%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "고양외국어고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 덕양구 통일로 820",
+      "schoolCode": "7530552",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B3%A0%EC%96%91%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "과천고등학교",
+      "region": "경기도",
+      "address": "경기도 과천시 꿈보람길 26",
+      "schoolCode": "7530048",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B3%BC%EC%B2%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "과천외국어고등학교",
+      "region": "경기도",
+      "address": "경기도 과천시 희망길 36",
+      "schoolCode": "7530146",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B3%BC%EC%B2%9C%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "광남고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 광진구 아차산로70길 17-16",
+      "schoolCode": "7010066",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B4%91%EB%82%A8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "광남고등학교",
+      "region": "전남광주통합특별시(전남)",
+      "address": "전남광주통합특별시 나주시 남평읍 남평향교길 19",
+      "schoolCode": "7140225",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B4%91%EB%82%A8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "광남고등학교",
+      "region": "경기도",
+      "address": "경기도 광주시 회안대로 350-32",
+      "schoolCode": "7530885",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B4%91%EB%82%A8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "광명북고등학교",
+      "region": "경기도",
+      "address": "경기도 광명시 시청로 127",
+      "schoolCode": "7530051",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B4%91%EB%AA%85%EB%B6%81%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "광문고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강동구 동남로 968",
+      "schoolCode": "7010131",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B4%91%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "광문고등학교",
+      "region": "경기도",
+      "address": "경기도 광명시 원광명안로 39",
+      "schoolCode": "7530053",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B4%91%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "광양제철고등학교",
+      "region": "전남광주통합특별시(전남)",
+      "address": "전남광주통합특별시 광양시 마로니에길 61",
+      "schoolCode": "7140226",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B4%91%EC%96%91%EC%A0%9C%EC%B2%A0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "금옥여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 신정로 213",
+      "schoolCode": "7010071",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B8%88%EC%98%A5%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "김포외국어고등학교",
+      "region": "경기도",
+      "address": "경기도 김포시 월곶면 김포대로 2537",
+      "schoolCode": "7530745",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B9%80%ED%8F%AC%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "김포제일고등학교",
+      "region": "경기도",
+      "address": "경기도 김포시 김포한강11로 242",
+      "schoolCode": "7531149",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EA%B9%80%ED%8F%AC%EC%A0%9C%EC%9D%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "낙생고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 대왕판교로 477",
+      "schoolCode": "7530149",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%82%99%EC%83%9D%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "늘푸른고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 성남대로407번길 26",
+      "schoolCode": "7530625",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8A%98%ED%91%B8%EB%A5%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "단국대학교사범대학부속고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 도곡로64길 21",
+      "schoolCode": "7010137",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8B%A8%EA%B5%AD%EB%8C%80%ED%95%99%EA%B5%90%EC%82%AC%EB%B2%94%EB%8C%80%ED%95%99%EB%B6%80%EC%86%8D%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대구남산고등학교",
+      "region": "대구광역시",
+      "address": "대구광역시 수성구 신천동로 364",
+      "schoolCode": "7240213",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EA%B5%AC%EB%82%A8%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대구여자고등학교",
+      "region": "대구광역시",
+      "address": "대구광역시 수성구 달구벌대로488길 17",
+      "schoolCode": "7240062",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EA%B5%AC%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대륜고등학교",
+      "region": "대구광역시",
+      "address": "대구광역시 수성구 달구벌대로 2700",
+      "schoolCode": "7240085",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EB%A5%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대성고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 은평구 갈현로29길 51-24",
+      "schoolCode": "7010139",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대성고등학교",
+      "region": "강원특별자치도",
+      "address": "강원특별자치도 원주시 북원로 2001",
+      "schoolCode": "7801117",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대원외국어고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 광진구 용마산로22길 26",
+      "schoolCode": "7010143",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%9B%90%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대일외국어고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 성북구 서경로 116",
+      "schoolCode": "7010145",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%9D%BC%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대전고등학교",
+      "region": "대전광역시",
+      "address": "대전광역시 중구 대흥로 110",
+      "schoolCode": "7430031",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A0%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대전노은고등학교",
+      "region": "대전광역시",
+      "address": "대전광역시 유성구 노은동로 99",
+      "schoolCode": "7430143",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A0%84%EB%85%B8%EC%9D%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대전대성고등학교",
+      "region": "대전광역시",
+      "address": "대전광역시 중구 목동로 23",
+      "schoolCode": "7430325",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A0%84%EB%8C%80%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대전여자고등학교",
+      "region": "대전광역시",
+      "address": "대전광역시 동구 용운로1번길 28-37",
+      "schoolCode": "7430036",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A0%84%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대전외국어고등학교",
+      "region": "대전광역시",
+      "address": "대전광역시 서구 신갈마로 19",
+      "schoolCode": "7430037",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A0%84%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대진고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 공릉로62가길 47",
+      "schoolCode": "7010146",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A7%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대진고등학교",
+      "region": "대구광역시",
+      "address": "대구광역시 달서구 화암로73길 15",
+      "schoolCode": "7240271",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A7%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대진고등학교",
+      "region": "강원특별자치도",
+      "address": "강원특별자치도 고성군 현내면 화진포길 476",
+      "schoolCode": "7801118",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%EC%A7%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대화고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 일산서구 대화로 100",
+      "schoolCode": "7531042",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%ED%99%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "대화고등학교",
+      "region": "강원특별자치도",
+      "address": "강원특별자치도 평창군 대화면 대화중앙로 32-8",
+      "schoolCode": "7801119",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8C%80%ED%99%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "덕수고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 위례북로 10",
+      "schoolCode": "7010808",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8D%95%EC%88%98%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "돌마고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 이매로 105",
+      "schoolCode": "7530523",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%8C%EB%A7%88%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동덕여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 효령로2길 123-5",
+      "schoolCode": "7010152",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%EB%8D%95%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동산고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 제물포구 동산로 58",
+      "schoolCode": "7310071",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동성고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 종로구 대학로 156",
+      "schoolCode": "7010155",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동성고등학교",
+      "region": "충청북도",
+      "address": "충청북도 음성군 맹동면 대하로 315",
+      "schoolCode": "8000530",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동안고등학교",
+      "region": "경기도",
+      "address": "경기도 안양시 동안구 부림로 71",
+      "schoolCode": "7530063",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%EC%95%88%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동원동우고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 장안구 장안로 426-1",
+      "schoolCode": "7531598",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%EC%9B%90%EB%8F%99%EC%9A%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동탄고등학교",
+      "region": "경기도",
+      "address": "경기도 화성시 동탄구 동탄공원로1길 26-7",
+      "schoolCode": "7530820",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%ED%83%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동탄국제고등학교",
+      "region": "경기도",
+      "address": "경기도 화성시 동탄나루로 27",
+      "schoolCode": "7530976",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%ED%83%84%EA%B5%AD%EC%A0%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "동탄중앙고등학교",
+      "region": "경기도",
+      "address": "경기도 화성시 동탄구 동탄대로시범길 167",
+      "schoolCode": "7531159",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%8F%99%ED%83%84%EC%A4%91%EC%95%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "마산중앙고등학교",
+      "region": "경상남도",
+      "address": "경상남도 창원시 마산합포구 고운로 103",
+      "schoolCode": "9010094",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%A7%88%EC%82%B0%EC%A4%91%EC%95%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "목동고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 목동동로2길 68",
+      "schoolCode": "7010744",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%AA%A9%EB%8F%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "문정고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 송이로34길 62",
+      "schoolCode": "7010701",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%AC%B8%EC%A0%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "문현고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 충민로 115",
+      "schoolCode": "7010959",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%AC%B8%ED%98%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "문현고등학교",
+      "region": "울산광역시",
+      "address": "울산광역시 동구 화잠7길 25",
+      "schoolCode": "7480108",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%AC%B8%ED%98%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "미사고등학교",
+      "region": "경기도",
+      "address": "경기도 하남시 미사강변한강로 210",
+      "schoolCode": "7531163",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%AF%B8%EC%82%AC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "반포고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 고무래로 71",
+      "schoolCode": "7010080",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%98%ED%8F%AC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "방산고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 오금로27길 18",
+      "schoolCode": "7010590",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%A9%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "배명고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 삼학사로 11",
+      "schoolCode": "7010168",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B0%EB%AA%85%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "배재고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강동구 고덕로 227",
+      "schoolCode": "7010170",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B0%EC%9E%AC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "배화여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 종로구 필운대로1길 34",
+      "schoolCode": "7010171",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B0%ED%99%94%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "백마고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 일산동구 백석로 155",
+      "schoolCode": "7530066",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B1%EB%A7%88%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "백석고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 검단구 서곶로 701",
+      "schoolCode": "7310044",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B1%EC%84%9D%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "백석고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 일산동구 강촌로 115",
+      "schoolCode": "7530067",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B1%EC%84%9D%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "백암고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 신정로13길 16",
+      "schoolCode": "7010172",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B1%EC%95%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "백암고등학교",
+      "region": "경기도",
+      "address": "경기도 용인시 처인구 백암면 백원로 519-9",
+      "schoolCode": "7530650",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B0%B1%EC%95%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "보성고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 양재대로 1278",
+      "schoolCode": "7010173",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B3%B4%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "보성고등학교",
+      "region": "전남광주통합특별시(전남)",
+      "address": "전남광주통합특별시 보성군 보성읍 용문길 48",
+      "schoolCode": "7140177",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B3%B4%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "보인고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 오금로49길 18",
+      "schoolCode": "7010813",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B3%B4%EC%9D%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "보정고등학교",
+      "region": "경기도",
+      "address": "경기도 용인시 기흥구 보정로 22",
+      "schoolCode": "7530658",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B3%B4%EC%A0%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "보평고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 동판교로 124",
+      "schoolCode": "7530921",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B3%B4%ED%8F%89%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "부천고등학교",
+      "region": "경기도",
+      "address": "경기도 부천시 경인로92번길 70",
+      "schoolCode": "7530071",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%80%EC%B2%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "부흥고등학교",
+      "region": "부산광역시",
+      "address": "부산광역시 해운대구 좌동순환로 248",
+      "schoolCode": "7150111",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%80%ED%9D%A5%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "부흥고등학교",
+      "region": "경기도",
+      "address": "경기도 안양시 동안구 달안로 15",
+      "schoolCode": "7530074",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%80%ED%9D%A5%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "북일고등학교",
+      "region": "충청남도",
+      "address": "충청남도 천안시 동남구 단대로 69",
+      "schoolCode": "8140270",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%81%EC%9D%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "분당고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 내정로165번길 31",
+      "schoolCode": "7530075",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%84%EB%8B%B9%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "분당대진고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 분당로 271",
+      "schoolCode": "7530160",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%84%EB%8B%B9%EB%8C%80%EC%A7%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "분당영덕여자고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 판교로592번길 13",
+      "schoolCode": "7530598",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%84%EB%8B%B9%EC%98%81%EB%8D%95%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "분당중앙고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 불정로 174",
+      "schoolCode": "7530076",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%84%EB%8B%B9%EC%A4%91%EC%95%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "불곡고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 금곡로 149",
+      "schoolCode": "7530077",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%88%EA%B3%A1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "불암고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 중계로 155",
+      "schoolCode": "7010736",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EB%B6%88%EC%95%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "상문고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 명달로 45",
+      "schoolCode": "7010179",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%83%81%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "상산고등학교",
+      "region": "전북특별자치도",
+      "address": "전북특별자치도 전주시 완산구 거마평로 130",
+      "schoolCode": "8321090",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%83%81%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "상일고등학교",
+      "region": "경기도",
+      "address": "경기도 부천시 부흥로 13",
+      "schoolCode": "7530616",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%83%81%EC%9D%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "서라벌고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 한글비석로5길 18",
+      "schoolCode": "7010182",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%9C%EB%9D%BC%EB%B2%8C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "서문여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 동광로12길 84",
+      "schoolCode": "7010183",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%9C%EB%AC%B8%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "서울고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 효령로 197",
+      "schoolCode": "7010083",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%9C%EC%9A%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "서울세종고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 광평로51길 36",
+      "schoolCode": "7010186",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%9C%EC%9A%B8%EC%84%B8%EC%A2%85%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "서인천고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 서해구 서곶로 587",
+      "schoolCode": "7310075",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%9C%EC%9D%B8%EC%B2%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "서초고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 반포대로27길 29",
+      "schoolCode": "7010087",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%9C%EC%B4%88%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "서현고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 분당로 87",
+      "schoolCode": "7530081",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%9C%ED%98%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "선덕고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 도봉구 시루봉로 53",
+      "schoolCode": "7010189",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%A0%EB%8D%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "성문고등학교",
+      "region": "경기도",
+      "address": "경기도 안양시 만안구 성문길 1",
+      "schoolCode": "7530528",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%B1%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "성복고등학교",
+      "region": "경기도",
+      "address": "경기도 용인시 수지구 도마치로 92",
+      "schoolCode": "7530973",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%B1%EB%B3%B5%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "세마고등학교",
+      "region": "경기도",
+      "address": "경기도 오산시 수목원로 559-17",
+      "schoolCode": "7530936",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%B8%EB%A7%88%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "세화고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 신반포로 56-7",
+      "schoolCode": "7010197",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%B8%ED%99%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "세화고등학교",
+      "region": "경상북도",
+      "address": "경상북도 포항시 북구 아치로 94",
+      "schoolCode": "8750541",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%B8%ED%99%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "세화고등학교",
+      "region": "제주특별자치도",
+      "address": "제주특별자치도 제주시 구좌읍 세종로 26",
+      "schoolCode": "9290064",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%B8%ED%99%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "세화여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 신반포로 56-7",
+      "schoolCode": "7010198",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%84%B8%ED%99%94%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "소사고등학교",
+      "region": "경기도",
+      "address": "경기도 부천시 소사로78번길 22",
+      "schoolCode": "7530087",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%86%8C%EC%82%AC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "송림고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 이매로 100",
+      "schoolCode": "7530171",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%86%A1%EB%A6%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "수내고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 발이봉북로 15",
+      "schoolCode": "7530089",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%88%98%EB%82%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "수원고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 팔달구 정조로 666-10",
+      "schoolCode": "7530174",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%88%98%EC%9B%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "수원외국어고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 영통구 창룡대로 263",
+      "schoolCode": "7530761",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%88%98%EC%9B%90%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "수지고등학교",
+      "region": "경기도",
+      "address": "경기도 용인시 수지구 수풍로 73",
+      "schoolCode": "7530093",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%88%98%EC%A7%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "숙명여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 남부순환로 2807",
+      "schoolCode": "7010201",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%88%99%EB%AA%85%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "숭문고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 마포구 숭문길 99",
+      "schoolCode": "7010202",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%88%AD%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "숭실고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 은평구 은평터널로7길 6",
+      "schoolCode": "7010203",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%88%AD%EC%8B%A4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "신목고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 안양천로 739",
+      "schoolCode": "7010093",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%8B%A0%EB%AA%A9%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "신서고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 은행정로 42",
+      "schoolCode": "7010765",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%8B%A0%EC%84%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "신성고등학교",
+      "region": "경기도",
+      "address": "경기도 안양시 만안구 소곡로 93",
+      "schoolCode": "7530178",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%8B%A0%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "신일고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강북구 솔매로49길 20",
+      "schoolCode": "7010206",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%8B%A0%EC%9D%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "안산강서고등학교",
+      "region": "경기도",
+      "address": "경기도 안산시 단원구 삼일로 367",
+      "schoolCode": "7530182",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%95%88%EC%82%B0%EA%B0%95%EC%84%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "안산동산고등학교",
+      "region": "경기도",
+      "address": "경기도 안산시 상록구 충장로 56",
+      "schoolCode": "7530184",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%95%88%EC%82%B0%EB%8F%99%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "안양고등학교",
+      "region": "경기도",
+      "address": "경기도 안양시 만안구 삼봉로 46",
+      "schoolCode": "7530098",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%95%88%EC%96%91%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "안양외국어고등학교",
+      "region": "경기도",
+      "address": "경기도 안양시 만안구 양화로37번길 36",
+      "schoolCode": "7530187",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%95%88%EC%96%91%EC%99%B8%EA%B5%AD%EC%96%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "압구정고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 압구정로39길 20",
+      "schoolCode": "7010917",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%95%95%EA%B5%AC%EC%A0%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "야탑고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 판교로 738",
+      "schoolCode": "7530548",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%95%BC%ED%83%91%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "양재고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 남부순환로346길 9",
+      "schoolCode": "7010094",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%96%91%EC%9E%AC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "양정고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 안양천로 1039",
+      "schoolCode": "7010208",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%96%91%EC%A0%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "양정고등학교",
+      "region": "부산광역시",
+      "address": "부산광역시 부산진구 양정로 46",
+      "schoolCode": "7150152",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%96%91%EC%A0%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "양지고등학교",
+      "region": "경기도",
+      "address": "경기도 안산시 단원구 화정천동로 50",
+      "schoolCode": "7530558",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%96%91%EC%A7%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "양지고등학교",
+      "region": "세종특별자치시",
+      "address": "세종특별자치시  갈매로 518",
+      "schoolCode": "9300179",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%96%91%EC%A7%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "양천고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 신정로14길 13",
+      "schoolCode": "7010209",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%96%91%EC%B2%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "언남고등학교",
+      "region": "서울특별시",
+      "address": "서울 서초구 동산로13길 35",
+      "schoolCode": "7010095",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%96%B8%EB%82%A8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영덕고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 영통구 매영로 334",
+      "schoolCode": "7530101",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EB%8D%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영덕고등학교",
+      "region": "경상북도",
+      "address": "경상북도 영덕군 영덕읍 군청1길 13",
+      "schoolCode": "8750546",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EB%8D%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영동고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 선릉로 742",
+      "schoolCode": "7010212",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EB%8F%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영동고등학교",
+      "region": "충청북도",
+      "address": "충청북도 영동군 영동읍 계산로 122",
+      "schoolCode": "8000048",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EB%8F%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영동고등학교",
+      "region": "경상북도",
+      "address": "경상북도 영천시 안야사길 13",
+      "schoolCode": "8750192",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EB%8F%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영동일고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 석촌호수로 93",
+      "schoolCode": "7010712",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EB%8F%99%EC%9D%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영신여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 중계로16나길 13",
+      "schoolCode": "7010215",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EC%8B%A0%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영신여자고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 권선구 삼천병마로1566번길 30",
+      "schoolCode": "7530197",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%EC%8B%A0%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "영파여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 올림픽로 565",
+      "schoolCode": "7010217",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%81%ED%8C%8C%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "오금고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 중대로 247",
+      "schoolCode": "7010101",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%98%A4%EA%B8%88%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "용인백현고등학교",
+      "region": "경기도",
+      "address": "경기도 용인시 기흥구 동백7로 112",
+      "schoolCode": "7530778",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9A%A9%EC%9D%B8%EB%B0%B1%ED%98%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "용인한국외국어대학교부설고등학교",
+      "region": "경기도",
+      "address": "경기도 용인시 처인구 모현읍 외대로54번길 50",
+      "schoolCode": "7531146",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9A%A9%EC%9D%B8%ED%95%9C%EA%B5%AD%EC%99%B8%EA%B5%AD%EC%96%B4%EB%8C%80%ED%95%99%EA%B5%90%EB%B6%80%EC%84%A4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "운정고등학교",
+      "region": "경기도",
+      "address": "경기도 파주시 와석순환로 267",
+      "schoolCode": "7531047",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9A%B4%EC%A0%95%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "운중고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 운중로 95",
+      "schoolCode": "7530941",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9A%B4%EC%A4%91%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "유신고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 팔달구 월드컵로 216",
+      "schoolCode": "7530201",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9C%A0%EC%8B%A0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "은광여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 남부순환로359길 36",
+      "schoolCode": "7010226",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%80%EA%B4%91%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "의정부고등학교",
+      "region": "경기도",
+      "address": "경기도 의정부시 녹양로 29",
+      "schoolCode": "7530109",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%98%EC%A0%95%EB%B6%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "이매고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 탄천로 1",
+      "schoolCode": "7530111",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%B4%EB%A7%A4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "이화여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 중구 정동길",
+      "schoolCode": "7010227",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%B4%ED%99%94%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "인천고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 미추홀구 경원대로 804",
+      "schoolCode": "7310057",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%B8%EC%B2%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "인천국제고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 영종구 영종대로277번길 74-40",
+      "schoolCode": "7310334",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%B8%EC%B2%9C%EA%B5%AD%EC%A0%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "인천대건고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 연수구 능허대로 437",
+      "schoolCode": "7310068",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%B8%EC%B2%9C%EB%8C%80%EA%B1%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "인천포스코고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 연수구 컨벤시아대로42번길 50",
+      "schoolCode": "7310447",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%B8%EC%B2%9C%ED%8F%AC%EC%8A%A4%EC%BD%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "인천하늘고등학교",
+      "region": "인천광역시",
+      "address": "인천광역시 영종구 영종대로277번길 117",
+      "schoolCode": "7310371",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%B8%EC%B2%9C%ED%95%98%EB%8A%98%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "일산대진고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 일산서구 대산로 246",
+      "schoolCode": "7530203",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9D%BC%EC%82%B0%EB%8C%80%EC%A7%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "잠신고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 잠실로 24",
+      "schoolCode": "7010106",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9E%A0%EC%8B%A0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "잠실고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 올림픽로33길 71",
+      "schoolCode": "7010107",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9E%A0%EC%8B%A4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "잠실여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 송파대로38길 8",
+      "schoolCode": "7010232",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9E%A0%EC%8B%A4%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "잠일고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 백제고분로 21",
+      "schoolCode": "7011112",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9E%A0%EC%9D%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "재현고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 덕릉로82길 64",
+      "schoolCode": "7010235",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%9E%AC%ED%98%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "저현고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 일산동구 위시티3로 37",
+      "schoolCode": "7530980",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A0%80%ED%98%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "전주한일고등학교",
+      "region": "전북특별자치도",
+      "address": "전북특별자치도 전주시 완산구 백제대로 442",
+      "schoolCode": "8321104",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A0%84%EC%A3%BC%ED%95%9C%EC%9D%BC%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "정신여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 올림픽로4길 16",
+      "schoolCode": "7010236",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A0%95%EC%8B%A0%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "죽전고등학교",
+      "region": "경기도",
+      "address": "경기도 용인시 수지구 용구대로2771번길 23",
+      "schoolCode": "7530525",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A3%BD%EC%A0%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "중동고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 일원로 7",
+      "schoolCode": "7010238",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A4%91%EB%8F%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "중산고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 일원로14길 22",
+      "schoolCode": "7010239",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A4%91%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "중산고등학교",
+      "region": "경기도",
+      "address": "경기도 고양시 일산동구 중산로 290",
+      "schoolCode": "7530123",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A4%91%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "중앙고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 종로구 창덕궁길 164",
+      "schoolCode": "7010240",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A4%91%EC%95%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "중앙대학교사범대학부속고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 선릉로 207",
+      "schoolCode": "7010241",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A4%91%EC%95%99%EB%8C%80%ED%95%99%EA%B5%90%EC%82%AC%EB%B2%94%EB%8C%80%ED%95%99%EB%B6%80%EC%86%8D%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "중앙여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서대문구 북아현로11가길 7",
+      "schoolCode": "7010243",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A4%91%EC%95%99%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "중흥고등학교",
+      "region": "경기도",
+      "address": "경기도 부천시 계남로 171",
+      "schoolCode": "7530125",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A4%91%ED%9D%A5%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "진명여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 목동로 170",
+      "schoolCode": "7010244",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A7%84%EB%AA%85%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "진선여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 선릉로85길 27",
+      "schoolCode": "7010245",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%A7%84%EC%84%A0%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "창덕여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 송파구 양재대로 1240",
+      "schoolCode": "7010110",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B0%BD%EB%8D%95%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "창원중앙고등학교",
+      "region": "경상남도",
+      "address": "경상남도 창원시 성산구 용호로 16",
+      "schoolCode": "9010071",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B0%BD%EC%9B%90%EC%A4%91%EC%95%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "천안고등학교",
+      "region": "충청남도",
+      "address": "충청남도 천안시 동남구 봉명로 53",
+      "schoolCode": "8140104",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%9C%EC%95%88%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "청담고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서초구 신반포로23길 66",
+      "schoolCode": "7010112",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%AD%EB%8B%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "청담고등학교",
+      "region": "경기도",
+      "address": "경기도 평택시 팽성읍 팽성송화로 192",
+      "schoolCode": "7530992",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%AD%EB%8B%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "청명고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 영통구 영통로 466",
+      "schoolCode": "7530126",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%AD%EB%AA%85%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "청심국제고등학교",
+      "region": "경기도",
+      "address": "경기도 가평군 설악면 미사리로 324-213",
+      "schoolCode": "7530776",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%AD%EC%8B%AC%EA%B5%AD%EC%A0%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "청원고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 한글비석로 506",
+      "schoolCode": "7010247",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%AD%EC%9B%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "청원고등학교",
+      "region": "충청북도",
+      "address": "충청북도 청주시 청원구 오창읍 구룡5길 9",
+      "schoolCode": "8000214",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%AD%EC%9B%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "청원여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 한글비석로 506",
+      "schoolCode": "7010552",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B2%AD%EC%9B%90%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "충남고등학교",
+      "region": "대전광역시",
+      "address": "대전광역시 서구 문정로 171",
+      "schoolCode": "7430043",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B6%A9%EB%82%A8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "충남삼성고등학교",
+      "region": "충청남도",
+      "address": "충청남도 아산시 탕정면 삼성로 77",
+      "schoolCode": "8140366",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B6%A9%EB%82%A8%EC%82%BC%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "충남여자고등학교",
+      "region": "대전광역시",
+      "address": "대전광역시 중구 선화로43번길 77",
+      "schoolCode": "7430044",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B6%A9%EB%82%A8%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "충암고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 은평구 가좌로5길 5",
+      "schoolCode": "7010248",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%EC%B6%A9%EC%95%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "태원고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 성남대로 822",
+      "schoolCode": "7530210",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%83%9C%EC%9B%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "평촌고등학교",
+      "region": "경기도",
+      "address": "경기도 안양시 동안구 동안로 80",
+      "schoolCode": "7530131",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%8F%89%EC%B4%8C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "포천고등학교",
+      "region": "경기도",
+      "address": "경기도 포천시 원모루로 40",
+      "schoolCode": "7530133",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%8F%AC%EC%B2%9C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "풍문고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 자곡로 152",
+      "schoolCode": "7011457",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%92%8D%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "하나고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 은평구 연서로 535",
+      "schoolCode": "7010918",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%98%EB%82%98%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "하남고등학교",
+      "region": "경기도",
+      "address": "경기도 하남시 미사강변남로 39",
+      "schoolCode": "7530214",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%98%EB%82%A8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "한가람고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 양천구 목동서로 15",
+      "schoolCode": "7010250",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%9C%EA%B0%80%EB%9E%8C%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "한성고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 서대문구 북아현로1길 24",
+      "schoolCode": "7010254",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%9C%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "한솔고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 분당구 내정로 70",
+      "schoolCode": "7530136",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%9C%EC%86%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "한솔고등학교",
+      "region": "세종특별자치시",
+      "address": "세종특별자치시  누리로 34",
+      "schoolCode": "9300058",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%9C%EC%86%94%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "한양대학교사범대학부속고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 성동구 마조로 42",
+      "schoolCode": "7010793",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%9C%EC%96%91%EB%8C%80%ED%95%99%EA%B5%90%EC%82%AC%EB%B2%94%EB%8C%80%ED%95%99%EB%B6%80%EC%86%8D%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "한영고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강동구 동남로 832",
+      "schoolCode": "7010258",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%9C%EC%98%81%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "한영고등학교",
+      "region": "전남광주통합특별시(전남)",
+      "address": "전남광주통합특별시 여수시 장군산길 18-43",
+      "schoolCode": "7140217",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%9C%EC%98%81%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "해운대고등학교",
+      "region": "부산광역시",
+      "address": "부산광역시 해운대구 우동3로11번길 43",
+      "schoolCode": "7150160",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%95%B4%EC%9A%B4%EB%8C%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "현대고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 압구정로 127",
+      "schoolCode": "7010260",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%98%84%EB%8C%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "현대고등학교",
+      "region": "울산광역시",
+      "address": "울산광역시 동구 봉수로 455",
+      "schoolCode": "7480039",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%98%84%EB%8C%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "현대청운고등학교",
+      "region": "울산광역시",
+      "address": "울산광역시 동구 방어진순환도로 1077",
+      "schoolCode": "7480085",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%98%84%EB%8C%80%EC%B2%AD%EC%9A%B4%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "혜성여자고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 노원구 노원로16길 2",
+      "schoolCode": "7010261",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%98%9C%EC%84%B1%EC%97%AC%EC%9E%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "화성고등학교",
+      "region": "경기도",
+      "address": "경기도 화성시 향남읍 장짐길 4",
+      "schoolCode": "7530584",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%99%94%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "효성고등학교",
+      "region": "경기도",
+      "address": "경기도 성남시 수정구 심곡로 16",
+      "schoolCode": "7530219",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%9A%A8%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "효원고등학교",
+      "region": "경기도",
+      "address": "경기도 수원시 영통구 동수원로 336",
+      "schoolCode": "7530139",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%9A%A8%EC%9B%90%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    },
+    {
+      "name": "휘문고등학교",
+      "region": "서울특별시",
+      "address": "서울특별시 강남구 역삼로 541",
+      "schoolCode": "7010268",
+      "source": "https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM=%ED%9C%98%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90"
+    }
+  ],
+  "missing": [
+    "경찰대학교",
+    "사관학교"
+  ]
+}
