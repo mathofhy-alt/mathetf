@@ -11,7 +11,7 @@ type Material = { id: string; type: 'PDF' | 'HWP'; price: number };
 export default function PaidMaterialChoice({ examId, title, materials }: { examId: string; title: string; materials: Material[] }) {
   const router = useRouter();
   const { addToCart } = useCart();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [selectedId, setSelectedId] = useState(materials[0]?.id || '');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');

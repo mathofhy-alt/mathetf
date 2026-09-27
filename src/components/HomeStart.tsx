@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowRight, ArrowUpRight, Search, Plus, School2, FileText, Files } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Search, Plus, School2, FileText } from 'lucide-react';
 import AccessPolicy from './AccessPolicy';
 import { examSeason, questionBankHref } from '@/lib/discovery';
+import ThisWeekUploads from './ThisWeekUploads';
+import type { WeeklyUpload } from '@/lib/home-weekly-uploads';
 
 const collections = [
   { id: 'school', number: '01', href: '/schools', title: <>우리 학교의<br/>지난 시험.</>, label: '학교별 기출', detail: '학교와 지역으로 찾아보기', english: 'THE SCHOOL ARCHIVE', color: 'forest' },
@@ -22,7 +24,7 @@ function CoverDrawing({ type }: { type: string }) {
   </svg>;
 }
 
-export default function HomeStart({ onSearch, onFindFreePdf }: { onSearch: (keyword: string) => void; onFindFreePdf: () => void }) {
+export default function HomeStart({ onSearch, onFindFreePdf, thisWeekUploads }: { onSearch: (keyword: string) => void; onFindFreePdf: () => void; thisWeekUploads: WeeklyUpload }) {
   const [keyword, setKeyword] = useState('');
   const [season, setSeason] = useState<ReturnType<typeof examSeason> | null>(null);
   useEffect(() => {
@@ -37,35 +39,39 @@ export default function HomeStart({ onSearch, onFindFreePdf }: { onSearch: (keyw
   }
   return <>
     <section className="atelier-opening" aria-labelledby="atelier-title">
-      <div className="atelier-edition"><span>수학을 위한 작은 서재</span><span className="atelier-edition-mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M1 12h22M4.2 4.2l15.6 15.6M4.2 19.8 19.8 4.2"/></svg></span><span>THE MATH LIBRARY</span></div>
-      <h1 id="atelier-title">고르는 즐거움.<br/><span>완성하는 <i>수학.</i></span></h1>
-      <p className="atelier-lead">한 번의 시험부터, 매일의 연습까지.<br className="atelier-mobile-break"/> 좋은 문제를 모아 당신만의 한 장을 만드세요.</p>
+      <div className="launch-board">
+        <span className="launch-board-kicker">MATH ETF · PERSONAL QUESTION BANK</span>
+        <h1 id="atelier-title"><span className="launch-board-title">개인 DB 시험지 출제 기능</span><span className="launch-board-hello">런칭 기념 무료</span></h1>
+        <p>실제 학교 기출 문항을 골라 나만의 시험지를 만드세요.</p>
+        <Link className="launch-board-action" href="/question-bank?demo=1&origin=home">무료로 출제 시작 <ArrowUpRight size={16}/></Link>
+      </div>
+      <ThisWeekUploads week={thisWeekUploads}/>
+      <p className="atelier-lead">우리 학교 기출을 찾으시나요? 학교명을 입력해 전체 시험지를 확인하세요.</p>
       <form onSubmit={submit} className="atelier-search" role="search" aria-label="홈 학교 검색">
         <Search size={20} aria-hidden="true"/>
-        <input aria-label="찾고 싶은 학교" value={keyword} onChange={e=>setKeyword(e.target.value)} placeholder="어느 학교의 기출을 찾으세요?" autoComplete="off" maxLength={80}/>
+        <input aria-label="찾고 싶은 학교" value={keyword} onChange={e=>setKeyword(e.target.value)} placeholder="학교명 입력 (예: 휘문고)" autoComplete="off" maxLength={80}/>
         <button type="submit" aria-label="학교 기출 찾기"><ArrowRight size={21}/></button>
       </form>
-      <div className="atelier-start-paths" aria-label="원하는 작업으로 바로 시작">
+      <div className="atelier-start-paths launch-start-paths" aria-label="원하는 작업으로 바로 시작">
         <Link href="/schools" className="atelier-start-path">
           <span className="atelier-start-icon"><School2 size={19}/></span>
           <span><strong>우리 학교 시험 찾기</strong><small>학교·학년·회차별 기출</small></span>
           <ArrowUpRight size={17} className="atelier-start-arrow"/>
         </Link>
-        <Link href="/question-bank?demo=1&origin=home" className="atelier-start-path">
-          <span className="atelier-start-icon"><Files size={19}/></span>
-          <span><strong>시험지 직접 만들기</strong><small>실제 기출 5문항으로 시작</small></span>
-          <ArrowUpRight size={17} className="atelier-start-arrow"/>
-        </Link>
-        <button type="button" onClick={onFindFreePdf} className="atelier-start-path">
+        <button type="button" onClick={onFindFreePdf} className="atelier-start-path atelier-start-path-secondary">
           <span className="atelier-start-icon"><FileText size={19}/></span>
           <span><strong>무료 문제 PDF 찾기</strong><small>전체 문제·해설 제외·회원 무료</small></span>
           <ArrowUpRight size={17} className="atelier-start-arrow"/>
         </button>
       </div>
       <div className="atelier-opening-links"><Link href="/guide">처음이라면, 이용 가이드 <ArrowRight size={14}/></Link></div>
-      <p className="atelier-no-login">시험지 미리보기는 로그인 없이 볼 수 있습니다.</p>
       {season && <Link className="atelier-season" href={questionBankHref({semester:season.semester,exam:season.exam,origin:'home'})} aria-label={`${season.label} 문항 찾기`}><span>이번 시험 준비</span><strong>{season.label}</strong><ArrowUpRight size={15}/></Link>}
     </section>
+  </>;
+}
+
+export function HomeExplore() {
+  return <>
     <section className="shelf-section" aria-label="수학 자료 컬렉션">
       <div className="shelf-caption"><span>THE COLLECTION</span><p>어떤 수학을 펼쳐볼까요?</p><span>01 — 04</span></div>
       <div className="shelf-stage">

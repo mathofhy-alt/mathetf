@@ -155,9 +155,16 @@ body footer,body:has(.atelier-home) footer{background:#f7f9fc!important;border-c
 }
 
 /* The first visit starts with a task, not a product category. */
-.atelier-start-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:900px;margin:28px auto 0;text-align:left}
+.atelier-home .atelier-opening{padding-top:36px;padding-bottom:28px}
+.atelier-home .atelier-edition{margin-bottom:13px}
+.atelier-home .atelier-opening h1{font-size:clamp(42px,5.1vw,66px);line-height:1.12}
+.atelier-home .atelier-lead{margin:15px 0 18px}
+.atelier-start-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:930px;margin:28px auto 0;text-align:left}
+.atelier-home .atelier-start-paths{margin-top:17px}
 .atelier-start-path{display:flex;align-items:center;gap:13px;min-width:0;min-height:82px;padding:15px 16px;border:1px solid #dce4ef;border-radius:14px;background:#fff;color:#23334e;box-shadow:0 6px 22px #25497d08;text-align:left;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.atelier-home .atelier-start-path{min-height:65px;padding:11px 15px}
 .atelier-start-path:hover,.atelier-start-path:focus-visible{transform:translateY(-2px);border-color:#9ab6ed;box-shadow:0 12px 28px #25497d12;outline:none}
+.atelier-start-path-secondary{min-height:58px;background:#f7faf8;border-color:#e0eae2;box-shadow:none}
 .atelier-start-icon{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:11px;background:#edf3ff;color:#285ce6}
 .atelier-start-path:nth-child(2) .atelier-start-icon{background:#f0f1ff;color:#5d5bba}
 .atelier-start-path:nth-child(3) .atelier-start-icon{background:#e9f8f3;color:#178466}
@@ -166,7 +173,35 @@ body footer,body:has(.atelier-home) footer{background:#f7f9fc!important;border-c
 .atelier-start-path small{font-size:10px;line-height:1.4;color:#66758c;white-space:nowrap}
 .atelier-start-arrow{flex:none;margin-left:auto;color:#8396b4}
 .atelier-opening-links{margin-top:16px}
-@media(max-width:767px){.atelier-start-paths{grid-template-columns:1fr;max-width:510px;gap:8px;margin-top:22px}.atelier-start-path{min-height:68px;padding:11px 13px}.atelier-start-path strong{font-size:13px}.atelier-start-path small{font-size:11px}.atelier-opening-links{margin-top:13px}}
+@media(min-width:768px) and (max-width:1023px){.atelier-start-paths{grid-template-columns:repeat(2,minmax(0,1fr));max-width:690px}.atelier-start-path-secondary{grid-column:1/-1}}
+@media(max-width:767px){.atelier-start-paths{grid-template-columns:1fr;max-width:510px;gap:8px;margin-top:22px}.atelier-start-path{min-height:68px;padding:11px 13px}.atelier-start-path-secondary{grid-column:auto;min-height:60px}.atelier-start-path strong{font-size:13px}.atelier-start-path small{font-size:11px}.atelier-opening-links{margin-top:13px}}
+@media(max-width:767px){.atelier-home .atelier-opening{padding-top:27px;padding-bottom:23px}.atelier-home .atelier-opening h1{font-size:clamp(39px,9vw,54px)}.atelier-home .atelier-start-paths{margin-top:15px}.atelier-home .atelier-start-path{min-height:57px}.atelier-home .atelier-lead{margin:13px 0 16px}}
+
+/* The launch message borrows the calm home palette and lets one line breathe like a welcome screen. */
+.atelier-home .atelier-opening{padding-top:30px}
+.launch-board{position:relative;isolation:isolate;overflow:hidden;max-width:910px;margin:0 auto;padding:23px 24px 21px;border:1px solid #dce6f5;border-radius:26px;background:linear-gradient(120deg,#f6f9ff 0%,#fff 50%,#f6f9ff 100%);box-shadow:0 16px 45px #25497d10}
+.launch-board::before{content:"";position:absolute;z-index:-1;inset:-70% -25%;background:radial-gradient(circle at 35% 55%,#c9deff9c,transparent 42%),radial-gradient(circle at 70% 45%,#ead5ff85,transparent 42%);animation:launch-board-glow 9s ease-in-out infinite alternate}
+.launch-board-kicker{display:block;color:#5f708d;font-size:10px;font-weight:750;letter-spacing:.16em}
+.atelier-home .launch-board h1{margin:12px 0 7px;font-size:clamp(38px,5.2vw,64px);line-height:1.16;letter-spacing:-.07em;font-weight:680;animation:launch-hello-reveal 3s linear infinite}
+.atelier-home .launch-board-title{display:block;color:#1d2c45;font-weight:650}
+.atelier-home .launch-board-hello{display:block;min-height:1.16em;background:linear-gradient(105deg,#2456da 0%,#9671d8 25%,#e6809f 50%,#428fd3 75%,#2456da 100%);background-size:250% 100%;background-clip:text;-webkit-background-clip:text;color:transparent;font-weight:800;animation:launch-hello-color 8s linear infinite}
+.launch-board>p{margin:0;color:#526178;font-size:12px;line-height:1.6;word-break:keep-all}.launch-board>p strong{color:#285ce6;font-weight:750}
+.launch-board-action{display:inline-flex;align-items:center;gap:7px;margin-top:13px;padding:11px 20px;border:1px solid #ead49f;border-radius:12px;background:linear-gradient(110deg,#f5dfaa 0%,#fff6dc 48%,#f1d38f 100%);background-size:220% 100%;color:#8d2a38;font-size:14px;font-weight:800;box-shadow:0 6px 18px #9b78331f;animation:launch-action-shine 3.8s ease-in-out infinite;transition:transform .2s,box-shadow .2s}
+.launch-board-action:hover{transform:translateY(-2px);box-shadow:0 9px 22px #9b78332e}
+.this-week-uploads{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:fit-content;max-width:100%;margin:13px auto 0;padding:9px 19px 10px;border:1px solid #dce6f5;border-radius:16px;background:#f8fbff;color:#526178;font-size:11px}
+.this-week-uploads-label{display:inline-flex;align-items:center;gap:8px}
+.this-week-uploads-dot{width:6px;height:6px;border-radius:50%;background:#285ce6;box-shadow:0 0 0 4px #285ce615}
+.this-week-uploads>strong{display:block;color:#e33d52;font-size:26px;font-weight:800;line-height:1.15;text-shadow:0 2px 12px #e33d522b}.this-week-uploads>strong small{font-size:15px;font-weight:700}
+.atelier-home .atelier-lead{margin:13px 0 14px;font-size:12px}
+.atelier-home .launch-start-paths{grid-template-columns:repeat(2,minmax(0,1fr));max-width:690px;margin-top:14px}
+.atelier-home .launch-start-paths .atelier-start-path{min-height:57px}
+.atelier-home .atelier-start-path-secondary .atelier-start-icon{background:#e9f8f3;color:#178466}
+@keyframes launch-board-glow{from{transform:translateX(-8%)}to{transform:translateX(8%)}}
+@keyframes launch-hello-reveal{0%,100%{opacity:0;filter:blur(8px);transform:translateY(6px)}20%,75%{opacity:1;filter:blur(0);transform:translateY(0)}}
+@keyframes launch-hello-color{from{background-position:0% 50%}to{background-position:100% 50%}}
+@keyframes launch-action-shine{0%,100%{background-position:100% 50%}50%{background-position:0% 50%}}
+@media(max-width:767px){.atelier-home .atelier-opening{padding-top:20px}.launch-board{padding:20px 14px 18px;border-radius:20px}.atelier-home .launch-board h1{font-size:clamp(31px,8.5vw,46px)}.launch-board>p{font-size:11px}.atelier-home .launch-start-paths{grid-template-columns:1fr}.this-week-uploads{border-radius:14px;padding:8px 11px}}
+@media(prefers-reduced-motion:reduce){.launch-board::before,.atelier-home .launch-board-hello{animation:none;opacity:1;filter:none;transform:none}.site-suite .atelier-home .launch-board h1{animation:launch-hello-reveal 3s linear infinite!important}.site-suite .launch-board-action{animation:launch-action-shine 3.8s ease-in-out infinite!important}}
 
 /* Archive cards show the exam first, then the two useful shortcuts. */
 .atelier-results .cloud-exam-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
