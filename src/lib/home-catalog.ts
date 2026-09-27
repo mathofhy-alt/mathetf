@@ -52,7 +52,10 @@ async function loadHomeExams() {
         const { free_pdf_url, preview_urls, ...rest } = item;
         return packHomeRow({
             ...rest,
-            created_at: typeof rest.created_at === 'string' ? rest.created_at.slice(0, 10) : rest.created_at,
+            // 한국 날짜로 자른다. UTC 로 자르면 오전 9시 전 등록분이 전날로 찍힌다(9/28 새벽 등록분이 9/27 로 보였다).
+            created_at: typeof rest.created_at === 'string'
+                ? new Date(Date.parse(rest.created_at) + 9 * 3600 * 1000).toISOString().slice(0, 10)
+                : rest.created_at,
             has_free_pdf: !!free_pdf_url, has_preview: Array.isArray(preview_urls)&&preview_urls.length>0,
         });
     });
