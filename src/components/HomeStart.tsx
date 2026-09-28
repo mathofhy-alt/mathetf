@@ -39,9 +39,10 @@ export default function HomeStart({ onSearch, onFindFreePdf, thisWeekUploads }: 
   }
   return <>
     <section className="atelier-opening" aria-labelledby="atelier-title">
+      <h1 id="atelier-title" className="home-service-title">고등학교 수학 기출문제 검색·시험지 만들기</h1>
       <div className="launch-board">
         <span className="launch-board-kicker">MATH ETF · PERSONAL QUESTION BANK</span>
-        <h1 id="atelier-title"><span className="launch-board-title">개인 DB 시험지 출제 기능</span><span className="launch-board-hello">런칭 기념 무료</span></h1>
+        <div className="launch-board-message"><span className="launch-board-title">개인 DB 시험지 출제 기능</span><span className="launch-board-hello">런칭 기념 무료</span></div>
         <p>실제 학교 기출 문항을 골라 나만의 시험지를 만드세요.</p>
         <Link className="launch-board-action" href="/question-bank?demo=1&origin=home">무료로 출제 시작 <ArrowUpRight size={16}/></Link>
       </div>

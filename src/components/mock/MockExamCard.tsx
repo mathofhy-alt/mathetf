@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { mockQuestionHref } from '@/lib/mock-question-link';
 import { ArrowRight, FileText } from 'lucide-react';
 
 // 분류별 디자인 토큰 (그라데이션·글리프·색). 클래스는 리터럴이라 Tailwind JIT가 인식함.
@@ -35,10 +36,12 @@ export interface MockExam {
     variant_pdf_path?: string | null;
     variant_hwp_path?: string | null;
     materialOnly?: boolean;
+    materialDbs?: { id: string; subject: string }[];
 }
 
 export default function MockExamCard({exam}:{exam:MockExam}){
  const cat=MOCK_CATEGORIES[exam.category]??MOCK_CATEGORIES['전국연합'];
  const formats=[(exam.original_pdf_path||exam.variant_pdf_path)?'PDF':null,(exam.original_hwp_path||exam.variant_hwp_path)?'HWP':null].filter(Boolean).join(' · ');
- return <Link href={`/모의고사/${exam.slug}`} className="suite-mock-card"><div className="mock-card-top">{cat.label}<span>{exam.year}</span></div><h3>{exam.title}</h3><p>{exam.grade}{exam.month?` · ${exam.month}월`:''}{exam.subject?` · ${exam.subject}`:''}</p><div className="mock-card-bottom"><div>{exam.materialOnly&&<span>문항별 출제</span>}{(exam.original_pdf_path||exam.original_hwp_path)&&<span>원본</span>}{(exam.hasVariant===true||exam.variant_pdf_path||exam.variant_hwp_path)&&<span>변형</span>}{formats&&<span>{formats}</span>}</div><ArrowRight size={18}/></div></Link>;
+ const createHref=mockQuestionHref(exam);
+ return <div className="suite-mock-card"><Link href={`/모의고사/${exam.slug}`} className="block"><div className="mock-card-top">{cat.label}<span>{exam.year}</span></div><h3>{exam.title}</h3><p>{exam.grade}{exam.month?` · ${exam.month}월`:''}{exam.subject?` · ${exam.subject}`:''}</p><div className="mock-card-bottom"><div>{exam.materialOnly&&<span>문항별 출제</span>}{(exam.original_pdf_path||exam.original_hwp_path)&&<span>원본</span>}{(exam.hasVariant===true||exam.variant_pdf_path||exam.variant_hwp_path)&&<span>변형</span>}{formats&&<span>{formats}</span>}</div><ArrowRight size={18}/></div></Link>{createHref&&<Link href={createHref} className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm font-bold text-brand-700 hover:bg-brand-100">문항 골라 출제 <ArrowRight size={15}/></Link>}</div>;
 }

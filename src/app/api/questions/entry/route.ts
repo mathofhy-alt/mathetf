@@ -5,6 +5,7 @@ import {availableCatalog} from '@/lib/questions/catalog';
 import {resolveScope} from '@/lib/questions/scope';
 import {samePaper,entryFilters} from '@/lib/questions/entry';
 import demo from '@/lib/questions/demo-set.json';
+import {fetchMockExamBySlug} from '@/lib/mock-exams';
 export const dynamic='force-dynamic';
 export async function GET(req:NextRequest){
  try{
@@ -12,7 +13,14 @@ export async function GET(req:NextRequest){
  const catalog=await availableCatalog();let selected=catalog.filter(d=>!d.availability) as any[];
  let label='선택한 출제 범위';let mockSource:string|undefined;
  if(p.get('demo')==='1')selected=selected.filter(d=>demo.dbIds.includes(d.id));
- if(p.get('material')){
+ if(p.get('round')){
+  const row=await fetchMockExamBySlug(p.get('round')!);
+  const ids=row?.materialDbs?.map(d=>d.id)||[];
+  if(!row||!ids.length)return NextResponse.json({error:'이 회차의 출제 문항은 준비 중입니다.'},{status:404});
+  selected=selected.filter(d=>ids.includes(d.id));
+  if(selected.length!==ids.length)return NextResponse.json({error:'이 회차 자료의 이용 범위를 확인해주세요.'},{status:403});
+  label=row.title;
+ }else if(p.get('material')){
   const {data:row,error}=await sb.from('exam_materials').select('*').eq('id',p.get('material')!).single();
   if(error||!row)return NextResponse.json({error:'자료를 찾지 못했습니다.'},{status:404});
   selected=selected.filter(d=>d.id===row.id||samePaper(d,row));label=row.title||row.school;
@@ -27,7 +35,7 @@ export async function GET(req:NextRequest){
  for(const key of ['school','region','district'] as const)if(p.get(key))selected=selected.filter(d=>d[key]===p.get(key));
  if(p.get('semester'))selected=selected.filter(d=>String(d.semester)===p.get('semester'));
  if(p.get('exam'))selected=selected.filter(d=>d.exam_type===p.get('exam'));
- if(!p.get('material')&&!p.get('mock')){const parts=[p.get('school')||p.get('region'),p.get('semester')?`${p.get('semester')}학기`:null,p.get('exam'),p.get('subject')].filter(Boolean);if(parts.length)label=parts.join(' ')+' 문항';}
+ if(!p.get('material')&&!p.get('mock')&&!p.get('round')){const parts=[p.get('school')||p.get('region'),p.get('semester')?`${p.get('semester')}학기`:null,p.get('exam'),p.get('subject')].filter(Boolean);if(parts.length)label=parts.join(' ')+' 문항';}
  if(!selected.length)return NextResponse.json({error:'이 조건에서 출제 가능한 자료가 없습니다. 다른 회차를 선택해주세요.'},{status:404});
  let query=sb.rpc('question_bank_candidates',{p_scope:resolveScope(catalog,selected.map(d=>d.id),p.get('mock')),p_excluded:[]},{count:'exact'})
  .select('id,question_number,subject,grade,school,year,semester,difficulty,key_concepts,unit,work_status,source_db_id,question_type,is_off_curriculum')
