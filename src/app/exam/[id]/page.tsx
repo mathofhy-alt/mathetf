@@ -28,12 +28,17 @@ type Composition = { total: number; byUnit: { unit: string; count: number }[]; e
 
 // Show only statements that can be checked against the linked questions.
 function buildNarrative(label: string, comp: Composition): string[] {
-    const top = comp.byUnit.slice(0, 3);
-    const topStr = top.map((u) => `${u.unit} ${u.count}문항`).join(', ');
-    return [
-        `${label}은 총 ${comp.total}문항이며 ${comp.byUnit.length}개 단원에서 출제되었습니다.${topStr ? ` 문항 수가 많은 단원은 ${topStr}입니다.` : ''}`,
-        `연결된 문항의 분류 난이도는 쉬움 ${comp.easy}문항, 보통 ${comp.mid}문항, 어려움 ${comp.hard}문항입니다. 이는 학생 성적이나 실제 정답률을 뜻하지 않습니다.`,
-    ];
+    const top = comp.byUnit[0];
+    if (!top || !comp.total) return [];
+    const share = Math.round(top.count / comp.total * 100);
+    const hardShare = Math.round(comp.hard / comp.total * 100);
+    const unitInsight = share >= 40
+        ? `${label}은 ${top.unit}에 ${top.count}/${comp.total}문항(${share}%)이 집중됐습니다. 이 범위를 먼저 점검하면 출제 비중이 가장 큰 부분을 살펴볼 수 있습니다.`
+        : `${label}에서 문항 수가 가장 많은 단원은 ${top.unit} ${top.count}문항(${share}%)입니다. 다른 단원도 함께 출제되어 한 단원만 준비해서는 전체 범위를 다루기 어렵습니다.`;
+    const difficultyInsight = comp.hard > 0
+        ? `자동 분류상 어려움은 ${comp.hard}문항(${hardShare}%)입니다. 실제 정답률이나 학생 평균 점수가 아니라 문항 분류 결과이므로, 아래 원본 미리보기에서 해당 범위의 문제를 직접 확인하세요.`
+        : '자동 분류상 어려움으로 표시된 문항은 없습니다. 실제 시험 체감 난도나 정답률을 뜻하지 않으므로 원본 문제를 직접 확인하세요.';
+    return [unitInsight, difficultyInsight];
 }
 
 async function getExam(id: string) {

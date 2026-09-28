@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem, unpackHomeRow } from '../lib/data';
+import { matchesCatalogSearch } from '@/lib/catalog-search';
 import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, AlertTriangle, Search, Loader2, Check, ArrowUpRight } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -9,7 +10,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PromoCarousel from '@/components/PromoCarousel';
 import {unavailableDbs} from '@/lib/questions/scope';
-import HomeStart from '@/components/HomeStart';
+import HomeStart, { HomeExplore } from '@/components/HomeStart';
+import type { WeeklyUpload } from '@/lib/home-weekly-uploads';
 import { FREE_ACCESS_LABEL } from '@/lib/config';
 import FeatureCards from '@/components/FeatureCards';
 import SimilarDemo from '@/components/SimilarDemo';
@@ -33,6 +35,8 @@ const freePdfDownloadKey = (id: string) => `free-pdf:${id}`;
 
 interface HomeClientProps {
     initialExamData: any[][];   // packHomeRow 로 압축된 행
+    initialExamCount: number;
+    thisWeekUploads: WeeklyUpload;
     initialSchoolsRaw: any[];
 }
 
@@ -152,7 +156,7 @@ function buildGroupedFiles(packed: any[]): GroupedExam[] {
     return Object.values(groups);
 }
 
-export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeClientProps) {
+export default function HomeClient({ initialExamData, initialExamCount, thisWeekUploads, initialSchoolsRaw }: HomeClientProps) {
 
     // [SSR·크롤예산 2026-08-26] 예전엔 빈 배열로 시작해 useEffect 에서 채웠다.
     // 그러면 서버 렌더링 시점에 목록이 비어, 구글이 받는 HTML 에 자료도 링크도 한 건도 없었다
@@ -167,6 +171,23 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
 
     const [catalogState,setCatalogState]=useState<'loading'|'ready'|'error'>('loading');
     useEffect(()=>{const c=new AbortController();(async()=>{try{let page=0;const rows:any[]=[];for(;;){const r=await fetch(`/api/catalog/home?page=${page}`,{signal:c.signal});const d=await r.json();if(!r.ok||!Array.isArray(d.rows))throw Error();rows.push(...d.rows);if(!d.hasNext)break;if(++page>100)throw Error();}if(!c.signal.aborted){setGroupedFiles(buildGroupedFiles(rows));setCatalogState('ready');}}catch{if(!c.signal.aborted)setCatalogState('error');}})();return()=>c.abort();},[]);
+    const [searchedCatalog,setSearchedCatalog]=useState<{query:string;status:'loading'|'ready'|'error';groups:GroupedExam[]}|null>(null);
+    const [searchKeyword, setSearchKeyword] = useState('');
+    useEffect(()=>{
+        const query=searchKeyword.trim();
+        if(query.length<2){setSearchedCatalog(null);return;}
+        const controller=new AbortController();
+        setSearchedCatalog({query,status:'loading',groups:[]});
+        const timer=setTimeout(async()=>{
+            try{
+                const response=await fetch(`/api/catalog/home?q=${encodeURIComponent(query)}`,{signal:controller.signal});
+                const result=await response.json();
+                if(!response.ok||!Array.isArray(result.rows))throw Error();
+                if(!controller.signal.aborted)setSearchedCatalog({query,status:'ready',groups:buildGroupedFiles(result.rows)});
+            }catch{if(!controller.signal.aborted)setSearchedCatalog({query,status:'error',groups:[]});}
+        },250);
+        return()=>{clearTimeout(timer);controller.abort();};
+    },[searchKeyword]);
     const [files, setFiles] = useState<FileItem[]>([]);
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedDistrict, setSelectedDistrict] = useState('');
@@ -196,7 +217,6 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const [selectedYear, setSelectedYear] = useState('');
     const [freePdfOnly, setFreePdfOnly] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState('');
-    const [searchKeyword, setSearchKeyword] = useState(''); // Search State
 
     // Points State
     // Points State (Separated)
@@ -247,16 +267,13 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
     const schools = (selectedRegion && selectedDistrict) ? schoolsMap[selectedRegion]?.[selectedDistrict] || [] : [];
 
     // useMemo: 필터 조건이나 groupedFiles가 바뀔 때만 재계산 (기존: 매 렌더마다 filter 실행)
-    const filteredFiles = useMemo(() => groupedFiles.filter(group => {
+    const activeSearch=searchKeyword.trim();
+    const searchComplete=activeSearch.length>=2&&searchedCatalog?.query===activeSearch&&searchedCatalog.status==='ready';
+    const filteredFiles = useMemo(() => (searchComplete?searchedCatalog!.groups:groupedFiles).filter(group => {
         if (targetMaterialId && !Object.values(group.files).some(file => file?.id === targetMaterialId)) return false;
         if (freePdfOnly && !group.files.pdfSol?.hasFreePdf) return false;
         // 0. Keyword Search
-        if (searchKeyword) {
-            const keyword = searchKeyword.toLowerCase();
-            const matchSchool = group.school.toLowerCase().includes(keyword);
-            const matchTitle = group.title.toLowerCase().includes(keyword);
-            if (!matchSchool && !matchTitle) return false;
-        }
+        if (!matchesCatalogSearch(group, searchKeyword)) return false;
 
         // 1. Region Filter
         if (selectedRegion) {
@@ -291,7 +308,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
         if (selectedSubject && group.subject !== selectedSubject) return false;
 
         return true;
-    }), [groupedFiles, targetMaterialId, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject, freePdfOnly]);
+    }), [groupedFiles, searchComplete, searchedCatalog, targetMaterialId, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject, freePdfOnly]);
 
     // 과목 드롭다운: 실제 자료에 있는 과목만, 교육과정별 그룹으로 (수학I/대수 등 이름 혼동 방지)
     // - 양쪽 교육과정에 같은 이름이 있으면(확통·기하와벡터) 먼저 나온 그룹에만 표시
@@ -661,7 +678,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                 onUploadClick={handleUploadClick}
             />
 
-            <HomeStart onSearch={(keyword)=>{
+            <HomeStart thisWeekUploads={thisWeekUploads} onSearch={(keyword)=>{
                 setSelectedRegion('');setSelectedDistrict('');setSelectedSchool('');
                 setSelectedGrade('');setSelectedExamScope('');setSelectedYear('');setSelectedSubject('');setFreePdfOnly(false);
                 setSearchKeyword(keyword);setCurrentPage(1);
@@ -679,13 +696,13 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                     target?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
                     target?.focus({preventScroll:true});
                 });
-            }} />{catalogState!=='ready'&&<p role="status" className="max-w-[1200px] mx-auto px-4 text-sm">{catalogState==='loading'?'전체 기출 자료를 불러오는 중입니다.':'일부 자료만 표시됩니다. 새로고침하거나 학교별 자료 페이지를 이용해주세요.'}</p>}
+            }} />
 
 
 
 
 
-            <section id="catalog" tabIndex={-1} aria-label="기출 아카이브" className="home-catalog max-w-[1200px] mx-auto px-4 pb-20"><div className="catalog-heading"><div><p className="eyebrow">BROWSE THE ARCHIVE</p><h2>기출 아카이브.</h2></div><a href="/schools">학교별로 모아 보기 →</a></div>
+            <section id="catalog" tabIndex={-1} aria-label="기출 아카이브" className="home-catalog max-w-[1200px] mx-auto px-4 pb-20"><div className="catalog-heading"><div><p className="eyebrow">학교별 수학 기출 {initialExamCount.toLocaleString()}회차</p><h2>기출 아카이브.</h2></div><a href="/schools">학교별로 모아 보기 →</a></div>
                 <div className="atelier-catalog-layout">
                         {/* 검색 필터 박스 */}
                         <div data-tour="search-filter" className="bg-white rounded-2xl border border-[#C5D8B5] shadow-sm p-5">
@@ -759,10 +776,10 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                         </div>
 
                         {/* 기출 자료 카드 목록 */}
-                        <div className="atelier-results"><div className="cloud-results-summary" role="status"><span>{targetMaterialId ? '선택한 회차' : freePdfOnly?'무료 PDF 자료':'기출 자료'} <strong>{targetMaterialId && catalogState === 'loading' ? '확인 중' : `${filteredFiles.length.toLocaleString()}건`}</strong></span>{targetMaterialId ? <button type="button" onClick={() => { setTargetMaterialId(null); history.replaceState(null, '', `${location.pathname}${location.search}`); }} className="text-[#426D36] font-bold underline">전체 자료 보기</button> : <span>학교 · 학년 · 회차별로 살펴보세요.</span>}</div>
+                        <div className="atelier-results"><div className="cloud-results-summary" role="status"><span>{targetMaterialId ? '선택한 회차' : freePdfOnly?'무료 PDF 자료':'기출 자료'} <strong>{activeSearch.length>=2&&!searchComplete&&catalogState!=='ready' ? '검색 중…' : targetMaterialId&&catalogState==='loading' ? '확인 중' : `${filteredFiles.length.toLocaleString()}건`}</strong></span>{targetMaterialId ? <button type="button" onClick={() => { setTargetMaterialId(null); history.replaceState(null, '', `${location.pathname}${location.search}`); }} className="text-[#426D36] font-bold underline">전체 자료 보기</button> : <span>{catalogState==='loading'&&!searchComplete ? '먼저 표시한 자료입니다 · 전체 목록 확인 중' : catalogState==='error'&&!searchComplete ? '전체 목록을 불러오지 못했습니다 · 학교명 검색을 이용해 주세요' : '학교 · 학년 · 회차별로 살펴보세요.'}</span>}</div>
                         <p className="mb-3 text-xs text-[#66776A]">해설 포함 유료 PDF·HWP는 결제 완료 후 즉시 다운로드할 수 있습니다.</p>
                         <div id="main-list" className="space-y-2">
-                            {currentItems.length > 0 ? currentItems.map((group, idx) => (
+                            {activeSearch.length>=2&&!searchComplete&&catalogState!=='ready'&&searchedCatalog?.status!=='error' ? <p role="status" className="rounded-xl border border-[#D6DDE3] bg-white p-6 text-sm text-[#365064]">전체 자료에서 학교명을 검색하고 있습니다…</p> : currentItems.length > 0 ? currentItems.map((group, idx) => (
                                 <div key={group.key} data-tour={idx === 0 ? 'exam-card' : undefined} className="cloud-exam-card">
                                     <div className="p-3 md:p-4">
                                         <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
@@ -951,6 +968,7 @@ export default function HomeClient({ initialExamData, initialSchoolsRaw }: HomeC
                     </div>
                 </div>
             </section>
+            <HomeExplore />
             <section className="atelier-finale" aria-label="시험지 만들기 시작">
                 <div><p>MAKE IT YOURS.</p><h2>수학, 이제 내 손으로.</h2></div>
                 <Link href="/question-bank?demo=1&origin=home">나의 첫 시험지 만들기 <ArrowUpRight size={19}/></Link>

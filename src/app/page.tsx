@@ -5,6 +5,7 @@ import { packHomeRow } from '@/lib/data';
 import { unstable_cache } from 'next/cache';
 import type { Metadata } from 'next';
 import HomeClient from './HomeClient';
+import { countThisWeekUploads } from '@/lib/home-weekly-uploads';
 
 // [PERF] 홈 ISR — 쿠키(auth) 읽기를 클라이언트로 내려 CDN 캐시 히트 확보 (TTFB ~900ms → ~150ms)
 // 업로드·삭제는 revalidatePath로 즉시 반영되므로 주기 재생성은 보험용 1시간이면 충분
@@ -45,6 +46,10 @@ export default async function ExamPlatformPage() {
         getHomeExams(),
         getCachedSchools(),
     ]);
+    const initialExamCount = new Set(examData.map(unpackHomeRow)
+        .filter(row => row.content_type !== '원본제보')
+        .map(row => `${row.region || ''}-${row.district || ''}-${row.school}-${row.exam_year || new Date().getFullYear()}-${row.grade}-${row.semester}-${row.exam_type}-${row.subject || 'Unknown'}`)).size;
+    const thisWeekUploads = countThisWeekUploads(examData);
 
     // [SEO] 홈에 구조화 데이터가 없었다. 사이트 대표 정보(WebSite·Organization)를 명시하고
     // 사이트 내 검색을 SearchAction 으로 알려 검색결과에 검색창이 노출될 여지를 만든다.
@@ -79,6 +84,8 @@ export default async function ExamPlatformPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <HomeClient
             initialExamData={examData.slice(0,120)}
+            initialExamCount={initialExamCount}
+            thisWeekUploads={thisWeekUploads}
             initialSchoolsRaw={schoolsRaw.filter(s=>new Set(examData.map(row=>unpackHomeRow(row).school)).has(s.name))}
         />
         </>

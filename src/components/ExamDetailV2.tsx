@@ -1,10 +1,13 @@
 import Link from 'next/link';
+import { examEditorials } from '@/lib/exam-editorials';
+import ExamEditorialArticle, { ExamEditorialSummary } from '@/components/ExamEditorial';
 import Header from '@/components/Header';
 import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
 import ExamOpinions, { ExamOpinion } from '@/components/ExamOpinions';
 import FreeProblemCTA from '@/components/FreeProblemCTA';
 import PaidMaterialChoice from '@/components/PaidMaterialChoice';
 import { schoolDestination } from '@/lib/discovery';
+import { getSchoolAddress } from '@/lib/school-address';
 
 type Props = {
   row: any;
@@ -28,11 +31,13 @@ type Props = {
 };
 
 export default function ExamDetailV2({ row, previews, questionCount, sourceKey, hasDb, hasSolutionMaterial, canStartWithQuestions, createHref, otherYears, paidPdfId, paidMaterials, opinionExamId, opinions, narrative, concepts, composition, relatedExams, relatedReport }: Props) {
+  const editorial = examEditorials[row.id];
   const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
   const period = isMock ? `${row.semester}월` : `${row.semester}학기`;
   const title = `${row.school} ${row.exam_year}년 ${row.grade ? `${row.grade}학년 ` : ''}${period} ${row.exam_type || ''}`.replace(/\s+/g, ' ').trim();
   const subject = row.subject || '수학';
   const previewLabel = `${title} ${subject}`;
+  const schoolAddress = isMock ? null : getSchoolAddress(row.school, row.region, row.district);
 
   return (
     <div className="min-h-screen bg-[#F8F9F5] font-sans text-[#193740]">
@@ -45,13 +50,16 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
 
         <header className="mb-8 border-b border-[#DDE6DE] pb-8 sm:mb-10 sm:pb-10">
           <div className="mb-4 flex items-center gap-3 text-[11px] font-extrabold tracking-[0.17em] text-[#9C7A4B]"><span className="h-px w-8 bg-[#B99766]" /> 기출 시험지</div>
-          <h1 className="max-w-[850px] text-[28px] font-black leading-[1.35] tracking-tight text-[#16353D] sm:text-[40px] lg:text-[46px] break-keep">{title}</h1>
+          <h1 className="max-w-[850px] text-[28px] font-black leading-[1.35] tracking-tight text-[#16353D] sm:text-[40px] lg:text-[46px] break-keep [overflow-wrap:anywhere]">{title}</h1>
+          {schoolAddress && <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-[#62776F]"><span className="shrink-0 font-semibold">학교 주소</span><span className="break-keep">{schoolAddress}</span></p>}
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-semibold text-[#62776F]">
             <span>{subject}</span><span aria-hidden="true" className="text-[#B7C8BE]">/</span>
             {questionCount ? <span>{questionCount}문항</span> : <span>문항 수 확인 중</span>}
           </div>
           <p className="mt-3 text-xs leading-5 text-[#7A8E83]">미리보기는 전체 공개 · {row.free_pdf_url ? '문제 PDF는 회원 무료' : '문제 PDF 제공 여부 확인 중'}{hasSolutionMaterial ? ' · 문제+해설 PDF·HWP는 유료' : ''}</p>
         </header>
+
+        {opinionExamId && questionCount && <div className="mb-8"><ExamOpinions compactEmpty examId={opinionExamId} questionCount={questionCount} initialOpinions={opinions} /></div>}
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
           <section id="exam-preview" className="order-2 min-w-0 overflow-hidden rounded-[28px] border border-[#DCE6DE] bg-white shadow-[0_16px_50px_rgba(25,55,64,0.05)] lg:order-1">
@@ -78,9 +86,10 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
           </aside>
         </div>
 
-        {opinionExamId && questionCount && <div className="mt-12 sm:mt-16"><ExamOpinions examId={opinionExamId} questionCount={questionCount} initialOpinions={opinions} /></div>}
+        {editorial && <div className="mt-10"><ExamEditorialSummary editorial={editorial} /><ExamEditorialArticle editorial={editorial} /></div>}
 
-        {composition && <section className="mt-12 border-t border-[#DDE6DE] pt-8" aria-labelledby="exam-analysis-title">
+
+        {!editorial && composition && <section className="mt-12 border-t border-[#DDE6DE] pt-8" aria-labelledby="exam-analysis-title">
           <p className="text-xs font-extrabold tracking-[0.15em] text-[#A07446]">시험 분석</p>
           <h2 id="exam-analysis-title" className="mt-2 scroll-mt-24 text-2xl font-black text-[#193740]">이 시험, 한눈에 보기</h2>
           <p className="mt-2 text-sm leading-6 text-[#657873]">연결된 {composition.total}개 문항의 단원과 분류 난이도를 요약했습니다.</p>
@@ -103,7 +112,7 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
             <article className="rounded-[22px] border border-[#DCE6DE] bg-white p-5 shadow-[0_8px_28px_rgba(25,55,64,0.04)]">
               <p className="text-xs font-bold text-[#71847B]">03 / 복습 단서</p>
               <h3 className="mt-2 text-lg font-black text-[#193740]">대표 개념·유형</h3>
-              {concepts.length > 0 ? <><div className="mt-4 flex flex-wrap gap-2">{concepts.slice(0, 5).map(concept => <span key={concept} className="rounded-lg bg-[#F1F6F2] px-3 py-2 text-xs font-semibold leading-5 text-[#3E6552] break-all">{concept}</span>)}</div>{concepts.length > 5 && <details className="mt-4 text-xs text-[#526F60]"><summary className="cursor-pointer font-bold underline underline-offset-4">나머지 {concepts.length - 5}개 개념 보기</summary><div className="mt-3 flex flex-wrap gap-2">{concepts.slice(5).map(concept => <span key={concept} className="rounded-lg bg-[#F1F6F2] px-2.5 py-1.5 leading-5 break-all">{concept}</span>)}</div></details>}</> : <p className="mt-4 text-sm text-[#74877E]">개념 태그를 확인 중입니다.</p>}
+              {concepts.length > 0 ? <><div className="mt-4 flex flex-wrap gap-2">{concepts.slice(0, 5).map(concept => <span key={concept} className="rounded-lg bg-[#F1F6F2] px-3 py-2 text-xs font-semibold leading-5 text-[#3E6552] break-words">{concept.replace(/[:_]/g, ' · ')}</span>)}</div>{concepts.length > 5 && <details className="mt-4 text-xs text-[#526F60]"><summary className="cursor-pointer font-bold underline underline-offset-4">나머지 {concepts.length - 5}개 개념 보기</summary><div className="mt-3 flex flex-wrap gap-2">{concepts.slice(5).map(concept => <span key={concept} className="rounded-lg bg-[#F1F6F2] px-2.5 py-1.5 leading-5 break-words">{concept.replace(/[:_]/g, ' · ')}</span>)}</div></details>}</> : <p className="mt-4 text-sm text-[#74877E]">개념 태그를 확인 중입니다.</p>}
             </article>
           </div>
           {narrative.length > 0 && <div className="mt-5 rounded-[18px] bg-[#F0F5F1] px-5 py-4 text-sm leading-7 text-[#4D675A]">{narrative.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>}

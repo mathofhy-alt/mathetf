@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
+import SubjectExamCatalog from '@/components/SubjectExamCatalog';
 import { getSubjectHub, HUB_SUBJECTS, SUBJECT_INFO, type HubSubject } from '@/lib/subject-hub';
 import { INSIGHT_REPORTS } from '@/lib/seo-insights';
 
@@ -29,9 +30,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const info = SUBJECT_INFO[subject as HubSubject];
     const title = `${subject} 기출문제 — 단원별 출제 분포와 학교별 기출 | 수학ETF`;
     const description =
-        `${subject}${info.eun} ${info.grade} ${info.when}에 배우는 과목입니다. ` +
-        `전국 ${hub.schoolCount}개교 내신 기출 ${hub.total.toLocaleString()}문항을 단원·난이도로 분류해 ` +
-        `실제 출제 분포를 정리했습니다. 학교별 기출 시험지와 문제 PDF는 무료로 받을 수 있습니다.`;
+        `${subject}로 등록된 기출 자료입니다. ` +
+        `${hub.schoolCount}개교를 포함한 보유 기출 ${hub.total.toLocaleString()}문항을 단원·난이도로 분류해 ` +
+        `실제 출제 분포를 정리했습니다. 시험지 미리보기는 공개이며, 제공 회차의 해설 없는 전체 문제 PDF는 회원 무료입니다.`;
     return {
         title,
         description,
@@ -87,10 +88,15 @@ export default async function SubjectHubPage({ params }: Props) {
                         {subject} 기출문제
                     </h1><p className="mt-4 text-sm leading-relaxed text-slate-600">보유 기출의 회차와 단원을 확인하고 필요한 문항만 골라 출제할 수 있습니다. <Link className="underline" href="/guide">만드는 순서·무료 범위·결과물 보기</Link> · <Link className="underline" href="/question-bank?demo=1&origin=content">5문항 체험</Link></p>
                     <p className="text-sm text-slate-500 mt-2 break-keep">
-                        {info.grade} {info.when} · 전국 <strong className="text-[#294437]">{hub.schoolCount}개교</strong> 내신 기출{' '}
+                        {info.grade} {info.when} · 보유 학교 <strong className="text-[#294437]">{hub.schoolCount}개교</strong> · 분류 문항{' '}
                         <strong className="text-[#294437]">{hub.total.toLocaleString()}문항</strong>
                     </p>
                 </div>
+
+                <nav aria-label="과목별 기출 검색" className="mb-4 flex flex-wrap gap-2">
+                    {HUB_SUBJECTS.map(s => <Link key={s} href={`/subject/${encodeURIComponent(s)}#subject-exams`} aria-current={s === subject ? 'page' : undefined} className={`rounded-lg border px-4 py-2 text-sm font-bold ${s === subject ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'}`}>{s}</Link>)}
+                </nav>
+                <SubjectExamCatalog key={subject} exams={hub.exams} subject={subject} />
 
                 {/* 과목 소개 — '이 과목이 뭐냐' 는 검색 의도에 답한다 */}
                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
@@ -98,19 +104,21 @@ export default async function SubjectHubPage({ params }: Props) {
                     <div className="space-y-3 text-sm text-slate-600 leading-relaxed break-keep">
                         <p>{info.blurb}</p>
                         <p>
-                            수학ETF는 전국 {hub.schoolCount}개교의 {subject} 내신 기출 {hub.total.toLocaleString()}문항을
+                            수학ETF는 {subject} 기출 {hub.total.toLocaleString()}문항을
                             단원과 난이도로 분류해 두었습니다. 지금 보유한 자료는{' '}
                             <strong className="text-[#294437]">중간고사 {hub.midtermCount.toLocaleString()}문항</strong>,{' '}
                             <strong className="text-[#294437]">기말고사 {hub.finalCount.toLocaleString()}문항</strong>입니다.
                         </p>
                         <p>
-                            {lopsided ? (
+                            {hub.midtermCount + hub.finalCount === 0 ? (
+                                <>아래 문항은 중간·기말 회차가 식별되지 않아 시험별 단원 표에 수치가 표시되지 않습니다.</>
+                            ) : lopsided ? (
                                 <>
                                     아래 단원 분포는 <strong className="text-[#294437]">{`${richer}고사`} 자료를 기준으로</strong> 읽어야 합니다.
                                     {poorCount === 0
                                         ? `${poorer}고사 회차가 아직 없어서, ${poorer}고사에서 다루는 단원은 표에 나타나지 않습니다.`
                                         : `${poorer}고사 회차가 아직 ${poorCount.toLocaleString()}문항뿐이라, ${poorer}고사에서 다루는 단원은 실제 출제 비중보다 적게 잡혀 있습니다.`}
-                                    {' '}해당 회차는 계속 등록하고 있습니다.
+                                    {' '}문항 분류 통계와 시험지 목록의 등록 범위는 다를 수 있습니다.
                                 </>
                             ) : (
                                 <>아래 표는 중간·기말을 나누어 세었습니다. 대비하는 시험 쪽 숫자를 보시면 됩니다.</>
@@ -119,7 +127,7 @@ export default async function SubjectHubPage({ params }: Props) {
                         <p>
                             난이도 분포는 쉬움 {pct(hub.easy, hub.total)}% · 보통 {pct(hub.mid, hub.total)}% ·
                             어려움 {pct(hub.hard, hub.total)}% 입니다.
-                            문제 미리보기와 워터마크 없는 문제 PDF는 회원가입만 하면 무료입니다.
+                            분류 문항 수에는 교과 외 문항 등이 포함되어 실제 출제 검색 결과와 다를 수 있습니다. 제공 회차의 미리보기는 로그인 없이 볼 수 있고, 해설 없는 전체 문제 PDF는 회원 무료입니다.
                         </p>
                     </div>
                 </section>
@@ -134,7 +142,7 @@ export default async function SubjectHubPage({ params }: Props) {
                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
                     <h2 className="text-sm font-bold text-slate-700 mb-1">📊 {subject} 단원별 출제 분포</h2>
                     <p className="text-xs text-slate-400 mb-4 break-keep">
-                        전국 {hub.schoolCount}개교 기출 {hub.total.toLocaleString()}문항을 실제로 세었습니다.
+                        보유한 {subject} 분류 문항 {hub.total.toLocaleString()}개를 집계했습니다.
                         과목 전체의 출제 비중이 아니라 <strong>지금 보유한 회차</strong>의 분포입니다.
                     </p>
                     <table className="w-full text-sm">
@@ -195,26 +203,6 @@ export default async function SubjectHubPage({ params }: Props) {
                     </section>
                 )}
 
-                {/* 시험지 목록 */}
-                {hub.exams.length > 0 && (
-                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                        <h2 className="text-sm font-bold text-slate-700 mb-3">📄 {subject} 기출 시험지 {hub.exams.length}개</h2>
-                        <ul className="divide-y divide-slate-100">
-                            {hub.exams.map((e) => (
-                                <li key={e.id}>
-                                    <Link href={`/exam/${e.id}`}
-                                        className="flex items-center justify-between gap-3 py-2.5 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
-                                        <span className="text-sm text-slate-700 break-keep">
-                                            {e.school} {e.year}년 {e.grade}학년 {e.semester}학기 {e.examType}
-                                        </span>
-                                        <span className="text-xs text-slate-300 shrink-0">›</span>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
-
                 {/* 다른 과목 */}
                 <nav className="flex flex-wrap gap-2 mb-6">
                     {HUB_SUBJECTS.filter((s) => s !== subject).map((s) => (
@@ -228,7 +216,7 @@ export default async function SubjectHubPage({ params }: Props) {
                 <div className="library-cta bg-[#20354F] rounded-2xl p-6 text-center text-white">
                     <p className="font-bold break-keep">{subject} 기출로 나만의 시험지를 만들어 보세요</p>
                     <p className="text-sm text-white/80 mt-1.5 break-keep">
-                        단원·난이도로 문항을 골라 한글(HWP)·PDF로 받을 수 있습니다. 현재 무료입니다.
+                        단원·난이도로 문항을 골라 편집용 HML로 받을 수 있습니다. PDF는 한글에서 저장하세요.
                     </p>
                     <Link href={questionBankHref({subject,origin:'subject'})}
                         className="inline-block mt-4 bg-white text-[#426D36] font-black px-6 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">

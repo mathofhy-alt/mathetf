@@ -1568,9 +1568,15 @@ export default function QuestionBankPage() {
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                                 <div className="min-w-0">
                                     <h2 className="text-base sm:text-2xl font-black text-slate-800 whitespace-nowrap">시험지 문항 검토</h2>
-                                    <p className="hidden sm:block text-sm text-slate-500 mt-1">출제할 문항들의 순서와 난이도를 최종적으로 확인하세요.</p>
+                                    <p className="hidden sm:block text-sm text-slate-500 mt-1">문항을 더하거나 순서를 바꾼 뒤 편집용 HML로 저장하세요. PDF는 한글에서 저장할 수 있습니다.</p>
                                 </div>
-                                <div className="flex gap-2 flex-shrink-0">
+                                <div className="flex flex-wrap gap-2 flex-shrink-0">
+                                    <button
+                                        onClick={() => { setViewMode('search'); setStorageModalMode('db'); setShowStorageModal(true); }}
+                                        className="px-3 sm:px-4 py-2 sm:py-2.5 border border-[#C9D9FF] bg-[#F0F5FF] text-[#285CE6] rounded-xl font-bold hover:bg-[#E5EEFF] text-xs sm:text-sm whitespace-nowrap"
+                                    >
+                                        다른 학교 문항 더하기
+                                    </button>
                                     <button
                                         onClick={() => setViewMode('search')}
                                         className="px-3 sm:px-5 py-2 sm:py-2.5 border border-slate-300 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all text-xs sm:text-sm whitespace-nowrap"
@@ -1974,7 +1980,7 @@ export default function QuestionBankPage() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="workbench-start"><div><p className="suite-eyebrow">A PAGE OF POSSIBILITIES</p><h2>어떤 문제로<br/>시작할까요?</h2><p>범위를 고르고, 마음에 드는 문항을 눌러 담으세요.<br/>선택한 문제들이 나만의 시험지가 됩니다.</p><div className="workbench-start-actions"><a className="suite-button" href="/question-bank?demo=1&origin=question-bank">기출 5문항으로 시작 →</a><button className="suite-button secondary" onClick={()=>{setStorageModalMode('db');setShowStorageModal(true);setShowMobileSidebar(false);}}>내 시험지 불러오기</button></div><a href="/guide">시험지 만들기 가이드 ↗</a></div><div className="workbench-empty-paper" aria-hidden="true"><span>MY WORKSHEET / MATH ETF</span><strong>나의 수학 시험지</strong><div/><div/><div/><small>좋은 문제를 고르는 일부터,<br/>새로운 배움이 시작됩니다.</small></div></div>
+                                        <div className="workbench-start"><div><p className="suite-eyebrow">A PAGE OF POSSIBILITIES</p><h2>우리 학교 기출로<br/>시작해보세요.</h2><p>먼저 학교·시험 회차를 고르거나 5문항으로 체험하세요.<br/>문항을 골라 담은 뒤 편집용 HML로 받을 수 있습니다.</p><div className="workbench-start-actions"><button className="suite-button" onClick={()=>{setStorageModalMode('db');setShowStorageModal(true);setShowMobileSidebar(false);}}>학교 기출 자료 선택 →</button><a className="suite-button secondary" href="/question-bank?demo=1&origin=question-bank">기출 5문항 체험</a></div><a href="/guide">시험지 만들기 가이드 ↗</a></div><div className="workbench-empty-paper" aria-hidden="true"><span>MY WORKSHEET / MATH ETF</span><strong>나의 수학 시험지</strong><div/><div/><div/><small>좋은 문제를 고르는 일부터,<br/>새로운 배움이 시작됩니다.</small></div></div>
                                     )}
                                 </div>
                             )}
