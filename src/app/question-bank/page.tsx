@@ -2043,6 +2043,7 @@ export default function QuestionBankPage() {
                             <h2 id="saved-exam-title" className="text-xl font-bold text-slate-800">시험지가 완성되었습니다</h2>
                             <p className="mt-3 break-words text-slate-600">{savedExam.name}</p><p className="mt-2 text-sm text-slate-500">{savedExam.count}문항 · {formatFileSize(savedExam.bytes)}</p>{(savedExam.bytes||0)>20*1024*1024&&<p className="text-sm text-amber-800">큰 파일입니다. 모바일에서는 안정적인 연결에서 받아주세요.</p>}
                             <p className="mt-2 text-sm text-slate-500">한글에서 열어 편집할 수 있는 HML 파일입니다. PDF가 필요하면 한글에서 PDF로 저장해주세요.</p>
+                            <p className="mt-2 text-xs text-slate-500">자료 보호를 위해 파일 내부에 회원 아이디(이메일)가 기록됩니다.</p>
                             <a className="mt-5 block rounded-xl bg-[#285CE6] p-3 text-center font-bold text-white" href={`/api/storage/download?id=${savedExam.id}`} download onClick={() => window.setTimeout(() => setSavedExam(null), 400)}>시험지 파일 받기 (.hml)</a>
                             <button className="mt-3 w-full rounded-xl border p-3 text-slate-700" onClick={() => setSavedExam(null)}>계속 출제하기</button>
                         </div>

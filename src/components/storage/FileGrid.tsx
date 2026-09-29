@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Folder as FolderIcon, FileText, CheckCircle2, DownloadCloud, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Folder as FolderType, UserItem } from '@/types/storage';
 import { DbFileIcon } from '@/components/FileIcons';
@@ -125,27 +125,6 @@ export default function FileGrid({ selectionOnly = false, folders, items, onFold
     const toggleGrade = (grade: string) => setOpenGrades(p => ({ ...p, [grade]: p[grade] ? false : true }));
     const toggleYear = (key: string) => setOpenYears(p => ({ ...p, [key]: p[key] ? false : true }));
     const toggleType = (key: string) => setOpenTypes(p => ({ ...p, [key]: p[key] ? false : true }));
-
-    // 첫 진입 시 '전부 접힘'이라 빈 화면처럼 보이던 것 개선 —
-    // 첫 학년 → 최신 연도 → 첫 시험종류를 자동으로 펼쳐 내용이 바로 보이게 (1회만)
-    const [autoExpanded, setAutoExpanded] = useState(false);
-    useEffect(() => {
-        if (autoExpanded) return;
-        const dbItems = items.filter(i => i.type === 'personal_db');
-        if (dbItems.length === 0) return;
-        const g = groupByGradeYearType(items);
-        const firstGrade = Object.keys(g)[0];
-        if (!firstGrade) return;
-        const years = Object.keys(g[firstGrade]).sort((a, b) => b.localeCompare(a));
-        const firstYear = years[0];
-        setOpenGrades({ [firstGrade]: true });
-        if (firstYear) {
-            setOpenYears({ [`${firstGrade}_${firstYear}`]: true });
-            const types = Object.keys(g[firstGrade][firstYear]).sort((a, b) => examTypeRank(a) - examTypeRank(b));
-            if (types[0]) setOpenTypes({ [`${firstGrade}_${firstYear}_${types[0]}`]: true });
-        }
-        setAutoExpanded(true);
-    }, [items, autoExpanded]);
 
     const handleDragStart = (e: React.DragEvent, type: 'folder' | 'item', id: string) => {
         e.dataTransfer.setData('application/json', JSON.stringify({ type, id }));

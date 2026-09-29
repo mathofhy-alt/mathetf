@@ -1,5 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
+import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import { createClient } from '@/utils/supabase/server';
 import { buildBody } from '@/lib/hml/body-builder';
 import { HmlTemplateManager } from '@/lib/hml/template-manager';
@@ -78,12 +79,13 @@ export async function POST(req: NextRequest) {
             title: title,
             date: dateStr
         });
-        const finalHml = result.hmlContent;
+        const finalHml = stampMemberId(result.hmlContent, user.email);
 
         return new NextResponse(finalHml, {
             status: 200,
             headers: {
                 'Content-Type': 'application/x-hwp',
+                'Cache-Control': 'private, no-store',
                 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
             },
         });

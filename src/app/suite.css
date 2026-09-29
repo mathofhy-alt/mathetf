@@ -127,6 +127,15 @@ body,.site-suite,.site-suite:not([data-surface="home"])>div,.atelier-home{backgr
 .mock-collections button:nth-child(3){background:#edf8f3;color:#326651;border-color:#d8ede2}
 .mock-collections button:nth-child(4){background:#fff0eb;color:#885044;border-color:#f3ded5}
 .mock-collections button:nth-child(5){background:#f3f0fb;color:#655183;border-color:#e6def4}
+.suite-mock-card[data-category="수능"]{--mock-bg:#edf3ff;--mock-border:#dce7fc;--mock-ink:#34588c}
+.suite-mock-card[data-category="평가원"]{--mock-bg:#fff5e4;--mock-border:#f2e6ce;--mock-ink:#795831}
+.suite-mock-card[data-category="전국연합"]{--mock-bg:#edf8f3;--mock-border:#d8ede2;--mock-ink:#326651}
+.suite-mock-card[data-category="경찰대"]{--mock-bg:#fff0eb;--mock-border:#f3ded5;--mock-ink:#885044}
+.suite-mock-card[data-category="사관학교"]{--mock-bg:#f3f0fb;--mock-border:#e6def4;--mock-ink:#655183}
+.suite-mock-card[data-category]{background:var(--mock-bg);border-color:var(--mock-border)}
+.suite-mock-card[data-category]:before{background:var(--mock-ink)}
+.suite-mock-card[data-category]:hover{border-color:var(--mock-ink)}
+.suite-mock-card[data-category] .mock-card-top,.suite-mock-card[data-category] .mock-card-top>span:last-child,.suite-mock-card[data-category] h3{color:var(--mock-ink)}
 .mock-collections button[aria-pressed="true"]{background:#285ce6;color:#fff;border-color:#285ce6;box-shadow:0 7px 18px #285ce620}
 [data-question-bank]{background:#f7f9fc!important}[data-question-bank] #main-scroll{background:#f7f9fc}
 .workbench-title{background:#fff;border-color:#e3e9f1}.workbench-title h2{color:#1d2c45}.workbench-tabs{background:#f1f5fb;border-color:#e1e8f2;border-radius:10px}
