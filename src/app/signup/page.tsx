@@ -9,6 +9,7 @@ import { safeReturnPath } from '@/lib/auth-return';
 import Link from 'next/link';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
+import { trackKakaoRegistration } from '@/lib/analytics/kakao-pixel';
 import MarketingModal from '@/components/MarketingModal';
 import { getStoredRole } from '@/components/RoleOnboardingModal';
 
@@ -200,6 +201,8 @@ export default function SignupPage() {
             if (!res.ok || !result.success) {
                 throw new Error(result.message || '회원가입에 실패했습니다.');
             }
+
+            trackKakaoRegistration();
 
             // 가입 직후 자동 로그인 (UX)
             const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });

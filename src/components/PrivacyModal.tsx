@@ -27,6 +27,7 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
                                 <li><span className="font-bold">회원가입 시:</span> 이메일 주소(ID), 비밀번호, 닉네임, <span className="font-bold">휴대폰 번호</span>.</li>
                                 <li><span className="font-bold">유료 서비스 이용 시:</span> 결제 기록, 결제 승인 번호 (포트원 연동 시 발생).</li>
                                 <li><span className="font-bold">서비스 이용 과정:</span> 접속 로그, 쿠키, IP 정보.</li>
+                                <li><span className="font-bold">광고 성과 측정:</span> 홈페이지 방문 및 회원가입 완료 이벤트, 방문 페이지 주소, 광고 쿠키, IP 주소와 브라우저 정보가 카카오 픽셀을 통해 수집될 수 있습니다. 회원가입 양식의 이메일·휴대폰 번호는 픽셀 호출에 전달하지 않습니다.</li>
                             </ul>
                         </section>
 
@@ -36,6 +37,7 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
                                 <li><span className="font-bold">회원 관리:</span> 회원 식별, 가입 의사 확인, <span className="font-bold">휴대폰 번호를 통한 본인 확인 및 중복·부정 가입 방지</span>, 불량 회원 부정 이용 방지.</li>
                                 <li><span className="font-bold">서비스 제공:</span> 기출자료 다운로드, 자료 결제 서비스 제공, 콘텐츠 구매 내역 관리.</li>
                                 <li><span className="font-bold">고객 지원:</span> 서비스 관련 공지사항 전달, 민원 처리 및 고객 상담.</li>
+                                <li><span className="font-bold">광고 성과 확인:</span> 카카오 광고에서 유입된 방문과 회원가입 완료를 집계하고 광고 효과를 분석합니다.</li>
                             </ul>
                         </section>
 
