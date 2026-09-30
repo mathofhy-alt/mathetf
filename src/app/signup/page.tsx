@@ -11,6 +11,8 @@ import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import MarketingModal from '@/components/MarketingModal';
 import { getStoredRole } from '@/components/RoleOnboardingModal';
+import { getStoredSignupAttribution } from '@/lib/analytics/signup-attribution';
+import { queueKakaoRegistration } from '@/components/KakaoPixel';
 
 export default function SignupPage() {
     const [step, setStep] = useState(1);
@@ -194,12 +196,15 @@ export default function SignupPage() {
                     full_name: nickname,
                     marketing_agreed: marketingAgreed,
                     persona: getStoredRole(), // 온보딩 모달에서 고른 역할(학생/강사) — 없으면 null
+                    attribution: getStoredSignupAttribution(),
                 }),
             });
             const result = await res.json();
             if (!res.ok || !result.success) {
                 throw new Error(result.message || '회원가입에 실패했습니다.');
             }
+
+            queueKakaoRegistration();
 
             // 가입 직후 자동 로그인 (UX)
             const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });

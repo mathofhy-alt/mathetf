@@ -1,4 +1,5 @@
 import CampaignCapture from '@/components/CampaignCapture';
+import KakaoPixel from '@/components/KakaoPixel';
 import ModalFocus from '@/components/ModalFocus';
 import type { Metadata } from "next";
 import "./globals.css";
@@ -79,7 +80,7 @@ export default function RootLayout({
                     <SiteSurface>{children}</SiteSurface>
                     <Footer />
                     <FloatingCart />
-                    <PersonaSync /><ModalFocus /><CampaignCapture/>
+                    <PersonaSync /><ModalFocus /><CampaignCapture/><KakaoPixel/>
                 </CartProvider>
                 
                 {/* PortOne SDK - Lazy load */}

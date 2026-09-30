@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MARKETING_CONSENT_VERSION } from '@/lib/consent';
 import { createClient } from '@supabase/supabase-js';
+import { safeSignupAttribution } from '@/lib/analytics/signup-attribution';
 
 // 서버에서만 사용하는 Service Role Key (관리자 권한). 절대 클라이언트로 나가면 안 됨.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         let { email, password, phone, full_name, marketing_agreed, persona } = body;
+        const signupAttribution = safeSignupAttribution(body.attribution);
 
         // 1. 입력 검증
         if (!email || !password || !phone || !full_name) {
@@ -54,6 +56,7 @@ export async function POST(req: Request) {
                 ...(marketing_agreed ? { marketing_consent_version: MARKETING_CONSENT_VERSION } : {}),
                 phone,
                 phone_verified: true,
+                ...(signupAttribution ? { signup_attribution: signupAttribution } : {}),
             },
         });
 
