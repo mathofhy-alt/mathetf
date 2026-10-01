@@ -14,10 +14,12 @@ const reasons = [
     { label: '시간 부족', color: '#89968D' },
 ];
 
-export default function ExamOpinions({ examId, questionCount, initialOpinions }: {
-    examId: string; questionCount: number; initialOpinions: ExamOpinion[];
+export default function ExamOpinions({ examId, questionCount, initialOpinions, compactEmpty = false }: {
+    examId: string; questionCount: number; initialOpinions: ExamOpinion[]; compactEmpty?: boolean;
 }) {
     const router = useRouter();
+    const [expanded, setExpanded] = useState(false);
+    useEffect(() => { if (window.location.hash === '#opinion-form') setExpanded(true); }, []);
     const [opinions, setOpinions] = useState(initialOpinions);
     const [mine, setMine] = useState<OwnOpinion | null>(null);
     const [loggedIn, setLoggedIn] = useState(false);
@@ -79,7 +81,13 @@ export default function ExamOpinions({ examId, questionCount, initialOpinions }:
         finally { setSaving(false); }
     };
 
-    return <section id="question-difficulty" className="scroll-mt-24 border-t border-[#DBE4E0] pt-10 sm:pt-14">
+    if (compactEmpty && opinions.length === 0 && !expanded) return <section id="question-difficulty" aria-label="이용자 분석" className="scroll-mt-24 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#DCE5EE] bg-white px-5 py-4 sm:px-6">
+        <div><h2 className="text-base font-bold text-[#193740]">이용자 분석 <span className="ml-1 text-sm font-normal text-[#83918C]">0개</span></h2><p className="mt-1 text-sm leading-6 text-[#657873]">아직 등록된 의견이 없습니다. 어려웠던 문항과 이유를 남겨주세요.</p><p className="mt-2 text-sm font-semibold leading-6 text-[#365B55]">의견을 남기면 자료 결제 시 사용할 수 있는 500P를 드립니다.</p><p className="mt-1 text-xs leading-5 text-[#71847B]">시험지당 첫 작성 1회 적립 · 하루 최대 2회, 총 1,000P</p></div>
+        <button type="button" onClick={() => setExpanded(true)} aria-expanded={false} className="shrink-0 rounded-xl border border-[#CDDBD2] px-4 py-2.5 text-sm font-bold text-[#365B55] hover:bg-[#F0F5F3]">첫 의견 남기기 →</button>
+    </section>;
+
+    return <section id="question-difficulty" className={compactEmpty ? "scroll-mt-24 rounded-2xl border border-[#DBE4E0] bg-white p-5 sm:p-7" : "scroll-mt-24 border-t border-[#DBE4E0] pt-10 sm:pt-14"}>
+        {compactEmpty && opinions.length === 0 && <button type="button" aria-expanded={true} onClick={() => setExpanded(false)} className="mb-4 block ml-auto text-xs font-semibold text-[#657873] underline underline-offset-4">의견 작성 접기</button>}
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
             <div>
                 <p className="text-xs font-extrabold tracking-[0.15em] text-[#A07446]">이 시험의 이용자 분석</p>
@@ -99,7 +107,7 @@ export default function ExamOpinions({ examId, questionCount, initialOpinions }:
             </div>
 
             <div id="opinion-form" className="scroll-mt-24 rounded-[28px] border border-[#D7E2DB] bg-white p-5 shadow-[0_18px_50px_rgba(25,55,64,0.06)] sm:p-7">
-                <div className="border-b border-[#E9EFEB] pb-5"><h3 className="text-lg font-black text-[#193740]">{mine ? '내 의견 수정' : '내 의견 남기기'}</h3><p className="mt-1 text-xs leading-5 text-[#71847B]">첫 작성에 500P · 시험지당 1회 · 하루 최대 2회(1,000P)</p>{loggedIn && <p className="mt-1 text-xs font-bold text-[#3B725C]">오늘 {todayCount}/2회 작성</p>}</div>
+                <div className="border-b border-[#E9EFEB] pb-5"><h3 className="text-lg font-black text-[#193740]">{mine ? '내 의견 수정' : '내 의견 남기기'}</h3><p className="mt-2 text-sm font-semibold leading-6 text-[#365B55]">의견을 남기면 자료 결제 시 사용할 수 있는 500P를 드립니다.</p><p className="mt-1 text-xs leading-5 text-[#71847B]">시험지당 첫 작성 1회 적립 · 하루 최대 2회, 총 1,000P</p>{loggedIn && <p className="mt-1 text-xs font-bold text-[#3B725C]">오늘 {todayCount}/2회 작성</p>}</div>
                 {loggedIn ? <form onSubmit={submit}>
                     <div className="mt-5 grid gap-4 sm:grid-cols-[140px_1fr]"><div><label htmlFor="opinion-number" className="block text-xs font-bold text-[#3F5956]">어려웠던 문항</label><select id="opinion-number" value={number} onChange={e => setNumber(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border border-[#CDDBD2] bg-white px-3 text-sm">{Array.from({ length: questionCount }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}번</option>)}</select></div><fieldset><legend className="text-xs font-bold text-[#3F5956]">어려웠던 이유</legend><div className="mt-2 flex flex-wrap gap-2">{reasons.map(item => <button key={item.label} type="button" aria-pressed={reason === item.label} onClick={() => setReason(item.label)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${reason === item.label ? 'border-[#176C56] bg-[#176C56] text-white' : 'border-[#CDDBD2] text-[#536C64]'}`}>{item.label}</button>)}</div></fieldset></div>
                     <label htmlFor="opinion-comment" className="mt-5 block text-xs font-bold text-[#3F5956]">어떤 점이 어려웠나요?</label><textarea id="opinion-comment" value={comment} onChange={e => setComment(e.target.value)} minLength={15} maxLength={400} rows={4} required placeholder="문항 번호를 고르고, 막혔던 이유를 적어 주세요." className="mt-2 w-full resize-y rounded-xl border border-[#CDDBD2] p-3 text-sm leading-6 outline-none focus:border-[#176C56]" />

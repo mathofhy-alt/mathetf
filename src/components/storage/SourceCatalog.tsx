@@ -25,7 +25,7 @@ export default function SourceCatalog({items, selectedIds, onItemSelect, onGroup
     return <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white" aria-label="출제 자료 분류">
         <div className="grid grid-cols-3 gap-2 border-b border-slate-200 p-3" role="group" aria-label="자료 종류">
             {sourceCategories.map(c => <button key={c.id} type="button" aria-pressed={category === c.id}
-                onClick={() => setCategory(c.id)}
+                onClick={() => { setCategory(c.id); setSearch(''); onGetViewItems(groups[c.id]); }}
                 className={`min-w-0 rounded-xl border px-2 py-3 text-sm font-bold transition ${category === c.id ? 'border-[#426D36] bg-[#426D36] text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
                 {c.label}<span className="mt-1 block text-xs font-normal opacity-80">{groups[c.id].length}개</span>
             </button>)}

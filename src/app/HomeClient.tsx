@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem, unpackHomeRow } from '../lib/data';
+import { matchesCatalogSearch } from '@/lib/catalog-search';
 import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, AlertTriangle, Search, Loader2, Check, ArrowUpRight } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -272,12 +273,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
         if (targetMaterialId && !Object.values(group.files).some(file => file?.id === targetMaterialId)) return false;
         if (freePdfOnly && !group.files.pdfSol?.hasFreePdf) return false;
         // 0. Keyword Search
-        if (searchKeyword) {
-            const keyword = searchKeyword.toLowerCase();
-            const matchSchool = group.school.toLowerCase().includes(keyword);
-            const matchTitle = group.title.toLowerCase().includes(keyword);
-            if (!matchSchool && !matchTitle) return false;
-        }
+        if (!matchesCatalogSearch(group, searchKeyword)) return false;
 
         // 1. Region Filter
         if (selectedRegion) {

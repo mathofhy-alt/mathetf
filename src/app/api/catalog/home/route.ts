@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {getHomeExams} from '@/lib/home-catalog';
 import {unpackHomeRow} from '@/lib/data';
+import {matchesCatalogSearch} from '@/lib/catalog-search';
 
 export async function GET(req:NextRequest){
     try{
@@ -12,8 +13,8 @@ export async function GET(req:NextRequest){
             if(query.length<2||query.length>80)return NextResponse.json({error:'검색어는 2~80자로 입력해주세요.'},{status:400});
             const matched=rows.filter(row=>{
                 const item=unpackHomeRow(row);
-                return [item.school,item.exam_year,item.grade,item.semester,item.exam_type,item.subject]
-                    .filter(value=>value!==null&&value!==undefined).join(' ').toLocaleLowerCase('ko-KR').includes(query);
+                return matchesCatalogSearch({school:item.school,title:item.title,year:item.exam_year,
+                    grade:item.grade,semester:item.semester,examType:item.exam_type,subject:item.subject},query);
             });
             return NextResponse.json({rows:matched},{headers:{'Cache-Control':'public, max-age=60'}});
         }

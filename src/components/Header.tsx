@@ -5,10 +5,17 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, BookOpen } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown } from 'lucide-react';
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
+
+function YoutubeIcon({ size }: { size: number }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
+        <rect x="1" y="4" width="22" height="16" rx="5" fill="#FF0000" />
+        <path d="M10 8.5L16 12L10 15.5Z" fill="#FFFFFF" />
+    </svg>;
+}
 
 interface HeaderProps {
     user?: User | null;
@@ -148,7 +155,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             {/* 사용법 안내 */}
                             <a href="/guide"
                                 className="px-2 py-2 rounded-lg text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
-                                <BookOpen size={20} /> 사용법
+                                <YoutubeIcon size={20} /> 사용법
                             </a>
                             {isAdmin && (
                                 <Link href="/admin/inventory" className="px-2 py-2 text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
@@ -261,7 +268,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         <a href="/guide"
                             onClick={() => setMobileMenuOpen(false)}
                             className="flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
-                            <BookOpen size={22} /> 사용법 가이드
+                            <YoutubeIcon size={22} /> 사용법 가이드
                             <span className="text-[10px] text-slate-400 font-semibold ml-auto">이용 안내</span>
                         </a>
                         {isAdmin && (

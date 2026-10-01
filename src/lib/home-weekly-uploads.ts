@@ -29,7 +29,8 @@ function isoDay(day: number): string {
 export function countThisWeekUploads(packedRows: any[][], now = new Date()): WeeklyUpload {
     const today = koreaDate(now);
     const todayNumber = dayNumber(today);
-    const monday = todayNumber - ((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7);
+    // Home catalog dates have day precision: today plus the previous six days (KST).
+    const startDay = todayNumber - 6;
     const firstUploadByExam = new Map<string, number>();
 
     for (const packed of packedRows) {
@@ -43,7 +44,7 @@ export function countThisWeekUploads(packedRows: any[][], now = new Date()): Wee
 
     let count = 0;
     for (const uploaded of firstUploadByExam.values()) {
-        if (uploaded >= monday && uploaded < monday + 7) count++;
+        if (uploaded >= startDay && uploaded <= todayNumber) count++;
     }
-    return { start: isoDay(monday), end: isoDay(monday + 6), count };
+    return { start: isoDay(startDay), end: today, count };
 }

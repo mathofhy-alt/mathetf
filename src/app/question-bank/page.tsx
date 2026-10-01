@@ -351,7 +351,9 @@ export default function QuestionBankPage() {
             const pending = result.data.filter((db: any) => db.availability);
             setPurchasedDbs(ready);
             setCatalogNotice(pending.length ? `${pending.length}개 자료는 문항 검수 또는 학년 정보 확인 중입니다. 준비된 자료만 선택할 수 있습니다.` : '');
-            if (!restoredDraftRef.current && !new URLSearchParams(window.location.search).has('resume') && !hasEntryContext(new URLSearchParams(window.location.search))) setSelectedDbIds(ready.map((db: any) => db.id));
+            // 미선택 상태는 검색 시 전체 자료로 해석한다. 시작부터 모든 ID를 선택하면
+            // 특정 분류를 '전체 선택'해도 다른 분류가 범위에 남는다.
+            if (!restoredDraftRef.current && !new URLSearchParams(window.location.search).has('resume') && !hasEntryContext(new URLSearchParams(window.location.search))) setSelectedDbIds([]);
         } catch (error) {
             setCatalogNotice(error instanceof Error ? error.message : '자료 목록을 불러오지 못했습니다.');
         }
@@ -540,10 +542,8 @@ export default function QuestionBankPage() {
 
 
 
-    // [비로그인 카탈로그] 전체 DB(purchasedDbs)를 보관함 아이템(UserItem) 모양으로 매핑해
-    // 기존 FolderExplorer 디자인 그대로 보여준다. (선택은 reference_id 기반 기존 로직 그대로 작동)
+    // 로그인 여부와 무관하게 같은 출제 자료 카탈로그를 보여준다.
     const guestDbInitialData = useMemo(() => {
-        if (user) return undefined;
         const items = [...purchasedDbs]
             .sort((a: any, b: any) =>
                 (a.school || '').localeCompare(b.school || '', 'ko')
@@ -568,7 +568,7 @@ export default function QuestionBankPage() {
                 };
             });
         return { folders: [], items, isUnified: true };
-    }, [user, purchasedDbs]);
+    }, [purchasedDbs]);
 
     const handleStorageItemSelect = async (item: UserItem) => {
         if (item.type === 'personal_db') {
@@ -1215,7 +1215,7 @@ export default function QuestionBankPage() {
                                 </div>
                             )}
                             <div className="flex-1 min-h-0">
-                            {!user && storageModalMode === 'db' ? <SourceCatalog
+                            {storageModalMode === 'db' ? <SourceCatalog
                                 items={guestDbInitialData?.items || []}
                                 selectedIds={selectedDbIds}
                                 onItemSelect={handleStorageItemSelect}
@@ -1225,45 +1225,20 @@ export default function QuestionBankPage() {
                                 }}
                                 onGetViewItems={setCurrentExamItems}
                             /> : <FolderExplorer
-                                // [비로그인] 전체 DB 카탈로그 주입 / [로그인] 프리페치 주입 → 열자마자 목록 표시
-                                initialData={!user
-                                    ? (storageModalMode === 'db' ? guestDbInitialData : undefined)
-                                    : (storageModalMode === 'db' ? storagePrefetch.db : storageModalMode === 'exam' ? storagePrefetch.exam : undefined)}
+                                initialData={user && storageModalMode === 'exam' ? storagePrefetch.exam : undefined}
                                 key={storageModalMode}
                                 onItemSelect={handleStorageItemSelect}
                                 onSelectAll={(items) => {
-                                    if (storageModalMode === 'exam') {
-                                        // DELETE/download API는 user_items.id(기본키)를 사용
-                                        const ids = items
-                                            .filter(i => i.type === 'saved_exam')
-                                            .map(i => i.id);
-                                        setSelectedExamIds(ids);
-                                    } else {
-                                        const ids = items
-                                            .filter(i => i.type === 'personal_db')
-                                            .map(i => i.reference_id || i.id);
-                                        setSelectedDbIds(ids);
-                                    }
+                                    const ids = items.filter(i => i.type === 'saved_exam').map(i => i.id);
+                                    setSelectedExamIds(ids);
                                 }}
                                 onGroupSelect={(items, select) => {
-                                    if (storageModalMode === 'db') {
-                                        const ids = items.map(i => i.reference_id || i.id);
-                                        setSelectedDbIds(prev =>
-                                            select
-                                                ? [...new Set([...prev, ...ids])]
-                                                : prev.filter(id => !ids.includes(id))
-                                        );
-                                    } else {
-                                        // exam 모드: user_items.id(기본키) 사용
-                                        const ids = items.map(i => i.id);
-                                        setSelectedExamIds(prev =>
-                                            select
-                                                ? [...new Set([...prev, ...ids])]
-                                                : prev.filter(id => !ids.includes(id))
-                                        );
-                                    }
+                                    const ids = items.map(i => i.id);
+                                    setSelectedExamIds(prev => select
+                                        ? [...new Set([...prev, ...ids])]
+                                        : prev.filter(id => !ids.includes(id)));
                                 }}
-                                selectedIds={storageModalMode === 'exam' ? selectedExamIds : selectedDbIds}
+                                selectedIds={selectedExamIds}
                                 filterType={storageModalMode}
                                 refreshKey={storageRefreshKey}
                                 onGetViewItems={(items) => setCurrentExamItems(items)}
@@ -1278,12 +1253,11 @@ export default function QuestionBankPage() {
                                             .filter(i => i.type === 'personal_db')
                                             .map(i => i.reference_id || i.id);
                                         const allSelected = allDbIds.length > 0 && allDbIds.every(id => selectedDbIds.includes(id));
+                                        const hasOtherSelected = selectedDbIds.some(id => !allDbIds.includes(id));
                                         return (
                                             <button
                                                 onClick={() => {
-                                                    setSelectedDbIds(prev => allSelected
-                                                        ? prev.filter(id => !allDbIds.includes(id))
-                                                        : [...new Set([...prev, ...allDbIds])]);
+                                                    setSelectedDbIds(hasOtherSelected ? allDbIds : allSelected ? [] : allDbIds);
                                                 }}
                                                 className={`px-4 py-2 font-bold rounded-lg transition flex items-center gap-2 border ${
                                                     allSelected
@@ -1292,7 +1266,7 @@ export default function QuestionBankPage() {
                                                 }`}
                                             >
                                                 <CheckSquare size={16} />
-                                                {allSelected ? '전체 해제' : '전체 선택'}
+                                                {hasOtherSelected ? '현재 분류만 선택' : allSelected ? '전체 해제' : '전체 선택'}
                                                 {selectedDbIds.length > 0 && (
                                                     <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${allSelected ? 'bg-white/30 text-white' : 'bg-[#285CE6] text-white'}`}>
                                                         {selectedDbIds.length}
@@ -1732,7 +1706,7 @@ export default function QuestionBankPage() {
                                         }}
                                         onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
                                         onDragEnd={() => viewMode === 'review' && handleDragEnd()}
-                                        className={`qb-card relative h-[300px] rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
+                                        className={`qb-card relative h-[450px] rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
                                             ${viewMode === 'review'
                                                 ? draggingIndex === idx
                                                     ? 'opacity-40 scale-95 border-[#285CE6] border-dashed'
@@ -2043,6 +2017,7 @@ export default function QuestionBankPage() {
                             <h2 id="saved-exam-title" className="text-xl font-bold text-slate-800">시험지가 완성되었습니다</h2>
                             <p className="mt-3 break-words text-slate-600">{savedExam.name}</p><p className="mt-2 text-sm text-slate-500">{savedExam.count}문항 · {formatFileSize(savedExam.bytes)}</p>{(savedExam.bytes||0)>20*1024*1024&&<p className="text-sm text-amber-800">큰 파일입니다. 모바일에서는 안정적인 연결에서 받아주세요.</p>}
                             <p className="mt-2 text-sm text-slate-500">한글에서 열어 편집할 수 있는 HML 파일입니다. PDF가 필요하면 한글에서 PDF로 저장해주세요.</p>
+                            <p className="mt-2 text-xs text-slate-500">자료 보호를 위해 파일 내부에 회원 아이디(이메일)가 기록됩니다.</p>
                             <a className="mt-5 block rounded-xl bg-[#285CE6] p-3 text-center font-bold text-white" href={`/api/storage/download?id=${savedExam.id}`} download onClick={() => window.setTimeout(() => setSavedExam(null), 400)}>시험지 파일 받기 (.hml)</a>
                             <button className="mt-3 w-full rounded-xl border p-3 text-slate-700" onClick={() => setSavedExam(null)}>계속 출제하기</button>
                         </div>

@@ -1,4 +1,5 @@
 import {parseDraft} from '@/lib/questions/draft';
+import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
 import {resolveScope} from '@/lib/questions/scope';
@@ -256,6 +257,7 @@ export async function POST(req: NextRequest) {
 
         if (!result || result.questionCount!==ids.length) throw new Error("시험지 문항 수가 일치하지 않습니다.");
         validateHml(result.hmlContent);
+        result.hmlContent = stampMemberId(result.hmlContent, user.email);
 
         // 5. Upload to Storage
         const fileId = crypto.randomUUID();

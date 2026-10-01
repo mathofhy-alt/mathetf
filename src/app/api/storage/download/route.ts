@@ -1,4 +1,5 @@
 import {recordDownload} from '@/lib/analytics/server';
+import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import {examFilename} from '@/lib/hml-v2/validate';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
         if (downloadError) throw new Error(downloadError.message);
 
         // Prepare response
-        const buffer = await data.arrayBuffer();
+        const buffer = Buffer.from(stampMemberId(await data.text(), user.email), 'utf8');
         // RFC 5987 encoded filename
         const filename = examFilename(item.name);
         if(user.email!=='mathofhy@naver.com')await recordDownload(req,user.id,id,item.details?.analytics_session_id);

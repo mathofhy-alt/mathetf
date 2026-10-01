@@ -1,5 +1,5 @@
 import PageHeading from "@/components/PageHeading";
-import mockLinks from '@/lib/questions/verified-mock-links.json';
+import { mockQuestionHref } from '@/lib/mock-question-link';
 import {questionBankHref} from '@/lib/discovery';
 import Link from 'next/link';
 import { Metadata } from 'next';
@@ -159,7 +159,7 @@ async function CategoryView({ category }: { category: MockCategory }) {
                             <p>
                                 수학ETF가 보유한 {category} 수학 기출{' '}
                                 <strong className="text-[#294437]">{stats.total.toLocaleString()}문항</strong>을
-                                과목·단원·난이도로 분류한 결과입니다.
+                                과목·단원·난이도로 분류한 결과입니다. 다운로드 파일 수가 아닌 시험지 출제용 문항 수이며, 원본·변형 PDF와 HWP는 별도로 등록된 회차에서만 받을 수 있습니다.
                                 {stats.years.length > 1 && (
                                     <> {stats.years[stats.years.length - 1].year}년부터 {stats.years[0].year}년까지
                                     {' '}{stats.years.length}개년, 연도당 평균 {Math.round(stats.total / stats.years.length)}문항입니다.</>
@@ -232,6 +232,7 @@ async function DetailView({ slug }: { slug: string }) {
     if (!exam) notFound();
     const cat = MOCK_CATEGORIES[exam.category] ?? MOCK_CATEGORIES['전국연합'];
     const previews = exam.preview_urls || [];
+    const createHref = mockQuestionHref(exam);
     const hasVariant = !!(exam.variant_pdf_path || exam.variant_hwp_path);
 
     const related = (await fetchMockExamsByCategory(exam.category)).filter((e) => e.slug !== exam.slug).slice(0, 4);
@@ -291,14 +292,12 @@ async function DetailView({ slug }: { slug: string }) {
                     </div>
                     <h1 className="mt-3 text-xl sm:text-2xl font-black break-keep">{exam.title}</h1>
                     <div className="mt-4 rounded-xl border bg-brand-50 p-4 text-sm">
-                        {exam.materialDbs?.length ? <>
+                        {createHref ? <>
                             <p className="font-bold mb-2">이 회차 문항으로 시험지 만들기</p>
-                            <div className="flex flex-wrap gap-2">{exam.materialDbs.map(db =>
-                                <Link key={db.id} className="inline-flex rounded-lg border border-brand-200 bg-white px-3 py-2 font-semibold hover:bg-brand-100" href={questionBankHref({material:db.id,origin:'mock'})}>{db.subject} 문항 출제 →</Link>
-                            )}</div>
-                        </> : (mockLinks as Record<string,unknown>)[exam.slug]
-                            ? <Link className="font-bold underline" href={questionBankHref({mock:exam.slug,origin:'mock'})}>이 회차 문항으로 시험지 만들기 →</Link>
-                            : <p>이 회차의 문항별 출제 연결은 준비 중입니다. 아래 원본 파일을 이용하거나 <Link href="/question-bank?demo=1&origin=mock" className="underline">예시 5문항 체험</Link>으로 시작하세요.</p>}
+                            <p className="mb-3 text-xs text-slate-600">해당 회차 문항을 바로 불러옵니다. 필요한 문제를 골라 나만의 시험지를 만드세요.</p>
+                            <Link className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white hover:bg-brand-700" href={createHref}>문항 골라 출제 →</Link>
+                        </> : <p>이 회차의 출제 문항은 준비 중입니다. 등록된 파일은 아래에서 받을 수 있습니다.</p>}
+
                     </div>
                     <p className="mt-1.5 text-sm text-slate-400 font-medium">
                         {exam.year} · {exam.grade}{exam.month ? ` · ${exam.month}월` : ''}{exam.subject ? ` · ${exam.subject}` : ''}
@@ -306,6 +305,7 @@ async function DetailView({ slug }: { slug: string }) {
                     <p className="mt-4 text-sm text-slate-600 leading-relaxed break-keep">{intro}</p>
                 </div>
 
+                {exam.materialOnly && <p className="mb-5 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">이 회차는 문항 골라 출제를 이용할 수 있습니다. 원본·변형 PDF/HWP 파일은 아직 등록되지 않았습니다.</p>}
                 {/* 다운로드 */}
                 {!exam.materialOnly && <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
                     <h2 className="font-extrabold text-[#294437] mb-1">자료 다운로드</h2>

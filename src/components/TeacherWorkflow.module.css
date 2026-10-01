@@ -1,0 +1,36 @@
+.workflow{margin-top:52px;color:#172c46}
+.heading{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:24px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.05em;color:#3864c5;margin-bottom:9px}
+.heading h2{font-size:clamp(23px,3.5vw,32px);font-weight:800;letter-spacing:-.055em;line-height:1.35}
+.heading>p{font-size:12px;line-height:1.8;color:#6b788b;text-align:right;word-break:keep-all}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.steps button{display:flex;align-items:center;justify-content:center;gap:10px;padding:17px 12px;border:1px solid #dde4ef;border-radius:13px;background:#fff;color:#67768c;font-size:14px;font-weight:700;transition:background .15s,border-color .15s}
+.steps button:hover{border-color:#8caae8;background:#f2f6ff}
+.steps button.active{color:#fff;background:#2858d5;border-color:#2858d5;box-shadow:0 4px 12px #2858d51a}
+.number{font-size:11px;opacity:.7;font-variant-numeric:tabular-nums}
+.preview{border:1px solid #dbe3ef;border-radius:18px;overflow:hidden;background:#f7f9fd;box-shadow:0 18px 48px -25px #253c7340}
+.previewTop{display:flex;justify-content:space-between;align-items:center;padding:13px 20px;background:#fff;border-bottom:1px solid #e6eaf2;font-size:11px;color:#8290a3}
+.previewTop>span:first-child{display:flex;align-items:center;gap:8px;font-weight:600;color:#4e6078}
+.previewTop i{width:7px;height:7px;border-radius:50%;background:#26a08c}
+.imageLink{position:relative;display:flex;min-height:0;align-items:center;justify-content:center;aspect-ratio:2.5;background:#f7f9fd;padding:12px}
+.imageLink img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.enlarge{position:absolute;bottom:18px;right:18px;display:flex;align-items:center;gap:4px;font-size:11px;background:#fffefc;color:#3b5479;border:1px solid #dbe3ef;padding:7px 10px;border-radius:7px;box-shadow:0 2px 6px #20395810}
+.caption{font-size:11px;text-align:center;padding:12px;color:#6f7e91;border-top:1px solid #e6eaf2;background:#fff}
+.explanation{display:grid;grid-template-columns:1.5fr 1fr;gap:32px;align-items:center;padding:25px 4px;min-height:126px}
+.explanation h3{font-size:18px;font-weight:750;letter-spacing:-.025em;margin-bottom:8px}
+.explanation p{font-size:13px;line-height:1.9;word-break:keep-all;color:#66768c}
+.tip{display:flex;align-items:flex-start;gap:9px;padding:15px 17px;border-radius:12px;background:#edf3fc}
+.tip svg{flex-shrink:0;margin-top:4px;color:#3864c5}
+.output{display:flex;gap:20px;align-items:center;padding:26px;border:1px solid #dbe3ef;border-radius:16px;background:#fff}
+.fileIcon{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;flex-shrink:0;width:65px;height:78px;border-radius:13px;background:#edf3fc;color:#2858d5}
+.fileIcon span{font-size:10px;font-weight:800;letter-spacing:.08em}
+.output h3{font-size:18px;letter-spacing:-.025em;font-weight:750;margin-bottom:8px;word-break:keep-all}
+.output p{font-size:13px;line-height:1.8;color:#52657e;word-break:keep-all}
+.output div>span{display:block;font-size:11px;line-height:1.8;margin-top:6px;color:#7b899c;word-break:keep-all}
+.actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:28px}
+.actions a{display:inline-flex;gap:8px;align-items:center;justify-content:center;font-size:14px;font-weight:700;padding:15px 23px;border-radius:11px;transition:background .15s}
+.primary{background:#2858d5;color:#fff}.primary:hover{background:#2049b7}
+.secondary{border:1px solid #dbe3ef;background:#fff;color:#536882}.secondary:hover{background:#edf3fc}
+.access{text-align:center;font-size:11px;line-height:1.8;color:#7b899c;margin-top:13px;word-break:keep-all}
+.workflow :is(button,a):focus-visible{outline:3px solid #94b3ff;outline-offset:4px}
+@media(max-width:640px){.workflow{margin-top:36px}.heading{display:block}.heading>p{text-align:left;margin-top:10px}.steps{gap:5px}.steps button{gap:5px;font-size:11px;padding:13px 5px}.steps svg{display:none}.number{font-size:10px}.previewTop{padding:11px 12px;font-size:10px}.imageLink{padding:0;aspect-ratio:2.1}.enlarge{right:8px;bottom:8px;font-size:10px;padding:5px 7px}.caption{font-size:10px}.explanation{grid-template-columns:1fr;gap:14px;padding:22px 0;min-height:0}.explanation h3{font-size:17px}.output{gap:13px;padding:19px 15px;align-items:flex-start}.fileIcon{width:46px;height:62px}.output h3{font-size:16px}.output p{font-size:12px}.actions{flex-direction:column}.actions a{width:100%}.access{padding:0 8px}}

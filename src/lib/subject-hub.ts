@@ -1,56 +1,23 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { NOT_A_SCHOOL } from '@/lib/stats';
 
-/**
- * 과목 허브 페이지(/subject/[subject])용 실측 데이터.
- *
- * [왜 만드나 — 2026-08-29 실측]
- * 네이버 월간 검색량: 공통수학2 7,880 · 공통수학1 5,410.
- * 그런데 '공통수학2기출' 은 55, '공통수학1기출' 은 15 밖에 안 된다.
- * → 사람들은 '기출' 을 붙여 찾지 않고 **과목명 자체**를 찾는다.
- *   2025년 교육과정 개편으로 새로 생긴 이름이라 "이 과목이 뭔지" 를 찾는 정보성 검색이다.
- *   그 검색을 받아 자료로 이어줄 페이지가 지금 없다(/study 는 예습 가이드 2개뿐).
- *
- * [무엇을 싣나]
- * 전부 우리가 분류한 데이터에서 나온다 — 문항수·학교수·단원 분포·난이도 분포·개념 태그.
- * 남의 시험지를 옮기는 게 아니라 14,394문항을 분류해 얻은 우리 통계라 저작권 문제가 없고,
- * 다른 곳이 낼 수 없는 글이다.
- *
- * [4개만 만드는 이유]
- * 학교 수가 받쳐주는 과목이 넷뿐이다(공통수학1 120교 · 공통수학2 112교 · 수학I 81교 · 수학II 81교).
- * 나머지는 2~8개교라 페이지를 만들면 씬페이지가 된다. 사용자가 씬페이지 양산을 명시적으로 거부했다.
- */
-
-export const HUB_SUBJECTS = ['공통수학1', '공통수학2', '수학I', '수학II'] as const;
+/** 실제 분류 문항 또는 내신 시험지가 등록된 과목. 과거 교육과정 명칭도 구분한다. */
+export const HUB_SUBJECTS = ['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하', '수학(상)', '수학(하)', '수학I', '수학II', '미적분', '기하와벡터'] as const;
 export type HubSubject = (typeof HUB_SUBJECTS)[number];
-
-/** 과목이 어느 학년 어느 학기 것인지 — 검색 의도('이 과목이 뭐냐')에 답하는 사실 정보 */
-/** 과목명 뒤 조사. 공통수학1='일'(받침 ㄹ)→은, 공통수학2='이'→는 처럼 읽는 소리로 갈린다. */
 export const SUBJECT_INFO: Record<HubSubject, { grade: string; when: string; blurb: string; eun: '은' | '는' }> = {
-    '공통수학1': {
-        eun: '은',
-        grade: '고등학교 1학년',
-        when: '1학기',
-        blurb: '2022 개정 교육과정에서 고1 1학기에 배우는 과목입니다. 옛 「수학(상)」과 일부 범위가 겹치지만 동일한 과목은 아니며 다항식·방정식과 부등식·경우의 수·행렬을 다룹니다.',
-    },
-    '공통수학2': {
-        eun: '는',
-        grade: '고등학교 1학년',
-        when: '2학기',
-        blurb: '2022 개정 교육과정에서 고1 2학기에 배우는 과목입니다. 옛 「수학(상)·수학(하)」의 일부 범위가 재편되었으며 도형의 방정식·집합과 명제·함수와 그래프를 다룹니다.',
-    },
-    '수학I': {
-        eun: '은',
-        grade: '고등학교 2학년',
-        when: '1학기',
-        blurb: '지수와 로그·삼각함수·수열을 다룹니다. 수능 공통과목이라 내신과 수능 대비가 함께 갑니다.',
-    },
-    '수학II': {
-        eun: '는',
-        grade: '고등학교 2학년',
-        when: '2학기',
-        blurb: '함수의 극한과 연속·미분·적분을 다룹니다. 수능 공통과목이며 미적분의 기초가 되는 과목입니다.',
-    },
+ '공통수학1': {grade:'고등학교',when:'공통 과목',eun:'은',blurb:'2022 개정 교육과정의 공통 과목입니다. 다항식·방정식과 부등식·경우의 수·행렬을 다룹니다. 학교별 시험 범위는 원본에서 확인하세요.'},
+ '공통수학2': {grade:'고등학교',when:'공통 과목',eun:'는',blurb:'2022 개정 교육과정의 공통 과목입니다. 도형의 방정식·집합과 명제·함수와 그래프를 다룹니다. 학교별 시험 범위는 원본에서 확인하세요.'},
+ '대수': {grade:'고등학교',when:'선택 과목',eun:'는',blurb:'지수와 로그·삼각함수·수열 관련 기출을 찾아볼 수 있습니다. 과거 수학I 자료와 등록 명칭을 구분해 확인하세요.'},
+ '미적분I': {grade:'고등학교',when:'등록 과목 분류',eun:'은',blurb:'미적분I로 분류된 기출 문항을 모았습니다. 교육과정과 연도에 따라 과목 범위가 다를 수 있으므로 원본 범위를 확인하세요.'},
+ '미적분II': {grade:'고등학교',when:'등록 과목 분류',eun:'는',blurb:'미적분II로 분류된 기출 문항을 모았습니다. 교육과정과 연도에 따라 과목 범위가 다를 수 있으므로 원본 범위를 확인하세요.'},
+ '확률과통계': {grade:'고등학교',when:'선택 과목',eun:'는',blurb:'경우의 수·확률·통계 관련 기출을 찾아볼 수 있습니다. 학년과 이수 시기는 학교마다 다르므로 해당 시험 범위를 확인하세요.'},
+ '기하': {grade:'고등학교',when:'선택 과목',eun:'는',blurb:'기하로 등록된 시험지와 분류 문항을 모았습니다. 교육과정과 학교별 진도에 따라 시험 범위가 다르므로 원본을 확인하세요.'},
+ '수학(상)': {grade:'고등학교',when:'과거 교육과정 자료',eun:'은',blurb:'수학(상)으로 등록된 과년도 기출입니다. 현재 공통수학1·공통수학2와 범위가 일치하지 않으므로 필요한 단원을 확인해 활용하세요.'},
+ '수학(하)': {grade:'고등학교',when:'과거 교육과정 자료',eun:'는',blurb:'수학(하)로 등록된 과년도 기출입니다. 현재 과목과 범위가 일치하지 않으므로 필요한 단원을 확인해 활용하세요.'},
+ '수학I': {grade:'고등학교',when:'등록 과목 분류',eun:'은',blurb:'지수와 로그·삼각함수·수열 관련 기출을 찾아볼 수 있습니다. 학년·학기·시험 범위는 학교별 자료를 확인하세요.'},
+ '수학II': {grade:'고등학교',when:'등록 과목 분류',eun:'는',blurb:'함수의 극한과 연속·미분·적분 관련 기출을 찾아볼 수 있습니다. 학년·학기·시험 범위는 학교별 자료를 확인하세요.'},
+ '미적분': {grade:'고등학교',when:'등록 과목 분류',eun:'은',blurb:'미적분으로 등록된 기출 문항을 모았습니다. 미적분I·미적분II 분류와 별도로 제공하며 실제 시험 범위는 원본을 확인하세요.'},
+ '기하와벡터': {grade:'고등학교',when:'과거 교육과정 자료',eun:'는',blurb:'기하와벡터로 분류된 과년도 기출 문항입니다. 현재 기하 과목과 범위가 일치하지 않으므로 필요한 단원을 확인해 활용하세요.'},
 };
 
 export type SubjectHub = {
@@ -65,7 +32,7 @@ export type SubjectHub = {
     easy: number; mid: number; hard: number;
     concepts: string[];
     schools: string[];
-    exams: { id: string; school: string; year: number; grade: number; semester: number; examType: string }[];
+    exams: { id: string; school: string; year: number; grade: number; semester: number; examType: string; region?: string; district?: string; hasFreePdf: boolean; hasPreview: boolean }[];
 };
 
 const PAGE = 1000;
@@ -127,15 +94,17 @@ export async function getSubjectHub(subject: string): Promise<SubjectHub | null>
         }
 
         // 이 과목의 시험지 목록 (대표 페이지만 — PDF·해설)
-        const { data: mats } = await supabase
-            .from('exam_materials')
-            .select('id, school, exam_year, grade, semester, exam_type')
-            .eq('subject', subject)
-            .eq('file_type', 'PDF')
-            .eq('content_type', '해설')
-            .neq('school', 'DELETED')
-            .order('exam_year', { ascending: false })
-            .limit(300);
+        const mats: any[] = [];
+        for (let from = 0; ; from += PAGE) {
+            const { data, error } = await supabase.from('exam_materials')
+                .select('id, school, exam_year, grade, semester, exam_type, region, district, free_pdf_url, preview_urls')
+                .eq('subject', subject).eq('file_type', 'PDF').eq('content_type', '해설')
+                .neq('school', 'DELETED').in('exam_type', ['중간고사', '기말고사'])
+                .order('exam_year', { ascending: false }).order('id').range(from, from + PAGE - 1);
+            if (error) throw error;
+            mats.push(...(data || []));
+            if (!data || data.length < PAGE) break;
+        }
 
         return {
             subject,
@@ -150,6 +119,8 @@ export async function getSubjectHub(subject: string): Promise<SubjectHub | null>
             exams: (mats || []).map((m: any) => ({
                 id: m.id, school: m.school, year: m.exam_year,
                 grade: m.grade, semester: m.semester, examType: m.exam_type,
+                region: m.region, district: m.district, hasFreePdf: Boolean(m.free_pdf_url),
+                hasPreview: Array.isArray(m.preview_urls) && m.preview_urls.length > 0,
             })),
         };
     } catch (e) {
