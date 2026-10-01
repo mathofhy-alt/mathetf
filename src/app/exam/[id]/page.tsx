@@ -3,6 +3,7 @@ import {questionBankHref, schoolDestination} from '@/lib/discovery';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import ExamDetailV2 from '@/components/ExamDetailV2';
 import { ExamOpinion } from '@/components/ExamOpinions';
 import { buildSourceDbId } from '@/lib/examKey';
@@ -10,6 +11,7 @@ import { proxiedOgImage } from '@/lib/og-image';
 import { reportForExam } from '@/lib/seo-insights';
 
 export const revalidate = 3600; // 1시간마다 갱신 (미리보기/가격 반영)
+export const dynamicParams = true; // 빌드에 포함되지 않은 시험지도 첫 방문 시 생성
 
 interface Props {
     params: { id: string };
@@ -41,7 +43,7 @@ function buildNarrative(label: string, comp: Composition): string[] {
     return [unitInsight, difficultyInsight];
 }
 
-async function getExam(id: string) {
+const getExam = cache(async (id: string) => {
     const supabase = createAdminClient();
     const { data: row } = await supabase
         .from('exam_materials')
@@ -60,7 +62,7 @@ async function getExam(id: string) {
     };
 
     // 같은 시험의 다른 형식(HWP/개인DB) 확인
-    const { data: siblings } = await matchLocation(matchSubject(
+    const siblingsQuery = matchLocation(matchSubject(
         supabase
             .from('exam_materials')
             .select('id,file_type,content_type,price')
@@ -72,7 +74,7 @@ async function getExam(id: string) {
     )).neq('school', 'DELETED');
 
     // 같은 학교·같은 시험(학년·학기·시험·과목)의 다른 연도 → 상세페이지 링크
-    const { data: otherYears } = await matchLocation(matchSubject(
+    const otherYearsQuery = matchLocation(matchSubject(
         supabase
             .from('exam_materials')
             .select('id, exam_year')
@@ -88,7 +90,7 @@ async function getExam(id: string) {
         .order('exam_year', { ascending: false });
 
     // 같은 연도 시리즈가 없는 시험도 학교의 실제 다른 회차로 이어 준다.
-    const { data: schoolExams } = await matchLocation(supabase
+    const schoolExamsQuery = matchLocation(supabase
         .from('exam_materials')
         .select('id, school, region, district, exam_year, grade, semester, exam_type, subject')
         .eq('school', row.school)
@@ -98,6 +100,19 @@ async function getExam(id: string) {
         .neq('school', 'DELETED')
         .order('exam_year', { ascending: false })
         .limit(100);
+    const sourceKey = buildSourceDbId(row);
+    const questionsQuery = sourceKey
+        ? supabase.from('questions').select('unit, difficulty, key_concepts').eq('source_db_id', sourceKey)
+        : null;
+    const [siblingsResult, otherYearsResult, schoolExamsResult, questionsResult] = await Promise.all([
+        siblingsQuery,
+        otherYearsQuery,
+        schoolExamsQuery,
+        questionsQuery,
+    ]);
+    const siblings = siblingsResult.data;
+    const otherYears = otherYearsResult.data;
+    const schoolExams = schoolExamsResult.data;
     const yearIds = new Set((otherYears || []).map((item: any) => item.id));
     const relatedExams = (schoolExams || [])
         .filter((item: any) => !yearIds.has(item.id)
@@ -112,12 +127,8 @@ async function getExam(id: string) {
     // 시험 구성(단원별·난이도별 문항수) + 출제 개념/유형(key_concepts) — source_db_id 로 questions 조회
     let composition: Composition | null = null;
     let concepts: string[] = [];  // 유형/개념 태그 (문제 본문은 노출 안 함 — 롱테일 키워드용)
-    const sourceKey = buildSourceDbId(row);
     if (sourceKey) {
-        const { data: qs } = await supabase
-            .from('questions')
-            .select('unit, difficulty, key_concepts')
-            .eq('source_db_id', sourceKey);
+        const qs = questionsResult?.data;
         if (qs && qs.length > 0) {
             const unitMap: Record<string, number> = {};
             const conceptCounts = new Map<string, number>();
@@ -143,26 +154,22 @@ async function getExam(id: string) {
     }
 
     return { row, siblings: siblings || [], otherYears: otherYears || [], relatedExams, composition, concepts, sourceKey };
-}
+});
 
-// 빌드 시 실제 해설 PDF 시험만 미리 생성
+// 최근 해설 PDF 100개만 빌드하고 나머지는 첫 방문 시 생성·캐시한다.
 export async function generateStaticParams() {
     const supabase = createAdminClient();
-    const ids: string[] = [];
-    for (let offset = 0; ; offset += 1000) {
-        const { data, error } = await supabase
-            .from('exam_materials')
-            .select('id')
-            .eq('file_type', 'PDF')
-            .eq('content_type', '해설')
-            .neq('school', 'DELETED')
-            .order('id')
-            .range(offset, offset + 999);
-        if (error) throw error;
-        ids.push(...(data || []).map((r: any) => r.id));
-        if (!data || data.length < 1000) break;
-    }
-    return ids.map(id => ({ id }));
+    const { data, error } = await supabase
+        .from('exam_materials')
+        .select('id')
+        .eq('file_type', 'PDF')
+        .eq('content_type', '해설')
+        .neq('school', 'DELETED')
+        .order('created_at', { ascending: false })
+        .order('id')
+        .limit(100);
+    if (error) throw error;
+    return (data || []).map(({ id }) => ({ id }));
 }
 
 /**
