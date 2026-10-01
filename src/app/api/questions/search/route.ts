@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { availableCatalog } from '@/lib/questions/catalog';
-import { resolveScope } from '@/lib/questions/scope';
+import { isWholeCatalog, resolveRequestScope, wholeCatalogIneligible } from '@/lib/questions/fastScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,9 +69,15 @@ export async function POST(req: NextRequest) {
     const to = from + PAGE_SIZE_MAX - 1;
 
     const supabase = createAdminClient();
-    let scope;
-    try { scope = resolveScope(await availableCatalog(), selectedDbs, advancedFilters?.mockSlug); }
+    let resolved;
+    try { resolved = await resolveRequestScope(selectedDbs, advancedFilters?.mockSlug); }
     catch (e) { return NextResponse.json({ success: false, error: (e as Error).message }, { status: 400 }); }
+    const { catalog, scope } = resolved;
+    // [성능 2026-10-01] '전체' 선택이면 범위 계산(자료 2,212개 규칙 대조) 대신
+    // 범위 밖 문항(~560개, 30분 캐시)만 빼는 question_bank_all 로 간다. 결과 문항 집합은 같다.
+    // 새 SQL 함수가 아직 없으면 null → 아래에서 예전 question_bank_candidates 로 간다.
+    const wholeExcluded = isWholeCatalog(catalog, selectedDbs, advancedFilters?.mockSlug) ? await wholeCatalogIneligible(catalog) : null;
+    const userExcluded: string[] = Array.isArray(excludedQuestionIds) ? excludedQuestionIds.filter((id:unknown)=>typeof id==='string' && /^[0-9a-f-]{36}$/i.test(id)) : [];
 
     // [성능] 카드 표시는 캡쳐 이미지(question_images)로만 함 (sorted 문제 100% 캡쳐 보유).
     // content_xml/plain_text/equation_scripts 는 표시에 불필요 → 전송 제외 (payload ~74% 감소, 클라 XML 파싱 0).
@@ -84,8 +89,9 @@ export async function POST(req: NextRequest) {
     // BMP 등 무거운 base64가 섞이면 응답이 수 MB로 커져 검색 체감속도가 들쭉날쭉하던 원인.
     // 카드 골격은 이 메타데이터로 즉시 뜨고, 이미지는 /api/questions/images 가 청크로 따라간다.
     const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, is_off_curriculum';
-    let query = supabase
-        .rpc('question_bank_candidates', { p_scope: scope, p_excluded: Array.isArray(excludedQuestionIds) ? excludedQuestionIds.filter((id:unknown)=>typeof id==='string' && /^[0-9a-f-]{36}$/i.test(id)) : [] }, wantCount ? {count:'estimated'} : {})
+    let query = (wholeExcluded
+        ? supabase.rpc('question_bank_all', { p_excluded: [...wholeExcluded, ...userExcluded] }, wantCount ? {count:'estimated'} : {})
+        : supabase.rpc('question_bank_candidates', { p_scope: scope, p_excluded: userExcluded }, wantCount ? {count:'estimated'} : {}))
         .select(SELECT_COLS)
         .eq('work_status', 'sorted')
         .order('question_number', { ascending: true }).order('id', { ascending: true })

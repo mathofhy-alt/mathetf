@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { canSeeSolutions, trimQuestionImages } from '@/lib/questions/imageAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +64,9 @@ export async function POST(req: NextRequest) {
     q = src
         ? q.eq('source_db_id', src).eq('work_status', 'sorted').order('question_number', { ascending: true }).limit(MAX_IDS)
         : q.in('id', ids);
-    const { data, error } = await q;
+    // [보안 2026-10-02] 해설 캡쳐는 로그인한 사람에게만 (이미지 API 와 같은 규칙: lib/questions/imageAccess)
+    const [withSolutions, { data: rows, error }] = await Promise.all([canSeeSolutions(), q]);
+    const data = (rows || []).map((r: any) => ({ ...r, question_images: trimQuestionImages(r.question_images || [], withSolutions) }));
 
     if (error) {
         console.error('[questions/by-ids] error:', error);

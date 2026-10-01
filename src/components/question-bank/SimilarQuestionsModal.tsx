@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { X, Loader2, Plus, Check } from 'lucide-react';
+import { DEFAULT_SIMILAR_BASIS, fetchSimilarImages, fetchSimilarMeta } from '@/lib/similarPrefetch';
 import QuestionRenderer from '@/components/QuestionRenderer';
 
 interface SimilarQuestionsModalProps {
@@ -20,7 +21,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
     const [error, setError] = useState<string | null>(null);
     // [유사 기준] 지금 임베딩(embedding)은 해설을 함께 담고 있어 실측 75%가 해설 = 사실상 '풀이 유사'.
     // 발문만의 임베딩(embedding_statement)을 따로 두어 사용자가 고르게 한다.
-    const [basis, setBasis] = useState<'statement' | 'solution'>('statement');
+    const [basis, setBasis] = useState<'statement' | 'solution'>(DEFAULT_SIMILAR_BASIS);
     // 서버가 실제로 무엇을 썼는지 — 발문 임베딩이 없으면 풀이로 폴백한다.
     const [usedBasis, setUsedBasis] = useState<'statement' | 'solution' | null>(null);
     // [2단계 로딩 대응] 검색 직후엔 question_images 가 아직 안 와서(null) 원본이 비어 보일 수 있음
@@ -49,12 +50,11 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
             setError(null);
             try {
                 // [성능] meta=1: 이미지 없이 결과만 먼저 → 카드 즉시 표시, 스피너 최소화
-                const res = await fetch(`/api/pro/similar-questions?id=${baseQuestion.id}&limit=10&meta=1&basis=${basis}`);
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.error || 'Failed to fetch similar questions');
+                // [성능 2026-10-01] '유사' 버튼에 올렸을 때 시작해 둔 요청(similarPrefetch)이 있으면 그걸 이어받는다.
+                const { ok, json: data } = await fetchSimilarMeta(baseQuestion.id, basis);
+                if (!ok) {
+                    throw new Error(data?.error || 'Failed to fetch similar questions');
                 }
-                const data = await res.json();
                 if (data.success) {
                     setUsedBasis(data.basis ?? null);
                     setQuestions(data.data);          // question_images: null → 카드는 스켈레톤으로 즉시
@@ -63,13 +63,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                     const ids = (data.data || []).map((q: any) => q.id);
                     if (ids.length > 0) {
                         try {
-                            const ir = await fetch('/api/questions/images', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ ids }),
-                            });
-                            const ij = await ir.json();
-                            const imgs = (ir.ok && ij.success) ? (ij.images || {}) : {};
+                            const imgs = await fetchSimilarImages(ids).catch(() => ({} as Record<string, any[]>));
                             setQuestions(prev => prev.map(q => ({ ...q, question_images: imgs[q.id] || [] })));
                         } catch {
                             setQuestions(prev => prev.map(q => ({ ...q, question_images: q.question_images ?? [] })));

@@ -169,7 +169,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     const facetRes = await fetch('/api/questions/facets', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ selectedDbs, purchasedDbsCount: purchasedDbs?.length || 0, includeOffCurriculum, mockSlug:initialFilters?.mockSlug }),
+                        body: JSON.stringify({ selectedDbs: selectedDbs.map((db: any) => typeof db === 'string' ? db : db.id), purchasedDbsCount: purchasedDbs?.length || 0, includeOffCurriculum, mockSlug:initialFilters?.mockSlug }),  // id 만 — 서버가 자료 목록에서 찾는다
                     });
                     const facetJson = await facetRes.json().catch(() => ({ data: [] }));
                     const data = facetJson?.data;

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSiteStats } from '@/lib/stats';
-import { createAdminClient } from '@/utils/supabase/server-admin';
-import { availableCatalog } from '@/lib/questions/catalog';
-import { resolveScope } from '@/lib/questions/scope';
+import { cachedFacets, isWholeCatalog, resolveRequestScope } from '@/lib/questions/fastScope';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,11 +40,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, data: [] });
     }
 
-    const supabase = createAdminClient();
-    let scope;
-    try { scope = resolveScope(await availableCatalog(), selectedDbs, body.mockSlug); }
+    let resolved;
+    try { resolved = await resolveRequestScope(selectedDbs, body.mockSlug); }
     catch (e) { return NextResponse.json({ success: false, error: (e as Error).message }, { status: 400 }); }
-    const {data,error}=await supabase.rpc('question_bank_facets',{p_scope:scope,p_include_off:includeOffCurriculum});
-    if(error) return NextResponse.json({success:false,error:'출제 가능한 단원을 불러오지 못했습니다.'},{status:503});
-    return NextResponse.json({success:true,data:data||[]});
+    // [성능 2026-10-01] '전체' 선택 시 16초 걸리던 단원목록 → 범위 밖 문항만 제외 + 범위별 10분 캐시
+    try {
+        const data = await cachedFacets(resolved.catalog, resolved.scope, isWholeCatalog(resolved.catalog, selectedDbs, body.mockSlug), includeOffCurriculum);
+        return NextResponse.json({success:true,data});
+    } catch (e) {
+        console.error('[questions/facets POST] error:', (e as Error).message);
+        return NextResponse.json({success:false,error:'출제 가능한 단원을 불러오지 못했습니다.'},{status:503});
+    }
 }

@@ -37,10 +37,11 @@ export default function AutoGenModal({
     const [facets,setFacets] = useState<{subject:string;unit:string}[]>([]);
     const [facetsLoading,setFacetsLoading] = useState(true);
     const [facetsError,setFacetsError] = useState('');
-    const selectionKey = selectedDbs.map(db=>typeof db==='string'?db:db.id).join(',')+'|'+(initialFilters?.mockSlug||'');
+    const selectedDbIds = selectedDbs.map(db=>typeof db==='string'?db:db.id);  // 서버는 id 만 쓴다
+    const selectionKey = selectedDbIds.join(',')+'|'+(initialFilters?.mockSlug||'');
     useEffect(()=>{
         const controller=new AbortController();setFacetsLoading(true);setFacetsError('');
-        fetch('/api/questions/facets',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({selectedDbs,includeOffCurriculum,mockSlug:initialFilters?.mockSlug})})
+        fetch('/api/questions/facets',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({selectedDbs:selectedDbIds,includeOffCurriculum,mockSlug:initialFilters?.mockSlug})})
           .then(async res=>{const data=await res.json();if(!res.ok||!data.success)throw new Error('출제 가능한 단원을 불러오지 못했습니다.');setFacets(data.data||[]);})
           .catch(e=>{if(e.name!=='AbortError')setFacetsError(e.message);})
           .finally(()=>{if(!controller.signal.aborted)setFacetsLoading(false);});
@@ -77,7 +78,7 @@ export default function AutoGenModal({
                 unit: selectedUnits.length > 0 ? selectedUnits : undefined,
                 minDifficulty: minDiff,
                 maxDifficulty: maxDiff,
-                count, selectedDbs, excludedQuestionIds, includeOffCurriculum
+                count, selectedDbs: selectedDbIds, excludedQuestionIds, includeOffCurriculum
             };
 
             try { sessionStorage.setItem('mathetf_autogen_draft', JSON.stringify(criteria)); } catch { }

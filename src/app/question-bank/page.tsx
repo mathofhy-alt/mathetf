@@ -33,6 +33,7 @@ import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 import ConfigModal from '@/components/question-bank/ConfigModal';
 import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsModal';
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
+import { prefetchSimilar } from '@/lib/similarPrefetch';
 import Header from '@/components/Header';
 import AccessPolicy from '@/components/AccessPolicy';
 import RecentExams from '@/components/question-bank/RecentExams';
@@ -385,15 +386,16 @@ export default function QuestionBankPage() {
     }, [cart]);
 
     // [성능] 이미지 지연 로딩: 검색 직후 카드는 스켈레톤으로 즉시 뜨고,
-    // 이미지는 20개씩 청크로 받아 도착하는 대로 채운다. (보이는 위쪽 카드부터 자연히 먼저 채워짐)
+    // 이미지는 20개씩 청크로 받아 도착하는 대로 채운다.
+    // [성능 2026-10-01] 청크를 하나씩 기다리지 않고 동시에 보낸다(50장 = 3청크 → 왕복 1번 시간).
     // 토큰: 새 검색/페이지 이동 시 이전 검색의 늦은 응답이 화면을 덮어쓰지 않게 차단.
     const imageLoadToken = useRef(0);
     const loadImagesProgressively = async (ids: string[]) => {
         const token = ++imageLoadToken.current;
         const CHUNK = 20;
-        for (let i = 0; i < ids.length; i += CHUNK) {
-            if (imageLoadToken.current !== token) return; // 새 검색 시작됨 → 중단
-            const chunk = ids.slice(i, i + CHUNK);
+        const chunks: string[][] = [];
+        for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK));
+        await Promise.all(chunks.map(async chunk => {
             let imagesMap: Record<string, any[]> | null = null;
             try {
                 const res = await fetch('/api/questions/images', {
@@ -404,14 +406,14 @@ export default function QuestionBankPage() {
                 const json = await res.json();
                 if (res.ok && json.success) imagesMap = json.images || {};
             } catch { /* 아래에서 빈 배열 처리 */ }
-            if (imageLoadToken.current !== token) return;
+            if (imageLoadToken.current !== token) return; // 새 검색 시작됨 → 버림
             // 실패한 청크는 빈 배열로 채워 스켈레톤이 영원히 남지 않게 함
             setQuestions(prev => prev.map(q =>
                 chunk.includes(q.id)
                     ? { ...q, question_images: (imagesMap && imagesMap[q.id]) || [], imageLoadError: imagesMap === null }
                     : q
             ));
-        }
+        }));
     };
 
     const retryQuestionImages = async (id: string) => {
@@ -444,7 +446,9 @@ export default function QuestionBankPage() {
         // [보안] 문제 콘텐츠는 더 이상 클라이언트가 DB를 직접 조회하지 않는다.
         // RLS를 잠그고, 오직 서버 라우트(/api/questions/search)를 통해서만 콘텐츠가 나간다.
         // (서버에서 페이지 상한 + IP 속도제한으로 대량 스크래핑 방지)
-        const selectedDbs = dbFilter.length > 0 ? purchasedDbs.filter(d => dbFilter.includes(d.id)) : [];
+        // [성능 2026-10-01] 서버는 자료 id 만 쓴다(resolveScope). 예전엔 자료 설명을 통째로 보내
+        // '전체' 검색 한 번에 1.1MB 를 올렸다(휴대폰에서 체감). id 만 보내면 ~80KB.
+        const selectedDbs = dbFilter.length > 0 ? purchasedDbs.filter(d => dbFilter.includes(d.id)).map(d => d.id) : [];
 
         try {
             const res = await fetch('/api/questions/search', {
@@ -894,7 +898,8 @@ export default function QuestionBankPage() {
     };
 
     // 1. Initial Review Block (Switch to Review Mode)
-    const [showLoginGate, setShowLoginGate] = useState(false);
+    // 'solution' = 해설보기에서 열림(문구가 다르다). 해설은 회원 전용(2026-10-02).
+    const [showLoginGate, setShowLoginGate] = useState<boolean | 'solution'>(false);
 
     const handleGenerate = () => {
         if (cart.length === 0) return;
@@ -1198,7 +1203,7 @@ export default function QuestionBankPage() {
             <div className="flex flex-1 overflow-hidden relative">
 
                 {/* 로그인 게이트 모달 - 비로그인 유저가 시험지 생성 클릭 시 */}
-                {showLoginGate && <div role="dialog" aria-modal="true" aria-label="로그인 안내" className="product-modal fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-5" onClick={e=>{if(e.target===e.currentTarget)setShowLoginGate(false);}}><div className="w-full max-w-sm rounded-3xl bg-white p-8"><FileText size={30} className="text-brand-600 mb-5"/><h2 className="text-2xl font-bold">고른 문제를<br/>시험지로 간직하세요.</h2><p className="text-sm text-slate-500 leading-6 mt-4">로그인하면 저장하고 한글 파일로 받을 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p><a className="product-button primary w-full mt-7" href={questionBankLoginUrl()}>로그인하고 이어서 만들기</a><button className="product-button secondary w-full mt-2" onClick={()=>setShowLoginGate(false)}>계속 둘러보기</button></div></div>}
+                {showLoginGate && <div role="dialog" aria-modal="true" aria-label="로그인 안내" className="product-modal fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-5" onClick={e=>{if(e.target===e.currentTarget)setShowLoginGate(false);}}><div className="w-full max-w-sm rounded-3xl bg-white p-8"><FileText size={30} className="text-brand-600 mb-5"/>{showLoginGate==='solution'?<><h2 className="text-2xl font-bold">해설은<br/>회원에게 보여드려요.</h2><p className="text-sm text-slate-500 leading-6 mt-4">로그인하면 모든 문항의 해설을 볼 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p><a className="product-button primary w-full mt-7" href={questionBankLoginUrl()}>로그인하고 해설 보기</a></>:<><h2 className="text-2xl font-bold">고른 문제를<br/>시험지로 간직하세요.</h2><p className="text-sm text-slate-500 leading-6 mt-4">로그인하면 저장하고 한글 파일로 받을 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p><a className="product-button primary w-full mt-7" href={questionBankLoginUrl()}>로그인하고 이어서 만들기</a></>}<button className="product-button secondary w-full mt-2" onClick={()=>setShowLoginGate(false)}>계속 둘러보기</button></div></div>}
 
                 {/* Storage Modal - Persistent Rendering for 0s Loading (visibility 전환으로 열림 애니메이션) */}
                 <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-150 ${showStorageModal ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'}`} aria-hidden={!showStorageModal}>
@@ -1798,6 +1803,9 @@ export default function QuestionBankPage() {
                                                 {viewMode === 'review' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate(true); return; } setSimilarTarget(q); }}
+                                                        // [성능] 누르기 전(올림·터치 시작)에 유사문항 요청을 시작해 둔다 → 모달이 이어받음
+                                                        onPointerEnter={() => { if (user) prefetchSimilar(q.id); }}
+                                                        onPointerDown={() => { if (user) prefetchSimilar(q.id); }}
                                                         className="px-2 py-1 bg-[#A47864] hover:bg-[#8A6553] text-white rounded-md shadow-sm transition-all flex items-center gap-1 whitespace-nowrap"
                                                         title="유사문항 찾기"
                                                     >
@@ -1864,7 +1872,7 @@ export default function QuestionBankPage() {
                                                 <div className="flex items-center gap-2 transition-opacity">
                                                     <button
                                                         className="question-action"
-                                                        onClick={(e) => { e.stopPropagation(); setSolutionTarget(q); }}
+                                                        onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate('solution'); return; } setSolutionTarget(q); }}
                                                     >
                                                         <FileText size={12} />
                                                         해설보기

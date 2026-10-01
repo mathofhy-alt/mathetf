@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { canSeeSolutions, trimQuestionImages } from '@/lib/questions/imageAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,12 +55,30 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
     try {
-        const { data, error } = await supabase
-            .from('question_images')
-            .select('question_id, data, id, original_bin_id, format')
-            .in('question_id', ids)
-            .order('created_at', { ascending: true });
-        if (error) throw error;
+        // [성능 2026-10-01] 카드는 캡쳐(MANUAL_/AUTO_)가 있으면 캡쳐만 그린다(QuestionRenderer manualCaps).
+        // 그런데 한글 원본 그림(BMP·PNG base64)까지 같이 보내 응답의 98%가 버려지고 있었다
+        // (실측: 문항 50개에 원본 그림 1MB, 실제 쓰는 캡쳐 주소 15KB).
+        // → 먼저 data 없이 목록만 읽고 거른 뒤(lib/questions/imageAccess), 남은 행의 data 만 읽는다.
+        // [보안 2026-10-02] 해설 캡쳐는 로그인한 사람에게만 — 세션 확인은 목록 조회와 동시에 해서 지연이 없다.
+        const [withSolutions, { data: listed, error: listError }] = await Promise.all([
+            canSeeSolutions(),
+            supabase
+                .from('question_images')
+                .select('question_id, id, original_bin_id, format, created_at')
+                .in('question_id', ids)
+                .order('created_at', { ascending: true }),
+        ]);
+        if (listError) throw listError;
+        const byQuestion: Record<string, any[]> = {};
+        for (const r of listed || []) (byQuestion[r.question_id] = byQuestion[r.question_id] || []).push(r);
+        const keep = Object.values(byQuestion).flatMap(rows => trimQuestionImages(rows, withSolutions));
+        const dataById: Record<string, string> = {};
+        for (let i = 0; i < keep.length; i += 100) {
+            const { data: rows, error } = await supabase.from('question_images').select('id, data').in('id', keep.slice(i, i + 100).map(r => r.id));
+            if (error) throw error;
+            for (const r of rows || []) dataById[r.id] = r.data;
+        }
+        const data = keep.map(({ created_at, ...r }) => ({ ...r, data: dataById[r.id] ?? '' }));
 
         // 요청한 모든 ID에 대해 키를 보장 (이미지 없는 문제 = 빈 배열 → 클라가 '로딩 끝'으로 인식)
         const images: Record<string, any[]> = {};

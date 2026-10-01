@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { availableCatalog } from '@/lib/questions/catalog';
-import { resolveScope } from '@/lib/questions/scope';
+import { resolveRequestScope } from '@/lib/questions/fastScope';
 import {uuidPattern} from '@/lib/payments/order';
 
 export async function POST(req: NextRequest) {
@@ -15,7 +14,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '문항 수와 난이도 범위를 확인해주세요.' }, { status: 400 });
     }
     try {
-        const scope = resolveScope(await availableCatalog(), body.selectedDbs, body.mockSlug);
+        const { scope } = await resolveRequestScope(body.selectedDbs, body.mockSlug);  // 자료 목록 5분 캐시
         if (!scope.length) return NextResponse.json({ error: '먼저 출제할 자료를 선택해주세요.' }, { status: 400 });
         const sb = createAdminClient();
         const excluded=Array.isArray(body.excludedQuestionIds)?body.excludedQuestionIds:[];

@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
 import { isPersonalDbFree } from '@/lib/config';
 
 /**
@@ -28,11 +29,13 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // [성능] 인증 확인과 원본 문제 조회는 서로 독립 → 병렬 실행 (왕복 1회 절약).
-        // 인증 실패면 조회 결과는 그냥 버려짐.
-        const [authRes, sourceRes] = await Promise.all([
+        // [성능 2026-10-01] 미리 계산한 유사문항(question_similar)을 먼저 본다.
+        // 실측: 누를 때마다 하던 벡터 검색이 0.5~3.7초 → 표 조회 2번(~0.1초).
+        // 표에 없는 문항(방금 등록된 문항, 표가 아직 없는 환경)은 아래 예전 벡터 검색으로 간다.
+        const admin = createAdminClient();
+        const [authRes, preRes] = await Promise.all([
             supabase.auth.getUser(),
-            supabase.from('questions').select('embedding, embedding_statement, plain_text, unit').eq('id', id).single(),
+            admin.from('question_similar').select('neighbors').eq('question_id', id).eq('basis', basisParam).maybeSingle(),
         ]);
 
         const user = authRes.data?.user;
@@ -41,17 +44,39 @@ export async function GET(req: NextRequest) {
         }
         const isAdmin = user.email === 'mathofhy@naver.com';
 
-        const { data: source, error: sourceError } = sourceRes;
-        if (sourceError || !source) {
+        let precomputed: any[] | null = null;
+        const pairs: [string, number][] = Array.isArray(preRes.data?.neighbors) ? preRes.data!.neighbors : [];
+        if (!preRes.error && preRes.data) {
+            const simById = new Map(pairs.map(([qid, sim]) => [qid, sim]));
+            const [{ data: srcRow }, { data: rows, error: rowsError }] = await Promise.all([
+                admin.from('questions').select('unit').eq('id', id).maybeSingle(),
+                pairs.length ? admin.from('questions')
+                    .select('id, school, grade, year, semester, subject, unit, question_number, key_concepts, difficulty, source_db_id, question_type, is_off_curriculum')
+                    .in('id', pairs.map(([qid]) => qid)).eq('work_status', 'sorted')
+                    : Promise.resolve({ data: [] as any[], error: null }),
+            ]);
+            if (srcRow && !rowsError) {
+                const byId = new Map((rows || []).map((r: any) => [r.id, r]));
+                precomputed = pairs.map(([qid]) => byId.get(qid)).filter(Boolean)
+                    .map((r: any) => ({ ...r, similarity: simById.get(r.id) }))
+                    .filter((r: any) => r.similarity > 1 - threshold && (!srcRow.unit || r.unit === srcRow.unit));
+                // 계산 뒤 단원이 바뀌는 등으로 저장된 목록이 전부 걸러졌으면 실시간 검색으로 넘긴다
+                if (precomputed.length === 0 && pairs.length > 0) precomputed = null;
+            }
+        }
+
+        // 예전 경로에서만 원본 임베딩을 읽는다(벡터 2개 ≈ 40KB 라 미리계산 경로에선 안 읽는다)
+        const source = precomputed ? null : (await supabase.from('questions').select('embedding, embedding_statement, unit').eq('id', id).single()).data;
+        if (!precomputed && !source) {
             return NextResponse.json({ success: false, error: '원본 문항을 찾을 수 없습니다. 다른 문항을 선택해주세요.' }, { status: 404 });
         }
 
         // 발문 임베딩이 아직 없는 문항은 기존 기준으로 되돌린다(백필 진행 중에도 화면이 살아 있게).
-        const basis: 'statement' | 'solution' =
-            basisParam === 'statement' && source.embedding_statement ? 'statement' : 'solution';
-        const queryEmbedding = basis === 'statement' ? source.embedding_statement : source.embedding;
+        const basis: 'statement' | 'solution' = precomputed ? basisParam :
+            basisParam === 'statement' && source!.embedding_statement ? 'statement' : 'solution';
+        const queryEmbedding = precomputed ? null : basis === 'statement' ? source!.embedding_statement : source!.embedding;
 
-        if (!queryEmbedding) {
+        if (!precomputed && !queryEmbedding) {
             return NextResponse.json({
                 success: false,
                 error: process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' ? '검토 화면에는 유사문항 추천 결과가 포함되지 않았습니다. 실제 기출 선택·저장·같은 범위 재출제를 이용할 수 있습니다.' : '이 문항의 유사문항 검색 자료가 아직 준비되지 않았습니다. 다른 문항을 선택하거나 같은 범위로 자동 출제해주세요.'
@@ -95,18 +120,21 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, error: '구매한 DB가 없습니다.', data: [] });
         }
 
-        // 3. Perform Vector Search via RPC (구매한 DB 범위 안에서만 검색)
-        const { data: similarQuestions, error: searchError } = await supabase
-            .rpc(basis === 'statement' ? 'match_questions_statement' : 'match_questions', {
-                query_embedding: queryEmbedding,
-                match_threshold: 1 - threshold,
-                match_count: limit * 5, // 여유있게 limit의 5배만 가져오면 충분
-                filter_exclude_id: id,
-                target_unit: source.unit,
-                allowed_bin_ids: allowedBinIds // ★ DB 레벨 필터링
-            });
-
-        if (searchError) throw searchError;
+        // 3. Perform Vector Search via RPC (구매한 DB 범위 안에서만 검색) — 미리계산이 없을 때만
+        let similarQuestions: any[] | null = precomputed;
+        if (!precomputed) {
+            const { data, error: searchError } = await supabase
+                .rpc(basis === 'statement' ? 'match_questions_statement' : 'match_questions', {
+                    query_embedding: queryEmbedding,
+                    match_threshold: 1 - threshold,
+                    match_count: limit * 5, // 여유있게 limit의 5배만 가져오면 충분
+                    filter_exclude_id: id,
+                    target_unit: source!.unit,
+                    allowed_bin_ids: allowedBinIds // ★ DB 레벨 필터링
+                });
+            if (searchError) throw searchError;
+            similarQuestions = data;
+        }
 
         // 4. Filter results based on purchased DB metadata
         const metadataFilter = (q: any) => {
@@ -158,8 +186,8 @@ export async function GET(req: NextRequest) {
             results = results.filter(metadataFilter);
         }
 
-        // Filter by Unit (Strict matching as requested previously)
-        if (source.unit) {
+        // Filter by Unit (Strict matching as requested previously) — 미리계산 경로는 위에서 이미 걸렀다
+        if (source?.unit) {
             results = results.filter((q: any) => q.unit === source.unit);
         }
 
