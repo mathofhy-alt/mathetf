@@ -98,6 +98,7 @@ export default function QuestionBankPage() {
     const [catalogNotice, setCatalogNotice] = useState('');
     const [savedExam, setSavedExam] = useState<{ id: string; name: string; bytes?:number; count?:number } | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
+    const [searchError, setSearchError] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalQuestions, setTotalQuestions] = useState(0);
     const itemsPerPage = 50;
@@ -436,6 +437,7 @@ export default function QuestionBankPage() {
         }
 
         setLoading(true);
+        setSearchError('');
         if (targetPage === 1) setCurrentPage(1);
 
         // [보안] 문제 콘텐츠는 더 이상 클라이언트가 DB를 직접 조회하지 않는다.
@@ -476,7 +478,9 @@ export default function QuestionBankPage() {
         } catch (err: any) {
             if (targetPage === 1) setIsFilterCollapsed(false);
             console.error("fetchQuestions error:", err);
-            showToast(`검색 실패: ${err.message || '오류가 발생했습니다.'}`, 'error');
+            const message = err.message || '오류가 발생했습니다.';
+            setSearchError(message);
+            showToast(`검색 실패: ${message}`, 'error');
             setQuestions([]);
         } finally {
             setLoading(false);
@@ -510,6 +514,8 @@ export default function QuestionBankPage() {
         logQb('qb_search', selectedDbIds.length > 0 ? `dbs:${effectiveDbIds.length}` : `all:${effectiveDbIds.length}`);
         setHasSearched(false);
         setIsFilterCollapsed(true);
+        // 이전 결과를 아래까지 본 상태에서도 새 검색의 로딩과 첫 카드를 바로 보여준다.
+        if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
         if (window.innerWidth >= 768) window.requestAnimationFrame(() => desktopFilterToggleRef.current?.focus());
         lastSearchDbIds.current = effectiveDbIds;
         fetchQuestions(effectiveDbIds, filterState, 1);
@@ -1445,9 +1451,10 @@ export default function QuestionBankPage() {
                                     setShowMobileSidebar(false);
                                     setShowStorageModal(false);
                                 }}
-                                className="w-full py-3 bg-[#285CE6] text-white font-bold rounded-xl shadow-md hover:bg-[#204BC3] transition flex items-center justify-center gap-2"
+                                disabled={loading}
+                                className="w-full py-3 bg-[#285CE6] text-white font-bold rounded-xl shadow-md hover:bg-[#204BC3] disabled:opacity-60 transition flex items-center justify-center gap-2"
                             >
-                                <span>조건 검색하기</span>
+                                <span>{loading ? '문항 검색 중…' : '조건 검색하기'}</span>
                             </button>
                         </div>
                     </div>
@@ -1483,7 +1490,7 @@ export default function QuestionBankPage() {
                                 <h2 className="hidden sm:block sm:text-2xl font-bold text-gray-800 truncate">
                                     {selectedDbIds.length > 0 ? '문항 고르기' : '전체 문제 검색'}
                                 </h2>
-                                {hasSearched && <span role="status" className="hidden sm:inline-flex shrink-0 rounded-full bg-[#EDF3FF] px-2.5 py-1 text-xs font-bold text-[#285CE6]">검색 결과 {totalQuestions.toLocaleString()}문항</span>}
+                                {(loading || hasSearched) && <span role="status" className="inline-flex shrink-0 rounded-full bg-[#EDF3FF] px-2.5 py-1 text-xs font-bold text-[#285CE6]">{loading ? '문항 검색 중…' : `검색 결과 ${totalQuestions.toLocaleString()}문항`}</span>}
                             </div>
                             <div className="flex gap-1.5 sm:gap-2 items-center">
                                 {/* 카드 크기(열 수) 토글 — lg 이상에서만 의미 있음 */}
@@ -1651,9 +1658,10 @@ export default function QuestionBankPage() {
 
                     {loading && viewMode === 'search' ? (
                         /* 검색 로딩: 문제 카드 모양 스켈레톤 (스피너보다 체감 빠름) */
-                        <div className={`grid grid-cols-1 md:grid-cols-2 ${searchCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6 px-6 pt-6 pb-10 animate-pulse`} aria-label="문제 검색 중">
+                        <div className={`grid grid-cols-1 md:grid-cols-2 ${searchCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6 px-6 pt-6 pb-10`} aria-label="문제 검색 중" role="status">
+                            <p className="col-span-full pt-1 text-sm font-semibold text-[#285CE6]">문항을 찾고 있습니다. 검색 조건에 따라 잠시 걸릴 수 있어요.</p>
                             {Array.from({ length: 8 }).map((_, i) => (
-                                <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2.5">
+                                <div key={i} className="animate-pulse bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2.5">
                                     <div className="flex justify-between">
                                         <div className="h-3 w-16 bg-slate-200 rounded" />
                                         <div className="h-3 w-10 bg-slate-100 rounded" />
@@ -1871,6 +1879,12 @@ export default function QuestionBankPage() {
                                             <p className="text-lg font-medium text-slate-500">출제할 문항이 없습니다.</p>
                                             <p className="text-sm text-slate-400">검색으로 돌아가서 문제를 담아주세요.</p>
                                             <button onClick={() => setViewMode('search')} className="rounded-xl bg-[#285CE6] px-5 py-2.5 text-sm font-bold text-white">문항 검색하기 →</button>
+                                        </div>
+                                    ) : searchError ? (
+                                        <div role="alert" className="text-center py-20 bg-white rounded-2xl border border-red-200 flex flex-col items-center justify-center gap-3">
+                                            <p className="text-lg font-bold text-red-700">문항 검색에 실패했습니다.</p>
+                                            <p className="text-sm text-slate-600">{searchError}</p>
+                                            <button onClick={handleSearch} className="rounded-xl bg-[#285CE6] px-5 py-2.5 text-sm font-bold text-white">다시 검색하기</button>
                                         </div>
                                     ) : hasSearched ? (
                                         /* 검색했지만 결과 없음 */
