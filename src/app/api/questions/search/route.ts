@@ -77,14 +77,15 @@ export async function POST(req: NextRequest) {
     // [성능] 카드 표시는 캡쳐 이미지(question_images)로만 함 (sorted 문제 100% 캡쳐 보유).
     // content_xml/plain_text/equation_scripts 는 표시에 불필요 → 전송 제외 (payload ~74% 감소, 클라 XML 파싱 0).
     // plain_text 는 키워드 검색 '조건'으로만 쓰이며 SELECT 하지 않아도 WHERE 에서 동작함.
-    // [성능] 전체 개수(count)는 1페이지에서만 계산 → 페이지 이동마다 풀카운트 재계산 방지.
+    // [성능] 첫 페이지에서만 개수를 요청한다. exact count는 넓은 범위에서
+    // 문항 검색 자체를 25초 제한 시간까지 붙잡으므로 estimated count를 사용한다.
     const wantCount = targetPage === 1;
     // [성능] 이미지(question_images)는 더 이상 검색 응답에 싣지 않는다.
     // BMP 등 무거운 base64가 섞이면 응답이 수 MB로 커져 검색 체감속도가 들쭉날쭉하던 원인.
     // 카드 골격은 이 메타데이터로 즉시 뜨고, 이미지는 /api/questions/images 가 청크로 따라간다.
     const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, is_off_curriculum';
     let query = supabase
-        .rpc('question_bank_candidates', { p_scope: scope, p_excluded: Array.isArray(excludedQuestionIds) ? excludedQuestionIds.filter((id:unknown)=>typeof id==='string' && /^[0-9a-f-]{36}$/i.test(id)) : [] }, wantCount ? {count:'exact'} : {})
+        .rpc('question_bank_candidates', { p_scope: scope, p_excluded: Array.isArray(excludedQuestionIds) ? excludedQuestionIds.filter((id:unknown)=>typeof id==='string' && /^[0-9a-f-]{36}$/i.test(id)) : [] }, wantCount ? {count:'estimated'} : {})
         .select(SELECT_COLS)
         .eq('work_status', 'sorted')
         .order('question_number', { ascending: true }).order('id', { ascending: true })
@@ -124,12 +125,12 @@ export async function POST(req: NextRequest) {
         if (error) {
             console.error('[questions/search] query error:', error);
             return NextResponse.json(
-                { success: false, error: '데이터베이스 검색 중 오류가 발생했습니다. (검색 조건이 너무 많을 수 있습니다)' },
+                { success: false, error: '문항 검색이 지연되고 있습니다. 범위를 좁혀 다시 시도해주세요.' },
                 { status: 500 }
             );
         }
         // count 는 1페이지에서만 계산. 그 외 페이지는 null → 클라이언트가 기존 총개수 유지.
-        return NextResponse.json({ success: true, data: data || [], count: wantCount ? (count ?? 0) : null });
+        return NextResponse.json({ success: true, data: data || [], count: wantCount ? (count ?? 0) : null, countIsEstimate: wantCount && (count ?? 0) > 1000 });
     } catch (e: any) {
         console.error('[questions/search] error:', e);
         return NextResponse.json({ success: false, error: e.message || '검색 실패' }, { status: 500 });

@@ -101,6 +101,7 @@ export default function QuestionBankPage() {
     const [searchError, setSearchError] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalQuestions, setTotalQuestions] = useState(0);
+    const [countIsEstimate, setCountIsEstimate] = useState(false);
     const itemsPerPage = 50;
 
     // Toast 알림 시스템
@@ -466,7 +467,10 @@ export default function QuestionBankPage() {
             // 이미지는 /api/questions/images 에서 청크 단위로 뒤따라 채운다.
             setQuestions(data.map((q: any) => ({ ...q, question_images: null })));
             loadImagesProgressively(data.map((q: any) => q.id));
-            if (result.count !== null && result.count !== undefined) setTotalQuestions(result.count);
+            if (result.count !== null && result.count !== undefined) {
+                setTotalQuestions(result.count);
+                setCountIsEstimate(Boolean(result.countIsEstimate));
+            }
             if (targetPage === 1) setHasSearched(true);
             if (data.length === 0 && targetPage === 1) {
                 setIsFilterCollapsed(false);
@@ -1490,7 +1494,7 @@ export default function QuestionBankPage() {
                                 <h2 className="hidden sm:block sm:text-2xl font-bold text-gray-800 truncate">
                                     {selectedDbIds.length > 0 ? '문항 고르기' : '전체 문제 검색'}
                                 </h2>
-                                {(loading || hasSearched) && <span role="status" className="inline-flex shrink-0 rounded-full bg-[#EDF3FF] px-2.5 py-1 text-xs font-bold text-[#285CE6]">{loading ? '문항 검색 중…' : `검색 결과 ${totalQuestions.toLocaleString()}문항`}</span>}
+                                {(loading || hasSearched) && <span role="status" className="inline-flex shrink-0 rounded-full bg-[#EDF3FF] px-2.5 py-1 text-xs font-bold text-[#285CE6]">{loading ? '문항 검색 중…' : `검색 결과 ${countIsEstimate ? '약 ' : ''}${totalQuestions.toLocaleString()}문항`}</span>}
                             </div>
                             <div className="flex gap-1.5 sm:gap-2 items-center">
                                 {/* 카드 크기(열 수) 토글 — lg 이상에서만 의미 있음 */}
@@ -1652,7 +1656,7 @@ export default function QuestionBankPage() {
                     {viewMode === 'search' && <div className="flex flex-wrap items-center gap-2 border-b border-[#E2E9F6] bg-[#F8FAFF] px-4 py-2 text-[11px] font-semibold text-[#52627D] sm:px-6">
                         <span>① {sourceScopeLabel}</span><span className="text-[#A9B8D2]">→</span>
                         <span>② 조건 {activeFilterCount > 0 ? `${activeFilterCount}개 적용` : '선택 사항'}</span><span className="text-[#A9B8D2]">→</span>
-                        <span>③ {hasSearched ? `결과 ${totalQuestions.toLocaleString()}문항에서 담기` : '검색 후 문항 담기'}</span>
+                        <span>③ {hasSearched ? `결과 ${countIsEstimate ? '약 ' : ''}${totalQuestions.toLocaleString()}문항에서 담기` : '검색 후 문항 담기'}</span>
                         <a href="/guide" className="ml-auto underline underline-offset-2 hover:text-[#285CE6]">출제 방법</a>
                     </div>}
 
