@@ -18,7 +18,24 @@ import { resolveScope, type CatalogDb, type ScopeRule } from './scope';
 
 const hash = (v: unknown) => createHash('sha1').update(JSON.stringify(v)).digest('hex').slice(0, 20);
 
-const cachedFreeCatalog = unstable_cache(async () => availableCatalog(), ['qb-catalog-v1'], { revalidate: 300, tags: ['qb-catalog'] });
+/**
+ * 인스턴스 메모리 캐시. [2026-10-02 배포 실측] Vercel 에서는 이 라우트들(force-dynamic)의 unstable_cache 가
+ * 유지되지 않아 '전체' 검색이 매번 범위 밖 목록(1.3초)을 새로 계산했다(로컬 next start 에선 정상).
+ * 같은 인스턴스가 연달아 요청을 받으므로 메모리에 한 번 더 들고 있는다. 실패한 계산은 지운다.
+ */
+const memoStore: Map<string, { at: number; value: Promise<any> }> = (globalThis as any).__qb_memo || new Map();
+(globalThis as any).__qb_memo = memoStore;
+function memo<T>(key: string, ttlMs: number, make: () => Promise<T>): Promise<T> {
+    const hit = memoStore.get(key);
+    if (hit && Date.now() - hit.at < ttlMs) return hit.value;
+    const value = make().catch(e => { memoStore.delete(key); throw e; });
+    memoStore.set(key, { at: Date.now(), value });
+    if (memoStore.size > 200) memoStore.delete(memoStore.keys().next().value as string);
+    return value;
+}
+
+const freeCatalogCache = unstable_cache(async () => availableCatalog(), ['qb-catalog-v1'], { revalidate: 300, tags: ['qb-catalog'] });
+const cachedFreeCatalog = () => memo('catalog', 300_000, freeCatalogCache);
 
 const requestedIds = (requested: unknown): string[] =>
     Array.isArray(requested) ? [...new Set(requested.map((db: any) => typeof db === 'string' ? db : db?.id).filter((id: unknown): id is string => typeof id === 'string'))] : [];
@@ -64,7 +81,7 @@ export async function wholeCatalogIneligible(catalog: CatalogDb[]): Promise<stri
         if (error) throw Object.assign(new Error(error.message), { code: error.code });
         return (data || []) as string[];
     }, ['qb-all-ineligible-v1', hash(ready.map(db => db.id).sort())], { revalidate: 1800, tags: ['qb-catalog'] });
-    try { return await load(); }
+    try { return await memo(`ineligible:${hash(ready.map(db => db.id).sort())}`, 1_800_000, load); }
     catch (e: any) {
         if (!missingFunction(e)) console.error('[fastScope] ineligible:', e?.message);
         return null;
@@ -82,12 +99,13 @@ export async function cachedFacets(catalog: CatalogDb[], scope: ScopeRule[], who
                 if (error) throw Object.assign(new Error(error.message), { code: error.code });
                 return data || [];
             }, ['qb-facets-all-v1', hash(excluded), String(includeOff)], { revalidate: 600, tags: ['qb-catalog'] });
-            try { return await viaAll(); } catch (e: any) { if (!missingFunction(e)) throw e; }
+            try { return await memo(`facets-all:${hash(excluded)}:${includeOff}`, 600_000, viaAll); } catch (e: any) { if (!missingFunction(e)) throw e; }
         }
     }
-    return unstable_cache(async () => {
+    const viaScope = unstable_cache(async () => {
         const { data, error } = await sb.rpc('question_bank_facets', { p_scope: scope, p_include_off: includeOff });
         if (error) throw new Error(error.message);
         return data || [];
-    }, ['qb-facets-v1', hash(scope), String(includeOff)], { revalidate: 600, tags: ['qb-catalog'] })();
+    }, ['qb-facets-v1', hash(scope), String(includeOff)], { revalidate: 600, tags: ['qb-catalog'] });
+    return memo(`facets:${hash(scope)}:${includeOff}`, 600_000, viaScope);
 }
