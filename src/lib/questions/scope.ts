@@ -6,7 +6,6 @@ export type CatalogDb = DbDescriptor & { id: string; availability?: string };
 export type ScopeRule = { sources?: string[]; school?: string; grade?: string; year?: string; semesters?: string[]; semesterPrefix?: string; subjects?: string[] };
 const mockSubjects = ['기하', '기하와벡터', '미적분II', '미적분', '확률과통계', '확률과 통계'];
 export const unavailableDbs: Record<string, string> = {
-    'fe34d2ea-2f6b-4c1a-a774-33ab238b2141': '고2 문항 등록 준비 중',
 };
 
 // Audited source links identify an original paper, never a curriculum-wide subject alias.
