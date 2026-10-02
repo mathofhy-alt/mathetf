@@ -36,6 +36,8 @@ export const HOME_FIELDS = [
     'id', 'school', 'grade', 'semester', 'subject', 'exam_type', 'exam_year',
     'file_type', 'content_type', 'created_at', 'price', 'uploader_name', 'region',
     'district', 'is_verified', 'has_free_pdf', 'has_preview',
+    // 교체한 날(KST, YYYY-MM-DD) 또는 null — 홈 '이번 주 새로 올라온 기출' 집계용. 끝에 붙여 기존 순서를 유지한다.
+    'replaced_at',
 ] as const;
 
 export function packHomeRow(o: any): any[] {

@@ -48,6 +48,17 @@ async function loadHomeExams() {
     //   created_at 은 화면에서 날짜만 쓰므로 시각을 잘라 보낸다.
     //   그리고 필드명은 행마다 반복될 뿐이라 값만 배열로 보낸다(HOME_FIELDS 순서 규약).
     //   측정: 객체 배열 645KB 중 키 이름이 248KB(38.5%)였다.
+    // [2026-10-02] 교체(문항 id 유지 재등록)는 행을 새로 만들지 않아 created_at 이 그대로다.
+    //   교체 후속(scratch_replace_followup.py)이 미리보기 주소에 ?v=<교체 시각(초)> 를 붙이므로 그걸 교체일로 쓴다.
+    //   ?v= 는 그 스크립트만 붙인다(10/2 확인: 오늘 찍힌 134회차 모두 판매파일도 같은 날 새로 올라감).
+    const replacedDate = (urls: unknown): string | null => {
+        let latest = 0;
+        for (const u of Array.isArray(urls) ? urls : []) {
+            const m = typeof u === 'string' ? u.match(/[?&]v=(\d{10})(?!\d)/) : null;
+            if (m) latest = Math.max(latest, Number(m[1]));
+        }
+        return latest ? new Date(latest * 1000 + 9 * 3600 * 1000).toISOString().slice(0, 10) : null;
+    };
     return (data || []).filter((item: any) => !isMockExam(item)).map((item: any) => {
         const { free_pdf_url, preview_urls, ...rest } = item;
         return packHomeRow({
@@ -57,6 +68,7 @@ async function loadHomeExams() {
                 ? new Date(Date.parse(rest.created_at) + 9 * 3600 * 1000).toISOString().slice(0, 10)
                 : rest.created_at,
             has_free_pdf: !!free_pdf_url, has_preview: Array.isArray(preview_urls)&&preview_urls.length>0,
+            replaced_at: replacedDate(preview_urls),
         });
     });
 }
