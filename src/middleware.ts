@@ -18,6 +18,12 @@ import examRedirects from '@/lib/exam-redirects.json'
 //   낡아도 해당 URL 이 200 으로 남을 뿐이라(현 상태와 동일) 잘못된 이동은 생기지 않는다.
 const EXAM_REDIRECTS = new Map<string, string>(Object.entries(examRedirects as Record<string, string>))
 
+// 학교 정식명 정정(NEIS 기준, 10/3) — 자료가 옛 이름으로 등록돼 있던 학교의 옛 학교 페이지 주소를 새 이름으로 옮긴다.
+// ⚠ 옛 이름이 다른 지역의 실제 학교 이름이기도 하다(동산고 = 인천). 그 학교 자료가 들어오면 이 줄을 지울 것.
+const SCHOOL_RENAMES: Record<string, string> = {
+    '동산고등학교': '안산동산고등학교',
+}
+
 export async function middleware(request: NextRequest) {
     const host = request.headers.get('host')
     let schoolPath=request.nextUrl.pathname;
@@ -25,6 +31,9 @@ export async function middleware(request: NextRequest) {
     const schoolMatch=schoolPath.match(/^\/school\/([^/]+)\/?$/);
     if(schoolMatch&&INSTITUTION_CATEGORY[schoolMatch[1]]){
         const url=request.nextUrl.clone();url.pathname=schoolDestination(schoolMatch[1]);url.search='';return NextResponse.redirect(url,301);
+    }
+    if(schoolMatch&&SCHOOL_RENAMES[schoolMatch[1]]){
+        const url=request.nextUrl.clone();url.pathname=`/school/${encodeURIComponent(SCHOOL_RENAMES[schoolMatch[1]])}`;url.search='';return NextResponse.redirect(url,301);
     }
 
 
