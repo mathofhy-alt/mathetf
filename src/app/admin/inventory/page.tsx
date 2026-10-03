@@ -24,6 +24,9 @@ export default function AdminInventory() {
     const [selectedDistrict, setSelectedDistrict] = useState('강남구');
     const [selectedYear, setSelectedYear] = useState('2024');
     const [selectedGrade, setSelectedGrade] = useState('1');
+    // [2026-10-04] 과목 구분 — 같은 시험에 과목이 둘(예: 하나고 2학기 중간 공통수학2·대수)이면 한 과목만 있어도 녹색이었다.
+    const [selectedSubject, setSelectedSubject] = useState('');
+    const [subjectOptions, setSubjectOptions] = useState<string[]>([]);
 
     const [matrixData, setMatrixData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -92,7 +95,7 @@ export default function AdminInventory() {
 
             const { data } = await supabase
                 .from('exam_materials')
-                .select('school, title, semester, exam_type, exam_year, file_type, content_type, created_at, file_path')
+                .select('school, title, semester, exam_type, exam_year, file_type, content_type, created_at, file_path, subject')
                 .in('school', targetSchools)
                 // [2026-10-04] 동명이교 — 이름만 보면 다른 지역 같은 이름 학교의 자료로 녹색이 떴다(30칸).
                 //   자료 행의 지역·구는 schools 와 맞춰 둔다(감사 I 항목 0건 유지) → 같이 걸러도 빠지는 자료가 없다.
@@ -101,19 +104,21 @@ export default function AdminInventory() {
                 .eq('grade', parseInt(selectedGrade))
                 .not('school', 'eq', 'DELETED');
 
+            const yearOf = (e: any) => (e.title?.match(/20\d{2}/)?.[0] ? parseInt(e.title.match(/20\d{2}/)[0]) : (e.exam_year || 2024));
+            const subj = (e: any) => (e.subject || '').trim();
+            const inYear = (data || []).filter(e => String(yearOf(e)) === selectedYear);
+            setSubjectOptions(Array.from(new Set(inYear.map(subj).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ko')));
+
             const result = targetSchools.map(school => {
                 const row: any = { school, exams: {} };
-                const schoolExams = (data || []).filter(d => d.school === school);
+                const schoolExams = inYear.filter(d => d.school === school && (!selectedSubject || subj(d) === selectedSubject));
                 
                 ['1학기 중간고사', '1학기 기말고사', '2학기 중간고사', '2학기 기말고사'].forEach(extype => {
                     const sem = extype.startsWith('1') ? 1 : 2;
                     const type = extype.includes('중간고사') ? '중간고사' : '기말고사';
                     
-                    const materials = schoolExams.filter(e => {
-                        const yearDerived = e.title?.match(/20\d{2}/)?.[0] ? parseInt(e.title.match(/20\d{2}/)[0]) : (e.exam_year || 2024);
-                        if (String(yearDerived) !== selectedYear) return false;
-                        return e.semester === sem && e.exam_type === type;
-                    });
+                    const materials = schoolExams.filter(e => e.semester === sem && e.exam_type === type);
+                    const subjects = Array.from(new Set(materials.map(subj).filter(Boolean)));
 
                     let hasPdfProb = false;
                     let hasHwpSol = false;
@@ -145,7 +150,7 @@ export default function AdminInventory() {
 
                     const isOld = latestMs > 0 && latestMs < RECENT_CUTOFF_MS;
                     const latest = latestMs ? new Date(latestMs + 9 * 3600 * 1000).toISOString().slice(0, 10) : '';   // KST 날짜
-                    row.exams[extype] = { status, missing, hasPdfProb, hasHwpSol, hasDb, latest, isOld };
+                    row.exams[extype] = { status, missing, hasPdfProb, hasHwpSol, hasDb, latest, isOld, subjects };
                 });
                 return row;
             });
@@ -155,7 +160,7 @@ export default function AdminInventory() {
         };
 
         fetchData();
-    }, [selectedRegion, selectedDistrict, selectedYear, selectedGrade, schoolsMap, supabase]);
+    }, [selectedRegion, selectedDistrict, selectedYear, selectedGrade, selectedSubject, schoolsMap, supabase]);
 
     if (!user) return null;
 
@@ -194,6 +199,10 @@ export default function AdminInventory() {
                         <option value="1">1학년</option>
                         <option value="2">2학년</option>
                         <option value="3">3학년</option>
+                    </select>
+                    <select className="form-select text-sm h-10 border-slate-300 rounded w-36" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
+                        <option value="">과목 전체</option>
+                        {Array.from(new Set([...subjectOptions, ...(selectedSubject ? [selectedSubject] : [])])).map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>
 
@@ -238,6 +247,9 @@ export default function AdminInventory() {
                                                                 </div>
                                                             )}
                                                         </div>
+                                                        {!selectedSubject && cell.subjects?.length > 0 && (
+                                                            <div className="mt-0.5 text-[10px] text-slate-500 leading-tight">{cell.subjects.join(' · ')}</div>
+                                                        )}
                                                     </td>
                                                 );
                                             })}
