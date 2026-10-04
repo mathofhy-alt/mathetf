@@ -11,9 +11,16 @@
       (50 = 라우트의 limit*5 — 유료 모드 구매 필터 여유분)
 
 사용:
-    python scripts/precompute_similar.py            # 표에 아직 없는 문항이 있는 단원만 (등록 배치 끝에서 자동)
-    python scripts/precompute_similar.py --all      # 전 단원 다시
+    python scripts/precompute_similar.py            # 증분: 표에 없는 문항(신규·교체)만 계산 + 그 문항이 기존 문항의 상위 50 에 들면 그 목록만 고친다
+    python scripts/precompute_similar.py --all      # 전 단원 다시 (단원 이동·삭제가 쌓였을 때 가끔. 무겁다 — 새벽 3~5시 피함)
     python scripts/precompute_similar.py --unit 로그 --dry-run   # 한 단원만, 저장 없이
+
+[2026-10-04] 증분 모드 — Supabase 'Disk IO Budget 고갈' 경고(10/3). 예전 기본 모드는 새 문항이 1개라도 있으면
+  그 단원 임베딩을 전부 다시 받고 모든 문항의 목록을 다시 썼다(10/3: 56단원 34분, 수학적귀납법 한 단원 2,292행).
+  지금은 ① 임베딩을 로컬 캐시(.cache/similar_emb_*.npz)에 두고 표에 없는 문항(신규·교체)의 것만 받는다
+  ② 그 문항들의 목록만 새로 만들고 ③ 기존 문항은 새 문항이 자기 상위 50 안에 들 때만 목록을 고친다.
+  결과는 단원 전체 재계산과 같다(목록에서 빠진 문항이 생기면 그 행만 캐시로 다시 계산해 50 을 채운다).
+  ⚠ 기존 문항의 단원이 바뀐 경우는 증분이 못 잡는다 — 단원 대량 수정 뒤엔 --all.
 
 ⚠ 임베딩을 단원별로 내려받아 로컬(numpy)에서 계산한다 — DB 에서 벡터 검색을 수만 번 돌리는 것보다
   DB 부하가 훨씬 작다. 그래도 전체 실행은 임베딩 약 2GB 를 읽으므로 새벽 3~5시(Supabase 장애 이력)는 피한다.
@@ -104,11 +111,11 @@ def existing_rows():
     have, last = set(), None
     while True:
         p = {'select': 'question_id,basis', 'order': 'question_id.asc,basis.asc', 'limit': '1000'}
-        if last: p['question_id'] = f'gt.{last}'
+        if last: p['question_id'] = f'gte.{last}'   # gte — 한 문항의 두 기준이 쪽 경계에 걸쳐도 빠지지 않게(증분 모드는 기준별로 본다)
         rows = get('question_similar', p)
         for r in rows: have.add((r['question_id'], r['basis']))
         if len(rows) < 1000: return have
-        last = rows[-1]['question_id']  # 같은 문항의 두 기준이 쪽 경계에 걸쳐도 다음 쪽에서 다시 안 읽힐 뿐 — 아래 판정은 '없는 문항' 기준이라 무해
+        last = rows[-1]['question_id']
 
 
 def parse_vec(v):
@@ -153,6 +160,114 @@ def upsert(rows):
             raise RuntimeError(f'저장 실패 {r.status_code} {r.text[:200]}')
 
 
+CACHE_DIR = os.path.join(os.path.dirname(__file__), '..', '.cache')
+
+
+def cache_load(basis):
+    f = os.path.join(CACHE_DIR, f'similar_emb_{basis}.npz')
+    if not os.path.exists(f): return {}
+    z = np.load(f, allow_pickle=False)
+    return dict(zip(z['ids'].tolist(), z['vecs']))
+
+
+def cache_save(basis, cache):
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    ids = list(cache)
+    vecs = np.vstack([cache[i] for i in ids]) if ids else np.zeros((0, 1), np.float32)
+    tmp = os.path.join(CACHE_DIR, f'similar_emb_{basis}.tmp.npz')
+    np.savez(tmp, ids=np.array(ids), vecs=vecs)
+    os.replace(tmp, os.path.join(CACHE_DIR, f'similar_emb_{basis}.npz'))
+
+
+def fetch_vecs(col, ids):
+    """지정한 문항들의 임베딩만 받는다(정규화해서 반환)."""
+    out = {}
+    for i in range(0, len(ids), 50):
+        if PAUSE: time.sleep(PAUSE); guard()
+        for r in get('questions', {'select': f'id,{col}', 'id': f'in.({",".join(ids[i:i + 50])})'}):
+            v = parse_vec(r[col])
+            if v is not None: out[r['id']] = v / max(float(np.linalg.norm(v)), 1e-12)
+    return out
+
+
+def read_lists(basis, ids):
+    out = {}
+    for i in range(0, len(ids), 100):
+        for r in get('question_similar', {'select': 'question_id,neighbors', 'basis': f'eq.{basis}', 'question_id': f'in.({",".join(ids[i:i + 100])})'}):
+            out[r['question_id']] = r['neighbors'] or []
+    return out
+
+
+def full_row(i, ids, E):
+    s = E @ E[i]; s[i] = -1.0
+    k = min(TOP_K, len(ids) - 1)
+    if k <= 0: return []
+    top = np.argpartition(-s, k - 1)[:k] if k < len(ids) - 1 else np.argsort(-s)[:k]
+    top = top[np.argsort(-s[top])]
+    return [[ids[j], round(float(s[j]), 4)] for j in top if s[j] > THRESHOLD]
+
+
+def incremental_unit(unit, basis, members, new_ids, cache):
+    """members: 이 단원·기준의 전체 문항 id, new_ids: 표에 행이 없는 문항. 바꿔 쓸 행만 반환."""
+    ids = [i for i in members if i in cache]
+    if len(ids) < 2:
+        return [{'question_id': i, 'basis': basis, 'neighbors': []} for i in new_ids if i in cache]
+    pos = {q: n for n, q in enumerate(ids)}
+    E = np.vstack([cache[i] for i in ids])
+    new_set = {i for i in new_ids if i in pos}
+    rows = [{'question_id': q, 'basis': basis, 'neighbors': full_row(pos[q], ids, E)} for q in new_set]
+    old = [q for q in ids if q not in new_set]
+    if not old: return rows
+    lists = read_lists(basis, old)
+    N = np.array([pos[q] for q in new_set], dtype=int)
+    member_set = set(ids)
+    for q in old:
+        cur = [p for p in lists.get(q, []) if p[0] in member_set and p[0] not in new_set]
+        dropped = len(cur) != len(lists.get(q, []))
+        if dropped and len(cur) < min(TOP_K, len(ids) - 1):
+            # 목록에서 빠진 문항(삭제·단원 이동·교체)이 있어 50 을 못 채운다 → 이 행만 전체 계산(캐시라 DB 읽기 없음)
+            rows.append({'question_id': q, 'basis': basis, 'neighbors': full_row(pos[q], ids, E)}); continue
+        add = []
+        if len(N):
+            s = E[N] @ E[pos[q]]
+            add = [[ids[N[j]], round(float(s[j]), 4)] for j in range(len(N)) if s[j] > THRESHOLD]
+        if not add and not dropped: continue
+        floor = cur[-1][1] if len(cur) >= TOP_K else THRESHOLD
+        add = [p for p in add if p[1] > floor]
+        if not add and not dropped: continue
+        merged = sorted(cur + add, key=lambda p: -p[1])[:TOP_K]
+        rows.append({'question_id': q, 'basis': basis, 'neighbors': merged})
+    return rows
+
+
+def run_incremental(a):
+    t0 = time.time(); written = fetched = 0; ok = fail = 0
+    have = existing_rows()
+    for basis, col in BASES.items():
+        qs = keyset('questions', 'id,unit', {'work_status': 'eq.sorted', col: 'not.is.null'})
+        by_unit = {}
+        for q in qs:
+            if q['unit']: by_unit.setdefault(q['unit'], []).append(q['id'])
+        alive = {q['id'] for q in qs}
+        new_ids = {q['id'] for q in qs if (q['id'], basis) not in have}
+        cache = {k: v for k, v in cache_load(basis).items() if k in alive}
+        need = sorted(i for i in alive if i not in cache or i in new_ids)   # 교체 문항은 임베딩이 바뀌었을 수 있다
+        print(f'[{basis}] 문항 {len(alive)} · 표에 없는 문항 {len(new_ids)} · 임베딩 받을 것 {len(need)}')
+        got = fetch_vecs(col, need); fetched += len(got); cache.update(got)
+        if not a.dry_run: cache_save(basis, cache)
+        targets = sorted({u for u, ids in by_unit.items() if any(i in new_ids for i in ids)})
+        for unit in targets:
+            try:
+                rows = incremental_unit(unit, basis, by_unit[unit], [i for i in by_unit[unit] if i in new_ids], cache)
+                if not a.dry_run and rows: upsert(rows)
+                written += len(rows); ok += 1
+                print(f'  {basis} {unit}: 단원 {len(by_unit[unit])}문항 중 {len(rows)}행 씀')
+            except Exception as e:
+                fail += 1; print(f'  ⚠ {basis} {unit}: {str(e)[:200]}')
+    print(f'임베딩 받음 {fetched} · 쓴 행 {written} · 총 {time.time() - t0:.0f}초')
+    print(f'완료: 성공 {ok} / 실패 {fail}')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--all', action='store_true')
@@ -166,6 +281,9 @@ def main():
         print('question_similar 표가 없습니다 — supabase/migrations/20261001_question_bank_speed.sql 을 먼저 실행하세요.')
         print('완료: 성공 0 / 실패 0')
         return
+
+    if not a.unit and not a.all:
+        return run_incremental(a)
 
     # 임베딩이 없는 문항은 행이 생기지 않으므로 대상 판정에서 뺀다(안 그러면 그 단원을 매번 다시 계산)
     qs = keyset('questions', 'id,unit', {'work_status': 'eq.sorted', 'embedding': 'not.is.null'})

@@ -105,3 +105,6 @@ scratch_*
 # Isolated local review outputs
 .next-review/
 tests/output/
+
+# 유사문항 미리계산 임베딩 캐시 (scripts/precompute_similar.py)
+.cache/
