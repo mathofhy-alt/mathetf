@@ -18,11 +18,10 @@ import examRedirects from '@/lib/exam-redirects.json'
 //   낡아도 해당 URL 이 200 으로 남을 뿐이라(현 상태와 동일) 잘못된 이동은 생기지 않는다.
 const EXAM_REDIRECTS = new Map<string, string>(Object.entries(examRedirects as Record<string, string>))
 
-// 학교 정식명 정정(NEIS 기준, 10/3) — 자료가 옛 이름으로 등록돼 있던 학교의 옛 학교 페이지 주소를 새 이름으로 옮긴다.
-// ⚠ 옛 이름이 다른 지역의 실제 학교 이름이기도 하다(동산고 = 인천). 그 학교 자료가 들어오면 이 줄을 지울 것.
-const SCHOOL_RENAMES: Record<string, string> = {
-    '동산고등학교': '안산동산고등학교',
-}
+// 학교 정식명 정정(NEIS 기준) — 자료가 틀린 이름으로 등록돼 있던 학교의 옛 학교 페이지 주소를 새 이름으로 옮긴다.
+// ⚠ 넣기 전에 NEIS 에서 옛 이름이 **다른 지역의 실제 학교 이름인지** 확인할 것. 그렇다면 넣지 않는다.
+//   (10/3 '동산고등학교' → 안산동산고 를 넣었다가 인천 동산고 자료가 들어와 10/4 제거 — 그 주소는 인천 동산고 것이다.)
+const SCHOOL_RENAMES: Record<string, string> = {}
 
 export async function middleware(request: NextRequest) {
     const host = request.headers.get('host')
