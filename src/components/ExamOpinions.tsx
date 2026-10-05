@@ -21,7 +21,9 @@ export default function ExamOpinions({ examId, questionCount, initialOpinions, c
     const [expanded, setExpanded] = useState(false);
     useEffect(() => { if (window.location.hash === '#opinion-form') setExpanded(true); }, []);
     const [opinions, setOpinions] = useState(initialOpinions);
-    const [mine, setMine] = useState<OwnOpinion | null>(null);
+    // [10/5] 의견은 문항마다 1개씩 여러 개. 포인트는 시험지당 첫 의견 1회(examRewarded), 하루 2개 시험지(todayCount).
+    const [mine, setMine] = useState<OwnOpinion[]>([]);
+    const [examRewarded, setExamRewarded] = useState(false);
     const [loggedIn, setLoggedIn] = useState(false);
     const [todayCount, setTodayCount] = useState(0);
     const [number, setNumber] = useState(Math.min(21, questionCount));
@@ -38,14 +40,22 @@ export default function ExamOpinions({ examId, questionCount, initialOpinions, c
         setOpinions(data.opinions || []);
         setLoggedIn(Boolean(data.loggedIn));
         setTodayCount(data.todayCount || 0);
-        setMine(data.mine || null);
-        if (data.mine) {
-            setNumber(data.mine.question_number);
-            setReason(data.mine.reason);
-            setComment(data.mine.comment);
-        }
+        setExamRewarded(Boolean(data.examRewarded));
+        const list: OwnOpinion[] = Array.isArray(data.mine) ? data.mine : [];
+        setMine(list);
+        return list;
     };
-    useEffect(() => { void load(); }, [examId]);
+    const editing = mine.find(item => item.question_number === number) || null;
+    // 문항을 고르면: 내가 이미 쓴 문항이면 그 의견을 불러와 수정, 아니면 새로 쓰기(수정하던 글은 비운다)
+    const selectNumber = (n: number, list: OwnOpinion[] = mine) => {
+        const found = list.find(item => item.question_number === n);
+        setNumber(n);
+        setNotice(''); setError('');
+        if (found) { setReason(found.reason); setComment(found.comment); }
+        else if (editing) { setReason(reasons[0].label); setComment(''); }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { void load().then(list => { const found = list?.find(item => item.question_number === number); if (found) { setReason(found.reason); setComment(found.comment); } }); }, [examId]);
 
     const summary = useMemo(() => {
         const reasonCounts = reasons.map(item => opinions.filter(opinion => opinion.reason === item.label).length);
@@ -74,7 +84,9 @@ export default function ExamOpinions({ examId, questionCount, initialOpinions, c
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || '의견을 저장하지 못했습니다.');
-            setNotice(data.rewarded === 500 ? '의견이 등록되고 500P가 적립되었습니다.' : '의견을 수정했습니다. 추가 포인트는 적립되지 않습니다.');
+            setNotice(data.rewarded === 500 ? `${number}번 의견이 등록되고 500P가 적립되었습니다. 다른 문항 의견도 남길 수 있어요.`
+                : data.isNew ? `${number}번 의견이 등록되었습니다.${data.examRewarded ? ' (포인트는 시험지당 1회 적립)' : ' (오늘 적립 한도 2회를 채워 포인트는 적립되지 않았습니다)'}`
+                : `${number}번 의견을 수정했습니다.`);
             await load();
             router.refresh();
         } catch (cause: any) { setError(cause.message || '저장하지 못했습니다.'); }
@@ -107,13 +119,14 @@ export default function ExamOpinions({ examId, questionCount, initialOpinions, c
             </div>
 
             <div id="opinion-form" className="scroll-mt-24 rounded-[28px] border border-[#D7E2DB] bg-white p-5 shadow-[0_18px_50px_rgba(25,55,64,0.06)] sm:p-7">
-                <div className="border-b border-[#E9EFEB] pb-5"><h3 className="text-lg font-black text-[#193740]">{mine ? '내 의견 수정' : '내 의견 남기기'}</h3><p className="mt-2 text-sm font-semibold leading-6 text-[#365B55]">의견을 남기면 자료 결제 시 사용할 수 있는 500P를 드립니다.</p><p className="mt-1 text-xs leading-5 text-[#71847B]">시험지당 첫 작성 1회 적립 · 하루 최대 2회, 총 1,000P</p>{loggedIn && <p className="mt-1 text-xs font-bold text-[#3B725C]">오늘 {todayCount}/2회 작성</p>}</div>
+                <div className="border-b border-[#E9EFEB] pb-5"><h3 className="text-lg font-black text-[#193740]">{editing ? `${number}번 의견 수정` : '내 의견 남기기'}</h3><p className="mt-2 text-sm font-semibold leading-6 text-[#365B55]">의견을 남기면 자료 결제 시 사용할 수 있는 500P를 드립니다.</p><p className="mt-1 text-xs leading-5 text-[#71847B]">의견은 문항마다 남길 수 있어요 · 적립은 시험지당 첫 의견 1회, 하루 최대 2개 시험지(총 1,000P)</p>{loggedIn && <p className="mt-1 text-xs font-bold text-[#3B725C]">{examRewarded ? '이 시험지는 500P 적립 완료' : `오늘 적립 ${todayCount}/2회`}</p>}
+                    {loggedIn && mine.length > 0 && <div className="mt-3 flex flex-wrap items-center gap-1.5"><span className="text-xs font-bold text-[#3F5956]">내 의견 {mine.length}개</span>{mine.map(item => <button key={item.question_number} type="button" onClick={() => selectNumber(item.question_number)} aria-pressed={item.question_number === number} className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${item.question_number === number ? 'border-[#176C56] bg-[#E6F0EB] text-[#176C56]' : 'border-[#CDDBD2] text-[#536C64] hover:bg-[#F0F5F3]'}`}>{item.question_number}번</button>)}{editing && <button type="button" onClick={() => { const next = Array.from({ length: questionCount }, (_, i) => i + 1).find(n => !mine.some(item => item.question_number === n)); if (next) selectNumber(next); }} className="ml-1 text-xs font-semibold text-[#176C56] underline underline-offset-2">+ 다른 문항 쓰기</button>}</div>}</div>
                 {loggedIn ? <form onSubmit={submit}>
-                    <div className="mt-5 grid gap-4 sm:grid-cols-[140px_1fr]"><div><label htmlFor="opinion-number" className="block text-xs font-bold text-[#3F5956]">어려웠던 문항</label><select id="opinion-number" value={number} onChange={e => setNumber(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border border-[#CDDBD2] bg-white px-3 text-sm">{Array.from({ length: questionCount }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}번</option>)}</select></div><fieldset><legend className="text-xs font-bold text-[#3F5956]">어려웠던 이유</legend><div className="mt-2 flex flex-wrap gap-2">{reasons.map(item => <button key={item.label} type="button" aria-pressed={reason === item.label} onClick={() => setReason(item.label)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${reason === item.label ? 'border-[#176C56] bg-[#176C56] text-white' : 'border-[#CDDBD2] text-[#536C64]'}`}>{item.label}</button>)}</div></fieldset></div>
+                    <div className="mt-5 grid gap-4 sm:grid-cols-[140px_1fr]"><div><label htmlFor="opinion-number" className="block text-xs font-bold text-[#3F5956]">어려웠던 문항</label><select id="opinion-number" value={number} onChange={e => selectNumber(Number(e.target.value))} className="mt-2 h-11 w-full rounded-xl border border-[#CDDBD2] bg-white px-3 text-sm">{Array.from({ length: questionCount }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}번{mine.some(item => item.question_number === n) ? ' (내 의견)' : ''}</option>)}</select></div><fieldset><legend className="text-xs font-bold text-[#3F5956]">어려웠던 이유</legend><div className="mt-2 flex flex-wrap gap-2">{reasons.map(item => <button key={item.label} type="button" aria-pressed={reason === item.label} onClick={() => setReason(item.label)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${reason === item.label ? 'border-[#176C56] bg-[#176C56] text-white' : 'border-[#CDDBD2] text-[#536C64]'}`}>{item.label}</button>)}</div></fieldset></div>
                     <label htmlFor="opinion-comment" className="mt-5 block text-xs font-bold text-[#3F5956]">어떤 점이 어려웠나요?</label><textarea id="opinion-comment" value={comment} onChange={e => setComment(e.target.value)} minLength={15} maxLength={400} rows={4} required placeholder="문항 번호를 고르고, 막혔던 이유를 적어 주세요." className="mt-2 w-full resize-y rounded-xl border border-[#CDDBD2] p-3 text-sm leading-6 outline-none focus:border-[#176C56]" />
                     <p className="mt-1 text-right text-[11px] text-[#88978E]">{comment.length}/400</p>
                     {error && <p role="alert" className="mt-2 text-xs font-semibold text-red-600">{error}</p>}{notice && <p role="status" className="mt-2 text-xs font-semibold text-[#176C56]">{notice}</p>}
-                    <button type="submit" disabled={saving || (!mine && todayCount >= 2)} className="mt-4 rounded-xl bg-[#193740] px-5 py-3 text-sm font-extrabold text-white disabled:opacity-50">{saving ? '저장 중…' : mine ? '의견 수정하기' : '의견 남기기'} →</button>
+                    <button type="submit" disabled={saving} className="mt-4 rounded-xl bg-[#193740] px-5 py-3 text-sm font-extrabold text-white disabled:opacity-50">{saving ? '저장 중…' : editing ? `${number}번 의견 수정하기` : '의견 남기기'} →</button>
                 </form> : <div className="pt-5"><p className="text-sm leading-6 text-[#657873]">의견 작성과 포인트 적립은 로그인 후 이용할 수 있습니다.</p><Link href={`/login?next=${encodeURIComponent(`/exam/${examId}#question-difficulty`)}`} className="mt-4 inline-block rounded-xl bg-[#193740] px-5 py-3 text-sm font-extrabold text-white">로그인하고 의견 남기기 →</Link></div>}
             </div>
         </div>

@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { FileItem } from '@/lib/data';
 import { Download, FileText, User as UserIcon, ArrowLeft, Trash2, Database, Settings, Edit } from 'lucide-react';
 import MarketingSettings from '@/components/MarketingSettings';
+import PasswordSettings from '@/components/PasswordSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import EditModal from '@/components/EditModal';
 import { deleteFile, deletePurchase, stopSelling } from './actions';
@@ -381,6 +382,7 @@ export default function MyPage() {
                 {activeTab === 'settings' && (
                     <div className="space-y-4">
                         <MarketingSettings />
+                        <PasswordSettings />
                     </div>
                 )}
 

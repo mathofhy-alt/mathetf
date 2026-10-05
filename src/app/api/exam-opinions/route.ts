@@ -20,21 +20,24 @@ export async function GET(req: NextRequest) {
     if (error) return NextResponse.json({ message: '의견을 불러오지 못했습니다.' }, { status: 503 });
 
     const { data: { user } } = await createClient().auth.getUser();
+    // [10/5] 의견은 문항마다 1개씩 여러 개(20261005_exam_opinions_multi.sql). todayCount = 오늘 포인트 받은 시험지 수.
     let todayCount = 0;
-    let mine: { question_number: number; reason: string; comment: string } | null = null;
+    let examRewarded = false;
+    let mine: { question_number: number; reason: string; comment: string }[] = [];
     if (user) {
         const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
         const start = new Date(`${today}T00:00:00+09:00`).toISOString();
-        const [{ data: myOpinion }, { count }] = await Promise.all([
-            admin.from('exam_opinions').select('question_number, reason, comment').eq('exam_id', examId).eq('user_id', user.id).maybeSingle(),
-            admin.from('exam_opinions').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', start),
+        const [{ data: myOpinions }, { count }, { count: rewardedHere }] = await Promise.all([
+            admin.from('exam_opinions').select('question_number, reason, comment').eq('exam_id', examId).eq('user_id', user.id).order('question_number'),
+            admin.from('exam_opinion_rewards').select('opinion_id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', start),
+            admin.from('exam_opinion_rewards').select('opinion_id', { count: 'exact', head: true }).eq('user_id', user.id).eq('exam_id', examId),
         ]);
-        mine = myOpinion;
+        mine = (myOpinions || []).map(o => ({ question_number: o.question_number, reason: o.reason, comment: o.comment }));
         todayCount = count || 0;
+        examRewarded = (rewardedHere || 0) > 0;
     }
     return NextResponse.json({ opinions: (opinions || []).map(({ user_id, ...item }) => item),
-        mine: mine ? { question_number: mine.question_number, reason: mine.reason, comment: mine.comment } : null,
-        todayCount, loggedIn: !!user }, { headers: { 'Cache-Control': 'no-store' } });
+        mine, todayCount, examRewarded, loggedIn: !!user }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(req: NextRequest) {
@@ -63,10 +66,7 @@ export async function POST(req: NextRequest) {
         p_exam_id: examId, p_user_id: user.id, p_question_number: number,
         p_reason: reason, p_comment: comment, p_question_count: count,
     });
-    if (error) {
-        const limited = error.message.includes('오늘은 이미 두 시험지');
-        return NextResponse.json({ message: limited ? error.message : '의견을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: limited ? 429 : 503 });
-    }
+    if (error) return NextResponse.json({ message: '의견을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
     revalidatePath(`/exam/${examId}`);
     return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } });
 }

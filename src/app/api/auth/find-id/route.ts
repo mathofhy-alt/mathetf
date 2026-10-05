@@ -47,13 +47,18 @@ export async function POST(req: Request) {
         // 1. 휴대폰 본인 인증 여부 확인
         const { data: verificationData, error: verificationError } = await supabaseAdmin
             .from('phone_verifications')
-            .select('is_verified')
+            .select('id, is_verified, expires_at')
             .eq('phone_number', phone)
             .single();
 
-        if (verificationError || !verificationData || !verificationData.is_verified) {
-            return NextResponse.json({ success: false, message: '휴대폰 본인 인증이 완료되지 않았거나 유효하지 않습니다.' }, { status: 400 });
+        // [10/5 보안] 인증 기록은 한 번 '인증됨' 이 되면 지워지지 않아(가입은 지우지만 아이디 찾기는 안 지웠다),
+        //   예전에 인증한 번호면 문자 없이 이 API 를 바로 불러도 통과했다 → 최근 인증만 받고, 쓰면 지운다.
+        //   expires_at = 발송 + 3분. 발송 후 10분 안에 인증·조회까지 끝낸 경우만 통과.
+        const fresh = verificationData?.expires_at && Date.now() - new Date(verificationData.expires_at).getTime() < 10 * 60 * 1000;
+        if (verificationError || !verificationData || !verificationData.is_verified || !fresh) {
+            return NextResponse.json({ success: false, message: '휴대폰 본인 인증이 완료되지 않았거나 유효하지 않습니다. 인증 번호를 다시 받아주세요.' }, { status: 400 });
         }
+        await supabaseAdmin.from('phone_verifications').delete().eq('id', verificationData.id);
 
         // 2. 유저 목록 조회 — 페이지네이션으로 전체 커버 (이전엔 첫 페이지(50명)만 조회해
         //    그 이후 가입자는 아이디를 못 찾는 버그가 있었음).

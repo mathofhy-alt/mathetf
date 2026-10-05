@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import neis from '@/lib/neis-high-schools.json';
+import { REPORT_MIN_YEAR } from '@/lib/report-reward';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
         const subject = String(m.subject || '').trim().slice(0, 20);
         const note = String(m.note || '').trim().slice(0, 300);
         const paths: string[] = Array.isArray(body.paths) ? body.paths.filter((p: unknown) => typeof p === 'string') : [];
-        if (!(year >= 2015 && year <= new Date().getFullYear() + 1) || ![1, 2, 3].includes(grade) || ![1, 2].includes(semester) || !examType || !subject)
+        if (!(year >= REPORT_MIN_YEAR && year <= new Date().getFullYear() + 1) || ![1, 2, 3].includes(grade) || ![1, 2].includes(semester) || !examType || !subject)
             return NextResponse.json({ error: '시험 정보(연도·학년·학기·시험·과목)를 확인해주세요.' }, { status: 400 });
         if (paths.length < 1 || paths.length > MAX_FILES || paths.some(p => !p.startsWith(`${user.id}/report_`)))
             return NextResponse.json({ error: '올린 사진 정보를 확인할 수 없습니다. 다시 시도해주세요.' }, { status: 400 });

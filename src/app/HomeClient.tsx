@@ -153,7 +153,9 @@ function buildGroupedFiles(packed: any[]): GroupedExam[] {
             groups[key].files.db = fileItem;
         }
     });
-    return Object.values(groups);
+    // [10/5] 최신 시험 순 — 서버(home-catalog)와 같은 기준. 시험 연도 → 학기·시험 → 올린 날짜.
+    const rank = (g: GroupedExam) => (Number(String(g.semester ?? '').replace(/[^0-9]/g, '')) || 0) * 2 + (String(g.examType ?? '').includes('기말') ? 1 : 0);
+    return Object.values(groups).sort((a, b) => b.year - a.year || rank(b) - rank(a) || b.date.localeCompare(a.date));
 }
 
 export default function HomeClient({ initialExamData, initialExamCount, thisWeekUploads, initialSchoolsRaw }: HomeClientProps) {

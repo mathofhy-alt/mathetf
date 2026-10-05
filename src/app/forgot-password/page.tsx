@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
@@ -9,6 +9,11 @@ export default function ForgotPasswordPage() {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [msg, setMsg] = useState('');
     const supabase = createClient();
+    // 재설정 링크가 다른 기기에서 열려 실패하면 /auth/callback 이 이유를 ?message= 로 붙여 이리 보낸다
+    useEffect(() => {
+        const m = new URLSearchParams(window.location.search).get('message');
+        if (m) { setStatus('error'); setMsg(m.slice(0, 200)); }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

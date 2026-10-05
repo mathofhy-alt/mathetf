@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Camera, FileText, Trash2, CheckCircle2, AlertCircle, ShieldCheck, Gift } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { CURRICULA } from '@/lib/curriculum';
-import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
+import { REPORT_REWARD_LABEL, REPORT_MIN_YEAR } from '@/lib/report-reward';
 
 /**
  * 회원 원본 시험지 제보 창 (2026-10-05).
@@ -170,7 +170,7 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                             )}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 <select aria-label="연도" value={year} onChange={e => setYear(Number(e.target.value))} className={field}>
-                                    {Array.from({ length: 6 }, (_, i) => thisYear - i).map(y => <option key={y} value={y}>{y}년</option>)}
+                                    {Array.from({ length: thisYear - REPORT_MIN_YEAR + 1 }, (_, i) => thisYear - i).map(y => <option key={y} value={y}>{y}년</option>)}
                                 </select>
                                 <select aria-label="학년" value={grade} onChange={e => setGrade(Number(e.target.value))} className={field}>
                                     {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}

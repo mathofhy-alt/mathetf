@@ -14,6 +14,13 @@ const HOME_COLUMNS =
     'id, title, school, grade, semester, subject, exam_type, exam_year, file_type, content_type, '
     + 'created_at, price, uploader_name, region, district, free_pdf_url, preview_urls, is_verified';
 
+/** 같은 연도 안에서 시험 순서: 1학기 중간(2) < 1학기 기말(3) < 2학기 중간(4) < 2학기 기말(5) */
+export function examTermRank(item: { semester?: unknown; exam_type?: unknown }): number {
+    const sem = Number(String(item.semester ?? '').replace(/[^0-9]/g, '')) || 0;
+    const kind = String(item.exam_type ?? '');
+    return sem * 2 + (kind.includes('기말') ? 1 : 0);
+}
+
 async function loadHomeExams() {
     const supabase = createAdminClient();
     // ⚠ PostgREST 는 max-rows(1000)에서 조용히 잘린다. range() 로 페이지네이션하지 않으면
@@ -59,7 +66,14 @@ async function loadHomeExams() {
         }
         return latest ? new Date(latest * 1000 + 9 * 3600 * 1000).toISOString().slice(0, 10) : null;
     };
-    return (data || []).filter((item: any) => !isMockExam(item)).map((item: any) => {
+    // [10/5] 최신 '시험' 순(사용자 요청) — 올린 날짜 순이면 오늘 올린 작년 시험지가 맨 위에 온다.
+    //   시험 연도 → 학기·시험(2학기 기말 > 2학기 중간 > 1학기 기말 > 1학기 중간) → 올린 날짜.
+    //   홈 첫 화면은 이 순서의 앞 120건만 서버에서 그리므로(page.tsx) 여기서 정렬해야 첫 화면이 맞는다.
+    return (data || []).filter((item: any) => !isMockExam(item))
+        .sort((a: any, b: any) => (Number(b.exam_year) || 0) - (Number(a.exam_year) || 0)
+            || examTermRank(b) - examTermRank(a)
+            || String(b.created_at).localeCompare(String(a.created_at)))
+        .map((item: any) => {
         const { free_pdf_url, preview_urls, ...rest } = item;
         return packHomeRow({
             ...rest,
@@ -74,4 +88,4 @@ async function loadHomeExams() {
 }
 
 
-export const getHomeExams=unstable_cache(loadHomeExams,['home-catalog-v2'],{revalidate:3600,tags:['home-catalog']});
+export const getHomeExams=unstable_cache(loadHomeExams,['home-catalog-v3'],{revalidate:3600,tags:['home-catalog']});
