@@ -11,21 +11,17 @@ import { Download, FileText, User as UserIcon, ArrowLeft, Trash2, Database, Sett
 import MarketingSettings from '@/components/MarketingSettings';
 import PasswordSettings from '@/components/PasswordSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
-import EditModal from '@/components/EditModal';
-import { deleteFile, deletePurchase, stopSelling } from './actions';
+import { deletePurchase } from './actions';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
-    const [activeTab, setActiveTab] = useState<'purchases' | 'sales' | 'settings'>('purchases');
+    const [activeTab, setActiveTab] = useState<'purchases' | 'settings'>('purchases');
     const [loading, setLoading] = useState(true);
     const [purchases, setPurchases] = useState<any[]>([]);
-    const [uploads, setUploads] = useState<any[]>([]);
     const [earnedPoints, setEarnedPoints] = useState(0);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
 
     // Edit Modal State
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingFile, setEditingFile] = useState<any>(null);
 
     // School Data State
     const [regions, setRegions] = useState<string[]>([]);
@@ -109,15 +105,7 @@ export default function MyPage() {
 
             setPurchases(finalPurchases);
 
-            // Fetch Uploads (Sales)
-            const { data: uploadData } = await supabase
-                .from('exam_materials')
-                .select('*')
-                .eq('uploader_id', user.id)
-                .neq('school', 'DELETED')
-                .order('created_at', { ascending: false });
-
-            if (uploadData) setUploads(uploadData);
+            // [10/6] '내 자료 관리'(예전 판매자 화면) 제거 — 회원은 자료를 올려 팔지 않는다(원본 제보만).
 
 
             setLoading(false);
@@ -257,32 +245,6 @@ export default function MyPage() {
         }
     };
 
-    const handleDelete = async (fileId: string, filePath: string) => {
-        if (!confirm('해당 자료와 연관된 파일(PDF, HWP 등)이 모두 함께 삭제됩니다. 정말로 삭제하시겠습니까?\n삭제된 자료는 복구할 수 없습니다.')) return;
-
-        try {
-            const result = await deleteFile(fileId);
-
-            if (!result.success) {
-                alert(result.message || '삭제 실패');
-                return;
-            }
-
-            alert(result.message || '자료가 성공적으로 삭제되었습니다.');
-
-            // Refresh List Locally
-            if (result.deletedIds) {
-                setUploads(prev => prev.filter(u => !result.deletedIds.includes(u.id)));
-            } else {
-                setUploads(prev => prev.filter(u => u.id !== fileId));
-            }
-
-        } catch (error: any) {
-            console.error('Delete error:', error);
-            alert('삭제 중 오류가 발생했습니다.');
-        }
-    };
-
     const handleDeletePurchase = async (purchaseId: string) => {
         // First warning
         alert('이 내역을 삭제하시면 해당 자료를 다시 다운로드할 수 없습니다.');
@@ -308,26 +270,6 @@ export default function MyPage() {
         }
     };
 
-    const handleStopSelling = async (fileId: string) => {
-        if (!confirm('판매를 중단하시겠습니까?\n\n• 신규 구매는 증단됩니다.\n• 기존 구매자는 30일간 계속 다운로드 가능합니다.')) return;
-
-        try {
-            const result = await stopSelling(fileId);
-            if (!result.success) {
-                alert(result.message || '판매 중단 실패');
-                return;
-            }
-            alert('판매가 중단되었습니다.');
-            if (result.stoppedIds) {
-                setUploads(prev => prev.filter(u => !(result.stoppedIds as string[]).includes(u.id)));
-            } else {
-                setUploads(prev => prev.filter(u => u.id !== fileId));
-            }
-        } catch (error) {
-            console.error('Stop selling error:', error);
-            alert('판매 중단 중 오류가 발생했습니다.');
-        }
-    };
 
 
 
@@ -362,12 +304,6 @@ export default function MyPage() {
                         className={`pb-3 px-2 font-bold text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'purchases' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
                     >
                         구매 내역
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('sales')}
-                        className={`pb-3 px-2 font-bold text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'sales' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
-                    >
-                        내 자료 관리
                     </button>
                     {/* [수신설정] 2026-09-05 배포한 마케팅 동의문이 "마이페이지 > 설정에서" 끄라고
                         안내하는데 그 화면이 없었다. 법이 요구하는 '수신 거부 방법'이기도 하다. */}
@@ -507,74 +443,6 @@ export default function MyPage() {
                     </div>
                 )}
 
-                {activeTab === 'sales' && (
-                    <div className="space-y-4">
-                        <div className="bg-white rounded-lg shadow-sm border border-slate-200 divide-y divide-slate-100">
-                            {uploads.length === 0 ? (
-                                <div className="p-10 text-center text-slate-500">업로드한 자료가 없습니다.<p className="mt-2 text-xs">자료를 올리면 여기서 확인할 수 있어요.</p></div>
-                            ) : (
-                                uploads.map(file => (
-                                    <div key={file.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-slate-50">
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-slate-100 rounded text-slate-400">
-                                                {file.file_type === 'PDF' ? <FileText size={20} /> : <FileText size={20} />}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-sm font-bold text-brand-600 truncate">{file.school}</span>
-                                                    <span className="w-px h-3 bg-slate-300 flex-shrink-0"></span>
-                                                    <span className="text-xs text-slate-500 truncate">{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>
-                                                </div>
-                                                <div className="font-medium text-slate-900 text-sm break-keep">{file.title}</div>
-                                                <div className="text-xs text-slate-400 mt-1">
-                                                    등록일: {new Date(file.created_at).toLocaleDateString()} · {file.subject} · {file.price}P
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between sm:justify-end sm:flex-col sm:items-end gap-2">
-                                            <div>
-                                                <div className="text-sm font-bold text-slate-800">{file.sales_count || 0}회 판매</div>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    onClick={() => { setEditingFile(file); setIsEditModalOpen(true); }}
-                                                    className="flex items-center gap-1 text-slate-400 hover:text-brand-600 px-3 py-2 rounded text-xs border border-slate-200 hover:border-brand-200 transition-colors"
-                                                >
-                                                    <Edit size={12} /> 수정
-                                                </button>
-                                                {(file.sales_count || 0) > 0 ? (
-                                                    <button
-                                                        onClick={() => handleStopSelling(file.id)}
-                                                        className="flex items-center gap-1 text-slate-400 hover:text-orange-600 px-3 py-2 rounded text-xs border border-slate-200 hover:border-orange-200 transition-colors"
-                                                        title="신규 구매 중단 (기존 구매자 다운로드 유지)"
-                                                    >
-                                                        <span className="text-[10px]">&#9646;</span> 판매중단
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleDelete(file.id, file.file_path)}
-                                                        className="flex items-center gap-1 text-slate-400 hover:text-red-600 px-3 py-2 rounded text-xs border border-slate-200 hover:border-red-200 transition-colors"
-                                                    >
-                                                        <Trash2 size={12} /> 삭제
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-                <EditModal
-                    isOpen={isEditModalOpen}
-                    onClose={() => setIsEditModalOpen(false)}
-                    user={user}
-                    fileData={editingFile}
-                    regions={regions}
-                    districtsMap={districtsMap}
-                    schoolsMap={schoolsMap}
-                />
             </main>
         </div>
     );

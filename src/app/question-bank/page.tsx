@@ -954,22 +954,44 @@ export default function QuestionBankPage() {
     };
 
     const [sortKeys, setSortKeys] = useState<string[]>([]);
+    // [10/6] 정렬은 '켜져 있는 동안 계속 유지'한다. 예전엔 고르는 순간 한 번만 정렬해서, 그 뒤 문항을 더 담거나
+    //   유사문항으로 바꾸면 순서가 흐트러졌는데 정렬 칸엔 기준이 그대로 떠 있어 '정렬이 안 된다'로 보였다(사용자 지적).
+    //   정렬 전 순서(sortBaseRef)를 기억해 '초기화'하면 그 순서로 돌린다. 손으로 끌어 옮기면 자동 정렬은 끈다.
+    const sortBaseRef = useRef<string[] | null>(null);
+    const sortCart = (items: any[], keys: string[]) => [...items].sort((a, b) => {
+        for (const key of keys) {
+            const opt = SORT_OPTIONS[key];
+            if (!opt) continue;
+            const result = opt.compareFn(a, b);
+            if (result !== 0) return result;
+        }
+        return 0;
+    });
 
     const applySortKeys = (keys: string[]) => {
-        setSortKeys(keys);
-        if (keys.length === 0) return;
-        let sorted = [...cart];
-        sorted.sort((a, b) => {
-            for (const key of keys) {
-                const opt = SORT_OPTIONS[key];
-                if (!opt) continue;
-                const result = opt.compareFn(a, b);
-                if (result !== 0) return result;
+        if (keys.length === 0) {
+            const base = sortBaseRef.current;
+            if (base) {   // 정렬 전 순서로 — 정렬 중에 새로 담은 문항은 뒤에 담은 순서대로
+                const rank = new Map(base.map((id, i) => [id, i]));
+                setCart(prev => [...prev].sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity)));
             }
-            return 0;
-        });
-        setCart(sorted);
+            sortBaseRef.current = null;
+            setSortKeys([]);
+            return;
+        }
+        if (!sortBaseRef.current) sortBaseRef.current = cart.map(q => q.id);
+        setSortKeys(keys);
+        setCart(prev => sortCart(prev, keys));
     };
+
+    // 정렬이 켜져 있으면 문항이 바뀔 때마다(담기·빼기·유사문항 교체) 같은 기준으로 다시 맞춘다
+    useEffect(() => {
+        if (!sortKeys.length) return;
+        if (sortBaseRef.current) { const known = new Set(sortBaseRef.current); for (const q of cart) if (!known.has(q.id)) sortBaseRef.current.push(q.id); }
+        const sorted = sortCart(cart, sortKeys);
+        if (sorted.some((q, i) => q.id !== cart[i]?.id)) setCart(sorted);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cart, sortKeys]);
 
     // Drag and Drop Handlers
     // dragOrderRef: 드래그 중 순서를 ref에 저장 → dragEnd 시에만 setCart 1회 호출
@@ -994,6 +1016,8 @@ export default function QuestionBankPage() {
 
     const handleDragEnd = () => {
         if (dragOrderRef.current.length > 0) {
+            // 손으로 정한 순서가 우선 — 자동 정렬을 끈다(켜 두면 바로 다시 정렬돼 드래그가 안 먹는다)
+            if (sortKeys.length) { setSortKeys([]); sortBaseRef.current = null; }
             setCart(dragOrderRef.current); // 드래그 완료 시 딱 1번만 setCart
         }
         dragOrderRef.current = [];
@@ -1603,9 +1627,9 @@ export default function QuestionBankPage() {
                                                 onChange={(e) => {
                                                     const next = [...sortKeys];
                                                     next[idx] = e.target.value;
-                                                    // 중복 제거: 이후 레벨에서 같은 기준 있으면 잘라냄
-                                                    const deduped = next.slice(0, idx + 1);
-                                                    applySortKeys(deduped);
+                                                    // [10/6] 뒤 기준은 남기고, 새로 고른 것과 같거나 부딪히는 뒤 기준만 뺀다(예전엔 뒤를 전부 잘랐다)
+                                                    const clash = new Set([e.target.value, ...(SORT_CONFLICTS[e.target.value] || [])]);
+                                                    applySortKeys(next.filter((k, i) => i <= idx || !clash.has(k)));
                                                 }}
                                                 className="text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200 rounded-lg px-2 py-1.5 outline-none cursor-pointer hover:bg-brand-100 transition-colors"
                                             >
@@ -1871,17 +1895,17 @@ export default function QuestionBankPage() {
                                                 </div>
                                             )}
                                             <button aria-label={`${idx+1}번 문항 상세보기`} className="question-action" onClick={e=>{e.stopPropagation();setZoomQuestion(q);}}><FileText size={14} aria-hidden="true"/>상세보기</button>
-                                            {viewMode === 'search' && (
-                                                <div className="flex items-center gap-2 transition-opacity">
-                                                    <button
-                                                        className="question-action"
-                                                        onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate('solution'); return; } setSolutionTarget(q); }}
-                                                    >
-                                                        <FileText size={12} />
-                                                        해설보기
-                                                    </button>
-                                                </div>
-                                            )}
+                                            {/* [10/6] 검토 화면에서도 해설보기 — 예전엔 검색 화면에서만 보여 '해설보기가 어디 갔냐'(사용자) */}
+                                            <div className="flex items-center gap-2 transition-opacity" data-no-drag="true">
+                                                <button
+                                                    aria-label={`${idx+1}번 문항 해설보기`}
+                                                    className="question-action"
+                                                    onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate('solution'); return; } setSolutionTarget(q); }}
+                                                >
+                                                    <FileText size={12} />
+                                                    해설보기
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 );

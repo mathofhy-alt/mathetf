@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, Upload, AlertTriangle, FileDown } from 'lucide-react';
+import { Package, Upload, AlertTriangle, FileDown, Database } from 'lucide-react';
 import AdminQuestionsClient from './questions/AdminQuestionsClient';
 import AdminIngestPage from './ingest/page';
 import AdminReportsClient from './reports/AdminReportsClient';
 import RawUploadsAdmin from './raw-uploads/page';
+import DbRequestsAdmin from './db-requests/page';
 
 interface AdminDashboardClientProps {
     initialQuestionsData: {
@@ -17,12 +18,13 @@ interface AdminDashboardClientProps {
 }
 
 export default function AdminDashboardClient({ initialQuestionsData }: AdminDashboardClientProps) {
-    const [activeTab, setActiveTab] = useState<'questions' | 'ingest' | 'reports' | 'raw-uploads'>('questions');
+    const [activeTab, setActiveTab] = useState<'questions' | 'ingest' | 'reports' | 'raw-uploads' | 'db-requests'>('questions');
 
     const tabs = [
         { id: 'questions', label: '문제 관리', icon: Package },
         { id: 'ingest', label: '문제 업로드', icon: Upload },
         { id: 'raw-uploads', label: '제보 확인', icon: FileDown },
+        { id: 'db-requests', label: '개인DB 요청', icon: Database },
         { id: 'reports', label: '신고 관리', icon: AlertTriangle },
     ] as const;
 
@@ -83,6 +85,11 @@ export default function AdminDashboardClient({ initialQuestionsData }: AdminDash
                 {activeTab === 'reports' && (
                     <div className="animate-in fade-in duration-300">
                         <AdminReportsClient />
+                    </div>
+                )}
+                {activeTab === 'db-requests' && (
+                    <div className="animate-in fade-in duration-300">
+                        <DbRequestsAdmin />
                     </div>
                 )}
                 {activeTab === 'raw-uploads' && (

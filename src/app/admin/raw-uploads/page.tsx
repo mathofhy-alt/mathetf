@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { FileDown, Calendar, School, User as UserIcon, Trash2, Link2, Coins, ChevronDown, ChevronUp, RefreshCw, AlertCircle } from 'lucide-react';
+import { FileDown, Calendar, School, User as UserIcon, Trash2, Coins, RefreshCw } from 'lucide-react';
 import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
 
 export default function RawUploadsAdmin() {
@@ -13,11 +13,7 @@ export default function RawUploadsAdmin() {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [uploads, setUploads] = useState<any[]>([]);
-    const [dbItems, setDbItems] = useState<any[]>([]);  // 연결 가능한 DB 자료 목록
     const [isLoading, setIsLoading] = useState(true);
-    const [expandedId, setExpandedId] = useState<string | null>(null);
-    const [linkingId, setLinkingId] = useState<string | null>(null);  // 현재 연결 처리 중인 submission id
-    const [selectedDbId, setSelectedDbId] = useState<string>('');
     const [rewardedIds, setRewardedIds] = useState<Set<string>>(new Set());  // 채택 보상 지급 완료된 제보
     const [rewardingId, setRewardingId] = useState<string | null>(null);
 
@@ -43,15 +39,6 @@ export default function RawUploadsAdmin() {
                 setRewardedIds(new Set(j.ids || []));
             }
         } catch { }
-
-        // 연결 가능한 모든 DB 자료 (content_type 이 '개인DB' 이거나 file_type이 'DB')
-        const { data: dbData } = await supabase
-            .from('exam_materials')
-            .select('id, title, school, exam_year, grade, semester, exam_type, subject, source_submission_id')
-            .or("content_type.eq.개인DB,file_type.eq.DB")
-            .order('created_at', { ascending: false });
-
-        if (dbData) setDbItems(dbData);
 
         setIsLoading(false);
     };
@@ -109,48 +96,25 @@ export default function RawUploadsAdmin() {
     const handleDelete = async (id: string, filePath: string) => {
         if (!confirm('이 파일을 스토리지와 DB에서 영구 삭제하시겠습니까? (삭제 후 복구 불가)')) return;
 
+        // [10/6] 서버(관리자 확인)에서 지운다. 브라우저에서 직접 지우면 권한 규칙에 막혀도 오류가 안 나
+        //   '삭제됐다' 뜨고 새로고침하면 다시 나타났다. filePath 는 서버가 제보 기록에서 다시 읽는다.
+        void filePath;
         try {
-            const row = uploads.find(u => u.id === id);
-            await supabase.storage.from('exam-materials').remove(row ? reportFiles(row) : [filePath]);
-            await supabase.from('exam_materials').delete().eq('id', id);
-            setUploads(uploads.filter(u => u.id !== id));
-            alert('성공적으로 삭제되었습니다.');
-        } catch (err) {
-            console.error('Delete failed:', err);
-            alert('삭제 중 오류가 발생했습니다.');
-        }
-    };
-
-    // DB 자료와 원본 제보 연결
-    const handleLinkDb = async (submissionId: string, dbItemId: string) => {
-        if (!dbItemId) {
-            alert('연결할 DB 자료를 선택해주세요.');
-            return;
-        }
-        if (!confirm('이 원본 제보를 해당 DB 자료의 출처로 연결하시겠습니까?')) return;
-
-        setLinkingId(submissionId);
-        try {
-            const { error } = await supabase
-                .from('exam_materials')
-                .update({ source_submission_id: submissionId })
-                .eq('id', dbItemId);
-
-            if (error) throw error;
-
-            alert('원본 제보와 DB 자료를 연결했습니다.');
-            setSelectedDbId('');
-            await fetchData();
+            const res = await fetch('/api/admin/raw-uploads', {
+                method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+            });
+            const j = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
+            setUploads(prev => prev.filter(u => u.id !== id));
+            alert(`삭제했습니다 (파일 ${j.files ?? 0}개).`);
         } catch (err: any) {
-            alert('연결 실패: ' + err.message);
-        } finally {
-            setLinkingId(null);
+            console.error('Delete failed:', err);
+            alert('삭제하지 못했습니다: ' + (err?.message || '알 수 없는 오류'));
         }
     };
 
-    // 이 제보와 연결된 DB 자료 목록
-    const getLinkedDbs = (submissionId: string) =>
-        dbItems.filter(d => d.source_submission_id === submissionId);
+    // [10/6] 'DB 연결'(제보 ↔ 개인DB 출처 연결) 제거 — 쓰던 칸(source_submission_id)이 DB 에 없어 처음부터 동작하지 않았고,
+    //   채택 → 정리·등록 흐름에 필요 없다(사용자 결정).
 
     // 제보 채택 → 제보자에게 보상 지급 (서버에서 멱등 보장)
     const handleApprove = async (file: any) => {
@@ -186,7 +150,6 @@ export default function RawUploadsAdmin() {
                         </h1>
                         <p className="text-sm text-slate-500 mt-1">
                             회원이 헤더의 원본 제보 버튼으로 올린 시험지 목록입니다 (사진 여러 장 = 제보 1건).
-                            <span className="ml-2 text-purple-600 font-bold">DB 자료의 원본 출처를 확인하고 연결합니다.</span>
                         </p>
                     </div>
                     <button
@@ -206,9 +169,6 @@ export default function RawUploadsAdmin() {
                                 <div className="py-20 text-center text-slate-500 font-medium">제보된 파일이 없습니다.</div>
                             )}
                             {uploads.map(file => {
-                                const linkedDbs = getLinkedDbs(file.id);
-                                const isExpanded = expandedId === file.id;
-
                                 return (
                                     <div key={file.id}>
                                         {/* 메인 행 */}
@@ -220,11 +180,6 @@ export default function RawUploadsAdmin() {
                                                         <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
                                                             <Calendar size={12} /> {new Date(file.created_at).toLocaleString('ko-KR')}
                                                         </span>
-                                                        {linkedDbs.length > 0 && (
-                                                            <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
-                                                                <Link2 size={10} /> DB 연결됨 ({linkedDbs.length}개)
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     <div className="font-bold text-slate-800 mt-1 flex items-center gap-1.5">
                                                         <School size={14} className="text-slate-400" /> {file.school}
@@ -265,14 +220,6 @@ export default function RawUploadsAdmin() {
                                                         <FileDown size={16} />
                                                     </button>
                                                     <button
-                                                        onClick={() => setExpandedId(isExpanded ? null : file.id)}
-                                                        title="DB 연결 관리"
-                                                        className={`inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg transition-colors shadow-sm border ${isExpanded ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-600 hover:text-white'}`}
-                                                    >
-                                                        <Link2 size={14} /> DB 연결
-                                                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                                    </button>
-                                                    <button
                                                         onClick={() => handleDelete(file.id, file.file_path)}
                                                         title="완전 삭제"
                                                         className="inline-flex items-center justify-center p-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg transition-colors shadow-sm"
@@ -283,65 +230,6 @@ export default function RawUploadsAdmin() {
                                             </div>
                                         </div>
 
-                                        {/* 확장 패널: DB 연결 관리 */}
-                                        {isExpanded && (
-                                            <div className="bg-purple-50 border-t border-purple-100 p-4 space-y-4">
-                                                {/* 연결된 DB 목록 */}
-                                                {linkedDbs.length > 0 && (
-                                                    <div>
-                                                        <h4 className="text-xs font-bold text-purple-800 mb-2 flex items-center gap-1">
-                                                            <Link2 size={12} /> 현재 연결된 DB 자료
-                                                        </h4>
-                                                        <div className="space-y-1.5">
-                                                            {linkedDbs.map(db => (
-                                                                <div key={db.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-purple-100">
-                                                                    <div>
-                                                                        <div className="text-xs font-bold text-slate-700">{db.title}</div>
-                                                                        <div className="text-[10px] text-slate-400">{db.school} · {db.exam_year}년 {db.grade}학년 {db.subject}</div>
-                                                                    </div>
-                                                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">연결됨</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {/* 새 DB 연결 */}
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-purple-800 mb-2 flex items-center gap-1">
-                                                        <AlertCircle size={12} /> DB 자료 새로 연결하기
-                                                    </h4>
-                                                    <p className="text-[11px] text-purple-700 mb-2">
-                                                        이 원본 제보를 바탕으로 만든 개인DB 자료를 선택해 출처를 연결합니다.
-                                                    </p>
-                                                    <div className="flex gap-2">
-                                                        <select
-                                                            className="flex-1 text-xs border border-purple-200 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-400 bg-white"
-                                                            value={selectedDbId}
-                                                            onChange={e => setSelectedDbId(e.target.value)}
-                                                        >
-                                                            <option value="">-- 연결할 DB 자료 선택 --</option>
-                                                            {dbItems
-                                                                .filter(d => !d.source_submission_id)  // 아직 연결 안 된 것만
-                                                                .map(d => (
-                                                                    <option key={d.id} value={d.id}>
-                                                                        {d.title} ({d.school} / {d.exam_year}년)
-                                                                    </option>
-                                                                ))
-                                                            }
-                                                        </select>
-                                                        <button
-                                                            onClick={() => handleLinkDb(file.id, selectedDbId)}
-                                                            disabled={linkingId === file.id || !selectedDbId}
-                                                            className="px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
-                                                        >
-                                                            <Link2 size={12} />
-                                                            {linkingId === file.id ? '연결 중...' : '연결하기'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                            </div>
-                                        )}
                                     </div>
                                 );
                             })}

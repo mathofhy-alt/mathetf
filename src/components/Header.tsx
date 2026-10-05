@@ -5,11 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, Camera } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, Camera, Database } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // [2026-10-05] 회원 원본 시험지 제보 — 눌렀을 때만 불러온다
 const OriginalReportModal = dynamic(() => import('@/components/OriginalReportModal'), { ssr: false });
+const DbRequestModal = dynamic(() => import('@/components/DbRequestModal'), { ssr: false });
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
@@ -73,8 +74,10 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                 if (user && propPurchased === undefined) {
                     fetchPoints(user.id);
                 }
-            } else if (user && propPurchased === undefined) {
-                fetchPoints(user.id);
+            } else if (propUser && propPurchased === undefined) {
+                // [10/6] 예전엔 state 의 user 로 확인했는데, 공지·건의사항처럼 페이지가 user 를 null → 로그인 정보로
+                //   늦게 넘기면 이 시점 state 가 아직 null 이라 포인트를 안 불러 0 으로 보였다(사용자 지적). 받은 값으로 부른다.
+                fetchPoints(propUser.id);
             }
         };
         init();
@@ -93,6 +96,9 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const [reportOpen, setReportOpen] = useState(false);
     const [reportSchool, setReportSchool] = useState<string | undefined>(undefined);   // 학교 페이지에서 열면 그 학교 코드
     const openReport = (code?: string) => { if (!user) { router.push(`/login?next=${authNext}`); return; } setReportSchool(code); setReportOpen(true); setMobileMenuOpen(false); };
+    // [10/6] 개인DB 요청 — 회원이 개인DB로 만들고 싶은 자료(시중 교재 등)를 운영자에게 보낸다
+    const [dbRequestOpen, setDbRequestOpen] = useState(false);
+    const openDbRequest = () => { if (!user) { router.push(`/login?next=${authNext}`); return; } setDbRequestOpen(true); setMobileMenuOpen(false); };
     useEffect(() => { const h = (e: Event) => openReport((e as CustomEvent).detail?.code); window.addEventListener('open-original-report', h); return () => window.removeEventListener('open-original-report', h); });
 
     const handleDefaultUploadClick = () => {
@@ -188,8 +194,14 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* 원본 시험지 제보 (회원 누구나) — 운영자는 아래 자료등록을 쓴다 */}
                         {!isAdmin && (
-                            <button type="button" onClick={() => openReport()} className="hidden lg:flex px-3 py-1.5 border border-brand-200 text-brand-700 bg-white rounded text-sm font-bold hover:bg-brand-50 items-center gap-1.5 whitespace-nowrap">
-                                <Camera size={14} /> 원본 제보
+                            <button type="button" onClick={() => openReport()} title="원본 제보" aria-label="원본 제보" className="hidden lg:flex px-2.5 min-[1400px]:px-3 py-1.5 border border-brand-200 text-brand-700 bg-white rounded text-sm font-bold hover:bg-brand-50 items-center gap-1.5 whitespace-nowrap">
+                                {/* 1400px 아래에선 아이콘만 — 두 버튼이 메뉴(사용법)를 덮었다(10/6 1024·1280 실측) */}
+                                <Camera size={14} /> <span className="hidden min-[1400px]:inline">원본 제보</span>
+                            </button>
+                        )}
+                        {!isAdmin && (
+                            <button type="button" onClick={openDbRequest} title="개인DB 요청" aria-label="개인DB 요청" className="hidden lg:flex px-2.5 min-[1400px]:px-3 py-1.5 border border-brand-200 text-brand-700 bg-white rounded text-sm font-bold hover:bg-brand-50 items-center gap-1.5 whitespace-nowrap">
+                                <Database size={14} /> <span className="hidden min-[1400px]:inline">개인DB 요청</span>
                             </button>
                         )}
 
@@ -301,6 +313,11 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 <span className="text-[10px] text-slate-400 font-semibold ml-auto">채택 시 {REPORT_REWARD_LABEL}</span>
                             </button>
                         )}
+                        {!isAdmin && (
+                            <button type="button" onClick={openDbRequest} className="w-full flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-brand-700 hover:bg-brand-50 transition-colors">
+                                <Database size={20} /> 개인DB 요청
+                            </button>
+                        )}
 
                         {/* Divider */}
                         <div className="border-t border-slate-100 my-2" />
@@ -338,6 +355,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                     </div>
                 </div>
             </header>
+            {dbRequestOpen && <DbRequestModal open={dbRequestOpen} onClose={() => setDbRequestOpen(false)} />}
             {reportOpen && <OriginalReportModal open={reportOpen} initialCode={reportSchool} onClose={() => setReportOpen(false)} />}
         </>
     );
