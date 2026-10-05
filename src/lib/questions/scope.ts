@@ -11,7 +11,8 @@ export const unavailableDbs: Record<string, string> = {
 // Audited source links identify an original paper, never a curriculum-wide subject alias.
 export function toScopeRule(db: CatalogDb): ScopeRule {
     const source = db.source_db_id || (verifiedLinks as Record<string, string>)[db.id];
-    if (source) return { sources: [source] };
+    // '|' 로 여러 묶음: 옛 고3 가형(2006~2009)은 공통 25 + 선택 5 가 묶음이 따로라 '가형 미분과적분' 개인DB = 공통|선택 (10/6)
+    if (source) return { sources: source.split('|') };
     const rule: ScopeRule = { school: db.school };
     const grade = String(db.grade || '').replace('고', '');
     if (grade) rule.grade = ['1', '2', '3'].includes(grade) ? `고${grade}` : grade;
