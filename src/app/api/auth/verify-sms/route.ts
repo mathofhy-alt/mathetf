@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { isPhoneRegistered, PHONE_TAKEN_MESSAGE } from '@/lib/phone-registered';
 
 // 서버에서만 사용하는 Supabase Service Role Key (관리자 권한)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,6 +11,8 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         let { phone, code } = body;
+        // 가입 화면만 purpose:'signup' 을 보낸다. 아이디 찾기·결제 인증은 기존 번호가 정상이라 검사하지 않음.
+        const forSignup = body.purpose === 'signup';
 
         if (!phone || !code) {
             return NextResponse.json({ success: false, message: '휴대폰 번호와 인증코드가 필요합니다.' }, { status: 400 });
@@ -32,6 +35,9 @@ export async function POST(req: Request) {
 
         // 1. 이미 인증된 경우 방어
         if (data.is_verified) {
+            if (forSignup && await isPhoneRegistered(supabaseAdmin, phone)) {
+                return NextResponse.json({ success: false, code: 'phone_taken', message: PHONE_TAKEN_MESSAGE }, { status: 409 });
+            }
             return NextResponse.json({ success: true, message: '이미 인증 완료된 번호입니다.' });
         }
 
@@ -56,6 +62,11 @@ export async function POST(req: Request) {
                 .update({ attempts: (data.attempts ?? 0) + 1 })
                 .eq('id', data.id);
             return NextResponse.json({ success: false, message: '인증 번호가 일치하지 않습니다.' }, { status: 400 });
+        }
+
+        // 3-1. 1번호 1계정 (10/6) — 번호 주인임이 확인된 뒤에만 알려준다(문자 발송 단계에서 알려주면 남의 번호 가입 여부를 떠볼 수 있음)
+        if (forSignup && await isPhoneRegistered(supabaseAdmin, phone)) {
+            return NextResponse.json({ success: false, code: 'phone_taken', message: PHONE_TAKEN_MESSAGE }, { status: 409 });
         }
 
         // 4. 인증 통과 -> DB 업데이트

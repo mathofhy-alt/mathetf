@@ -182,10 +182,11 @@ export default function QuestionBankPage() {
     const srcLoaded = useRef(false);
 
     /** 회차 하나를 통째로 장바구니에 담는다. ?src= 진입과 '이어서 만들기' 카드가 같이 쓴다. */
-    const fillFromSrc = async (src: string, logTitle: string) => {
+    // variant='similar1' (10/6): 무료PDF 팝업 '유사문제 풀기' 버튼 — 각 문항을 유사 1순위로 바꾼 시험지로 채운다.
+    const fillFromSrc = async (src: string, logTitle: string, variant?: 'similar1') => {
         const res = await fetch('/api/questions/by-ids', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ src }),
+            body: JSON.stringify(variant ? { src, variant } : { src }),
         });
         const r = await res.json();
         const data = (r?.data || []) as any[];
@@ -195,6 +196,8 @@ export default function QuestionBankPage() {
         logQb('qb_cart_add', logTitle.replace('{n}', String(data.length)));
         if (data.length > MAX_CART_SIZE) {
             showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${MAX_CART_SIZE}개만 담았습니다.`, 'info');
+        } else if (variant && r?.missing > 0) {
+            showToast(`${r.missing}문항은 비슷한 문항이 없어 빠졌습니다.`, 'info');
         }
         return data.length;
     };
@@ -205,7 +208,8 @@ export default function QuestionBankPage() {
         if (!src) return;
         srcLoaded.current = true;
         (async () => {
-            try { await fillFromSrc(src, 'from_exam:{n}'); }
+            const similar = new URLSearchParams(window.location.search).get('variant') === 'similar1';
+            try { await fillFromSrc(src, similar ? 'from_exam_similar1:{n}' : 'from_exam:{n}', similar ? 'similar1' : undefined); }
             catch { /* 조용히 — 빈 도구로 시작한다 */ }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps

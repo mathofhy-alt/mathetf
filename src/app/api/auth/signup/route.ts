@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { MARKETING_CONSENT_VERSION } from '@/lib/consent';
 import { createClient } from '@supabase/supabase-js';
 import { safeSignupAttribution } from '@/lib/analytics/signup-attribution';
+import { isPhoneRegistered, PHONE_TAKEN_MESSAGE } from '@/lib/phone-registered';
 
 // 서버에서만 사용하는 Service Role Key (관리자 권한). 절대 클라이언트로 나가면 안 됨.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -41,6 +42,11 @@ export async function POST(req: Request) {
 
         if (!pv || !pv.is_verified) {
             return NextResponse.json({ success: false, message: '휴대폰 본인 인증을 먼저 완료해주세요.' }, { status: 403 });
+        }
+
+        // 2-1. 1번호 1계정 (10/6) — 화면 단계(verify-sms)를 건너뛴 요청도 여기서 막는다
+        if (await isPhoneRegistered(supabaseAdmin, phone)) {
+            return NextResponse.json({ success: false, code: 'phone_taken', message: PHONE_TAKEN_MESSAGE }, { status: 409 });
         }
 
         // 3. 관리자 권한으로 계정 생성 (이메일 인증 절차 없이 즉시 활성)

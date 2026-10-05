@@ -5,7 +5,7 @@ import { Download, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import PersonaAsk from '@/components/PersonaAsk';
 import NotifyOptIn from '@/components/NotifyOptIn';
-import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
+import ExamPromoModal from '@/components/ExamPromoModal';
 import { logAnon } from '@/lib/anon-log';
 
 /**
@@ -80,7 +80,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
             // [2026-09-08] 한 번에 하나만 띄운다. 그전엔 프로모 모달과 알림 배너가 **동시에** 떴다
             //   (알림은 마케팅 미동의자용인데, 무료PDF 를 받는 사람 대부분이 미동의자다).
             //   순서: 프로모 → 역할 묻기 → 알림 옵트인.
-            const promo = !!sourceKey && !isExamPromoHidden();
+            const promo = !!sourceKey;   // [10/6] '오늘 하루 보지 않기' 무시 — 받을 때마다 띄운다
             if (promo) setShowPromo(true);
             // [persona] 회원 613명 중 301명(49%)이 역할 미응답이다. 온보딩 모달은 홈에서만 뜨는데
             // 유입은 네이버 검색으로 이 페이지에 곧장 떨어져 물어볼 기회가 없었다.
@@ -137,6 +137,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
                 <ExamPromoModal
                     src={sourceKey || undefined}
                     school={school}
+                    allowHideToday={false}
                     onClose={() => { setShowPromo(false); setAskPersona(true); }}
                 />
             )}

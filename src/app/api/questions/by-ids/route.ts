@@ -60,6 +60,45 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
+
+    // [2026-10-06] similar1 모드 — 무료PDF 팝업의 '유사문제 풀기' 버튼. 회차의 각 문항을 유사 1순위로 바꾼 시험지.
+    //   기준은 시험지출제 화면의 유사문항 버튼과 같다(미리계산 question_similar · 발문 기준 · 같은 단원 · sorted).
+    //   원본 회차 문항과 이미 고른 문항은 건너뛰고 다음 순위를 쓴다. 후보가 없으면 그 문항은 뺀다(missing 으로 알림).
+    if (src && body?.variant === 'similar1') {
+        const { data: base, error: baseErr } = await supabase.from('questions')
+            .select('id, unit').eq('source_db_id', src).eq('work_status', 'sorted')
+            .order('question_number', { ascending: true }).limit(MAX_IDS);
+        if (baseErr) return NextResponse.json({ success: false, error: baseErr.message }, { status: 500 });
+        const baseRows = base || [];
+        const { data: sims } = baseRows.length
+            ? await supabase.from('question_similar').select('question_id, neighbors')
+                .in('question_id', baseRows.map(r => r.id)).eq('basis', 'statement')
+            : { data: [] as any[] };
+        const TOP = 8;   // 원본별 상위 몇 개까지 후보로 볼지 — 중복·단원 불일치로 1순위를 못 쓸 때 대비
+        const nbrs = new Map<string, string[]>((sims || []).map((s: any) =>
+            [s.question_id, (Array.isArray(s.neighbors) ? s.neighbors : []).filter(([, sim]: [string, number]) => sim > 0.5).slice(0, TOP).map(([id]: [string, number]) => id)]));
+        const candIds = Array.from(new Set(Array.from(nbrs.values()).flat()));
+        const { data: cands } = candIds.length
+            ? await supabase.from('questions').select('id, unit').in('id', candIds).eq('work_status', 'sorted')
+            : { data: [] as any[] };
+        const unitOf = new Map((cands || []).map((c: any) => [c.id, c.unit]));
+        const used = new Set<string>(baseRows.map(r => r.id));
+        const picked: string[] = [];
+        for (const r of baseRows) {
+            const pick = (nbrs.get(r.id) || []).find(id => unitOf.has(id) && !used.has(id) && (!r.unit || unitOf.get(id) === r.unit));
+            if (pick) { used.add(pick); picked.push(pick); }
+        }
+        const [withSolutions, { data: rows, error }] = await Promise.all([
+            canSeeSolutions(),
+            picked.length ? supabase.from('questions').select(SELECT_COLS).in('id', picked) : Promise.resolve({ data: [] as any[], error: null }),
+        ]);
+        if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        const byId = new Map((rows || []).map((r: any) => [r.id, r]));
+        const data = picked.map(id => byId.get(id)).filter(Boolean)
+            .map((r: any) => ({ ...r, question_images: trimQuestionImages(r.question_images || [], withSolutions) }));
+        return NextResponse.json({ success: true, data, missing: baseRows.length - data.length });
+    }
+
     let q = supabase.from('questions').select(SELECT_COLS);
     q = src
         ? q.eq('source_db_id', src).eq('work_status', 'sorted').order('question_number', { ascending: true }).limit(MAX_IDS)

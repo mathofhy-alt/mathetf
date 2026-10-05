@@ -22,7 +22,7 @@ import { useCart } from '@/components/providers/CartProvider';
 import { CURRICULA } from '@/lib/curriculum';
 import { getStoredRole } from '@/components/RoleOnboardingModal';
 import TeacherExamCTA from '@/components/TeacherExamCTA';
-import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
+import ExamPromoModal from '@/components/ExamPromoModal';
 import { buildSourceDbId } from '@/lib/examKey';
 import dynamic from 'next/dynamic';
 
@@ -617,19 +617,16 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
             // 로그는 /api/free-pdf 가 발급 시점에 남긴다(상한 계산의 근거라 누락되면 안 됨).
             // [2026-09-09] 해설 프로모를 먼저 띄운다. 6주간 teacher_cta 는 7명만 눌렀고
             //   강사 전환율은 18% 에서 꿈쩍 안 했다 — 그 자리를 프로모로 대체한다.
-            //   세션당 1회(sessionStorage) + '오늘 그만보기'(localStorage) 둘 다 존중.
+            //   [10/6] 세션당 1회·'오늘 그만보기' 제한을 없앴다 — 무료PDF 를 받을 때마다 띄운다(사용자 지시).
             const src = buildSourceDbId({
                 school: file.school, exam_year: file.year, semester: file.semester,
                 exam_type: file.examType, subject: file.subject,
             });
             let shownPromo = false;
-            try {
-                if (src && !isExamPromoHidden() && !sessionStorage.getItem('mathetf_home_promo_shown')) {
-                    sessionStorage.setItem('mathetf_home_promo_shown', '1');
-                    setHomePromo({ src, school: file.school });
-                    shownPromo = true;
-                }
-            } catch { /* 시크릿 모드 등 — 프로모만 건너뛴다 */ }
+            if (src) {
+                setHomePromo({ src, school: file.school });
+                shownPromo = true;
+            }
             if (!shownPromo && !user?.user_metadata?.marketing_agreed && !localStorage.getItem('mathetf_notify_dismissed')) {
                 // 새 기출 알림 옵트인 배너 (미동의 + 미거절자에게만) — 프로모가 뜨면 겹치지 않게 뒤로 미룬다
                 setNotifySchool(file.school);
@@ -993,6 +990,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                 <ExamPromoModal
                     src={homePromo.src}
                     school={homePromo.school}
+                    allowHideToday={false}
                     onClose={() => {
                         setHomePromo(null);
                         // 프로모를 닫은 뒤에 알림 옵트인을 묻는다(동시 노출 금지)

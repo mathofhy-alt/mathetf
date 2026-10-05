@@ -114,13 +114,16 @@ export default function SignupPage() {
             const res = await fetch('/api/auth/verify-sms', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, code: otpCode }),
+                body: JSON.stringify({ phone, code: otpCode, purpose: 'signup' }),
             });
             const data = await res.json();
             if (data.success) {
                 alert('휴대폰 인증이 완료되었습니다.');
                 setIsPhoneVerified(true);
                 setOtpTimer(0);
+            } else if (data.code === 'phone_taken') {
+                setOtpTimer(0);
+                if (confirm(`${data.message}\n\n아이디 찾기로 이동할까요?`)) router.push('/find-id');
             } else {
                 alert(data.message || '인증 실패');
             }
