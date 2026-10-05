@@ -8,6 +8,66 @@ import { ChevronRight, PencilRuler } from 'lucide-react';
 import { examYearOf, examGroupKey } from '@/lib/exam-groups';
 import { proxiedOgImage } from '@/lib/og-image';
 import { NOT_A_SCHOOL } from '@/lib/stats';
+import SchoolNeisPage, { dbSubject, neisNarrative } from '@/components/SchoolNeisPage';
+import { neisSchoolPage, NEIS_ACADEMIC_YEAR, type NeisSchoolPage } from '@/lib/neis-school-pages';
+
+/** 기출 없는 학교(NEIS 시험 100곳) — 같은 구 기출 학교와 연습 시험지 링크를 채운다 */
+const QB_SUBJECTS = new Set(['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하']);
+async function renderNeisSchool(s: NeisSchoolPage) {
+    const { data } = await createAdminClient().from('exam_materials')
+        .select('school, title, exam_year, grade, semester, exam_type, subject')
+        .eq('region', s.region).eq('district', s.district).in('content_type', ['해설', '개인DB']);
+    const per: Record<string, Set<string>> = {};
+    for (const r of data || []) (per[r.school] ||= new Set()).add(examGroupKey(r as any));
+    const nearby = Object.entries(per).map(([school, k]) => ({ school, count: k.size }))
+        .filter(n => !NOT_A_SCHOOL.has(n.school)).sort((a, b) => b.count - a.count).slice(0, 8);
+    const seen = new Set<string>();
+    const wanted = Object.entries(s.math).flatMap(([grade, list]) => list.map(m => ({ grade, subject: dbSubject(m.subject) })))
+        .filter(t => QB_SUBJECTS.has(t.subject) && !seen.has(t.subject) && (seen.add(t.subject), true));
+    // [10/5] 과목마다 자료가 있는 범위로 넓힌다: 같은 구 → 같은 시·도 → 전국. 구 기준으로만 걸면
+    //   경성고(마포구) 미적분I 처럼 '조건에 맞는 문제 없음' 이 뜬다 (2022 과목은 아직 회차가 적다).
+    const { data: dbs } = wanted.length ? await createAdminClient().from('exam_materials')
+        .select('id, school, region, district, title, exam_year, grade, semester, exam_type, subject')
+        .eq('content_type', '개인DB').eq('file_type', 'DB').in('subject', wanted.map(t => t.subject)) : { data: [] as any[] };
+    const enc = encodeURIComponent;
+    // 이 학교의 다음 시험(학년별) — 그 시험과 같은 학기·같은 시험(중간/기말) 회차를 구성 기준으로 삼는다
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    // 학교마다 이름이 다르다: 중간고사 / 1차 정기시험 / 1회고사 / 2-1회고사 … — 못 읽으면 학기만 맞춘다
+    const kindOf = (name: string) => /중간|1차|1회/.test(name) ? '중간고사' : /기말|2차|2회/.test(name) ? '기말고사' : '';
+    const targetOf = (grade: string) => {
+        const e = s.exams.find(x => x.end >= today && !/졸업/.test(x.name) && (!x.grades.length || x.grades.includes(Number(grade))));
+        return e ? { semester: e.sem, examType: kindOf(e.name) } : null;
+    };
+    const toolLinks = wanted.flatMap(t => {
+        const all = (dbs || []).filter((r: any) => r.subject === t.subject);
+        const naesin = all.filter((r: any) => ['중간고사', '기말고사'].includes(r.exam_type) && !NOT_A_SCHOOL.has(r.school));
+        // 내신 기출이 아예 없는 과목(10/5 기준 확률과통계)은 모의고사 문항 목록으로만 연결 — 구성 맞추기는 하지 않는다
+        if (!naesin.length) return all.length ? [{ ...t, scope: '모의고사', count: new Set(all.map((r: any) => `${r.school}|${examGroupKey(r)}`)).size, blueprint: '',
+            href: `/question-bank?exam=${enc('모의고사')}&subject=${enc(t.subject)}&origin=school-neis` }] : [];   // 전체 DB(2,600여 개) 대신 모의고사(400여 개)만 — 같은 문항, 부하 1/6
+        const rows = naesin;
+        const scopes = [
+            { label: s.district, q: `region=${enc(s.region)}&district=${enc(s.district)}`, rows: rows.filter((r: any) => r.region === s.region && r.district === s.district) },
+            { label: s.region, q: `region=${enc(s.region)}`, rows: rows.filter((r: any) => r.region === s.region) },
+            { label: '전국', q: '', rows },
+        ];
+        // 1회차(20여 문항)뿐이면 연습이 안 된다 — 3회차 이상인 가장 가까운 범위, 전국은 있기만 하면
+        const n = (x: { rows: any[] }) => new Set(x.rows.map((r: any) => `${r.school}|${examGroupKey(r)}`)).size;
+        const hit = scopes.find((x, i) => n(x) >= (i < 2 ? 3 : 1));
+        if (!hit) return [];
+        const count = n(hit);
+        // 구성 기준 회차: 다음 시험과 같은 학기·시험 > 가까운 곳(같은 구 > 시·도 > 전국) > 최근 연도
+        const target = targetOf(t.grade);
+        const tier = (r: any) => r.region === s.region ? (r.district === s.district ? 0 : 1) : 2;
+        const bp = [...rows].sort((a: any, b: any) => {
+            const m = (r: any) => !target || Number(r.semester) !== target.semester ? 2 : r.exam_type === target.examType ? 0 : 1;   // 같은 시험 > 같은 학기
+            return m(a) - m(b) || tier(a) - tier(b) || examYearOf(b) - examYearOf(a);
+        })[0] as any;
+        const bpLabel = bp ? `${bp.school.replace(/고등학교$/, '고')} ${examYearOf(bp)} ${bp.semester}학기 ${bp.exam_type}` : '';
+        return [{ ...t, scope: hit.label, count, blueprint: bpLabel,
+            href: `/question-bank?${hit.q ? hit.q + '&' : ''}subject=${enc(t.subject)}${bp ? `&blueprint=${bp.id}` : ''}&origin=school-neis` }];
+    });
+    return <SchoolNeisPage s={s} nearby={nearby} toolLinks={toolLinks} />;
+}
 
 /**
  * [SEO] 학교 축약명. 사람들은 '창덕여자고등학교'가 아니라 '창덕여고'로 검색하는데
@@ -73,6 +133,13 @@ async function schoolOgImage(schoolName: string): Promise<string> {
     return '/og-image.png';
 }
 
+// 공개 카드로 나가는 회차(해설·개인DB)가 하나라도 있는지 — 없으면 NEIS 페이지로
+async function hasPublicExams(schoolName: string) {
+    const { count } = await createAdminClient().from('exam_materials').select('id', { count: 'exact', head: true })
+        .eq('school', schoolName).in('content_type', ['해설', '개인DB']);
+    return (count || 0) > 0;
+}
+
 // 동적 메타 태그 - 학교명 포함
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const schoolName = decodeURIComponent(params.schoolName);
@@ -136,6 +203,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 images: [ogImage],
             },
             alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
+        };
+    }
+
+    // 기출 없는 학교(NEIS 시험 페이지) — 있지도 않은 '기출문제'를 제목에 걸지 않는다
+    const neisPage = neisSchoolPage(schoolName);
+    if (neisPage && !(await hasPublicExams(schoolName))) {
+        const sn = shortSchoolName(schoolName);
+        const t = `${schoolName}${sn ? `(${sn})` : ''} 수학 내신 — ${NEIS_ACADEMIC_YEAR} 시험 일정·수학 과목 | 수학ETF`;
+        const d = neisNarrative(neisPage).join(' ').slice(0, 155);
+        return {
+            title: t, description: d,
+            openGraph: { title: t, description: d, url: `https://mathetf.com/school/${encodeURIComponent(schoolName)}`, images: ['/og-image.png'] },
+            alternates: { canonical: `/school/${encodeURIComponent(schoolName)}` },
+            ...(neisPage.unique ? {} : { robots: { index: false, follow: true } }),
         };
     }
 
@@ -223,7 +304,9 @@ export default async function SchoolPage({ params }: Props) {
         .neq('school', 'DELETED')
         .order('created_at', { ascending: false });
 
+    const neisPage = specialIntro ? null : neisSchoolPage(schoolName);
     if (!exams || exams.length === 0) {
+        if (neisPage) return renderNeisSchool(neisPage);
         notFound();
     }
 
@@ -258,6 +341,7 @@ export default async function SchoolPage({ params }: Props) {
     const examList = Object.values(groups)
         .filter((g: any) => g.files.some((f: any) => f.content_type === '해설' || f.content_type === '개인DB'))
         .sort((a: any, b: any) => b.year - a.year);
+    if (examList.length === 0 && neisPage) return renderNeisSchool(neisPage);   // 원본제보만 들어온 학교
 
     // 이 이름으로 실제 자료가 있는 지역들. 2곳 이상이면 목록을 지역별로 나눠 보여준다.
     const locations: { key: string; label: string; items: any[] }[] = [];

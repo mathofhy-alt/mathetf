@@ -32,5 +32,7 @@ Disallow: /question-bank?
 Sitemap: https://mathetf.com/sitemap.xml
 # [2026-09-03] 자료가 이미지(webp) 중심인데 이미지 사이트맵이 없어 이미지 검색 경로가 막혀 있었다.
 Sitemap: https://mathetf.com/image-sitemap.xml
+# [2026-10-05] 기출 없는 학교(NEIS 시험 100곳) — 색인 성과를 따로 보려고 나눴다.
+Sitemap: https://mathetf.com/sitemap-neis.xml
 
 #DaumWebMasterTool:4e290b2d559b2197ee12ffc2e977ac55d04cfb8444693cfc70109b9c109dd8b2:9QC48RIDoACLXH3FbFNbCg==

@@ -108,3 +108,6 @@ tests/output/
 
 # 유사문항 미리계산 임베딩 캐시 (scripts/precompute_similar.py)
 .cache/
+
+# 타이포 작업 폴더 (자료 원본 — 저장소에 올리지 않음)
+/타이포/

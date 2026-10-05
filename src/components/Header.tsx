@@ -5,10 +5,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, Camera } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// [2026-10-05] 회원 원본 시험지 제보 — 눌렀을 때만 불러온다
+const OriginalReportModal = dynamic(() => import('@/components/OriginalReportModal'), { ssr: false });
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
+import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
 
 function YoutubeIcon({ size }: { size: number }) {
     return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
@@ -82,6 +87,13 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
             setEarnedPoints(data.earned_points || 0);
         }
     };
+
+    // [2026-10-05] 원본 시험지 제보: 로그인 회원 누구나. 비로그인은 로그인 후 돌아오게.
+    //   다른 화면(학교 페이지 등)에서도 window.dispatchEvent(new Event('open-original-report')) 로 열 수 있다.
+    const [reportOpen, setReportOpen] = useState(false);
+    const [reportSchool, setReportSchool] = useState<string | undefined>(undefined);   // 학교 페이지에서 열면 그 학교 코드
+    const openReport = (code?: string) => { if (!user) { router.push(`/login?next=${authNext}`); return; } setReportSchool(code); setReportOpen(true); setMobileMenuOpen(false); };
+    useEffect(() => { const h = (e: Event) => openReport((e as CustomEvent).detail?.code); window.addEventListener('open-original-report', h); return () => window.removeEventListener('open-original-report', h); });
 
     const handleDefaultUploadClick = () => {
         if (onUploadClick) {
@@ -171,6 +183,13 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {user && isAdmin && !hideUploadButton && (
                             <button onClick={handleDefaultUploadClick} className="hidden lg:flex px-4 py-1.5 bg-brand-600 text-white rounded text-sm font-medium hover:bg-brand-700 items-center gap-2 whitespace-nowrap">
                                 <Upload size={14} /> 자료등록
+                            </button>
+                        )}
+
+                        {/* 원본 시험지 제보 (회원 누구나) — 운영자는 아래 자료등록을 쓴다 */}
+                        {!isAdmin && (
+                            <button type="button" onClick={() => openReport()} className="hidden lg:flex px-3 py-1.5 border border-brand-200 text-brand-700 bg-white rounded text-sm font-bold hover:bg-brand-50 items-center gap-1.5 whitespace-nowrap">
+                                <Camera size={14} /> 원본 제보
                             </button>
                         )}
 
@@ -276,6 +295,12 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 🎯 현황판
                             </Link>
                         )}
+                        {!isAdmin && (
+                            <button type="button" onClick={() => openReport()} className="w-full flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-brand-700 hover:bg-brand-50 transition-colors">
+                                <Camera size={20} /> 원본 시험지 제보
+                                <span className="text-[10px] text-slate-400 font-semibold ml-auto">채택 시 {REPORT_REWARD_LABEL}</span>
+                            </button>
+                        )}
 
                         {/* Divider */}
                         <div className="border-t border-slate-100 my-2" />
@@ -313,6 +338,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                     </div>
                 </div>
             </header>
+            {reportOpen && <OriginalReportModal open={reportOpen} initialCode={reportSchool} onClose={() => setReportOpen(false)} />}
         </>
     );
 }

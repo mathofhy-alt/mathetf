@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { FileDown, Calendar, School, User as UserIcon, Trash2, Link2, Coins, ChevronDown, ChevronUp, RefreshCw, AlertCircle } from 'lucide-react';
+import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
 
 export default function RawUploadsAdmin() {
     const supabase = createClient();
@@ -68,20 +69,36 @@ export default function RawUploadsAdmin() {
         init();
     }, [router, supabase]);
 
+    // [2026-10-05] 회원 제보는 사진 여러 장 = 행 1개. 나머지 경로는 description(JSON).files 에 있다.
+    const reportFiles = (row: any): string[] => { try { const d = JSON.parse(row.description || '{}'); if (Array.isArray(d.files) && d.files.length) return d.files; } catch { } return row.file_path ? [row.file_path] : []; };
+    const reportNote = (row: any): string => { try { return JSON.parse(row.description || '{}').note || ''; } catch { return ''; } };
+    const handleDownloadAll = async (row: any) => {
+        const paths = reportFiles(row);
+        for (let i = 0; i < paths.length; i++) {
+            await handleDownload(paths[i], `${row.title}_${String(i + 1).padStart(2, '0')}.${paths[i].split('.').pop()}`);
+            await new Promise(r => setTimeout(r, 400));   // 브라우저가 연속 다운로드를 막지 않게
+        }
+    };
+
     const handleDownload = async (filePath: string, originalTitle: string) => {
         try {
+            // [10/5] 파일을 먼저 받아(blob) 같은 출처 주소로 저장한다. 서명 주소를 바로 누르면 다른 도메인이라
+            //   a.download 가 무시돼 현재 탭에서 사진이 열리고(관리자 화면이 사라짐), 연달아 누르면 앞 다운로드가
+            //   취소돼 여러 장 제보의 일부만 받아졌다.
             const { data, error } = await supabase.storage
                 .from('exam-materials')
-                .createSignedUrl(filePath, 60);
+                .download(filePath);
 
             if (error) throw error;
-            if (data?.signedUrl) {
+            if (data) {
+                const url = URL.createObjectURL(data);
                 const a = document.createElement('a');
-                a.href = data.signedUrl;
-                a.download = originalTitle;
+                a.href = url;
+                a.download = originalTitle.replace(/[\\/:*?"<>|]/g, '_');
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 60_000);
             }
         } catch (err) {
             console.error('Download failed:', err);
@@ -93,7 +110,8 @@ export default function RawUploadsAdmin() {
         if (!confirm('이 파일을 스토리지와 DB에서 영구 삭제하시겠습니까? (삭제 후 복구 불가)')) return;
 
         try {
-            await supabase.storage.from('exam-materials').remove([filePath]);
+            const row = uploads.find(u => u.id === id);
+            await supabase.storage.from('exam-materials').remove(row ? reportFiles(row) : [filePath]);
             await supabase.from('exam_materials').delete().eq('id', id);
             setUploads(uploads.filter(u => u.id !== id));
             alert('성공적으로 삭제되었습니다.');
@@ -134,9 +152,9 @@ export default function RawUploadsAdmin() {
     const getLinkedDbs = (submissionId: string) =>
         dbItems.filter(d => d.source_submission_id === submissionId);
 
-    // 제보 채택 → 제보자에게 10,000P 지급 (서버에서 멱등 보장)
+    // 제보 채택 → 제보자에게 보상 지급 (서버에서 멱등 보장)
     const handleApprove = async (file: any) => {
-        if (!confirm(`이 제보를 채택하고 제보자(${file.submitter_name || file.uploader_name || '익명'})에게 10,000P를 지급하시겠습니까?`)) return;
+        if (!confirm(`이 제보를 채택하고 제보자(${file.submitter_name || file.uploader_name || '익명'})에게 ${REPORT_REWARD_LABEL}를 지급하시겠습니까?`)) return;
         setRewardingId(file.id);
         try {
             const res = await fetch('/api/admin/approve-submission', {
@@ -147,7 +165,7 @@ export default function RawUploadsAdmin() {
             const j = await res.json();
             if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
             setRewardedIds(prev => new Set(prev).add(file.id));
-            alert('✅ 채택 완료 — 10,000P 지급됐습니다.');
+            alert(`✅ 채택 완료 — ${REPORT_REWARD_LABEL} 지급됐습니다.`);
         } catch (err: any) {
             alert('지급 실패: ' + err.message);
         } finally {
@@ -167,7 +185,7 @@ export default function RawUploadsAdmin() {
                             📥 유저 제보 족보(원본) 확인
                         </h1>
                         <p className="text-sm text-slate-500 mt-1">
-                            사용자들이 '자료등록 - 원본 시험지 제보' 탭을 통해 업로드한 파일 목록입니다.
+                            회원이 헤더의 원본 제보 버튼으로 올린 시험지 목록입니다 (사진 여러 장 = 제보 1건).
                             <span className="ml-2 text-purple-600 font-bold">DB 자료의 원본 출처를 확인하고 연결합니다.</span>
                         </p>
                     </div>
@@ -214,7 +232,8 @@ export default function RawUploadsAdmin() {
                                                     <div className="text-xs text-slate-500 mt-0.5">
                                                         {file.exam_year}년도 {file.grade}학년 {file.semester === 1 ? '1학기' : '2학기'} {file.exam_type} ({file.subject})
                                                     </div>
-                                                    <div className="text-xs text-brand-600 mt-0.5 font-medium">{file.title}</div>
+                                                    <div className="text-xs text-brand-600 mt-0.5 font-medium">{file.title} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">{reportFiles(file).length}장</span></div>
+                                                    {reportNote(file) && <div className="text-xs text-slate-600 mt-1 bg-slate-50 rounded px-2 py-1">💬 {reportNote(file)}</div>}
                                                     <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
                                                         <UserIcon size={11} />
                                                         <span className="font-bold">{file.submitter_name || file.uploader_name || '익명'}</span>
@@ -226,21 +245,21 @@ export default function RawUploadsAdmin() {
                                                 <div className="flex items-center gap-2 shrink-0">
                                                     {rewardedIds.has(file.id) ? (
                                                         <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-amber-100 text-amber-700 border border-amber-200">
-                                                            <Coins size={13} /> 채택됨 · 10,000P
+                                                            <Coins size={13} /> 채택됨 · {REPORT_REWARD_LABEL}
                                                         </span>
                                                     ) : (
                                                         <button
                                                             onClick={() => handleApprove(file)}
                                                             disabled={rewardingId === file.id}
-                                                            title="채택하고 10,000P 지급"
+                                                            title={`채택하고 ${REPORT_REWARD_LABEL} 지급`}
                                                             className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-colors shadow-sm disabled:opacity-50"
                                                         >
-                                                            <Coins size={13} /> {rewardingId === file.id ? '지급 중…' : '채택 +10,000P'}
+                                                            <Coins size={13} /> {rewardingId === file.id ? '지급 중…' : `채택 +${REPORT_REWARD_LABEL}`}
                                                         </button>
                                                     )}
                                                     <button
-                                                        onClick={() => handleDownload(file.file_path, file.title)}
-                                                        title="다운로드"
+                                                        onClick={() => handleDownloadAll(file)}
+                                                        title={`다운로드 (${reportFiles(file).length}장)`}
                                                         className="inline-flex items-center justify-center p-2 bg-brand-50 text-brand-600 hover:bg-brand-600 hover:text-white rounded-lg transition-colors shadow-sm"
                                                     >
                                                         <FileDown size={16} />

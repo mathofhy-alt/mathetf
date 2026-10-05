@@ -6,6 +6,7 @@ import {resolveScope} from '@/lib/questions/scope';
 import {samePaper,entryFilters} from '@/lib/questions/entry';
 import demo from '@/lib/questions/demo-set.json';
 import {fetchMockExamBySlug} from '@/lib/mock-exams';
+import {buildBlueprintExam} from '@/lib/questions/blueprint';
 export const dynamic='force-dynamic';
 export async function GET(req:NextRequest){
  try{
@@ -37,6 +38,14 @@ export async function GET(req:NextRequest){
  if(p.get('exam'))selected=selected.filter(d=>d.exam_type===p.get('exam'));
  if(!p.get('material')&&!p.get('mock')&&!p.get('round')){const parts=[p.get('school')||p.get('region'),p.get('semester')?`${p.get('semester')}학기`:null,p.get('exam'),p.get('subject')].filter(Boolean);if(parts.length)label=parts.join(' ')+' 문항';}
  if(!selected.length)return NextResponse.json({error:'이 조건에서 출제 가능한 자료가 없습니다. 다른 회차를 선택해주세요.'},{status:404});
+ // [10/5] 기출 없는 학교 페이지: 실제 시험 한 회차와 같은 구성(문항 수·단원·난이도)으로 바로 담는다
+ if(p.get('blueprint')){
+  const r=await buildBlueprintExam(catalog,p.get('blueprint')!,selected.map(d=>d.id),p.get('subject')||undefined);
+  if(!r.questions.length)return NextResponse.json({error:'같은 구성으로 채울 문항이 부족합니다. 조건 검색으로 시작해주세요.'},{status:404});
+  const b=r.blueprint;const bpLabel=`${(b.school||'').replace(/고등학교$/,'고')} ${b.exam_year||''} ${b.grade}학년 ${b.semester}학기 ${b.exam_type||''}`.replace(/\s+/g,' ').trim();
+  return NextResponse.json({data:r.questions,total:r.questions.length,dbIds:selected.map(d=>d.id),filters:entryFilters(p.get('subject')),cart:true,
+   label:`${bpLabel} 구성 연습 시험지`,notice:`${bpLabel} ${r.baseCount}문항과 같은 단원·난이도로 ${r.questions.length}문항을 골랐어요${r.exactUnit<r.questions.length?` (단원이 다른 문항 ${r.questions.length-r.exactUnit}개)`:''}.`});
+ }
  let query=sb.rpc('question_bank_candidates',{p_scope:resolveScope(catalog,selected.map(d=>d.id),p.get('mock')),p_excluded:[]},{count:'exact'})
  .select('id,question_number,subject,grade,school,year,semester,difficulty,key_concepts,unit,work_status,source_db_id,question_type,is_off_curriculum')
  .eq('is_off_curriculum',false).order('question_number').order('id');

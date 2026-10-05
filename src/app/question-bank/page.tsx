@@ -1070,6 +1070,9 @@ export default function QuestionBankPage() {
        setSelectedDbIds(d.dbIds);setFilterState(d.filters);setFilterVersion(v=>v+1);setEntryLabel(d.label);
        if(d.demo){const detail=await fetch('/api/questions/by-ids',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:d.data.map((q:any)=>q.id)})}).then(r=>r.json());
         if(detail.data?.length!==5)throw Error('예시 문항을 불러오지 못했습니다.');setCart(d.data.map((q:any)=>detail.data.find((x:any)=>x.id===q.id)));setExamTitle('기출 5문항 체험');setViewMode('review');logQb('qb_demo');}
+       else if(d.cart){const detail=await fetch('/api/questions/by-ids',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:d.data.map((q:any)=>q.id)})}).then(r=>r.json());
+        const rows=d.data.map((q:any)=>detail.data?.find((x:any)=>x.id===q.id)).filter(Boolean);if(!rows.length)throw Error('문항을 불러오지 못했습니다.');
+        setCart(rows.slice(0,MAX_CART_SIZE));setExamTitle(String(d.label).slice(0,100));setViewMode('review');if(d.notice)showToast(d.notice,'info');logQb('qb_cart_add',`blueprint:${rows.length}`);}
        else{setQuestions(d.data.map((q:any)=>({...q,question_images:null})));loadImagesProgressively(d.data.map((q:any)=>q.id));lastSearchDbIds.current=d.dbIds;setHasSearched(true);setTotalQuestions(d.total??d.data.length);setCurrentPage(1);}
       }).catch(e=>{setEntryFailure(true);setSelectedDbIds([]);setQuestions([]);setTotalQuestions(0);setHasSearched(true);setEntryLabel((e as Error).message);showToast((e as Error).message,'error');});
     },[draftReady,isDbInitialized]);
