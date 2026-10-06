@@ -31,16 +31,16 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
         <div role="dialog" aria-modal="true" aria-label="문항 해설" className="product-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onWheel={(e) => e.stopPropagation()}>
             <div className="bg-white w-full max-w-md max-h-[90vh] rounded-2xl shadow-2xl flex flex-col">
                 {/* Header */}
-                <div className="p-4 border-b flex justify-between items-center bg-brand-50/50 flex-shrink-0">
+                <div className="p-4 border-b flex justify-between items-center bg-[#E8F6F5]/50 flex-shrink-0">
                     <div className="flex items-center gap-2">
-                        <span className="bg-brand-100 text-brand-700 p-2 rounded-lg">
+                        <span className="bg-[#D9F0EE] text-[#166B68] p-2 rounded-lg">
                             <BookOpen size={20} />
                         </span>
                         <div>
-                            <h2 className="font-bold text-lg text-brand-900">
+                            <h2 className="font-bold text-lg text-[#0B3F3D]">
                                 해설 보기
                             </h2>
-                            <p className="text-sm text-brand-700/70">
+                            <p className="text-sm text-[#166B68]/70">
                                 {question.school} {question.year||question.exam_year} #{question.question_number || '?'}
                             </p>
                         </div>

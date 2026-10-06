@@ -150,7 +150,7 @@ export default function AutoGenModal({
                     <div className="space-y-5 pt-2 pb-4">
                         <p className="text-sm text-slate-600">{sourceName?`‘${sourceName}’과 같은 자료 ${selectedDbs.length}개에서 이전 문항 ${excludedQuestionIds.length}개를 제외합니다. 취소하면 현재 시험지가 유지됩니다.`:`선택한 자료 ${selectedDbs.length}개 안에서 출제합니다. 이미 담은 문항은 제외합니다.`}</p>
                         {facetsLoading && <p role="status" className="text-sm text-slate-500">출제 가능한 단원을 확인하고 있습니다.</p>}{facetsError && <p role="alert" className="text-sm text-red-600">{facetsError}</p>}
-                        {message&&<p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm">{message}</p>}{authNeeded&&<div role="status" className="rounded-lg bg-brand-50 p-3 text-sm"><p>고른 조건은 보관했습니다. 로그인 후 이 화면에서 이어서 출제할 수 있습니다.</p><a className="mt-2 block font-bold underline" href={questionBankLoginUrl()}>로그인하고 계속하기</a></div>}
+                        {message&&<p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm">{message}</p>}{authNeeded&&<div role="status" className="rounded-lg bg-[#E8F6F5] p-3 text-sm"><p>고른 조건은 보관했습니다. 로그인 후 이 화면에서 이어서 출제할 수 있습니다.</p><a className="mt-2 block font-bold underline" href={questionBankLoginUrl()}>로그인하고 계속하기</a></div>}
                         {/* Subject Selection */}
                         <div>
                             <label className="block text-sm font-bold text-slate-700 mb-2">과목</label>
@@ -160,7 +160,7 @@ export default function AutoGenModal({
                                         key={sub}
                                         onClick={() => { setSubject(sub); setSelectedUnits([]); }}
                                         className={`p-2 text-sm rounded-lg border transition-all font-medium ${subject === sub
-                                            ? 'bg-brand-600 text-white border-brand-600 ring-2 ring-brand-200'
+                                            ? 'bg-[#1B7E7A] text-white border-[#1B7E7A] ring-2 ring-[#BFE5E2]'
                                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                             }`}
                                     >
@@ -175,7 +175,7 @@ export default function AutoGenModal({
                             <div className="animate-in slide-in-from-top-2 duration-200">
                                 <label className="block text-sm font-bold text-slate-700 mb-2 flex justify-between items-center">
                                     <span>단원 (중복 선택 가능)</span>
-                                    <span className="text-xs font-normal text-brand-600">
+                                    <span className="text-xs font-normal text-[#1B7E7A]">
                                         {selectedUnits.length > 0 ? `${selectedUnits.length}개 선택됨` : '전체'}
                                     </span>
                                 </label>
@@ -188,8 +188,8 @@ export default function AutoGenModal({
                                                 key={u}
                                                 onClick={() => toggleUnit(u)}
                                                 className={`px-3 py-1.5 text-xs rounded-full border transition-all font-bold ${isSelected
-                                                    ? 'bg-brand-100 text-brand-700 border-brand-300'
-                                                    : 'bg-white text-slate-500 border-slate-200 hover:border-brand-200 hover:text-brand-600'
+                                                    ? 'bg-[#D9F0EE] text-[#166B68] border-[#9ED8D4]'
+                                                    : 'bg-white text-slate-500 border-slate-200 hover:border-[#BFE5E2] hover:text-[#1B7E7A]'
                                                     }`}
                                             >
                                                 {u}
@@ -203,7 +203,7 @@ export default function AutoGenModal({
                         {/* Difficulty Range (1-10) */}
                         <div>
                             <label className="block text-sm font-bold text-slate-700 mb-2">
-                                난이도 범위 <span className="text-brand-600 font-normal ml-1">({minDiff} ~ {maxDiff})</span>
+                                난이도 범위 <span className="text-[#1B7E7A] font-normal ml-1">({minDiff} ~ {maxDiff})</span>
                             </label>
                             <div className="flex items-center gap-3">
                                 <div className="flex-1">
@@ -215,7 +215,7 @@ export default function AutoGenModal({
                                             setMinDiff(val);
                                             if (val > maxDiff) setMaxDiff(val);
                                         }}
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-center font-bold focus:ring-2 focus:ring-brand-500 outline-none"
+                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-center font-bold focus:ring-2 focus:ring-[#3AADA9] outline-none"
                                     >
                                         {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
                                             <option key={n} value={n}>{n}</option>
@@ -232,7 +232,7 @@ export default function AutoGenModal({
                                             setMaxDiff(val);
                                             if (val < minDiff) setMinDiff(val);
                                         }}
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-center font-bold focus:ring-2 focus:ring-brand-500 outline-none"
+                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-center font-bold focus:ring-2 focus:ring-[#3AADA9] outline-none"
                                     >
                                         {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
                                             <option key={n} value={n}>{n}</option>
@@ -251,7 +251,7 @@ export default function AutoGenModal({
                                 aria-label="출제 문항 수" type="number"
                                 min="1"
                                 max={maxCount}
-                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-brand-500 outline-none"
+                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-[#3AADA9] outline-none"
                                 value={count}
                                 onChange={e => {
                                     const val = Number(e.target.value);
@@ -275,7 +275,7 @@ export default function AutoGenModal({
                     <button
                         onClick={handleSubmit}
                         disabled={facetsLoading || !!facetsError || generating || count < 1 || count > maxCount || !Number.isInteger(count) || selectedDbs.length === 0}
-                        className="flex-1 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-3 bg-[#1B7E7A] text-white font-bold rounded-xl hover:bg-[#166B68] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all flex items-center justify-center gap-2"
                     >
                         {generating && <Loader2 size={16} className="animate-spin" />}
                         {generating ? '생성 중...' : '생성하기'}

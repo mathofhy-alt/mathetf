@@ -27,7 +27,7 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating, initialT
             <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-4 border-b flex justify-between items-center bg-slate-50">
                     <h3 className="font-bold text-lg flex items-center gap-2 text-slate-800">
-                        <FileText className="text-brand-600" size={20} />
+                        <FileText className="text-[#1B7E7A]" size={20} />
                         시험지 설정
                     </h3>
                     <button
@@ -50,7 +50,7 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating, initialT
                             value={title}
                             onChange={(e) => {setTitle(e.target.value);onDraftChange?.(e.target.value,questionsPerColumn);}}
                             placeholder="예: 공통수학2 기말고사 대비"
-                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-slate-800 font-medium"
+                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#3AADA9] outline-none text-slate-800 font-medium"
                             autoFocus
                         />
                         <p className="text-xs text-slate-500 mt-2">
@@ -60,7 +60,7 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating, initialT
 
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                            <LayoutGrid size={16} className="text-brand-500" />
+                            <LayoutGrid size={16} className="text-[#3AADA9]" />
                             열당 문제 수
                         </label>
                         <div className="flex gap-2">
@@ -71,7 +71,7 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating, initialT
                                     onClick={() => {setQuestionsPerColumn(n);onDraftChange?.(title,n);}}
                                     className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ${
                                         questionsPerColumn === n
-                                            ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-sm'
+                                            ? 'border-[#3AADA9] bg-[#E8F6F5] text-[#166B68] shadow-sm'
                                             : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
                                     }`}
                                 >
@@ -96,7 +96,7 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating, initialT
                         <button
                             type="submit"
                             disabled={!title.trim() || isGenerating}
-                            className="flex-1 py-3 px-4 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-[0.98]"
+                            className="flex-1 py-3 px-4 bg-[#1B7E7A] text-white rounded-xl font-bold hover:bg-[#166B68] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-[0.98]"
                         >
                             {isGenerating ? '생성 중...' : '시험지 생성하기'}
                         </button>

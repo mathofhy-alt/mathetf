@@ -292,7 +292,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                 }
                             }}
                             placeholder="예: 삼각함수 (Enter)"
-                            className="w-full text-base md:text-sm p-2.5 md:p-2 border border-slate-200 rounded focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                            className="w-full text-base md:text-sm p-2.5 md:p-2 border border-slate-200 rounded focus:ring-2 focus:ring-[#3AADA9] focus:border-[#3AADA9] outline-none"
                         />
 
                         {activeKeywords.length > 0 && (
@@ -301,7 +301,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                     <span
                                         key={keyword}
                                         onClick={() => setActiveKeywords(activeKeywords.filter(k => k !== keyword))}
-                                        className="bg-brand-50 text-brand-700 text-xs px-2 py-1 rounded border border-brand-100 cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center gap-1"
+                                        className="bg-[#E8F6F5] text-[#166B68] text-xs px-2 py-1 rounded border border-[#D9F0EE] cursor-pointer hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center gap-1"
                                     >
                                         #{keyword}
                                         <Check size={10} className="opacity-50" />
@@ -325,7 +325,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             <button
                                 key={c.id}
                                 aria-pressed={curriculum===c.id} onClick={() => {setCurriculum(c.id);setSelectedSubjects([]);setSelectedUnits([]);setSelectedConcepts([]);}}
-                                className={`flex-1 text-[12px] md:text-[11px] font-bold py-1.5 rounded-md transition-colors ${curriculum === c.id ? 'bg-white text-[#285CE6] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                className={`flex-1 text-[12px] md:text-[11px] font-bold py-1.5 rounded-md transition-colors ${curriculum === c.id ? 'bg-white text-[#1B7E7A] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 {c.label.replace(' 교육과정', '')}
                             </button>
@@ -373,19 +373,19 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                         setSelectedUnits(Array.from(newUnits));
                                                     }
                                                 }}
-                                                className={`w-6 h-6 md:w-4 md:h-4 border rounded flex items-center justify-center transition-colors ${allUnitsSelected ? 'bg-brand-600 border-brand-600' :
-                                                    someUnitsSelected ? 'bg-brand-50 border-brand-400' : 'border-slate-300'
+                                                className={`w-6 h-6 md:w-4 md:h-4 border rounded flex items-center justify-center transition-colors ${allUnitsSelected ? 'bg-[#1B7E7A] border-[#1B7E7A]' :
+                                                    someUnitsSelected ? 'bg-[#E8F6F5] border-[#6CC3BF]' : 'border-slate-300'
                                                     }`}
                                             >
                                                 {allUnitsSelected && <Check size={12} className="text-white" />}
-                                                {!allUnitsSelected && someUnitsSelected && <div className="w-2 h-2 bg-brand-500 rounded-sm" />}
+                                                {!allUnitsSelected && someUnitsSelected && <div className="w-2 h-2 bg-[#3AADA9] rounded-sm" />}
                                             </button>
 
                                             <button
                                                 onClick={() => {
                                                     setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
                                                 }}
-                                                className="text-base md:text-sm font-bold text-slate-800 hover:text-brand-600 transition-colors"
+                                                className="text-base md:text-sm font-bold text-slate-800 hover:text-[#1B7E7A] transition-colors"
                                             >
                                                 {node.subject}
                                             </button>
@@ -395,7 +395,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                             onClick={() => {
                                                 setTreeData(prev => prev.map(n => n.subject === node.subject ? { ...n, isExpanded: !n.isExpanded } : n));
                                             }}
-                                            className="text-slate-400 hover:text-brand-500 p-2 -m-2 md:p-0 md:m-0"
+                                            className="text-slate-400 hover:text-[#3AADA9] p-2 -m-2 md:p-0 md:m-0"
                                         >
                                             {node.isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                         </button>
@@ -417,7 +417,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                     onClick={() => {
                                                                         toggleSelection(selectedUnits, uNode.name, setSelectedUnits);
                                                                     }}
-                                                                    className={`w-5 h-5 md:w-3.5 md:h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-brand-500 border-brand-500' : 'border-slate-300'}`}
+                                                                    className={`w-5 h-5 md:w-3.5 md:h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-[#3AADA9] border-[#3AADA9]' : 'border-slate-300'}`}
                                                                 >
                                                                     {isUnitSelected && <Check size={10} className="text-white" />}
                                                                 </button>
@@ -428,7 +428,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             unitNodes: n.unitNodes.map(un => un.name === uNode.name ? { ...un, isExpanded: !un.isExpanded } : un)
                                                                         } : n));
                                                                     }}
-                                                                    className={`text-sm md:text-xs flex-1 text-left ${isUnitSelected ? 'text-brand-700 font-bold' : 'text-slate-600'} hover:text-brand-500 transition-colors`}
+                                                                    className={`text-sm md:text-xs flex-1 text-left ${isUnitSelected ? 'text-[#166B68] font-bold' : 'text-slate-600'} hover:text-[#3AADA9] transition-colors`}
                                                                 >
                                                                     {uNode.name}
                                                                     {uNode.offCurriculum && (
@@ -446,7 +446,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             unitNodes: n.unitNodes.map(un => un.name === uNode.name ? { ...un, isExpanded: !un.isExpanded } : un)
                                                                         } : n));
                                                                     }}
-                                                                    className="text-slate-300 hover:text-brand-400"
+                                                                    className="text-slate-300 hover:text-[#6CC3BF]"
                                                                 >
                                                                     {uNode.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                                                 </button>
@@ -458,7 +458,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                             <div className="pl-5 space-y-1 border-l border-slate-50 ml-1.5 mb-2">
                                                                 {uNode.concepts.map(concept => (
                                                                     <label key={concept} className="flex items-center gap-2 cursor-pointer group py-0.5">
-                                                                        <div className={`w-3 h-3 border rounded flex items-center justify-center transition-colors ${selectedConcepts.includes(concept) ? 'bg-brand-500 border-brand-500' : 'border-slate-200 group-hover:border-brand-400'}`}>
+                                                                        <div className={`w-3 h-3 border rounded flex items-center justify-center transition-colors ${selectedConcepts.includes(concept) ? 'bg-[#3AADA9] border-[#3AADA9]' : 'border-slate-200 group-hover:border-[#6CC3BF]'}`}>
                                                                             {selectedConcepts.includes(concept) && <Check size={8} className="text-white" />}
                                                                         </div>
                                                                         <input
@@ -467,7 +467,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                                             checked={selectedConcepts.includes(concept)}
                                                                             onChange={() => toggleSelection(selectedConcepts, concept, setSelectedConcepts)}
                                                                         />
-                                                                        <span className={`text-[12px] md:text-[11px] ${selectedConcepts.includes(concept) ? 'text-brand-600 font-medium' : 'text-slate-500'}`}>
+                                                                        <span className={`text-[12px] md:text-[11px] ${selectedConcepts.includes(concept) ? 'text-[#1B7E7A] font-medium' : 'text-slate-500'}`}>
                                                                             #{concept}
                                                                         </span>
                                                                     </label>
@@ -489,7 +489,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase mb-4 flex justify-between">
                         <span>난이도</span>
-                        <span className="text-brand-600 font-normal">
+                        <span className="text-[#1B7E7A] font-normal">
                             {selectedDifficulty.length > 0 ? (
                                 selectedDifficulty.length === 10 ? '전체' :
                                     `${Math.min(...selectedDifficulty.map(Number))} ~ ${Math.max(...selectedDifficulty.map(Number))}`
@@ -505,8 +505,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                     key={num}
                                     onClick={() => toggleSelection(selectedDifficulty, strNum, setSelectedDifficulty)}
                                     className={`h-8 text-xs rounded border transition-all font-bold ${isSelected
-                                        ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300'
+                                        ? 'bg-[#1B7E7A] text-white border-[#1B7E7A] shadow-sm'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:border-[#9ED8D4]'
                                         }`}
                                 >
                                     {num}
