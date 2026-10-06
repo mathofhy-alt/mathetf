@@ -4,6 +4,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import { buildRegionTree, findDistrict } from '@/lib/region-hub';
+import { ChevronRight } from 'lucide-react';
 
 export const revalidate = 3600;
 
@@ -47,65 +48,47 @@ export default async function DistrictPage({ params }: Props) {
         ],
     };
 
+    const maxSubj = Math.max(1, ...node.subjects.map(s => s.count));
     return (
-        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="library-page max-w-4xl mx-auto px-4 py-8">
-                <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
-                    <span className="mx-1.5">/</span>
-                    <Link href="/지역" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">지역별 기출</Link>
-                    <span className="mx-1.5">/</span>
-                    <Link href={`/지역/${sido}`} className="hover:text-[#426D36]">{sido}</Link>
-                    <span className="mx-1.5">/</span>
-                    <span className="text-slate-500 font-semibold">{gu}</span>
-                </nav>
+            <div>
+                <section className="rd-wrap rd-x-top">
+                    <nav className="rd-mk-crumb" aria-label="위치"><Link href="/">홈</Link><ChevronRight size={14} aria-hidden="true" /><Link href="/지역">지역별 기출</Link><ChevronRight size={14} aria-hidden="true" /><Link href={`/지역/${sido}`}>{sido}</Link><ChevronRight size={14} aria-hidden="true" /><span>{gu}</span></nav>
+                    <h1 className="rd-x-h1 rd-s-h1">{gu} 고등학교<br />수학 기출</h1>
+                    <p className="rd-lead">{sido} {gu}의 <b>{node.schools.length}개 고등학교</b>, 수학 내신 기출 <b>{node.examCount}회차</b>가 등록되어 있습니다.
+                        {node.subjects.length > 0 && <> 과목별로는 {node.subjects.slice(0, 3).map((s) => `${s.subject} ${s.count}회차`).join(', ')} 순으로 많고,</>}
+                        {' '}학교를 고르면 회차별 문제·해설과 단원 분포를 볼 수 있어요.</p>
+                    <div className="rd-s-actions"><Link href={questionBankHref({ region: sido, district: gu, origin: 'region' })} className="rd-btn rd-btn-primary">{gu} 기출로 시험지 만들기</Link></div>
+                </section>
 
-                <h1 className="text-2xl sm:text-3xl font-black break-keep">{gu} 고등학교 수학 기출</h1>
-                <p className="text-slate-500 mt-2 break-keep">
-                    {sido} {gu}의 <strong className="text-[#294437]">{node.schools.length}개 고등학교</strong>, 수학 내신 기출{' '}
-                    <strong className="text-[#294437]">{node.examCount}회차</strong>가 등록되어 있습니다.
-                    {node.subjects.length > 0 && (
-                        <> 과목별로는 {node.subjects.slice(0, 3).map((s) => `${s.subject} ${s.count}회차`).join(', ')} 순으로 많고,</>
-                    )}
-                    {' '}학교를 고르면 회차별 문제·해설과 단원 분포를 볼 수 있어요.
-                </p>
+                <section className="rd-wrap rd-s-list" aria-labelledby="gu-schools">
+                    <h2 id="gu-schools" className="rd-x-h2">학교별 기출</h2>
+                    <div className="rd-x-rows rd-sd-rows">
+                        {node.schools.map((sc) => <Link key={sc.name} href={`/school/${encodeURIComponent(sc.name)}`} className="rd-x-row">
+                            <span><b>{sc.name}</b><small>기출 {sc.count}회차</small></span>
+                            <ChevronRight size={22} aria-hidden="true" />
+                        </Link>)}
+                    </div>
+                </section>
 
-                {node.subjects.length > 0 && (
-                    <div className="mt-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                        <h2 className="text-sm font-extrabold text-slate-700 mb-3">{gu} 기출 과목 분포</h2>
-                        <div className="flex flex-wrap gap-2">
-                            {node.subjects.map((s) => (
-                                <span key={s.subject} className="text-xs font-bold text-[#2F5A92] bg-[#EAF1E1] border border-[#C5D8B5]/60 px-3 py-1.5 rounded-full">
-                                    {s.subject} <span className="font-normal tabular-nums">{s.count}회차</span>
-                                </span>
-                            ))}
+                {node.subjects.length > 0 && <section className="rd-s-zone" aria-labelledby="gu-subjects">
+                    <div className="rd-wrap">
+                        <h2 id="gu-subjects" className="rd-x-h2">{gu} 기출 과목 분포</h2>
+                        <div className="rd-s-unitcard rd-rg-subj">
+                            <div className="rd-x-bars is-tight">{node.subjects.map(s => <div key={s.subject} className="rd-x-bar is-small">
+                                <span title={s.subject}>{s.subject}</span><div className="rd-x-track"><span style={{ width: `${Math.round(s.count / maxSubj * 100)}%` }} /></div><span>{s.count}</span>
+                            </div>)}</div>
                         </div>
                     </div>
-                )}
+                </section>}
 
-                <h2 className="mt-8 mb-3 text-lg font-extrabold">학교별 기출</h2>
-                <div className="grid gap-3 sm:grid-cols-2">
-                    {node.schools.map((sc) => (
-                        <Link
-                            key={sc.name}
-                            href={`/school/${encodeURIComponent(sc.name)}`}
-                            className="flex items-center justify-between gap-3 bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3.5 hover:border-[#426D36] transition-colors"
-                        >
-                            <span className="font-bold text-[#294437] truncate">{sc.name}</span>
-                            <span className="text-xs font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
-                                {sc.count}회차
-                            </span>
-                        </Link>
-                    ))}
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-2">
-                    <Link href={`/지역/${sido}`} className="text-sm font-bold text-[#426D36] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#426D36] transition-colors">← {sido} 전체</Link>
-                    <Link href={questionBankHref({region:sido,district:gu,origin:'region'})} className="text-sm font-bold text-white bg-[#426D36] px-4 py-2 rounded-xl hover:bg-[#31572E] transition-colors">기출로 시험지 만들기 →</Link>
-                </div>
-            </main>
+                <div className="rd-x-more rd-s-more"><div className="rd-wrap rd-x-links">
+                    <Link href={`/지역/${sido}`} className="rd-link">{sido} 전체</Link>
+                    <Link href="/지역" className="rd-link">다른 지역</Link>
+                </div></div>
+            </div>
         </div>
     );
 }
