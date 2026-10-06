@@ -62,13 +62,13 @@ export function RdHomeFeatures() {
     return (
         <>
             <section className="rd-feature rd-zone">
-                <div className="rd-wrap rd-split">
+                <div className="rd-wrap rd-stack">
                     <div className="rd-txt">
                         <p className="rd-kicker">시험지 만들기</p>
-                        <h2 className="rd-h2">카드를 누르면<br />문항이 담깁니다</h2>
+                        <h2 className="rd-h2">카드를 누르면 문항이 담깁니다</h2>
                         <p className="rd-lead">학교와 회차를 고르고, 필요한 문항 카드만 누르세요. 단원과 난이도로 좁혀 볼 수도 있어요.</p>
                     </div>
-                    <div className="rd-pic"><Image src="/home/cards.webp" alt="문항 카드에 단원과 난이도가 표시된 시험지 만들기 화면" width={1800} height={343} sizes="(max-width: 900px) 100vw, 620px" /></div>
+                    <div className="rd-pic"><Image src="/home/cards.webp" alt="문항 카드에 단원과 난이도가 표시된 시험지 만들기 화면" width={1800} height={343} sizes="(max-width: 1160px) 100vw, 1112px" /></div>
                 </div>
             </section>
             <section className="rd-feature">

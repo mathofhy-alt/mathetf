@@ -806,12 +806,18 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                                         {group.files.db && <button type="button" disabled={!!unavailableDbs[group.files.db.id]} onClick={()=>router.push(`/question-bank?material=${group.files.db!.id}&origin=home`)} className="rd-chip">{unavailableDbs[group.files.db.id] ? '문항 연결 준비 중' : '문항 골라 출제'}</button>}
                                     </div>
                                     {(group.files.pdfSol || group.files.hwpSol || group.files.db || (user?.email === 'mathofhy@naver.com' && group.files.raw)) && <div className="rd-exam-more">
-                                        {group.files.pdfSol && <button data-tour={idx === 0 ? 'pdf-download' : undefined} onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)} className="rd-text-btn">
-                                            {dlState[group.files.pdfSol.id] === 'loading' ? '받는 중' : checkAccess(group.files.pdfSol.id) && dlState[group.files.pdfSol.id] === 'done' ? '받았어요' : checkAccess(group.files.pdfSol.id) ? '해설 PDF 받기' : cartItemIds.has(group.files.pdfSol.id) ? '해설 PDF 장바구니에 담김' : `해설 PDF ${group.files.pdfSol.price.toLocaleString()}원`}
+                                        {(group.files.pdfSol || group.files.hwpSol) && <span className="rd-paid-row">
+                                        {group.files.pdfSol && <button data-tour={idx === 0 ? 'pdf-download' : undefined} onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)} className={`rd-paid ${cartItemIds.has(group.files.pdfSol.id) ? 'is-in-cart' : ''}`}>
+                                            {dlState[group.files.pdfSol.id] === 'loading' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <PdfFileIcon size={20} purchased={checkAccess(group.files.pdfSol.id)} />}
+                                            <span className="rd-paid-label">{checkAccess(group.files.pdfSol.id) ? (dlState[group.files.pdfSol.id] === 'done' ? '받았어요' : '문제+해설 PDF 받기') : cartItemIds.has(group.files.pdfSol.id) ? '장바구니에 담김' : '문제+해설 PDF'}</span>
+                                            {!checkAccess(group.files.pdfSol.id) && !cartItemIds.has(group.files.pdfSol.id) && <b className="rd-paid-price">{group.files.pdfSol.price.toLocaleString()}원</b>}
                                         </button>}
-                                        {group.files.hwpSol && <button onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)} className="rd-text-btn">
-                                            {dlState[group.files.hwpSol.id] === 'loading' ? '받는 중' : dlState[group.files.hwpSol.id] === 'done' ? '받았어요' : checkAccess(group.files.hwpSol.id) ? '해설 한글 파일 받기' : cartItemIds.has(group.files.hwpSol.id) ? '한글 파일 장바구니에 담김' : `해설 한글 파일 ${group.files.hwpSol.price.toLocaleString()}원`}
+                                        {group.files.hwpSol && <button onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)} className={`rd-paid ${cartItemIds.has(group.files.hwpSol.id) ? 'is-in-cart' : ''}`}>
+                                            {dlState[group.files.hwpSol.id] === 'loading' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <HwpFileIcon size={20} purchased={checkAccess(group.files.hwpSol.id)} />}
+                                            <span className="rd-paid-label">{checkAccess(group.files.hwpSol.id) ? (dlState[group.files.hwpSol.id] === 'done' ? '받았어요' : '문제+해설 한글 받기') : cartItemIds.has(group.files.hwpSol.id) ? '장바구니에 담김' : '문제+해설 한글 파일'}</span>
+                                            {!checkAccess(group.files.hwpSol.id) && !cartItemIds.has(group.files.hwpSol.id) && <b className="rd-paid-price">{group.files.hwpSol.price.toLocaleString()}원</b>}
                                         </button>}
+                                        </span>}
                                         {group.files.db && <button type="button" onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }} className="rd-text-btn">문항 구성 보기</button>}
                                         {user?.email === 'mathofhy@naver.com' && group.files.raw && <button onClick={() => handleDownload(group.files.raw!)} className="rd-text-btn">원본</button>}
                                     </div>}

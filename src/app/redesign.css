@@ -192,3 +192,20 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
   .rd .rd-start.lg\:hidden, .rd .rd-icon-btn.lg\:hidden { display: none; }
 }
 .rd .rd-nav-link[aria-current="page"] { background: var(--rd-tint); }
+
+/* 10/7 사용자 요청 — 원본 제보·개인DB 요청 강조 */
+.rd .rd-feature-btn { align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--rd-tint); font: inherit; font-size: 15px; font-weight: 700; color: var(--rd-ink); cursor: pointer; white-space: nowrap; }
+.rd .rd-feature-btn:hover { background: #d9f0ee; }
+/* 10/7 — 문항 카드 사진은 위아래 배치로 전체 폭 */
+.rd .rd-stack { display: flex; flex-direction: column; gap: 48px; }
+.rd .rd-stack .rd-txt { max-width: 720px; }
+.rd .rd-stack .rd-pic img { display: block; width: 100%; height: auto; border-radius: 24px; box-shadow: var(--rd-shot); }
+/* 10/7 — 유료 문제+해설 버튼(수익 버튼): 테두리·파일 아이콘·굵은 가격으로 버튼임을 분명히 */
+.rd .rd-exam-more { flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 12px; }
+.rd .rd-paid-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.rd .rd-paid { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 12px; border: 0; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1.5px #17202C; font: inherit; font-size: 15px; font-weight: 700; color: var(--rd-text); cursor: pointer; }
+.rd .rd-paid:hover { background: var(--rd-text); color: #fff; }
+.rd .rd-paid:hover .rd-paid-price { color: #fff; }
+.rd .rd-paid-price { font-size: 16px; font-weight: 800; color: var(--rd-text); padding-left: 8px; box-shadow: inset 1px 0 0 #D5DAE0; }
+.rd .rd-paid.is-in-cart { box-shadow: inset 0 0 0 1.5px var(--rd-ink); color: var(--rd-ink); background: var(--rd-tint); }
+@media (max-width: 560px) { .rd .rd-paid-row { width: 100%; } .rd .rd-paid { flex: 1 1 100%; justify-content: center; } }
