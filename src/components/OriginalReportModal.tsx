@@ -24,8 +24,8 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
     const thisYear = new Date().getFullYear();
     type School = { name: string; region: string; district: string; code: string };
     const [school, setSchool] = useState<School | null>(null);
-    const [query, setQuery] = useState('');
-    const [listOpen, setListOpen] = useState(false);
+    const [region, setRegion] = useState('');
+    const [district, setDistrict] = useState('');
     const [year, setYear] = useState(thisYear);
     const [grade, setGrade] = useState(1);
     const [semester, setSemester] = useState(new Date().getMonth() >= 7 ? 2 : 1);
@@ -39,6 +39,11 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
     const [busy, setBusy] = useState<string>('');
     const [error, setError] = useState('');
     const [done, setDone] = useState(false);
+    const schoolKey = (sc: School) => `${sc.region}|${sc.district}|${sc.name}`;
+    const REGION_ORDER = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+    const regions = useMemo(() => Array.from(new Set(schools.map(x => x.region))).sort((a, b) => (REGION_ORDER.indexOf(a) + 1 || 99) - (REGION_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b, 'ko')), [schools]);
+    const districts = useMemo(() => Array.from(new Set(schools.filter(x => x.region === region).map(x => x.district))).sort((a, b) => a.localeCompare(b, 'ko')), [schools, region]);
+    const districtSchools = useMemo(() => schools.filter(x => x.region === region && x.district === district).sort((a, b) => a.name.localeCompare(b.name, 'ko')), [schools, region, district]);
     const cameraRef = useRef<HTMLInputElement>(null);
     const pickRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +53,7 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
     }, [open, schools.length]);
     useEffect(() => () => files.forEach(f => f.url && URL.revokeObjectURL(f.url)), [files]);
     // 학교 페이지의 '이 학교 시험지 제보' 로 열리면 그 학교를 미리 고른다
-    useEffect(() => { if (initialCode && !school && schools.length) { const hit = schools.find(x => x.code === initialCode); if (hit) setSchool(hit); } // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { if (initialCode && !school && schools.length) { const hit = schools.find(x => x.code === initialCode); if (hit) { setRegion(hit.region); setDistrict(hit.district); setSchool(hit); } } // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialCode, schools]);
     useEffect(() => {
         setTaken(null); if (!school) return;
@@ -86,7 +91,7 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault(); setError('');
-        if (!school) return setError('학교를 목록에서 골라주세요.');
+        if (!school) return setError('시도, 구·군, 학교를 차례로 골라주세요.');
         if (!subject) return setError('과목을 골라주세요.');
         if (!files.length) return setError('시험지 사진이나 PDF를 올려주세요.');
         try {
@@ -110,7 +115,7 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
         } finally { setBusy(''); }
     };
 
-    const close = () => { if (!busy) { onClose(); if (done) { setDone(false); setFiles([]); setSchool(null); setQuery(''); setNote(''); } } };
+    const close = () => { if (!busy) { onClose(); if (done) { setDone(false); setFiles([]); setSchool(null); setRegion(''); setDistrict(''); setNote(''); } } };
     const field = 'w-full rounded-[14px] border-0 bg-[#F2F4F6] px-[14px] py-[13px] text-[16px] text-[#17202C] outline-none focus:ring-2 focus:ring-[#1B7E7A]/30';
     const h3 = 'm-0 text-[15px] font-bold text-[#17202C]';
 
@@ -146,32 +151,21 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
 
                             <section className="space-y-3">
                                 <h3 className={h3}>1. 어느 학교 시험인가요?</h3>
-                                {school ? (
-                                    <div className="flex items-center justify-between gap-2 rounded-[14px] bg-[#E8F6F5] pl-[14px] pr-1 py-0.5">
-                                        <span className="text-[15px] py-3"><b className="text-[#17202C]">{school.name}</b><span className="ml-2 text-[#5F6B78]">{school.region} {school.district}</span></span>
-                                        <button type="button" onClick={() => { setSchool(null); setQuery(''); setListOpen(true); }} className="min-h-[44px] px-3 text-[14px] font-bold text-[#1B7E7A] hover:underline">다시 고르기</button>
-                                    </div>
-                                ) : (
-                                    <div className="relative">
-                                        <input aria-label="학교 검색" value={query} onChange={e => { setQuery(e.target.value); setListOpen(true); }} onFocus={() => setListOpen(true)}
-                                            placeholder="학교 이름으로 검색 (예: 휘문)" className={field} autoComplete="off" />
-                                        {listOpen && query.trim() && (() => {
-                                            const q = query.replace(/\s/g, '');
-                                            const hits = schools.filter(sc => sc.name.replace(/\s/g, '').includes(q)).slice(0, 12);
-                                            return (
-                                                <ul role="listbox" aria-label="학교 목록" className="absolute z-10 mt-1.5 w-full max-h-64 overflow-y-auto rounded-[14px] bg-white p-1 shadow-[0_12px_32px_rgba(23,32,44,0.16)]">
-                                                    {hits.length ? hits.map(sc => (
-                                                        <li key={sc.code} role="option" aria-selected={false}>
-                                                            <button type="button" onClick={() => { setSchool(sc); setListOpen(false); }} className="w-full min-h-[44px] text-left px-3 py-2.5 text-[15px] rounded-[10px] hover:bg-[#F2F4F6] flex justify-between gap-2">
-                                                                <span className="font-semibold text-[#17202C]">{sc.name}</span><span className="text-[#5F6B78] shrink-0">{sc.region} {sc.district}</span>
-                                                            </button>
-                                                        </li>
-                                                    )) : <li className="px-3 py-3 text-[15px] text-[#5F6B78]">찾는 학교가 없어요. 학교 이름을 다시 확인해주세요 (전국 고등학교에서 찾아요).</li>}
-                                                </ul>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
+                                {/* [10/7] 이름 검색 대신 시도 → 구군 → 학교. 동명이교(경신고 등)를 올리는 사람이 직접 가려 고르게 한다 */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <select aria-label="시도" value={region} onChange={e => { setRegion(e.target.value); setDistrict(''); setSchool(null); }} className={field}>
+                                        <option value="">시도 선택</option>
+                                        {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                                    </select>
+                                    <select aria-label="구군" value={district} onChange={e => { setDistrict(e.target.value); setSchool(null); }} className={field} disabled={!region}>
+                                        <option value="">구·군 선택</option>
+                                        {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                    <select aria-label="학교" value={school ? schoolKey(school) : ''} onChange={e => setSchool(districtSchools.find(x => schoolKey(x) === e.target.value) || null)} className={field} disabled={!district}>
+                                        <option value="">학교 선택</option>
+                                        {districtSchools.map(sc => <option key={schoolKey(sc)} value={schoolKey(sc)}>{sc.name}</option>)}
+                                    </select>
+                                </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     <select aria-label="연도" value={year} onChange={e => setYear(Number(e.target.value))} className={field}>
                                         {Array.from({ length: thisYear - REPORT_MIN_YEAR + 1 }, (_, i) => thisYear - i).map(y => <option key={y} value={y}>{y}년</option>)}
