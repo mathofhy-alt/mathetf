@@ -279,7 +279,8 @@ export default function QuestionBankPage() {
     // (storageRefreshKey 변경 시 재프리페치 → 저장 직후에도 최신 유지)
     useEffect(() => {
         if (!user) return;
-        (['db', 'exam'] as const).forEach((t) => {
+        // 'db' 미리받기는 쓰는 곳이 없어 뺐다(10/7) — 출제 자료 창은 카탈로그를 직접 읽는다
+        (['exam'] as const).forEach((t) => {
             fetch(`/api/storage/folders?mode=all&folderType=${t}`)
                 .then(res => res.json())
                 .then(data => {
@@ -330,11 +331,9 @@ export default function QuestionBankPage() {
         supabase.auth.getUser().then(({ data }) => {
             setUser(data.user);
             if (data.user) {
-                // 어드민 또는 무료 모드: 전체 DB를 user_items에 자동 동기화
-                if (data.user.email === 'mathofhy@naver.com' || PERSONAL_DB_FREE_MODE) {
-                    fetch('/api/storage/sync', { method: 'POST' })
-                        .then(() => setStorageRefreshKey(prev => prev + 1));
-                }
+                // [10/7] 예전엔 여기서 /api/storage/sync 로 전체 자료(약 2,200개)를 회원마다 user_items 에 복사했다.
+                //   지금 출제 자료 창(SourceCatalog)은 /api/questions/catalog 를 바로 읽어서 그 복사본을 아무도 안 쓴다.
+                //   방문할 때마다 수천 행을 읽고 쓰기만 해서(누적 58만 행) 뺐다.
                 fetchPurchasedDbs(data.user.id, data.user.email ?? undefined).finally(() => setIsDbInitialized(true));
                 fetchMyPoints(data.user.id);
             } else if (PERSONAL_DB_FREE_MODE) {
@@ -1367,7 +1366,8 @@ export default function QuestionBankPage() {
                                         setEntryLabel(chosen.length === 1 ? chosen[0].title : chosen.length ? `선택한 자료 ${chosen.length}개` : '전체 자료에서 검색');
                                         setEntryFailure(false);
                                         if (filterState?.mockSlug) { setFilterState((f:any) => ({...f, mockSlug:undefined})); setFilterVersion(v => v + 1); }
-                                        if (user) setShowDuplicateModal(true);
+                                        // 저장한 시험지가 없으면 비교할 게 없다 — 빈 '중복 소스 체크' 창을 띄우지 않는다(10/7)
+                                        if (user && savedCount > 0) setShowDuplicateModal(true);
                                         else setExcludedQuestionIds([]);
                                     } else {
                                         setShowStorageModal(false);
