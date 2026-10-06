@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Download, Sparkles } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import PersonaAsk from '@/components/PersonaAsk';
 import NotifyOptIn from '@/components/NotifyOptIn';
@@ -14,7 +14,7 @@ import { logAnon } from '@/lib/anon-log';
  * - 로그인: 워터마크 없는 문제 PDF 즉시 다운로드.
  * 페이지는 ISR 정적 캐시라 로그인 여부는 클라이언트에서 판별한다.
  */
-export default function FreeProblemCTA({ examId, filename, sourceKey, school, compact = false }: { examId: string; filename: string; sourceKey?: string | null; school?: string; compact?: boolean }) {
+export default function FreeProblemCTA({ examId, filename, sourceKey, school }: { examId: string; filename: string; sourceKey?: string | null; school?: string; compact?: boolean }) {
     const [authed, setAuthed] = useState<boolean | null>(null);
     const [marketingAgreed, setMarketingAgreed] = useState(true); // 기본 true → 확인 전엔 배너 안 뜸
     const [showNotify, setShowNotify] = useState(false);
@@ -95,44 +95,23 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
     };
 
     return (
-        <div id="free-problem-pdf" className={compact ? 'scroll-mt-24 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4' : 'scroll-mt-24 bg-white rounded-2xl border-2 border-emerald-200 shadow-sm p-5 sm:p-6 mb-6'}>
-            {resumeDownload && authed && <p role="status" className="mb-3 rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-800">로그인했습니다. 아래 버튼을 누르면 이 시험의 문제 PDF를 받을 수 있어요.</p>}
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-extrabold px-2.5 py-1 rounded-full">
-                    <Sparkles size={13} /> 무료
-                </span>
-                <p className={compact ? 'font-extrabold text-slate-900 text-sm break-keep' : 'font-extrabold text-slate-900 text-lg break-keep'}>문제 전체 PDF · 워터마크 없음</p>
-            </div>
-            <p className={compact ? 'text-xs leading-5 text-slate-600 break-keep mb-3' : 'text-sm text-slate-600 break-keep mb-4'}>
-                회원이면 <strong className="text-emerald-700">워터마크 없는 전체 문제 PDF</strong>를 하루 10회까지 무료로 받을 수 있어요. <span className="text-slate-500">이 파일에는 해설이 없습니다. 문제+해설 원본 파일은 별도 구매입니다.</span>
-            </p>
-
+        <div id="free-problem-pdf" className="rd-get-card">
+            {resumeDownload && authed && <p role="status" className="rd-get-status">로그인했습니다. 아래 버튼을 누르면 바로 받을 수 있어요.</p>}
+            <p className="rd-get-kicker">회원 무료</p>
+            <h2 className="rd-get-title">문제 전체 PDF</h2>
+            <p className="rd-get-text">워터마크 없는 깨끗한 문제지예요. 하루 10회까지 받을 수 있고, 해설은 없습니다.</p>
             {authed ? (
-                <button
-                    onClick={handleDownload}
-                    disabled={downloading}
-                    className={`${compact ? 'w-full' : 'w-full sm:w-auto'} inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-4 py-3 rounded-xl transition-colors disabled:opacity-60`}
-                >
-                    <Download size={18} /> {downloading ? '받는 중…' : '문제 PDF 무료 다운로드'}
+                <button type="button" onClick={handleDownload} disabled={downloading} className="rd-btn rd-btn-primary rd-btn-block">
+                    <Download size={18} aria-hidden="true" /> {downloading ? '받는 중' : '무료로 받기'}
                 </button>
             ) : (
                 <>
-                    <Link
-                        href={`/signup?next=${encodeURIComponent(`/exam/${examId}?download=free`)}`}
-                        onClick={() => logAnon('anon_cta_click', examId)}
-                        className={`${compact ? 'w-full text-center text-xs' : 'w-full sm:w-auto'} inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-4 py-3 rounded-xl transition-colors shadow-sm shadow-emerald-500/25`}
-                    >
-                        <Sparkles size={18} /> 무료 회원가입하고 깨끗한 PDF 받기
+                    <Link href={`/signup?next=${encodeURIComponent(`/exam/${examId}?download=free`)}`} onClick={() => logAnon('anon_cta_click', examId)} className="rd-btn rd-btn-primary rd-btn-block">
+                        무료로 받기
                     </Link>
-                    {authed === false && (
-                        <p className="text-xs text-slate-400 mt-2.5">
-                            이미 회원이신가요?{' '}
-                            <Link href={`/login?next=${encodeURIComponent(`/exam/${examId}?download=free`)}`} className="text-emerald-600 font-bold hover:underline">로그인</Link>
-                        </p>
-                    )}
+                    <p className="rd-get-foot">회원가입 후 바로 받아요. 이미 회원이면 <Link href={`/login?next=${encodeURIComponent(`/exam/${examId}?download=free`)}`}>로그인</Link></p>
                 </>
             )}
-            {!compact && <Link className="mt-3 block text-sm font-semibold underline" href={`/question-bank?material=${examId}&origin=free-pdf`}>이 회차로 시험지 만들기 →</Link>}
             {showPromo && (
                 <ExamPromoModal
                     src={sourceKey || undefined}
