@@ -735,3 +735,83 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 
 /* 자료 안내 펼침 */
 [data-question-bank].rd .qb-context details > p { width: 280px; margin: 0; padding: 14px 16px; border: 0; border-radius: 14px; background: #fff; font-size: 14px; line-height: 1.6; font-weight: 500; color: var(--rd-sub); box-shadow: 0 20px 50px rgba(23, 32, 44, 0.16), 0 0 0 1px var(--rd-line); }
+
+/* ── 출제 자료 고르기 (10/7 다시 짬: 검색 + 거르기 + 학교별 회차) ── */
+.rd .rd-cat { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.rd .rd-cat-tabs { flex: none; }
+.rd .rd-cat-tabs button { min-height: 48px; line-height: 1.25; }
+.rd .rd-cat-tabs small { display: block; font-size: 12px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-cat-search { flex: none; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 8px 0 16px; border-radius: 14px; background: var(--rd-panel); color: var(--rd-sub); }
+.rd .rd-cat-search:focus-within { background: #fff; box-shadow: inset 0 0 0 2px var(--rd-ink); }
+.rd .rd-cat-search input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font: inherit; font-size: 16px; font-weight: 600; color: var(--rd-text); }
+.rd .rd-cat-search input::placeholder { color: #8B95A1; font-weight: 500; }
+.rd .rd-cat-search button { border: 0; background: transparent; width: 36px; height: 36px; border-radius: 10px; color: var(--rd-sub); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.rd .rd-cat-filters { flex: none; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rd .rd-cat-filters select { min-height: 40px; padding: 0 30px 0 12px; border: 0; border-radius: 10px; background-color: var(--rd-panel); font: inherit; font-size: 14px; font-weight: 700; color: var(--rd-text); cursor: pointer; }
+.rd .rd-cat-filters select:focus { outline: 2px solid var(--rd-ink); }
+.rd .rd-cat-reset { border: 0; background: transparent; min-height: 40px; padding: 0 8px; font: inherit; font-size: 14px; font-weight: 700; color: var(--rd-ink); cursor: pointer; }
+.rd .rd-cat-chosen { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--rd-tint); }
+.rd .rd-cat-chosen > span { flex: none; font-size: 14px; font-weight: 800; color: var(--rd-ink); }
+.rd .rd-cat-chosen > div { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+.rd .rd-cat-chosen > div button { flex: none; display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 999px; padding: 6px 10px; background: #fff; font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-text); cursor: pointer; white-space: nowrap; }
+.rd .rd-cat-chosen > div button:hover { color: #B42318; }
+.rd .rd-cat-chosen em { flex: none; align-self: center; font-style: normal; font-size: 13px; font-weight: 700; color: var(--rd-sub); }
+.rd .rd-cat-clear { flex: none; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-sub); cursor: pointer; }
+.rd .rd-cat-bar { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rd .rd-cat-bar p { margin: 0; font-size: 14px; font-weight: 700; color: var(--rd-nav); }
+.rd .rd-cat-bar button { border: 0; border-radius: 10px; min-height: 36px; padding: 0 12px; background: var(--rd-tint); font: inherit; font-size: 14px; font-weight: 700; color: var(--rd-ink); cursor: pointer; }
+.rd .rd-cat-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-radius: 20px; background: var(--rd-zone); padding: 6px; }
+.rd .rd-cat-empty { margin: 0; padding: 48px 16px; text-align: center; font-size: 15px; color: var(--rd-sub); }
+.rd .rd-cat-school { border-radius: 14px; background: #fff; }
+.rd .rd-cat-school + .rd-cat-school { margin-top: 6px; }
+.rd .rd-cat-school.has-pick { box-shadow: inset 0 0 0 1px var(--rd-ink); }
+.rd .rd-cat-head { display: flex; align-items: center; gap: 6px; padding-right: 8px; }
+.rd .rd-cat-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 8px 0 12px; border: 0; background: transparent; font: inherit; text-align: left; color: var(--rd-text); cursor: pointer; }
+.rd .rd-cat-name svg { flex: none; color: var(--rd-icon); }
+.rd .rd-cat-name b { font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd .rd-cat-name small { flex: none; font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-cat-count { margin-left: auto; flex: none; font-size: 13px; font-weight: 700; color: var(--rd-sub); }
+.rd .rd-cat-school.has-pick .rd-cat-count { color: var(--rd-ink); }
+.rd .rd-cat-all { flex: none; border: 0; border-radius: 10px; min-height: 36px; padding: 0 12px; background: var(--rd-panel); font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-text); cursor: pointer; }
+.rd .rd-cat-all:hover { background: var(--rd-tint); color: var(--rd-ink); }
+.rd .rd-cat-all.is-on { background: var(--rd-tint); color: var(--rd-ink); }
+.rd .rd-cat-exams { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; padding: 2px 12px 12px; }
+.rd .rd-cat-exam { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; border: 0; border-radius: 12px; background: var(--rd-zone); font: inherit; text-align: left; color: var(--rd-text); cursor: pointer; }
+.rd .rd-cat-exam:hover { background: var(--rd-panel); }
+.rd .rd-cat-exam.is-on { background: var(--rd-tint); box-shadow: inset 0 0 0 1px var(--rd-ink); }
+.rd .rd-cat-exam > span:last-child { font-size: 14px; font-weight: 700; line-height: 1.35; }
+.rd .rd-cat-exam small { display: block; font-size: 12px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-cat-box { flex: none; width: 20px; height: 20px; border-radius: 6px; background: #fff; box-shadow: inset 0 0 0 2px #C9D0D8; display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+.rd .rd-cat-exam.is-on .rd-cat-box { background: var(--rd-ink); box-shadow: none; }
+@media (max-width: 640px) {
+  .rd .rd-cat-filters select { flex: 1 1 calc(50% - 6px); min-width: 0; }
+  .rd .rd-cat-name small { display: none; }
+  .rd .rd-cat-exams { grid-template-columns: minmax(0, 1fr); padding: 2px 8px 8px; }
+}
+
+/* 10/7 사용자 지적: 위에 고정된 줄들이 커서 카드 볼 자리가 적다 → 제목줄은 얇게, 검토 머리는 한 줄 */
+[data-question-bank].rd .workbench-title { padding: 8px 24px !important; }
+[data-question-bank].rd .workbench-title h2 { font-size: 20px !important; }
+[data-question-bank].rd .workbench-tabs button { min-height: 34px !important; font-size: 14px !important; }
+[data-question-bank].rd .qb-context { padding: 6px 24px !important; }
+.rd .rd-qb-rhead { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 10px 24px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rd-line); }
+.rd .rd-qb-rhead h2 { order: 1; margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.03em; color: var(--rd-text); white-space: nowrap; }
+.rd .rd-qb-rhead h2 small { margin-left: 4px; font-size: 14px; font-weight: 700; color: var(--rd-ink); }
+.rd .rd-qb-sort { order: 2; flex: 1; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.rd .rd-qb-ractions { order: 3; margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
+.rd .rd-qb-ractions button { min-height: 38px; padding: 0 14px !important; border-radius: 10px !important; font-size: 14px !important; box-shadow: none !important; }
+.rd .rd-qb-sort > span:first-child { font-size: 13px !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--rd-sub) !important; }
+.rd .rd-qb-sort select { min-height: 34px; font-size: 13px !important; }
+.rd .rd-qb-sort > .flex-1 { display: none; }
+.rd .rd-qb-sort > button:last-child { margin-left: 4px; min-height: 34px; padding: 0 12px !important; border-radius: 10px !important; font-size: 13px !important; background: var(--rd-tint) !important; color: var(--rd-ink) !important; box-shadow: none !important; }
+@media (max-width: 767px) {
+  .rd .rd-qb-rhead { padding: 8px 12px; gap: 6px 10px; }
+  .rd .rd-qb-sort { order: 3; flex-basis: 100%; }
+  .rd .rd-qb-ractions { order: 2; }
+  .rd .rd-qb-ractions button { min-height: 36px; padding: 0 10px !important; font-size: 13px !important; }
+}
+@media (max-width: 767px) {
+  /* 폰은 아래 '1. 범위 선택 / 2. 문항 확인 / 3. 완성' 줄이 같은 역할 — 제목줄은 숨겨 카드 자리를 넓힌다 */
+  [data-question-bank].rd .workbench-title { display: none !important; }
+  .rd .rd-qb-ractions button { padding: 0 8px !important; }
+}

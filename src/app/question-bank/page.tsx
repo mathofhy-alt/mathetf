@@ -1410,10 +1410,10 @@ export default function QuestionBankPage() {
                             className="absolute right-4 top-3 text-slate-400 hover:text-slate-600 text-xl font-bold"
                         >×</button>
                     </div>
-                    <div data-tour="qb-pool" className="px-4 py-2.5 md:p-4 border-b space-y-2">
-                        <h2 className="hidden md:block font-bold text-lg text-slate-800">출제 범위</h2>
+                    <div data-tour="qb-pool" className="px-4 py-2.5 md:px-4 md:py-3 border-b space-y-2">
+                        <h2 className="sr-only">출제 범위</h2>
                         {/* ... existing DB selectors ... */}
-                        <div className="flex gap-2 mb-2">
+                        <div className="flex gap-2">
                             {/* 비로그인도 열람 가능 (맛보기 — 게이트는 시험지 저장에서만) */}
                             <button
                                 onClick={() => {
@@ -1421,7 +1421,7 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-2 md:py-3 px-3 bg-[#E8F6F5] text-[#1B7E7A] border border-[#BFE5E2] rounded-xl hover:bg-[#E5EDFF] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-2 md:py-2.5 px-3 bg-[#E8F6F5] text-[#1B7E7A] border border-[#BFE5E2] rounded-xl hover:bg-[#E5EDFF] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <Database size={16} />
                                 출제 자료
@@ -1432,7 +1432,7 @@ export default function QuestionBankPage() {
                                     setShowStorageModal(true);
                                     setShowMobileSidebar(false);
                                 }}
-                                className="flex-1 py-2 md:py-3 px-3 bg-[#E8F6F5] text-[#166B68] border border-[#1B7E7A]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
+                                className="flex-1 py-2 md:py-2.5 px-3 bg-[#E8F6F5] text-[#166B68] border border-[#1B7E7A]/40 rounded-xl hover:bg-[#C8F0EE] flex items-center justify-center gap-2 font-bold text-sm transition-colors whitespace-nowrap"
                             >
                                 <FolderIcon size={16} />
                                 만든 시험지
@@ -1482,7 +1482,7 @@ export default function QuestionBankPage() {
                                 }}
                             />
                         </div>
-                        <div className="p-4 border-t bg-[#F7F8FA]">
+                        <div className="p-3 border-t bg-[#F7F8FA]">
                             <button
                                 data-tour="qb-search"
                                 onClick={() => {
@@ -1583,14 +1583,10 @@ export default function QuestionBankPage() {
                             </div>
                         </header>
                     ) : (
-                        <header className="sticky top-0 z-10 flex flex-col gap-2 sm:gap-4 px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#BFE5E2]/60 shadow-sm">
-                            {/* 모바일: 컴팩트 단일 행 / 데스크탑: 2행 */}
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                <div className="min-w-0">
-                                    <h2 className="text-base sm:text-2xl font-black text-slate-800 whitespace-nowrap">시험지 문항 검토</h2>
-                                    <p className="hidden sm:block text-sm text-slate-500 mt-1">문항을 더하거나 순서를 바꾼 뒤 편집용 HML로 저장하세요. PDF는 한글에서 저장할 수 있습니다.</p>
-                                </div>
-                                <div className="flex flex-wrap gap-2 flex-shrink-0">
+                        <header className="rd-qb-rhead sticky top-0 z-10">
+                            {/* [10/7] 한 줄로 — 예전엔 제목·설명·정렬 상자가 3층이라 카드 볼 자리가 너무 적었다(사용자 지적) */}
+                            <h2 title="문항을 더하거나 순서를 바꾼 뒤 편집용 HML로 저장하세요. PDF는 한글에서 저장할 수 있습니다.">시험지 문항 검토 <small>{cart.length}문항</small></h2>
+                            <div className="rd-qb-ractions">
                                     <button
                                         onClick={() => { setViewMode('search'); setStorageModalMode('db'); setShowStorageModal(true); }}
                                         className="px-3 sm:px-4 py-2 sm:py-2.5 border border-[#BFE5E2] bg-[#E8F6F5] text-[#1B7E7A] rounded-xl font-bold hover:bg-[#E5EEFF] text-xs sm:text-sm whitespace-nowrap"
@@ -1616,11 +1612,9 @@ export default function QuestionBankPage() {
                                         비우기
                                     </button>
                                 </div>
-                            </div>
 
                             {/* 정렬 + 유사문항 */}
-                            <div className="bg-white border rounded-xl sm:rounded-2xl px-3 py-2.5 sm:p-4 shadow-sm">
-                                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                <div className="rd-qb-sort">
                                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex-shrink-0">정렬</span>
                                     {sortKeys.map((key, idx) => (
                                         <div key={idx} className="flex items-center gap-0.5">
@@ -1680,11 +1674,10 @@ export default function QuestionBankPage() {
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                                             </svg>
-                                        ) : '🔗'}
+                                        ) : null}
                                         <span>{isAutoAdding ? '분석중' : selectedReviewIds.size > 0 ? `${selectedReviewIds.size}개 유사추가` : '유사문항'}</span>
                                     </button>
                                 </div>
-                            </div>
                         </header>
                     )}
 

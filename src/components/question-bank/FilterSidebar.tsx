@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Filter, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { CONCEPT_MAP } from '@/lib/concept-map';
 import { SUBJECT_UNITS, CURRICULA } from '@/lib/curriculum';
@@ -264,13 +264,10 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     return (
         <div className="w-full min-w-0 bg-white flex flex-col md:h-full">
             {/* 헤더는 작게 — 이 자리를 크게 쓰면 아래 키워드 검색이 첫 화면 밖으로 밀린다 (9/4) */}
-            <div className="hidden md:block px-4 py-2.5 border-b">
-                <h2 className="font-bold text-[13px] text-slate-500 flex items-center gap-1.5">
-                    <Filter size={14} /> 상세 필터
-                </h2>
-            </div>
+            {/* [10/7] '상세 필터' 머리줄은 뺐다 — 조건판이 스크롤 없이 한 화면에 들어가게(사용자 요청) */}
+            <h2 className="sr-only">상세 필터</h2>
 
-            <div className="flex-1 md:overflow-y-auto p-3 md:p-4 space-y-5 md:space-y-6">
+            <div className="flex-1 md:overflow-y-auto p-3 md:px-4 md:py-3 space-y-4">
 
                 {/* 키워드 검색을 맨 위로 (9/4 사용자 지적) — 아래에 있으면 스크롤해야 보여서
                     "검색이라는 걸 할 수 있다"는 사실 자체가 전달되지 않았다. */}
@@ -291,7 +288,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                     }
                                 }
                             }}
-                            placeholder="예: 삼각함수 (Enter)"
+                            placeholder="예: 삼각함수 (Enter로 추가)" title="입력한 모든 단어가 포함된 문제만 검색됩니다."
                             className="w-full text-base md:text-sm p-2.5 md:p-2 border border-slate-200 rounded focus:ring-2 focus:ring-[#3AADA9] focus:border-[#3AADA9] outline-none"
                         />
 
@@ -309,9 +306,6 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                 ))}
                             </div>
                         )}
-                        <p className="text-[12px] md:text-[10px] text-slate-400">
-                            * 입력한 모든 단어가 포함된 문제만 검색됩니다.
-                        </p>
                     </div>
                 </div>
 
@@ -320,7 +314,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">과목 및 단원</h3>
                     {/* 교육과정 선택 — 선택한 과정의 과목만 표시 (기본: 현 교육과정 2022) */}
-                    <div className="flex gap-1 mb-3 bg-slate-100 p-0.5 rounded-lg">
+                    <div className="flex gap-1 mb-2 bg-slate-100 p-0.5 rounded-lg">
                         {CURRICULA.map((c) => (
                             <button
                                 key={c.id}
@@ -333,7 +327,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                     </div>
                     {/* [교과외] 옛 회차(2006~)에는 부등식의 영역·이중근호처럼 지금은 안 배우는 단원이 있다.
                         기본은 숨김이고, 켜면 '교과외' 표시와 함께 함께 검색된다. */}
-                    <label className="flex items-start gap-2 mb-3 px-2 py-2 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer">
+                    <label className="flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer" title="옛 기출의 부등식의 영역·이중근호 등 현행 과정에 없는 단원">
                         <button
                             type="button"
                             aria-label="교과외 문항 포함" aria-pressed={includeOffCurriculum} onClick={() => setIncludeOffCurriculum(v => !v)}
@@ -343,10 +337,10 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         </button>
                         <span className="text-[12px] md:text-[11px] leading-snug text-amber-900">
                             <b>교과외 문항 포함</b>
-                            <span className="block text-amber-700/80">옛 기출의 부등식의 영역·이중근호 등 현행 과정에 없는 단원</span>
+                            <span className="text-amber-700/80"> (옛 단원)</span>
                         </span>
                     </label>
-                    <div className="space-y-4">
+                    <div className="space-y-1">
                         {loadingUnits && <div className="text-xs text-slate-400">로딩중...</div>}
                         {!loadingUnits && treeData.filter((n) => curSubjects.includes(n.subject)).length === 0 && (
                             <div className="text-xs text-slate-400">표시할 과목이 없습니다.</div>
