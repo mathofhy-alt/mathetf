@@ -11,10 +11,10 @@ import { payOrder } from '@/lib/payments/client';
  * 안내문은 관리자 화면(/admin/db-requests)에서 적는다. 데이터는 GET /api/db-request (본인 것만).
  */
 const STATUS_STYLE: Record<string, string> = {
-    '접수': 'bg-slate-100 text-slate-600',
-    '처리중': 'bg-amber-100 text-amber-700',
-    '완료': 'bg-emerald-100 text-emerald-700',
-    '반려': 'bg-rose-100 text-rose-600',
+    '접수': 'is-wait',
+    '처리중': 'is-doing',
+    '완료': 'is-done',
+    '반려': 'is-no',
 };
 
 export default function MyDbRequests() {
@@ -40,58 +40,59 @@ export default function MyDbRequests() {
         finally { setPaying(null); }
     };
 
-    if (error) return <div className="p-10 text-center text-sm text-rose-600 font-bold bg-white rounded-2xl border border-slate-200">{error}</div>;
-    if (!rows) return <div className="p-10 text-center text-sm text-slate-400 font-bold bg-white rounded-2xl border border-slate-200">불러오는 중…</div>;
+    if (error) return <div className="rd-my-empty is-error" role="alert"><p>{error}</p></div>;
+    if (!rows) return <div className="rd-my-empty" role="status"><p className="rd-my-muted">불러오는 중…</p></div>;
     if (rows.length === 0) return (
-        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200">
-            <p className="text-sm font-bold text-slate-600">개인DB 요청 내역이 없습니다.</p>
-            <p className="text-xs text-slate-400 mt-1">화면 위쪽 ‘개인DB 요청’ 버튼으로 자료를 보내면 여기에서 처리 결과를 확인할 수 있어요.</p>
+        <div className="rd-my-empty">
+            <span className="rd-my-empty-icon"><MessageSquare size={28} /></span>
+            <p>개인DB 요청 내역이 없습니다.</p>
+            <small>화면 위쪽 ‘개인DB 요청’ 버튼으로 자료를 보내면 여기에서 처리 결과를 확인할 수 있어요.</small>
         </div>
     );
 
     return (
-        <div className="space-y-3">
+        <ul className="rd-my-list rd-my-reqs">
             {rows.map(row => (
-                <div key={row.id} className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <p className="flex items-center gap-1 text-xs text-slate-400"><Calendar size={12} />{new Date(row.created_at).toLocaleString('ko-KR')} 요청</p>
-                            <ul className="mt-1 text-sm font-bold text-slate-800 space-y-0.5">
-                                {(row.files || []).map((f: any, i: number) => <li key={i} className="break-all">{f.name}</li>)}
+                <li key={row.id} className="rd-my-req">
+                    <div className="rd-my-req-head">
+                        <div className="rd-my-req-main">
+                            <p className="rd-my-req-date"><Calendar size={14} />{new Date(row.created_at).toLocaleString('ko-KR')} 요청</p>
+                            <ul className="rd-my-req-files">
+                                {(row.files || []).map((f: any, i: number) => <li key={i}>{f.name}</li>)}
                             </ul>
-                            {row.note && <p className="mt-1 text-xs text-slate-500">내가 남긴 메모: {row.note}</p>}
+                            {row.note && <p className="rd-my-req-note">내가 남긴 메모: {row.note}</p>}
                         </div>
-                        <span className={`shrink-0 text-xs font-extrabold px-2.5 py-1 rounded-full ${STATUS_STYLE[row.status] || STATUS_STYLE['접수']}`}>{row.status}</span>
+                        <span className={`rd-my-status ${STATUS_STYLE[row.status] || STATUS_STYLE['접수']}`}>{row.status}</span>
                     </div>
                     {row.admin_reply ? (
-                        <div className="mt-3 rounded-xl bg-brand-50 border border-brand-100 p-3">
-                            <p className="flex items-center gap-1 text-xs font-bold text-brand-700 mb-1">
-                                <MessageSquare size={13} /> 운영자 안내
-                                {row.replied_at && <span className="font-normal text-slate-400">· {new Date(row.replied_at).toLocaleDateString('ko-KR')}</span>}
+                        <div className="rd-my-reply">
+                            <p className="rd-my-reply-head">
+                                <MessageSquare size={15} /> 운영자 안내
+                                {row.replied_at && <span>{new Date(row.replied_at).toLocaleDateString('ko-KR')}</span>}
                             </p>
-                            <p className="text-sm text-slate-700 whitespace-pre-wrap break-keep leading-relaxed">{row.admin_reply}</p>
+                            <p className="rd-my-reply-body">{row.admin_reply}</p>
                         </div>
                     ) : !row.product && (
-                        <p className="mt-3 text-xs text-slate-400">운영자가 확인 중입니다. 안내가 등록되면 여기에 표시됩니다.</p>
+                        <p className="rd-my-req-wait">운영자가 확인 중입니다. 안내가 등록되면 여기에 표시됩니다.</p>
                     )}
                     {row.product && (
-                        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 p-3">
-                            <Database size={18} className="text-brand-600 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-extrabold text-slate-800 break-keep">{row.product.title}</p>
-                                <p className="text-xs text-slate-500">{row.product.paid ? '이용 중 — 시험지 만들기 › 출제 자료 › 내 개인DB' : `회원님 전용 개인DB가 준비됐습니다 · ${Number(row.product.price).toLocaleString()}원`}</p>
+                        <div className="rd-my-product">
+                            <span className="rd-my-ficon is-db"><Database size={20} /></span>
+                            <div className="rd-my-product-txt">
+                                <p className="rd-my-title">{row.product.title}</p>
+                                <p className="rd-my-product-sub">{row.product.paid ? '이용 중 — 시험지 만들기 › 출제 자료 › 내 개인DB' : `회원님 전용 개인DB가 준비됐습니다 · ${Number(row.product.price).toLocaleString()}원`}</p>
                             </div>
                             {row.product.paid ? (
-                                <Link href="/question-bank" className="shrink-0 text-sm font-extrabold px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">시험지 만들기 →</Link>
+                                <Link href="/question-bank" className="rd-btn rd-btn-primary rd-my-product-btn">시험지 만들기</Link>
                             ) : (
-                                <button onClick={() => pay(row.product)} disabled={paying === row.product.id} className="shrink-0 text-sm font-extrabold px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">
+                                <button type="button" onClick={() => pay(row.product)} disabled={paying === row.product.id} className="rd-btn rd-btn-primary rd-my-product-btn">
                                     {paying === row.product.id ? '결제 진행 중…' : '결제하기'}
                                 </button>
                             )}
                         </div>
                     )}
-                </div>
+                </li>
             ))}
-        </div>
+        </ul>
     );
 }

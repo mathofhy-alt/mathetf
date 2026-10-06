@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
+// 결제 결과(10/7 새 디자인) — 계정 화면과 같은 가운데 카드(rd-auth). 확인 로직은 그대로, 겉모습만 바꿨다.
 export default function PaymentReturn() {
     const [message,setMessage] = useState('결제 결과를 확인하고 있습니다.');
     const [done,setDone] = useState(false);
@@ -30,5 +32,16 @@ export default function PaymentReturn() {
         finally { setBusy(false); }
     }
     useEffect(()=>{ void verify(); },[]);
-    return <div className="max-w-xl mx-auto px-6 py-20"><h1 className="text-2xl font-bold mb-4">결제 결과</h1><p role="status">{message}</p>{!done && <button disabled={busy} onClick={verify} className="my-6 px-6 py-3 bg-brand-600 text-white rounded-lg disabled:opacity-50">결제 결과 다시 확인</button>}<Link href="/mypage" className="block mt-6 underline">내 보관함으로</Link></div>;
+    return <div className="rd rd-auth rd-cart-ret">
+        <div className="rd-auth-card">
+            <Link href="/" className="rd-auth-brand"><Image src="/icon.svg" alt="" width={32} height={32} /><span>수학ETF</span></Link>
+            <h1 className="rd-auth-title">결제 결과</h1>
+            <p role="status" className={done ? 'rd-cart-ret-msg is-done' : 'rd-cart-ret-msg'}>{message}</p>
+            <div className="rd-cart-ret-actions">
+                {!done && <button disabled={busy} onClick={verify} className="rd-btn rd-btn-primary rd-btn-block">결제 결과 다시 확인</button>}
+                <Link href="/mypage" className={done ? 'rd-btn rd-btn-primary rd-btn-block' : 'rd-btn rd-btn-gray rd-btn-block'}>내 보관함으로</Link>
+            </div>
+        </div>
+        <Link className="rd-auth-home" href="/">홈으로 돌아가기</Link>
+    </div>;
 }

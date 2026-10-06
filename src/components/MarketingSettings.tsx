@@ -44,30 +44,31 @@ export default function MarketingSettings() {
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                    <h3 className="font-extrabold text-[#294437] flex items-center gap-2">
-                        <Bell size={16} className="text-[#426D36]" /> 새 기출 알림 받기
+        <section className="rd-my-card">
+            <div className="rd-my-set-row">
+                <div className="rd-my-set-txt">
+                    <h3 className="rd-my-card-title">
+                        <span className="rd-my-card-icon"><Bell size={18} /></span> 새 기출 알림 받기
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1.5 break-keep">
-                        관심 학교에 새 기출이 올라오면 <strong className="text-slate-700">이메일·문자</strong>로 알려드려요.
-                        <br />
-                        <span className="text-slate-400">야간(21~08시)에는 보내지 않습니다. 언제든 끄실 수 있어요.</span>
+                    <p className="rd-my-card-text">
+                        관심 학교에 새 기출이 올라오면 <strong>이메일·문자</strong>로 알려드려요.
                     </p>
+                    <p className="rd-my-card-hint">야간(21~08시)에는 보내지 않습니다. 언제든 끄실 수 있어요.</p>
                 </div>
                 <button
+                    type="button"
                     onClick={toggle}
                     disabled={agreed === null || saving}
                     aria-pressed={!!agreed}
-                    className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${agreed ? 'bg-[#426D36]' : 'bg-slate-300'}`}
+                    aria-label="새 기출 알림 받기"
+                    className={`rd-my-switch${agreed ? ' is-on' : ''}`}
                 >
-                    <span className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-all flex items-center justify-center ${agreed ? 'left-7' : 'left-1'}`}>
-                        {agreed && <Check size={13} className="text-[#426D36]" />}
+                    <span className="rd-my-switch-knob">
+                        {agreed && <Check size={14} />}
                     </span>
                 </button>
             </div>
-            {msg && <p className="text-xs font-bold text-[#2F5A92] mt-3">{msg}</p>}
-        </div>
+            {msg && <p className="rd-my-card-msg" role="status">{msg}</p>}
+        </section>
     );
 }
