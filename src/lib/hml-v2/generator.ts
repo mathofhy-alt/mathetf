@@ -701,7 +701,11 @@ export function generateHmlFromTemplate(
                 continue;
             }
 
-            // [Manual Filter Removed] to ensure all images are available
+            // [2026-10-06] 캡쳐(MANUAL_/AUTO_ — 카드 표시용 문제·해설 그림)는 파일에 넣지 않는다.
+            //   본문은 원본 그림 번호(original_bin_id)만 참조하므로 캡쳐는 어디서도 안 쓰이는데,
+            //   예전엔 전부 BINDATA 로 들어가 회원 시험지 10개 실측 파일 용량의 약 47%를 차지했다.
+            //   문제 캡쳐는 위 사전스캔(줄 높이 추정)에서만 쓰고, 그건 qwi.images 를 그대로 본다.
+            if (/^(MANUAL|AUTO)_/.test(img.original_bin_id || '')) continue;
 
             // Mode B: Keep everything (Standard processing)
 
