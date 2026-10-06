@@ -829,3 +829,15 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 .rd .rd-cat-places small { font-size: 13px; font-weight: 600; color: var(--rd-sub); }
 .rd .rd-cat-exams.is-compact { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 @media (max-width: 640px) { .rd .rd-cat-places { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rd .rd-cat-exams.is-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 출제 자료 — 시험 범위 단추(10/7) */
+.rd .rd-cat-sec { margin: 10px 8px 8px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.rd .rd-cat-sec:first-child { margin-top: 6px; }
+.rd .rd-cat-sec b { font-size: 16px; font-weight: 800; color: var(--rd-text); }
+.rd .rd-cat-sec small { font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-cat-places.is-range { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); margin-bottom: 8px; }
+.rd .rd-cat-places.is-range button { background: var(--rd-tint); }
+.rd .rd-cat-places.is-range button:hover { box-shadow: inset 0 0 0 2px var(--rd-ink); }
+.rd .rd-cat-bar.is-range { padding: 12px 14px; border-radius: 14px; background: var(--rd-tint); }
+.rd .rd-cat-bar.is-range p b { margin-right: 6px; font-size: 16px; font-weight: 800; color: var(--rd-text); }
+.rd .rd-cat-bar.is-range button { min-height: 44px; padding: 0 18px; background: var(--rd-ink); color: #fff; font-size: 15px; }
+@media (max-width: 640px) { .rd .rd-cat-places.is-range { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rd .rd-cat-places.is-range button { min-height: 58px; padding: 10px 12px; } .rd .rd-cat-places.is-range b { font-size: 15px; } }

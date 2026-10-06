@@ -82,15 +82,33 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
         for (const i of restPool) { const d = i.details || {}; if (d.region !== region || !d.district) continue; (m.get(d.district) || m.set(d.district, new Set()).get(d.district)!).add(d.school); }
         return Array.from(m, ([r, s]) => ({ r, n: s.size })).sort((a, b) => a.r.localeCompare(b.r, 'ko'));
     }, [restPool, region]);
-    const showList = !browsing || !!district || district === '*';
+    // [10/7] 시험 범위로 한 번에 담기 — 회원 시험지 570개 중 36%가 학교 5곳 이상, 29%가 자료 21개 이상을 담았다.
+    //   학교보다 '학년·학기·시험 범위'로 모으는 사람이 셋 중 하나라, 지역보다 앞에 둔다.
+    const rangeMode = browsing && !region && !!grade && !!term;
+    const ranges = useMemo(() => {
+        const m = new Map<string, { grade: number; term: string; n: number; schools: Set<string> }>();
+        for (const i of pool) {
+            const d = i.details || {};
+            const t = termOf(d);
+            if (!d.grade || !TERMS.some(x => x.id === t)) continue;
+            if (year && String(d.exam_year) !== year) continue;
+            if (subject && d.subject !== subject) continue;
+            const k = `${d.grade}|${t}`;
+            if (!m.has(k)) m.set(k, { grade: d.grade, term: t, n: 0, schools: new Set() });
+            const r = m.get(k)!; r.n++; r.schools.add(d.school);
+        }
+        return Array.from(m.values()).sort((a, b) => a.grade - b.grade || TERMS.findIndex(x => x.id === a.term) - TERMS.findIndex(x => x.id === b.term));
+    }, [pool, year, subject]);
+    const termLabel = (t: string) => TERMS.find(x => x.id === t)?.label || t;
+    const showList = !browsing || rangeMode || !!district || district === '*';
 
     const visible = useMemo(() => restPool.filter(i => {
-        if (!isSchool || words.length) return true;
+        if (!isSchool || words.length || rangeMode) return true;
         const d = i.details || {};
         if (region && d.region !== region) return false;
         if (district && district !== '*' && d.district !== district) return false;
         return !!region;
-    }), [restPool, isSchool, words.length, region, district]);
+    }), [restPool, isSchool, words.length, region, district, rangeMode]);
 
     const groups: Group[] = useMemo(() => {
         const map = new Map<string, Group>();
@@ -186,25 +204,35 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
         </div>}
 
         {/* 내신: 지역 → 구·군 */}
-        {browsing && <nav className="rd-cat-crumb" aria-label="지역">
-            <button type="button" onClick={() => { setRegion(''); setDistrict(''); }} aria-current={!region ? 'true' : undefined}>전국</button>
+        {browsing && (region || rangeMode) && <nav className="rd-cat-crumb" aria-label="지역">
+            <button type="button" onClick={() => { setRegion(''); setDistrict(''); setGrade(''); setTerm(''); }} aria-current={!region && !rangeMode ? 'true' : undefined}>처음으로</button>
+            {rangeMode && <><ChevronRight size={14} aria-hidden="true" /><span aria-current="true">전국 {grade}학년 {termLabel(term)}</span></>}
             {region && <><ChevronRight size={14} aria-hidden="true" /><button type="button" onClick={() => setDistrict('')} aria-current={region && !district ? 'true' : undefined}>{region}</button></>}
             {district && <><ChevronRight size={14} aria-hidden="true" /><span aria-current="true">{district === '*' ? `${region} 전체` : district}</span></>}
         </nav>}
 
-        {browsing && !region ? <div className="rd-cat-list"><div className="rd-cat-places">
-            {regionCounts.map(({ r, n }) => <button key={r} type="button" onClick={() => setRegion(r)}><b>{r}</b><small>{n}개 학교</small></button>)}
-        </div></div>
+        {browsing && !region && !rangeMode ? <div className="rd-cat-list">
+            <p className="rd-cat-sec"><b>시험 범위로 한 번에 담기</b><small>범위를 고르면 전국 학교의 그 시험 회차가 모입니다{year ? ` (${year}년)` : ''}</small></p>
+            <div className="rd-cat-places is-range">
+                {ranges.map(r => <button key={`${r.grade}|${r.term}`} type="button" onClick={() => { setGrade(String(r.grade)); setTerm(r.term); }}>
+                    <b>{r.grade}학년 {termLabel(r.term)}</b><small>학교 {r.schools.size}곳, 회차 {r.n}개</small>
+                </button>)}
+            </div>
+            <p className="rd-cat-sec"><b>지역으로 학교 찾기</b></p>
+            <div className="rd-cat-places">
+                {regionCounts.map(({ r, n }) => <button key={r} type="button" onClick={() => setRegion(r)}><b>{r}</b><small>{n}개 학교</small></button>)}
+            </div>
+        </div>
         : browsing && region && !district ? <div className="rd-cat-list"><div className="rd-cat-places">
             <button type="button" className="is-all" onClick={() => setDistrict('*')}><b>{region} 전체</b><small>{regionCounts.find(x => x.r === region)?.n || 0}개 학교</small></button>
             {districtCounts.map(({ r, n }) => <button key={r} type="button" onClick={() => setDistrict(r)}><b>{r}</b><small>{n}개 학교</small></button>)}
         </div></div>
         : showList && <>
-            <div className="rd-cat-bar">
-                <p role="status">자료 {visible.length}개{isSchool ? `, ${groups.length}개 학교` : ''}</p>
-                {visible.length > 0 && visible.length <= 300 && (isSchool ? (words.length || district || extraFiltered) : true) && (visibleSelected === visible.length
-                    ? <button type="button" onClick={() => onGroupSelect(visible, false)}>보이는 자료 모두 빼기</button>
-                    : <button type="button" onClick={() => onGroupSelect(visible.filter(i => !selected.has(i.id)), true)}>보이는 자료 {visible.length}개 모두 담기</button>)}
+            <div className={`rd-cat-bar ${rangeMode ? 'is-range' : ''}`}>
+                <p role="status">{rangeMode ? <><b>전국 {grade}학년 {termLabel(term)}{year ? `, ${year}년` : ''}{subject ? `, ${subject}` : ''}</b> 학교 {groups.length}곳, 회차 {visible.length}개</> : <>자료 {visible.length}개{isSchool ? `, ${groups.length}개 학교` : ''}</>}</p>
+                {visible.length > 0 && visible.length <= 1500 && (isSchool ? (words.length || district || extraFiltered) : true) && (visibleSelected === visible.length
+                    ? <button type="button" onClick={() => onGroupSelect(visible, false)}>{rangeMode ? '이 범위 모두 빼기' : '보이는 자료 모두 빼기'}</button>
+                    : <button type="button" onClick={() => onGroupSelect(visible.filter(i => !selected.has(i.id)), true)}>{rangeMode ? `이 범위 ${visible.length}개 모두 담기` : `보이는 자료 ${visible.length}개 모두 담기`}</button>)}
             </div>
             <div className="rd-cat-list">
                 {groups.length === 0 ? <p className="rd-cat-empty">조건에 맞는 자료가 없습니다. 검색어나 거르기 조건을 바꿔 보세요.</p>
