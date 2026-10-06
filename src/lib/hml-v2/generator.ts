@@ -518,9 +518,12 @@ export function generateHmlFromTemplate(
         };
 
         const endnotesInQ = findEndnotes(root);
+        const endnoteClones: Element[] = [];   // 아래에서 그림 번호를 바꿀 때 이 사본도 같이 바꾼다(10/7)
         if (endnotesInQ.length > 0) {
             for (const en of endnotesInQ) {
-                allEndnotes.push(en.cloneNode(true) as Element);
+                const clone = en.cloneNode(true) as Element;
+                endnoteClones.push(clone);
+                allEndnotes.push(clone);
             }
         }
 
@@ -854,6 +857,17 @@ export function generateHmlFromTemplate(
                 if (count > 0) console.log(`[HML-V2] V47: Stripped ${count} forced breaks from Q${qIndex}`);
             };
             stripBreaks(root);
+
+            // [2026-10-07] 미주(해설) 사본의 그림 번호도 바꾼다.
+            //   사본은 위에서 그림 번호를 바꾸기 '전에' 떠 두었기 때문에 원래 번호(예: 8·9)가 그대로 남았다.
+            //   두 번째 회차 문항부터 번호가 어긋나, 범위를 넘으면 저장 실패('그림 연결이 누락'),
+            //   범위 안이면 해설에 다른 문항 그림이 들어갔다(개포고+풍문고 2문항으로 재현).
+            for (const en of endnoteClones) {
+                const enImages = en.getElementsByTagName('IMAGE');
+                const enPictures = en.getElementsByTagName('PICTURE');
+                for (let i = 0; i < enImages.length; i++) processImageNode(enImages[i]);
+                for (let i = 0; i < enPictures.length; i++) processImageNode(enPictures[i]);
+            }
 
             const children = Array.from(root.childNodes);
             for (const child of children) {
