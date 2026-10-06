@@ -7,15 +7,20 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileItem } from '@/lib/data';
-import { Download, FileText, User as UserIcon, ArrowLeft, Trash2, Database, Settings, Edit } from 'lucide-react';
+import { Download, FileText, User as UserIcon, ArrowLeft, Trash2, Database, Settings, Edit, MessageSquare } from 'lucide-react';
 import MarketingSettings from '@/components/MarketingSettings';
 import PasswordSettings from '@/components/PasswordSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import { deletePurchase } from './actions';
+import MyDbRequests from '@/components/MyDbRequests';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
-    const [activeTab, setActiveTab] = useState<'purchases' | 'settings'>('purchases');
+    const [activeTab, setActiveTab] = useState<'purchases' | 'requests' | 'settings'>('purchases');
+    // ?tab=requests 로 들어오면 '내 요청' 탭을 연다(안내 링크용, 10/6)
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get('tab') === 'requests') setActiveTab('requests');
+    }, []);
     const [loading, setLoading] = useState(true);
     const [purchases, setPurchases] = useState<any[]>([]);
     const [earnedPoints, setEarnedPoints] = useState(0);
@@ -305,6 +310,12 @@ export default function MyPage() {
                     >
                         구매 내역
                     </button>
+                    <button
+                        onClick={() => setActiveTab('requests')}
+                        className={`pb-3 px-2 font-bold text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${activeTab === 'requests' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
+                    >
+                        <MessageSquare size={14} /> 내 요청
+                    </button>
                     {/* [수신설정] 2026-09-05 배포한 마케팅 동의문이 "마이페이지 > 설정에서" 끄라고
                         안내하는데 그 화면이 없었다. 법이 요구하는 '수신 거부 방법'이기도 하다. */}
                     <button
@@ -314,6 +325,8 @@ export default function MyPage() {
                         <Settings size={14} /> 설정
                     </button>
                 </div>
+
+                {activeTab === 'requests' && <MyDbRequests />}
 
                 {activeTab === 'settings' && (
                     <div className="space-y-4">

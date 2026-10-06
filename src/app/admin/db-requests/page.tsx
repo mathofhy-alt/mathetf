@@ -44,6 +44,19 @@ export default function DbRequestsAdmin() {
         if (!r.ok) { alert('상태를 바꾸지 못했습니다.'); return; }
         setRows(prev => prev.map(x => x.id === id ? { ...x, status } : x));
     };
+    // [10/6] 운영자 안내문 — 회원 마이페이지 '내 요청' 탭에 그대로 보인다.
+    const [drafts, setDrafts] = useState<Record<string, string>>({});
+    const [savingId, setSavingId] = useState<string | null>(null);
+    const saveReply = async (row: any) => {
+        const text = drafts[row.id] ?? row.admin_reply ?? '';
+        setSavingId(row.id);
+        const r = await fetch('/api/admin/db-requests', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, admin_reply: text }) });
+        const j = await r.json().catch(() => ({}));
+        setSavingId(null);
+        if (!r.ok) { alert('안내문을 저장하지 못했습니다: ' + (j.error || r.status)); return; }
+        setRows(prev => prev.map(x => x.id === row.id ? { ...x, ...j.row } : x));
+        setDrafts(prev => { const n = { ...prev }; delete n[row.id]; return n; });
+    };
     const remove = async (row: any) => {
         if (!confirm('이 요청과 올린 파일을 모두 삭제할까요? (복구 불가)')) return;
         const r = await fetch('/api/admin/db-requests', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id }) });
@@ -78,6 +91,26 @@ export default function DbRequestsAdmin() {
                                     ))}
                                 </ul>
                                 {row.note && <div className="text-xs text-slate-600 bg-slate-50 rounded px-2 py-1">💬 {row.note}</div>}
+                                <div className="pt-2">
+                                    <label className="block text-xs font-bold text-slate-600 mb-1">회원에게 보낼 안내 <span className="font-normal text-slate-400">— 마이페이지 &gt; 내 요청에 보입니다</span></label>
+                                    <textarea
+                                        value={drafts[row.id] ?? row.admin_reply ?? ''}
+                                        onChange={e => setDrafts(prev => ({ ...prev, [row.id]: e.target.value }))}
+                                        rows={3} maxLength={2000}
+                                        placeholder="예) 올려주신 자료는 이미 수학ETF에 있는 모의고사 문항이라 바로 쓰실 수 있습니다…"
+                                        className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-brand-400"
+                                    />
+                                    <div className="flex items-center justify-between mt-1">
+                                        <span className="text-xs text-slate-400">{row.replied_at ? `저장됨 · ${new Date(row.replied_at).toLocaleString('ko-KR')}` : '아직 안내 없음'}</span>
+                                        <button
+                                            onClick={() => saveReply(row)}
+                                            disabled={savingId === row.id || drafts[row.id] === undefined}
+                                            className="text-xs font-bold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40"
+                                        >
+                                            {savingId === row.id ? '저장 중…' : '안내 저장'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                                 <select value={row.status} onChange={e => setStatus(row.id, e.target.value)} aria-label="처리 상태" className="text-xs font-bold border border-slate-200 rounded-lg px-2 py-2 bg-white">

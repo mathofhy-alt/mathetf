@@ -18,6 +18,21 @@ const MAX_BYTES = 50 * 1024 * 1024;   // Supabase 프로젝트 업로드 한도(
 const OK_EXT = new Set(['pdf', 'hwp', 'hwpx', 'jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'zip']);
 const extOf = (name: string) => (name.split('.').pop() || '').toLowerCase();
 
+/** GET → 내 요청 목록 (마이페이지 '내 요청' 탭, 10/6). 저장 경로는 빼고 파일 이름만 준다. */
+export async function GET() {
+    const { data: { user } } = await createClient().auth.getUser();
+    if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    const { data, error } = await createAdminClient().from('db_requests')
+        .select('id, files, note, status, admin_reply, replied_at, created_at')
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(100);
+    if (error) return NextResponse.json({ error: '요청 내역을 불러오지 못했습니다.' }, { status: 500 });
+    const requests = (data || []).map(r => ({
+        ...r,
+        files: (Array.isArray(r.files) ? r.files : []).map((f: any) => ({ name: f?.name || '파일', size: f?.size ?? null })),
+    }));
+    return NextResponse.json({ requests });
+}
+
 export async function POST(req: NextRequest) {
     const { data: { user } } = await createClient().auth.getUser();
     if (!user) return NextResponse.json({ error: '로그인 후 요청할 수 있습니다.' }, { status: 401 });

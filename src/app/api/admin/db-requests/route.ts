@@ -16,11 +16,23 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
-    const { id, status } = await req.json().catch(() => ({}));
-    if (typeof id !== 'string' || !['접수', '처리중', '완료', '반려'].includes(status)) return NextResponse.json({ error: '상태를 확인해주세요.' }, { status: 400 });
-    const { error } = await createAdminClient().from('db_requests').update({ status }).eq('id', id);
-    if (error) return NextResponse.json({ error: '상태를 바꾸지 못했습니다.' }, { status: 500 });
-    return NextResponse.json({ ok: true });
+    // status 와 admin_reply(회원 마이페이지에 보이는 안내문, 10/6) 중 온 것만 바꾼다.
+    const { id, status, admin_reply } = await req.json().catch(() => ({}));
+    if (typeof id !== 'string') return NextResponse.json({ error: 'id가 없습니다.' }, { status: 400 });
+    const patch: Record<string, unknown> = {};
+    if (status !== undefined) {
+        if (!['접수', '처리중', '완료', '반려'].includes(status)) return NextResponse.json({ error: '상태를 확인해주세요.' }, { status: 400 });
+        patch.status = status;
+    }
+    if (admin_reply !== undefined) {
+        const text = String(admin_reply ?? '').trim().slice(0, 2000);
+        patch.admin_reply = text || null;
+        patch.replied_at = text ? new Date().toISOString() : null;
+    }
+    if (!Object.keys(patch).length) return NextResponse.json({ error: '바꿀 내용이 없습니다.' }, { status: 400 });
+    const { data, error } = await createAdminClient().from('db_requests').update(patch).eq('id', id).select('status, admin_reply, replied_at').single();
+    if (error) return NextResponse.json({ error: '저장하지 못했습니다.' }, { status: 500 });
+    return NextResponse.json({ ok: true, row: data });
 }
 
 export async function DELETE(req: NextRequest) {
