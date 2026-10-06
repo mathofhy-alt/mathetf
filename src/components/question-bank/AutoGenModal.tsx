@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import {logQuestionBankEvent} from '@/lib/analytics/question-bank';
 import { questionBankLoginUrl } from '@/lib/auth-return';
 
@@ -122,47 +122,40 @@ export default function AutoGenModal({
 
     return (
         <div role="dialog" aria-modal="true" aria-label="자동 출제 설정"
-            className="product-modal fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center animate-in fade-in duration-200"
+            className="rd rd-overlay"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className="bg-white w-full sm:w-[440px] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[90vh]">
-                {/* 모바일 드래그 핸들 */}
-                <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
-                    <div className="w-10 h-1 rounded-full bg-slate-300" />
-                </div>
+            <div className="rd-modal rd-modal-sm">
+                <div className="rd-sheet-handle" />
 
                 {/* 헤더 */}
-                <div className="flex items-center justify-between px-6 pt-4 pb-2 flex-shrink-0">
-                    <h3 className="font-bold text-xl flex items-center gap-2 text-slate-800">
-
-                        범위에 맞춰 자동 출제
-                    </h3>
+                <div className="rd-modal-head">
+                    <div style={{ minWidth: 0 }}>
+                        <h3 className="rd-modal-title">범위에 맞춰 자동 출제</h3>
+                        <p className="rd-modal-sub">{sourceName?`‘${sourceName}’과 같은 자료 ${selectedDbs.length}개에서 이전 문항 ${excludedQuestionIds.length}개를 제외합니다. 취소하면 현재 시험지가 유지됩니다.`:`선택한 자료 ${selectedDbs.length}개 안에서 출제합니다. 이미 담은 문항은 제외합니다.`}</p>
+                    </div>
                     <button
                         aria-label="자동 출제 설정 닫기" onClick={onClose}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors text-xl font-bold"
+                        className="rd-modal-x"
                     >
-                        ×
+                        <X size={20} />
                     </button>
                 </div>
 
                 {/* 스크롤 가능한 본문 */}
-                <div className="overflow-y-auto flex-1 px-6 pb-2">
-                    <div className="space-y-5 pt-2 pb-4">
-                        <p className="text-sm text-slate-600">{sourceName?`‘${sourceName}’과 같은 자료 ${selectedDbs.length}개에서 이전 문항 ${excludedQuestionIds.length}개를 제외합니다. 취소하면 현재 시험지가 유지됩니다.`:`선택한 자료 ${selectedDbs.length}개 안에서 출제합니다. 이미 담은 문항은 제외합니다.`}</p>
-                        {facetsLoading && <p role="status" className="text-sm text-slate-500">출제 가능한 단원을 확인하고 있습니다.</p>}{facetsError && <p role="alert" className="text-sm text-red-600">{facetsError}</p>}
-                        {message&&<p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm">{message}</p>}{authNeeded&&<div role="status" className="rounded-lg bg-[#E8F6F5] p-3 text-sm"><p>고른 조건은 보관했습니다. 로그인 후 이 화면에서 이어서 출제할 수 있습니다.</p><a className="mt-2 block font-bold underline" href={questionBankLoginUrl()}>로그인하고 계속하기</a></div>}
+                <div className="rd-modal-body">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+                        {facetsLoading && <p role="status" className="rd-help" style={{ margin: 0 }}>출제 가능한 단원을 확인하고 있습니다.</p>}{facetsError && <p role="alert" className="rd-alert">{facetsError}</p>}
+                        {message&&<p role="alert" className="rd-alert">{message}</p>}{authNeeded&&<div role="status" className="rd-modal-note" style={{ margin: 0 }}><p style={{ margin: 0 }}>고른 조건은 보관했습니다. 로그인 후 이 화면에서 이어서 출제할 수 있습니다.</p><a style={{ display: 'block', marginTop: 6, fontWeight: 800, color: 'var(--rd-ink)', textDecoration: 'underline' }} href={questionBankLoginUrl()}>로그인하고 계속하기</a></div>}
                         {/* Subject Selection */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">과목</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <label className="rd-field-label">과목</label>
+                            <div className="rd-opt-grid">
                                 {['',...subjects].map(sub => (
                                     <button
                                         key={sub}
                                         onClick={() => { setSubject(sub); setSelectedUnits([]); }}
-                                        className={`p-2 text-sm rounded-lg border transition-all font-medium ${subject === sub
-                                            ? 'bg-[#1B7E7A] text-white border-[#1B7E7A] ring-2 ring-[#BFE5E2]'
-                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                            }`}
+                                        className={`rd-opt${subject === sub ? ' is-on' : ''}`}
                                     >
                                         {sub || '선택 자료의 모든 과목'}
                                     </button>
@@ -172,25 +165,22 @@ export default function AutoGenModal({
 
                         {/* Conditional Unit Selection (Multi-select) */}
                         {hasUnits && (
-                            <div className="animate-in slide-in-from-top-2 duration-200">
-                                <label className="block text-sm font-bold text-slate-700 mb-2 flex justify-between items-center">
-                                    <span>단원 (중복 선택 가능)</span>
-                                    <span className="text-xs font-normal text-[#1B7E7A]">
+                            <div>
+                                <label className="rd-field-label">
+                                    <span>단원 <small>중복 선택 가능</small></span>
+                                    <small style={{ color: 'var(--rd-ink)', fontWeight: 700 }}>
                                         {selectedUnits.length > 0 ? `${selectedUnits.length}개 선택됨` : '전체'}
-                                    </span>
+                                    </small>
                                 </label>
 
-                                <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-[120px] overflow-y-auto custom-scrollbar">
+                                <div className="rd-chips">
                                     {units.map(u => {
                                         const isSelected = selectedUnits.includes(u);
                                         return (
                                             <button
                                                 key={u}
                                                 onClick={() => toggleUnit(u)}
-                                                className={`px-3 py-1.5 text-xs rounded-full border transition-all font-bold ${isSelected
-                                                    ? 'bg-[#D9F0EE] text-[#166B68] border-[#9ED8D4]'
-                                                    : 'bg-white text-slate-500 border-slate-200 hover:border-[#BFE5E2] hover:text-[#1B7E7A]'
-                                                    }`}
+                                                className={`rd-chip-opt${isSelected ? ' is-on' : ''}`}
                                             >
                                                 {u}
                                             </button>
@@ -202,12 +192,13 @@ export default function AutoGenModal({
 
                         {/* Difficulty Range (1-10) */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">
-                                난이도 범위 <span className="text-[#1B7E7A] font-normal ml-1">({minDiff} ~ {maxDiff})</span>
+                            <label className="rd-field-label">
+                                <span>난이도 범위</span>
+                                <small style={{ color: 'var(--rd-ink)', fontWeight: 700 }}>{minDiff} ~ {maxDiff}</small>
                             </label>
-                            <div className="flex items-center gap-3">
-                                <div className="flex-1">
-                                    <label className="text-xs text-slate-500 block mb-1">최소</label>
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+                                <div style={{ flex: 1 }}>
+                                    <label className="rd-help" style={{ display: 'block', margin: '0 0 6px' }}>최소</label>
                                     <select
                                         aria-label="최소 난이도" value={minDiff}
                                         onChange={(e) => {
@@ -215,16 +206,16 @@ export default function AutoGenModal({
                                             setMinDiff(val);
                                             if (val > maxDiff) setMaxDiff(val);
                                         }}
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-center font-bold focus:ring-2 focus:ring-[#3AADA9] outline-none"
+                                        className="rd-input"
                                     >
                                         {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
                                             <option key={n} value={n}>{n}</option>
                                         ))}
                                     </select>
                                 </div>
-                                <span className="text-slate-300 mt-4">~</span>
-                                <div className="flex-1">
-                                    <label className="text-xs text-slate-500 block mb-1">최대</label>
+                                <span style={{ color: 'var(--rd-icon)', paddingBottom: 14 }}>~</span>
+                                <div style={{ flex: 1 }}>
+                                    <label className="rd-help" style={{ display: 'block', margin: '0 0 6px' }}>최대</label>
                                     <select
                                         aria-label="최대 난이도" value={maxDiff}
                                         onChange={(e) => {
@@ -232,7 +223,7 @@ export default function AutoGenModal({
                                             setMaxDiff(val);
                                             if (val < minDiff) setMinDiff(val);
                                         }}
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-center font-bold focus:ring-2 focus:ring-[#3AADA9] outline-none"
+                                        className="rd-input"
                                     >
                                         {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
                                             <option key={n} value={n}>{n}</option>
@@ -244,14 +235,14 @@ export default function AutoGenModal({
 
                         {/* Question Count */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">
-                                문항 수 <span className="text-slate-400 font-normal ml-1">(최대 {maxCount}문제)</span>
+                            <label className="rd-field-label">
+                                <span>문항 수</span> <small>최대 {maxCount}문제</small>
                             </label>
                             <input
                                 aria-label="출제 문항 수" type="number"
                                 min="1"
                                 max={maxCount}
-                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-[#3AADA9] outline-none"
+                                className="rd-input"
                                 value={count}
                                 onChange={e => {
                                     const val = Number(e.target.value);
@@ -265,19 +256,19 @@ export default function AutoGenModal({
                 </div>
 
                 {/* 하단 버튼 - 항상 고정 */}
-                <div className="flex gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                <div className="rd-modal-foot">
                     <button
                         aria-label="자동 출제 설정 닫기" onClick={onClose}
-                        className="flex-1 py-3 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl font-bold transition-colors border border-slate-200"
+                        className="rd-btn rd-btn-gray"
                     >
                         취소
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={facetsLoading || !!facetsError || generating || count < 1 || count > maxCount || !Number.isInteger(count) || selectedDbs.length === 0}
-                        className="flex-1 py-3 bg-[#1B7E7A] text-white font-bold rounded-xl hover:bg-[#166B68] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all flex items-center justify-center gap-2"
+                        className="rd-btn rd-btn-primary"
                     >
-                        {generating && <Loader2 size={16} className="animate-spin" />}
+                        {generating && <Loader2 size={18} className="animate-spin" />}
                         {generating ? '생성 중...' : '생성하기'}
                     </button>
                 </div>
@@ -285,3 +276,4 @@ export default function AutoGenModal({
         </div>
     );
 }
+

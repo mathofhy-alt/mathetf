@@ -28,24 +28,24 @@ export default function SourceCatalog({items, selectedIds, onItemSelect, onGroup
     const report = useRef(onGetViewItems);
     report.current = onGetViewItems;
     useEffect(() => { report.current(visible); }, [visible]);
-    return <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white" aria-label="출제 자료 분류">
-        <div className={`grid ${tabs.length > 3 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 border-b border-slate-200 p-3`} role="group" aria-label="자료 종류">
+    return <section className="flex h-full min-h-0 flex-col overflow-hidden" aria-label="출제 자료 분류">
+        <div className="rd-seg" role="group" aria-label="자료 종류">
             {tabs.map(c => <button key={c.id} type="button" aria-pressed={category === c.id}
                 onClick={() => { setCategory(c.id); setSearch(''); onGetViewItems(groups[c.id]); }}
-                className={`min-w-0 rounded-xl border px-2 py-3 text-sm font-bold transition ${category === c.id ? 'border-[#1B7E7A] bg-[#1B7E7A] text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
-                {c.label}<span className="mt-1 block text-xs font-normal opacity-80">{groups[c.id].length}개</span>
+                style={{ minHeight: 52, padding: '6px 8px', lineHeight: 1.3 }}>
+                {c.label}<span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--rd-sub)' }}>{groups[c.id].length}개</span>
             </button>)}
         </div>
-        <div className="space-y-2 border-b border-slate-200 p-3">
-            <p className="text-xs text-slate-500">{category === 'mine' ? '회원님만 쓰는 전용 개인DB입니다.' : category === 'national' ? '전국연합·평가원·수능 자료입니다.' : category === 'special' ? '사관학교·경찰대 입학시험 자료입니다.' : '학교별 내신 기출 자료입니다.'} 분류를 바꿔도 선택한 자료는 유지됩니다.</p>
-            <input aria-label="선택한 분류에서 자료 검색" placeholder="학교명, 연도 등으로 검색..." value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-            <p role="status" className="text-xs text-slate-500">{sourceCategories.find(c => c.id === category)?.label} · {visible.length}개 자료</p>
+        <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p className="rd-help" style={{ margin: 0 }}>{category === 'mine' ? '회원님만 쓰는 전용 개인DB입니다.' : category === 'national' ? '전국연합·평가원·수능 자료입니다.' : category === 'special' ? '사관학교·경찰대 입학시험 자료입니다.' : '학교별 내신 기출 자료입니다.'} 분류를 바꿔도 선택한 자료는 유지됩니다.</p>
+            <input aria-label="선택한 분류에서 자료 검색" placeholder="학교명, 연도 등으로 검색..." value={search} onChange={e => setSearch(e.target.value)} className="rd-input" style={{ minHeight: 46, fontSize: 15 }} />
+            <p role="status" className="rd-help" style={{ margin: 0, fontWeight: 700 }}>{sourceCategories.find(c => c.id === category)?.label} · {visible.length}개 자료</p>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto rd-well" style={{ overflowX: 'hidden' }}>
             {visible.length ? <FileGrid key={`${category}:${search}`} selectionOnly folders={[]} items={visible} selectedIds={selectedIds}
                 onItemClick={onItemSelect} onGroupSelect={onGroupSelect}
                 onFolderClick={() => {}} onRename={() => {}} onDelete={() => {}} onMoveItem={() => {}} onContextMenu={() => {}} />
-                : <p className="p-8 text-center text-sm text-slate-500">이 분류에 조건과 일치하는 자료가 없습니다.</p>}
+                : <p className="rd-empty" style={{ margin: 0 }}>이 분류에 조건과 일치하는 자료가 없습니다.</p>}
         </div>
     </section>;
 }

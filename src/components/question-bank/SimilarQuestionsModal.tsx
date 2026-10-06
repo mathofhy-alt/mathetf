@@ -83,23 +83,24 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
     }, [baseQuestion, basis]);
 
     return (
-        <div role="dialog" aria-modal="true" aria-label="유사 문항 검색" className="product-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-[95vw] h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div role="dialog" aria-modal="true" aria-label="유사 문항 검색" className="rd rd-overlay">
+            <div className="rd-modal rd-modal-flush rd-modal-xl">
+                <div className="rd-sheet-handle" />
                 {/* Header */}
-                <div className="p-4 border-b flex justify-between items-center bg-[#E8F6F5]/50 shrink-0">
-                    <div>
-                        <h2 className="font-bold text-lg text-[#0B3F3D] flex items-center gap-2">
-                            <span>🔍 유사 문항 검색</span>
-                            <span className="text-xs bg-[#D9F0EE] text-[#166B68] px-2 py-1 rounded-full">
+                <div className="rd-modal-band rd-modal-head">
+                    <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px 10px' }}>
+                            <h2 className="rd-modal-title">유사 문항 검색</h2>
+                            <span className="rd-tag rd-tag-ink">
                                 {baseQuestion.school} {baseQuestion.exam_year}
                             </span>
-                        </h2>
-                        <p className="text-sm text-slate-500">
+                        </div>
+                        <p className="rd-modal-sub">
                             {basis === 'statement'
                                 ? '문제(발문)가 비슷한 문항을 찾습니다 — 묻는 내용이 닮은 문제.'
                                 : '풀이가 비슷한 문항을 찾습니다 — 해결 방법이 닮은 문제.'}
                         </p>
-                        <div className="mt-2 inline-flex bg-white border border-[#BFE5E2] rounded-lg p-0.5">
+                        <div className="rd-seg rd-seg-inline" style={{ marginTop: 12 }}>
                             {([
                                 ['statement', '문제 유사'],
                                 ['solution', '풀이 유사'],
@@ -108,9 +109,7 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                     key={key}
                                     onClick={() => setBasis(key)}
                                     disabled={loading}
-                                    className={`px-3.5 py-1.5 text-xs font-bold rounded-md transition-colors disabled:opacity-60 ${basis === key
-                                        ? 'bg-[#1B7E7A] text-white shadow-sm'
-                                        : 'text-slate-500 hover:text-[#166B68]'}`}
+                                    className={basis === key ? 'is-on' : ''}
                                 >
                                     {label}
                                 </button>
@@ -118,31 +117,29 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                         </div>
                         {/* 발문 임베딩이 아직 없는 문항이면 서버가 풀이 기준으로 되돌린다. 조용히 속이지 않는다. */}
                         {basis === 'statement' && usedBasis === 'solution' && !loading && (
-                            <p className="mt-1.5 text-[11px] font-bold text-amber-700">
+                            <p style={{ margin: '8px 0 0', fontSize: 13, fontWeight: 700, color: '#8A4B00' }}>
                                 이 문항은 아직 발문 분석이 없어 풀이 유사로 찾았습니다.
                             </p>
                         )}
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                        aria-label="닫기"
+                        className="rd-modal-x"
                     >
-                        <X size={24} className="text-slate-500" />
+                        <X size={22} />
                     </button>
                 </div>
 
                 {/* Body - Split View */}
-                <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                <div className="rd-similar-split">
                     {/* Left Panel - Fixed Original Question */}
-                    <div className="w-full md:w-[450px] max-h-[40vh] md:max-h-none border-b md:border-b-0 md:border-r border-slate-200 bg-white flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10 shrink-0">
-                        <div className="p-4 border-b bg-[#E8F6F5]/30">
-                            <h3 className="font-bold text-[#0B3F3D] flex items-center gap-2">
-                                <span className="text-xl">🎯</span>
-                                원본 문제
-                            </h3>
+                    <div className="rd-similar-base">
+                        <div style={{ padding: '16px 20px 0' }}>
+                            <h3 className="rd-sec-title">원본 문제</h3>
                         </div>
-                        <div data-modal-scroll className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                            <div className="bg-white rounded-xl shadow-sm border border-[#D9F0EE] p-1">
+                        <div data-modal-scroll className="custom-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 20px 20px' }}>
+                            <div>
                                 <QuestionRenderer
                                     xmlContent={baseQuestion.content_xml}
                                     externalImages={baseImages || undefined}
@@ -154,78 +151,74 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                     </div>
 
                     {/* Right Panel - Scrollable Similar Questions */}
-                    <div data-modal-scroll className="flex-1 overflow-y-auto bg-slate-50 p-6">
+                    <div data-modal-scroll className="rd-similar-list">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
-                                <Loader2 size={40} className="animate-spin text-[#3AADA9]" />
-                                <p>유사한 문제를 분석하고 있습니다...</p>
+                            <div className="rd-empty">
+                                <Loader2 size={36} className="animate-spin" style={{ color: 'var(--rd-ink)' }} />
+                                <p style={{ margin: 0 }}>유사한 문제를 분석하고 있습니다...</p>
                             </div>
                         ) : error ? (
-                            <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2">
-                                <p className="font-bold">오류가 발생했습니다</p>
-                                <p className="text-sm">{error}</p>
+                            <div className="rd-empty">
+                                <strong>오류가 발생했습니다</strong>
+                                <p style={{ margin: 0, fontSize: 14 }}>{error}</p>
                             </div>
                         ) : questions.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
-                                <p>유사한 문제를 찾을 수 없습니다.</p>
-                                <p className="text-sm">임베딩 데이터가 생성되지 않았거나, 유사도가 낮은 경우일 수 있습니다.</p>
+                            <div className="rd-empty">
+                                <strong>유사한 문제를 찾을 수 없습니다.</strong>
+                                <p style={{ margin: 0, fontSize: 14 }}>임베딩 데이터가 생성되지 않았거나, 유사도가 낮은 경우일 수 있습니다.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="rd-similar-grid">
                                 {questions.map((q, idx) => {
                                     const inCart = !!cart.find(c => c.id === q.id);
                                     const similarity = q.similarity ? Math.round(q.similarity * 100) : null;
 
                                     return (
-                                        <div key={q.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition-shadow flex flex-col h-full">
+                                        <div key={q.id} className="rd-similar-card">
                                             {/* Card Header for Similar Item */}
-                                            <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
-                                                <div className="flex gap-2 items-center flex-wrap">
-                                                    <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded">
+                                            <div className="rd-similar-card-head">
+                                                <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+                                                    <span className="rd-tag">
                                                         #{idx + 1}
                                                     </span>
                                                     {similarity && (
-                                                        <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
+                                                        <span className="rd-tag rd-tag-ink">
                                                             {similarity}%
                                                         </span>
                                                     )}
-                                                    <span className="text-sm font-bold text-slate-700 truncate max-w-[120px]">
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--rd-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                                                         {q.school}
                                                     </span>
                                                 </div>
-                                                <div className="flex gap-2">
+                                                <div style={{ display: 'flex', gap: 6, flex: 'none' }}>
                                                     {onReplace && (
                                                         <button
                                                             onClick={() => onReplace(baseQuestion, q)}
-                                                            className="px-3 py-1.5 rounded-lg text-sm font-bold bg-white border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors whitespace-nowrap flex items-center gap-1"
+                                                            className="rd-btn rd-btn-gray rd-btn-sm"
                                                         >
                                                             교체
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={() => onToggleCart(q)}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors whitespace-nowrap
-                                                            ${inCart
-                                                                ? 'bg-[#1B7E7A] text-white hover:bg-[#166B68]'
-                                                                : 'bg-white border border-[#BFE5E2] text-[#1B7E7A] hover:bg-[#E8F6F5]'
-                                                            }`}
+                                                        className={`rd-btn rd-btn-sm rd-btn-tint${inCart ? ' rd-btn-on' : ''}`}
                                                     >
                                                         {inCart ? (
-                                                            <><Check size={14} /> 담김</>
+                                                            <><Check size={15} /> 담김</>
                                                         ) : (
-                                                            <><Plus size={14} /> 담기</>
+                                                            <><Plus size={15} /> 담기</>
                                                         )}
                                                     </button>
                                                 </div>
                                             </div>
 
                                             {/* Question Content */}
-                                            <div className="p-4 bg-white flex-1 overflow-hidden">
+                                            <div style={{ padding: 16, flex: 1, overflow: 'hidden', background: '#fff' }}>
                                                 {q.question_images === null ? (
-                                                    <div className="space-y-2 animate-pulse">
-                                                        <div className="h-4 bg-gray-200 rounded w-3/4" />
-                                                        <div className="h-4 bg-gray-200 rounded w-full" />
-                                                        <div className="h-16 bg-gray-200 rounded w-full mt-3" />
+                                                    <div className="animate-pulse" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        <div style={{ height: 14, width: '75%', borderRadius: 8, background: 'var(--rd-panel)' }} />
+                                                        <div style={{ height: 14, width: '100%', borderRadius: 8, background: 'var(--rd-panel)' }} />
+                                                        <div style={{ height: 64, width: '100%', borderRadius: 10, background: 'var(--rd-panel)', marginTop: 4 }} />
                                                     </div>
                                                 ) : (
                                                     <QuestionRenderer
@@ -239,10 +232,11 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
 
                                             {/* Card Footer - 해설보기 */}
                                             {onViewSolution && (
-                                                <div className="px-4 py-2 bg-slate-50 border-t flex justify-end items-center">
+                                                <div style={{ padding: '10px 12px', borderTop: '1px solid var(--rd-line)', display: 'flex', justifyContent: 'flex-end' }}>
                                                     <button
                                                         onClick={() => onViewSolution(q)}
-                                                        className="text-[10px] font-bold text-slate-500 hover:text-[#1B7E7A] bg-white border border-slate-200 hover:border-[#9ED8D4] hover:bg-[#E8F6F5] px-2 py-1 rounded-md transition-all flex items-center gap-1 shadow-sm"
+                                                        className="rd-btn rd-btn-gray rd-btn-sm"
+                                                        style={{ minHeight: 36 }}
                                                     >
                                                         해설보기
                                                     </button>

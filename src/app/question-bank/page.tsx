@@ -1235,30 +1235,31 @@ export default function QuestionBankPage() {
             <div className="flex flex-1 overflow-hidden relative">
 
                 {/* 로그인 게이트 모달 - 비로그인 유저가 시험지 생성 클릭 시 */}
-                {showLoginGate && <div role="dialog" aria-modal="true" aria-label="로그인 안내" className="product-modal fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-5" onClick={e=>{if(e.target===e.currentTarget)setShowLoginGate(false);}}><div className="w-full max-w-sm rounded-3xl bg-white p-8"><FileText size={30} className="text-[#1B7E7A] mb-5"/>{showLoginGate==='solution'?<><h2 className="text-2xl font-bold">해설은<br/>회원에게 보여드려요.</h2><p className="text-sm text-slate-500 leading-6 mt-4">로그인하면 모든 문항의 해설을 볼 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p><a className="product-button primary w-full mt-7" href={questionBankLoginUrl()}>로그인하고 해설 보기</a></>:<><h2 className="text-2xl font-bold">고른 문제를<br/>시험지로 간직하세요.</h2><p className="text-sm text-slate-500 leading-6 mt-4">로그인하면 저장하고 한글 파일로 받을 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p><a className="product-button primary w-full mt-7" href={questionBankLoginUrl()}>로그인하고 이어서 만들기</a></>}<button className="product-button secondary w-full mt-2" onClick={()=>setShowLoginGate(false)}>계속 둘러보기</button></div></div>}
+                {showLoginGate && <div role="dialog" aria-modal="true" aria-label="로그인 안내" className="rd rd-overlay" onClick={e=>{if(e.target===e.currentTarget)setShowLoginGate(false);}}><div className="rd-modal rd-modal-sm"><div className="rd-sheet-handle"/><span className="rd-modal-icon" style={{marginBottom:18}}><FileText size={20}/></span>{showLoginGate==='solution'?<><h2 className="rd-modal-title" style={{fontSize:24}}>해설은<br/>회원에게 보여드려요.</h2><p className="rd-modal-text">로그인하면 모든 문항의 해설을 볼 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p></>:<><h2 className="rd-modal-title" style={{fontSize:24}}>고른 문제를<br/>시험지로 간직하세요.</h2><p className="rd-modal-text">로그인하면 저장하고 한글 파일로 받을 수 있습니다. 선택한 문항과 출제 조건은 이 브라우저에 보관됩니다.</p></>}<div className="rd-modal-actions"><a className="rd-btn rd-btn-primary rd-btn-block" href={questionBankLoginUrl()}>{showLoginGate==='solution'?'로그인하고 해설 보기':'로그인하고 이어서 만들기'}</a><button className="rd-btn rd-btn-gray rd-btn-block" onClick={()=>setShowLoginGate(false)}>계속 둘러보기</button></div></div></div>}
 
                 {/* Storage Modal - Persistent Rendering for 0s Loading (visibility 전환으로 열림 애니메이션) */}
-                <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-150 ${showStorageModal ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'}`} aria-hidden={!showStorageModal}>
-                    <div className={`bg-white w-full sm:max-w-5xl sm:mx-4 max-h-[90dvh] sm:h-[80vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-transform duration-200 ${showStorageModal ? 'translate-y-0 sm:scale-100' : 'translate-y-4 sm:scale-[0.98]'}`}>
-                        <div className="px-4 py-3 border-b flex justify-between items-center bg-white">
-                            <h3 className="font-extrabold text-lg flex items-center gap-2.5 text-[#1D2C45]">
+                <div className={`rd rd-overlay rd-storage-overlay ${showStorageModal ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'}`} aria-hidden={!showStorageModal}>
+                    <div className={`rd-modal rd-modal-flush rd-modal-catalog transition-transform duration-200 ${showStorageModal ? 'translate-y-0 sm:scale-100' : 'translate-y-4 sm:scale-[0.98]'}`}>
+                        <div className="rd-sheet-handle" />
+                        <div className="rd-modal-band rd-modal-head" style={{ alignItems: 'center' }}>
+                            <h3 className="rd-modal-title rd-modal-title-row">
                                 {storageModalMode === 'db' ? (
-                                    <><span className="w-9 h-9 rounded-xl bg-[#E8F6F5] border border-[#BFE5E2]/60 flex items-center justify-center"><Database size={18} className="text-[#1B7E7A]" /></span> 기출 자료 선택</>
+                                    <><span className="rd-modal-icon"><Database size={20} /></span> 기출 자료 선택</>
                                 ) : storageModalMode === 'exam' ? (
-                                    <><span className="w-9 h-9 rounded-xl bg-[#E8F6F5] border border-[#1B7E7A]/40 flex items-center justify-center"><FolderIcon size={18} className="text-[#166B68]" /></span> 만든 시험지 선택</>
+                                    <><span className="rd-modal-icon"><FolderIcon size={20} /></span> 만든 시험지 선택</>
                                 ) : (
-                                    <><span className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center"><FolderIcon size={18} className="text-slate-500" /></span> 내 보관함</>
+                                    <><span className="rd-modal-icon"><FolderIcon size={20} /></span> 내 보관함</>
                                 )}
                             </h3>
-                            <button onClick={() => setShowStorageModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                                <X />
+                            <button onClick={() => setShowStorageModal(false)} aria-label="닫기" className="rd-modal-x" style={{ marginTop: 0 }}>
+                                <X size={22} />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-hidden p-4 bg-slate-100 flex flex-col">
+                        <div className="rd-storage-body">
                             {!user && storageModalMode === 'exam' && (
                                 /* 비로그인 '만든 시험지': 아직 만든 게 없음 — 안내 */
-                                <div className="mb-3 px-4 py-3 bg-[#E8F6F5] border border-[#BFE5E2] rounded-xl text-sm text-[#3A5A82] break-keep shrink-0">
-                                    시험지를 만들어 <strong>저장하면 이곳에 모여요.</strong> 저장에는 로그인이 필요해요.
+                                <div className="rd-modal-note">
+                                    시험지를 만들어 저장하면 이곳에 모여요. 저장에는 로그인이 필요해요.
                                 </div>
                             )}
                             <div className="flex-1 min-h-0">
@@ -1292,8 +1293,8 @@ export default function QuestionBankPage() {
                             />}
                             </div>
                         </div>
-                        <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
-                            <div className="flex gap-2">
+                        <div className="rd-modal-band-foot">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                 {/* Actions for DBs - 전체 선택 */}
                                 {storageModalMode === 'db' && (() => {
                                         const allDbIds = currentExamItems
@@ -1306,16 +1307,12 @@ export default function QuestionBankPage() {
                                                 onClick={() => {
                                                     setSelectedDbIds(hasOtherSelected ? allDbIds : allSelected ? [] : allDbIds);
                                                 }}
-                                                className={`px-4 py-2 font-bold rounded-lg transition flex items-center gap-2 border ${
-                                                    allSelected
-                                                        ? 'bg-[#1B7E7A] text-white border-[#3A6BA0] hover:bg-[#3A6BA0]'
-                                                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                                                }`}
+                                                className={`rd-btn rd-btn-sm ${allSelected ? 'rd-btn-tint rd-btn-on' : 'rd-btn-gray'}`}
                                             >
                                                 <CheckSquare size={16} />
                                                 {hasOtherSelected ? '현재 분류만 선택' : allSelected ? '전체 해제' : '전체 선택'}
                                                 {selectedDbIds.length > 0 && (
-                                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${allSelected ? 'bg-white/30 text-white' : 'bg-[#1B7E7A] text-white'}`}>
+                                                    <span style={{ fontSize: 12, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'var(--rd-ink)', color: '#fff' }}>
                                                         {selectedDbIds.length}
                                                     </span>
                                                 )}
@@ -1333,7 +1330,7 @@ export default function QuestionBankPage() {
                                                 .map(i => i.id);
                                             setSelectedExamIds(ids);
                                         }}
-                                        className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition flex items-center gap-2 border border-slate-200"
+                                        className="rd-btn rd-btn-gray rd-btn-sm"
                                     >
                                         <CheckSquare size={16} /> 전체 선택
                                     </button>
@@ -1342,19 +1339,19 @@ export default function QuestionBankPage() {
                                     <>
                                         <button
                                             onClick={handleBulkDownloadExams}
-                                            className="px-4 py-2 bg-[#E8F6F5] text-[#166B68] font-bold rounded-lg hover:bg-[#D9F0EE] transition flex items-center gap-2 border border-[#BFE5E2]"
+                                            className="rd-btn rd-btn-tint rd-btn-sm"
                                         >
                                             <FileText size={16} /> 선택 다운로드 ({selectedExamIds.length})
                                         </button>
                                         <button
                                             onClick={handleEditSelectedExam}
-                                            className="px-4 py-2 bg-purple-50 text-purple-700 font-bold rounded-lg hover:bg-purple-100 transition flex items-center gap-2 border border-purple-200"
+                                            className="rd-btn rd-btn-gray rd-btn-sm"
                                         >
                                             <Search size={16} /> 수정/재편집
                                         </button>
                                         <button
                                             onClick={handleBulkDeleteExams}
-                                            className="px-4 py-2 bg-red-50 text-red-700 font-bold rounded-lg hover:bg-red-100 transition flex items-center gap-2 border border-red-200"
+                                            className="rd-btn rd-btn-danger rd-btn-sm"
                                         >
                                             <Trash2 size={16} /> 선택 삭제
                                         </button>
@@ -1377,7 +1374,8 @@ export default function QuestionBankPage() {
                                         setSelectedExamIds([]); // Reset selection on close
                                     }
                                 }}
-                                className="px-6 py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900 transition"
+                                className={`rd-btn ${storageModalMode === 'db' ? 'rd-btn-primary' : 'rd-btn-gray'}`}
+                                style={{ marginLeft: 'auto' }}
                             >
                                 {storageModalMode === 'db' ? '선택 완료' : '창 닫기'}
                             </button>
@@ -2077,16 +2075,23 @@ export default function QuestionBankPage() {
 
 
 
-                {zoomQuestion&&<div role="dialog" aria-modal="true" aria-label="문항 상세보기" className="fixed inset-0 z-[150] bg-black/60 p-3 flex items-center justify-center" onClick={e=>{if(e.target===e.currentTarget)setZoomQuestion(null);}}><div className="bg-white rounded-xl p-4 max-w-3xl w-full max-h-[90dvh] overflow-auto"><button autoFocus className="sticky top-0 ml-auto block p-3 bg-white border rounded-lg" onClick={()=>setZoomQuestion(null)}>상세보기 닫기</button><QuestionRenderer xmlContent={zoomQuestion.content_xml} externalImages={zoomQuestion.question_images} displayMode="question" showDownloadAction={false}/></div></div>}
+                {zoomQuestion&&<div role="dialog" aria-modal="true" aria-label="문항 상세보기" className="rd rd-overlay" onClick={e=>{if(e.target===e.currentTarget)setZoomQuestion(null);}}><div className="rd-modal rd-modal-flush" style={{maxWidth:800}}><div className="rd-sheet-handle"/><div className="rd-modal-band rd-modal-head" style={{alignItems:'center'}}><h2 className="rd-modal-title">문항 상세보기</h2><button autoFocus className="rd-btn rd-btn-gray rd-btn-sm" onClick={()=>setZoomQuestion(null)}>상세보기 닫기</button></div><div style={{flex:1,minHeight:0,overflow:'auto',padding:'0 20px 20px'}}><QuestionRenderer xmlContent={zoomQuestion.content_xml} externalImages={zoomQuestion.question_images} displayMode="question" showDownloadAction={false}/></div></div></div>}
                 {savedExam && (
-                    <div role="dialog" aria-modal="true" aria-labelledby="saved-exam-title" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-                        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                            <h2 id="saved-exam-title" className="text-xl font-bold text-slate-800">시험지가 완성되었습니다</h2>
-                            <p className="mt-3 break-words text-slate-600">{savedExam.name}</p><p className="mt-2 text-sm text-slate-500">{savedExam.count}문항 · {formatFileSize(savedExam.bytes)}</p>{(savedExam.bytes||0)>20*1024*1024&&<p className="text-sm text-amber-800">큰 파일입니다. 모바일에서는 안정적인 연결에서 받아주세요.</p>}
-                            <p className="mt-2 text-sm text-slate-500">한글에서 열어 편집할 수 있는 HML 파일입니다. PDF가 필요하면 한글에서 PDF로 저장해주세요.</p>
-                            <p className="mt-2 text-xs text-slate-500">자료 보호를 위해 파일 내부에 회원 아이디(이메일)가 기록됩니다.</p>
-                            <a className="mt-5 block rounded-xl bg-[#1B7E7A] p-3 text-center font-bold text-white" href={`/api/storage/download?id=${savedExam.id}`} download onClick={() => window.setTimeout(() => setSavedExam(null), 400)}>시험지 파일 받기 (.hml)</a>
-                            <button className="mt-3 w-full rounded-xl border p-3 text-slate-700" onClick={() => setSavedExam(null)}>계속 출제하기</button>
+                    <div role="dialog" aria-modal="true" aria-labelledby="saved-exam-title" className="rd rd-overlay">
+                        <div className="rd-modal rd-modal-sm">
+                            <div className="rd-sheet-handle" />
+                            <span className="rd-modal-icon" style={{ marginBottom: 18 }}><CheckSquare size={20} /></span>
+                            <h2 id="saved-exam-title" className="rd-modal-title" style={{ fontSize: 24 }}>시험지가 완성되었습니다</h2>
+                            <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 16, background: 'var(--rd-zone)' }}>
+                                <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--rd-text)', overflowWrap: 'anywhere' }}>{savedExam.name}</p><p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 600, color: 'var(--rd-sub)' }}>{savedExam.count}문항 · {formatFileSize(savedExam.bytes)}</p>
+                            </div>
+                            {(savedExam.bytes||0)>20*1024*1024&&<p className="rd-alert" style={{ marginTop: 12 }}>큰 파일입니다. 모바일에서는 안정적인 연결에서 받아주세요.</p>}
+                            <p className="rd-modal-text" style={{ fontSize: 15, marginTop: 14 }}>한글에서 열어 편집할 수 있는 HML 파일입니다. PDF가 필요하면 한글에서 PDF로 저장해주세요.</p>
+                            <p className="rd-help">자료 보호를 위해 파일 내부에 회원 아이디(이메일)가 기록됩니다.</p>
+                            <div className="rd-modal-actions">
+                                <a className="rd-btn rd-btn-primary rd-btn-block" href={`/api/storage/download?id=${savedExam.id}`} download onClick={() => window.setTimeout(() => setSavedExam(null), 400)}>시험지 파일 받기 (.hml)</a>
+                                <button className="rd-btn rd-btn-gray rd-btn-block" onClick={() => setSavedExam(null)}>계속 출제하기</button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -2210,12 +2215,9 @@ export default function QuestionBankPage() {
 
         {/* Toast 알림 UI */}
         {toastMessage && (
-            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-xl shadow-2xl font-bold text-sm max-w-[90vw] text-center ${
-                toastType === 'success' ? 'bg-emerald-600 text-white' :
-                toastType === 'error' ? 'bg-red-600 text-white' :
-                'bg-slate-800 text-white'
-            }`}>
-                {toastMessage}
+            <div className="rd rd-qb-toast">
+                <span aria-hidden="true" className={`rd-qb-toast-dot${toastType === 'success' ? ' is-success' : toastType === 'error' ? ' is-error' : ''}`} />
+                <span>{toastMessage}</span>
             </div>
         )}
         </>

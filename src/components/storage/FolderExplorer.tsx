@@ -243,13 +243,13 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
     const currentFolderName = breadcrumbs[breadcrumbs.length - 1]?.name || '내 보관함';
 
     return (
-        <div className="flex h-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+        <div className="flex h-full border border-[#ECEFF2] rounded-[20px] overflow-hidden bg-white">
 
             {/* ── 데스크탑: 좌측 탐색기 사이드바 ── */}
-            <div className="hidden md:flex w-64 bg-slate-50 border-r border-slate-200 flex-col">
-                <div className="p-3 border-b flex items-center justify-between bg-slate-100">
-                    <span className="font-bold text-slate-700 text-sm">탐색기</span>
-                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="text-slate-400 hover:text-[#1B7E7A]">
+            <div className="hidden md:flex w-64 bg-[#F7F8FA] border-r border-[#ECEFF2] flex-col">
+                <div className="px-4 py-3 border-b border-[#ECEFF2] flex items-center justify-between">
+                    <span className="font-extrabold text-[#17202C] text-sm">탐색기</span>
+                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="p-1.5 rounded-lg text-[#B0B8C1] hover:text-[#1B7E7A] hover:bg-white">
                         <RefreshCw size={14} />
                     </button>
                 </div>
@@ -269,48 +269,48 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
             <div className="flex-1 flex flex-col min-w-0">
 
                 {/* 모바일: 현재 폴더 위치 + 폴더 선택 버튼 */}
-                <div className="md:hidden flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
+                <div className="md:hidden flex items-center gap-2 px-3 py-2 bg-white border-b border-[#ECEFF2]">
                     <button
                         onClick={() => setMobileTreeOpen(true)}
-                        className="flex items-center gap-2 flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-left hover:bg-slate-50 active:bg-slate-100"
+                        className="flex items-center gap-2 flex-1 min-w-0 bg-[#F2F4F6] rounded-xl px-3 min-h-[44px] text-sm text-left hover:bg-[#E7EAEE]"
                     >
                         <FolderIcon size={15} className="text-[#3AADA9] flex-shrink-0" />
-                        <span className="font-medium text-slate-700 truncate">{currentFolderName}</span>
+                        <span className="font-bold text-[#17202C] truncate">{currentFolderName}</span>
                         <ChevronRight size={14} className="text-slate-400 flex-shrink-0 ml-auto" />
                     </button>
-                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="p-2 text-slate-400 hover:text-[#1B7E7A] flex-shrink-0">
+                    <button onClick={() => setRefreshTrigger(p => p + 1)} className="p-2.5 rounded-xl text-[#B0B8C1] hover:text-[#1B7E7A] hover:bg-[#F7F8FA] flex-shrink-0">
                         <RefreshCw size={15} />
                     </button>
                 </div>
 
                 {/* 데스크탑: 브레드크럼 + 버튼 */}
-                <div className="hidden md:flex border-b flex-col bg-white">
-                    <div className="h-12 flex items-center px-4 justify-between">
-                        <div className="flex items-center gap-1 text-sm text-slate-600 min-w-0 flex-1 overflow-hidden">
+                <div className="hidden md:flex border-b border-[#ECEFF2] flex-col bg-white">
+                    <div className="h-14 flex items-center px-4 justify-between">
+                        <div className="flex items-center gap-1 text-sm font-semibold text-[#5F6B78] min-w-0 flex-1 overflow-hidden">
                             {breadcrumbs.map((crumb, idx) => (
                                 <React.Fragment key={crumb.id || 'root'}>
                                     {idx > 0 && <span className="text-slate-300 flex-shrink-0">/</span>}
-                                    <button className={`hover:text-[#1B7E7A] truncate max-w-[120px] ${crumb.id === currentFolderId ? 'font-bold text-slate-900' : ''}`} onClick={() => setCurrentFolderId(crumb.id)}>{crumb.name}</button>
+                                    <button className={`hover:text-[#1B7E7A] truncate max-w-[120px] ${crumb.id === currentFolderId ? 'font-extrabold text-[#17202C]' : ''}`} onClick={() => setCurrentFolderId(crumb.id)}>{crumb.name}</button>
                                 </React.Fragment>
                             ))}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <button onClick={handleSync} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium transition-colors"><DownloadCloud size={16} /> 가져오기</button>
-                            <button onClick={handleCreateFolder} className="flex items-center gap-1 px-3 py-1.5 bg-[#E8F6F5] text-[#1B7E7A] rounded-lg hover:bg-[#D9F0EE] text-sm font-medium transition-colors"><FolderPlus size={16} /> 새 폴더</button>
+                            <button onClick={handleSync} className="rd-btn rd-btn-gray rd-btn-sm"><DownloadCloud size={16} /> 가져오기</button>
+                            <button onClick={handleCreateFolder} className="rd-btn rd-btn-tint rd-btn-sm"><FolderPlus size={16} /> 새 폴더</button>
                         </div>
                     </div>
                 </div>
 
                 {/* 검색창 */}
-                <div className="px-3 py-2 border-b bg-white">
+                <div className="px-3 py-2.5 border-b border-[#ECEFF2] bg-white">
                     <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8B95A1]" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             placeholder="학교명, 연도 등으로 검색..."
-                            className="w-full pl-8 pr-8 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-[#6CC3BF] bg-slate-50"
+                            className="rd-input" style={{ minHeight: 44, fontSize: 15, paddingLeft: 38, paddingRight: 36 }}
                         />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -321,7 +321,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
                 </div>
 
                 {/* 파일 그리드 */}
-                <div className="flex-1 overflow-y-auto bg-slate-50/30 relative" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'background', id: null }); }}>
+                <div className="flex-1 overflow-y-auto bg-white relative" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'background', id: null }); }}>
                     {/* 내용이 아직 없을 때만 스켈레톤 — 내용이 있으면 조용히 백그라운드 갱신 (오버레이로 가리지 않음) */}
                     {loading && viewFolders.length === 0 && filteredItems.length === 0 ? (
                         <div className="p-3 space-y-2 animate-pulse" aria-label="불러오는 중">
@@ -355,16 +355,16 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
             {mobileTreeOpen && (
                 <>
                     <div className="fixed inset-0 z-50 bg-black/50 md:hidden" onClick={() => setMobileTreeOpen(false)} />
-                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl md:hidden flex flex-col max-h-[70vh]">
-                        <div className="flex items-center justify-between px-4 py-3 border-b">
+                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[28px] shadow-2xl md:hidden flex flex-col max-h-[70dvh]">
+                        <div className="flex items-center justify-between px-4 pt-6 pb-3 border-b border-[#ECEFF2]">
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-1 bg-slate-200 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2" />
+                                <div className="w-10 h-1 bg-[#D5DAE0] rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2.5" />
                                 <FolderIcon size={16} className="text-[#3AADA9]" />
-                                <span className="font-bold text-slate-800 text-sm">폴더 선택</span>
+                                <span className="font-extrabold text-[#17202C] text-base">폴더 선택</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={handleSync} className="text-xs text-slate-500 border border-slate-200 px-2 py-1 rounded-lg flex items-center gap-1"><DownloadCloud size={12} /> 가져오기</button>
-                                <button onClick={handleCreateFolder} className="text-xs text-[#1B7E7A] bg-[#E8F6F5] px-2 py-1 rounded-lg flex items-center gap-1"><FolderPlus size={12} /> 새 폴더</button>
+                                <button onClick={handleSync} className="text-xs font-bold text-[#4E5968] bg-[#F2F4F6] px-2.5 min-h-[32px] rounded-lg flex items-center gap-1"><DownloadCloud size={12} /> 가져오기</button>
+                                <button onClick={handleCreateFolder} className="text-xs font-bold text-[#1B7E7A] bg-[#E8F6F5] px-2.5 min-h-[32px] rounded-lg flex items-center gap-1"><FolderPlus size={12} /> 새 폴더</button>
                                 <button onClick={() => setMobileTreeOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100">
                                     <X size={16} className="text-slate-500" />
                                 </button>

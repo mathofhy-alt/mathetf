@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Folder, FolderPlus, X, Check, Loader2 } from 'lucide-react';
+import { FolderPlus, X, Check, Loader2 } from 'lucide-react';
 import FolderTree from './FolderTree';
 import InputModal from '../common/InputModal';
 import type { Folder as FolderType } from '@/types/storage';
@@ -59,40 +59,42 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
     };
 
     return (
-        <div role="dialog" aria-modal="true" aria-label="시험지 저장 위치" className="product-modal fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-                <div className="p-4 border-b flex justify-between items-center bg-slate-50">
-                    <div className="min-w-0 flex-1">
-                        {error&&<p role="alert" className="text-sm text-amber-800">{error}<button onClick={()=>void loadFolders()}>다시 불러오기</button></p>}<h3 className="font-bold text-lg text-slate-800">저장 위치 선택</h3>
-                        <p className="text-xs text-slate-500 font-medium truncate max-w-[300px]">
+        <div role="dialog" aria-modal="true" aria-label="시험지 저장 위치" className="rd rd-overlay">
+            <div className="rd-modal" style={{ height: 'min(620px, calc(100dvh - 32px))' }}>
+                <div className="rd-sheet-handle" />
+                <div className="rd-modal-head">
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <h3 className="rd-modal-title">저장 위치 선택</h3>
+                        <p className="rd-modal-sub" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             파일: {title}.hml
                         </p>
                     </div>
                     <button
                         aria-label="저장 위치 닫기" onClick={onClose}
                         disabled={isSaving}
-                        className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                        className="rd-modal-x"
                     >
                         <X size={20} />
                     </button>
                 </div>
+                {error&&<p role="alert" className="rd-alert" style={{ marginTop: 14 }}>{error}<button onClick={()=>void loadFolders()}>다시 불러오기</button></p>}
 
-                <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm font-bold text-slate-600">
-                            현재 위치: <span className="text-[#1B7E7A]">{getCurrentFolderName()}</span>
+                <div style={{ marginTop: 18, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--rd-sub)', minWidth: 0 }}>
+                            현재 위치 <b style={{ color: 'var(--rd-text)', fontWeight: 700, marginLeft: 4 }}>{getCurrentFolderName()}</b>
                         </span>
                         <button
                             onClick={handleCreateFolder}
-                            className="text-xs flex items-center gap-1 px-2 py-1 bg-[#E8F6F5] text-[#1B7E7A] rounded hover:bg-[#D9F0EE] font-bold transition-colors"
+                            className="rd-btn rd-btn-tint rd-btn-sm"
                         >
-                            <FolderPlus size={14} /> 새 폴더
+                            <FolderPlus size={16} /> 새 폴더
                         </button>
                     </div>
 
-                    <div className="flex-1 border rounded-lg overflow-y-auto p-2 bg-slate-50">
+                    <div className="rd-well" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 8 }}>
                         {loading ? (
-                            <div className="flex justify-center items-center h-full text-slate-400">
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--rd-icon)' }}>
                                 <Loader2 className="animate-spin" />
                             </div>
                         ) : (
@@ -105,26 +107,26 @@ export default function SaveLocationModal({ onClose, onConfirm, title, isSaving 
                     </div>
                 </div>
 
-                <div className="p-4 border-t bg-white flex justify-end gap-2">
+                <div className="rd-modal-foot">
                     <button
                         aria-label="저장 위치 닫기" onClick={onClose}
                         disabled={isSaving}
-                        className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold transition-colors"
+                        className="rd-btn rd-btn-gray"
                     >
                         취소
                     </button>
                     <button
                         onClick={() => onConfirm(currentFolderId)}
                         disabled={isSaving}
-                        className="px-6 py-2 bg-[#1B7E7A] hover:bg-[#166B68] text-white rounded-lg font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rd-btn rd-btn-primary"
                     >
                         {isSaving ? (
                             <>
-                                <Loader2 size={16} className="animate-spin" /> 저장 중...
+                                <Loader2 size={18} className="animate-spin" /> 저장 중...
                             </>
                         ) : (
                             <>
-                                <Check size={16} /> 여기에 저장
+                                <Check size={18} /> 여기에 저장
                             </>
                         )}
                     </button>
