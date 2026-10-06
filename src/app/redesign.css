@@ -966,3 +966,27 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-x-more.rd-s-more:has(> .rd-wrap.rd-x-links) { padding: 48px 0; }
 @media (max-width: 760px) { .rd .rd-rg-grid { grid-template-columns: minmax(0, 1fr); } .rd .rd-rg-all { margin-left: 0; } }
 .rd .rd-s-zone + .rd-s-more { margin-top: 0 !important; padding-top: 0 !important; }
+
+/* ── 계정 화면 공통 틀(10/7): 로그인·회원가입·아이디/비밀번호 찾기·비밀번호 변경·수신 거부 ── */
+.rd.rd-auth { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 48px 16px; background: var(--rd-zone); }
+.rd .rd-auth-card { width: 100%; max-width: 440px; background: #fff; border-radius: 28px; padding: 40px 36px; box-shadow: 0 1px 0 var(--rd-line); }
+.rd .rd-auth-card.is-wide { max-width: 560px; }
+.rd .rd-auth-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; color: var(--rd-text); text-decoration: none; }
+.rd .rd-auth-title { margin: 28px 0 0; font-size: 30px; font-weight: 800; letter-spacing: -0.04em; color: var(--rd-text); }
+.rd .rd-auth-sub { margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: var(--rd-sub); }
+.rd .rd-auth-form { margin-top: 24px; display: flex; flex-direction: column; }
+.rd .rd-auth-label { margin: 14px 0 8px; font-size: 14px; font-weight: 700; color: var(--rd-nav); }
+.rd .rd-auth-label:first-of-type { margin-top: 0; }
+.rd .rd-auth-submit { margin-top: 24px; min-height: 54px; }
+.rd .rd-auth-error { margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; background: #FEF3F2; font-size: 14px; font-weight: 600; line-height: 1.5; color: #B42318; }
+.rd .rd-auth-ok { margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--rd-tint); font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--rd-ink); }
+.rd .rd-auth-links { margin-top: 16px; display: flex; justify-content: center; gap: 20px; }
+.rd .rd-auth-links a { font-size: 14px; font-weight: 600; color: var(--rd-sub); text-decoration: none; }
+.rd .rd-auth-links a:hover { color: var(--rd-ink); }
+.rd .rd-auth-join { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--rd-line); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.rd .rd-auth-join > span { font-size: 14px; color: var(--rd-sub); }
+.rd .rd-auth-home { font-size: 14px; font-weight: 600; color: var(--rd-sub); text-decoration: none; }
+.rd .rd-auth-home:hover { color: var(--rd-ink); }
+@media (max-width: 480px) { .rd.rd-auth { justify-content: flex-start; padding: 24px 12px; } .rd .rd-auth-card { padding: 28px 22px; border-radius: 24px; } .rd .rd-auth-title { font-size: 26px; } }
+/* suite.css 의 '.site-suite > div { background:#fff }' 가 계정 화면 회색 바탕을 덮었다 */
+.site-suite > .rd.rd-auth { background: var(--rd-zone) !important; }
