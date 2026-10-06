@@ -26,9 +26,16 @@ export async function GET() {
         .select('id, files, note, status, admin_reply, replied_at, created_at')
         .eq('user_id', user.id).order('created_at', { ascending: false }).limit(100);
     if (error) return NextResponse.json({ error: '요청 내역을 불러오지 못했습니다.' }, { status: 500 });
+    // 연결된 전용 개인DB 상품 · 결제 여부 (10/6) — 문항 묶음 이름(source_db_id)은 내보내지 않는다
+    const admin = createAdminClient();
+    const { data: privs } = await admin.from('private_dbs').select('id, request_id, title, price').eq('owner_user_id', user.id);
+    const { data: paid } = privs?.length ? await admin.from('purchased_items').select('item_id').eq('user_id', user.id).eq('item_type', 'PRIVATE_DB').in('item_id', privs.map(p => p.id)) : { data: [] as any[] };
+    const paidIds = new Set((paid || []).map(p => p.item_id));
+    const byReq = new Map((privs || []).map(p => [p.request_id, { id: p.id, title: p.title, price: p.price, paid: p.price === 0 || paidIds.has(p.id) }]));
     const requests = (data || []).map(r => ({
         ...r,
         files: (Array.isArray(r.files) ? r.files : []).map((f: any) => ({ name: f?.name || '파일', size: f?.size ?? null })),
+        product: byReq.get(r.id) ?? null,
     }));
     return NextResponse.json({ requests });
 }

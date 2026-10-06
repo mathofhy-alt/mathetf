@@ -2,6 +2,7 @@ import {parseDraft} from '@/lib/questions/draft';
 import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
+import { privateCatalog } from '@/lib/questions/privateDb';
 import {resolveScope} from '@/lib/questions/scope';
 import {uuidPattern} from '@/lib/payments/order';
 import {productionSite} from '@/lib/analytics/server';
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
             const {data:folder,error:folderError}=await supabase.from('folders').select('id').eq('id',folderId).eq('user_id',user.id).single();
             if(folderError || !folder) throw new Error('저장 폴더를 찾을 수 없습니다.');
         }
-        const catalog = await availableCatalog();
+        const catalog = [...await availableCatalog(), ...await privateCatalog()];   // 전용 개인DB 문항도 저장 가능(10/6)
         const allowedDbIds=new Set(catalog.filter(d=>!d.availability).map(d=>d.id));
         const savedDbIds=Array.isArray(dbIds)?Array.from(new Set(dbIds.filter((id:unknown)=>typeof id==='string'&&allowedDbIds.has(id)))):[];
         const scope = resolveScope(catalog, catalog.filter(db=>!db.availability).map(db=>db.id));

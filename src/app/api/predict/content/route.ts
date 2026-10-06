@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { stripPrivate } from '@/lib/questions/privateDb';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
@@ -25,10 +26,10 @@ export async function POST(req: NextRequest) {
 
     try {
         const admin = createAdminClient();
-        const { data, error } = await admin.from('questions').select('id, content_xml').in('id', ids);
+        const { data, error } = await admin.from('questions').select('id, content_xml, work_status, source_db_id').in('id', ids);
         if (error) throw error;
         const content: Record<string, string> = {};
-        for (const r of (data || [])) content[r.id] = r.content_xml || '';
+        for (const r of await stripPrivate(data || [])) content[r.id] = r.content_xml || '';   // 전용 개인DB 는 쓸 수 있는 사람만(10/6)
         return NextResponse.json({ content, locked: !isLoggedIn });
     } catch (e: any) {
         return NextResponse.json({ content: {}, error: e.message }, { status: 500 });

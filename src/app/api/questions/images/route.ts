@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { stripPrivate } from '@/lib/questions/privateDb';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { canSeeSolutions, trimQuestionImages } from '@/lib/questions/imageAccess';
 
@@ -69,8 +70,15 @@ export async function POST(req: NextRequest) {
                 .order('created_at', { ascending: true }),
         ]);
         if (listError) throw listError;
+        // 회원 전용 개인DB 문항 그림은 쓸 수 있는 사람에게만 (10/6)
+        const { data: privRows } = await supabase.from('questions').select('id, work_status, source_db_id').in('id', ids).eq('work_status', 'private');
+        const blocked = new Set<string>();
+        if (privRows?.length) {
+            const ok = new Set((await stripPrivate(privRows)).map(r => r.id));
+            for (const r of privRows) if (!ok.has(r.id)) blocked.add(r.id);
+        }
         const byQuestion: Record<string, any[]> = {};
-        for (const r of listed || []) (byQuestion[r.question_id] = byQuestion[r.question_id] || []).push(r);
+        for (const r of listed || []) if (!blocked.has(r.question_id)) (byQuestion[r.question_id] = byQuestion[r.question_id] || []).push(r);
         const keep = Object.values(byQuestion).flatMap(rows => trimQuestionImages(rows, withSolutions));
         const dataById: Record<string, string> = {};
         for (let i = 0; i < keep.length; i += 100) {

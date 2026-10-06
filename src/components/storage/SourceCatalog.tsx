@@ -15,6 +15,12 @@ export default function SourceCatalog({items, selectedIds, onItemSelect, onGroup
     const [search, setSearch] = useState('');
     const groups = useMemo(() => Object.fromEntries(sourceCategories.map(c =>
         [c.id, items.filter(item => sourceCategory(item.details || {}) === c.id)])) as Record<SourceCategory, UserItem[]>, [items]);
+    // '내 개인DB' 칸은 전용 DB 가 있는 회원에게만 보이고, 있으면 처음에 그 칸을 연다 (10/6)
+    const tabs = sourceCategories.filter(c => c.id !== 'mine' || groups.mine.length > 0);
+    const openedMine = useRef(false);
+    useEffect(() => {
+        if (!openedMine.current && groups.mine.length > 0) { openedMine.current = true; setCategory('mine'); }
+    }, [groups.mine.length]);
     const visible = useMemo(() => {
         const words = search.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
         return groups[category].filter(item => words.every(word => (item.name || '').toLocaleLowerCase().includes(word)));
@@ -23,15 +29,15 @@ export default function SourceCatalog({items, selectedIds, onItemSelect, onGroup
     report.current = onGetViewItems;
     useEffect(() => { report.current(visible); }, [visible]);
     return <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white" aria-label="출제 자료 분류">
-        <div className="grid grid-cols-3 gap-2 border-b border-slate-200 p-3" role="group" aria-label="자료 종류">
-            {sourceCategories.map(c => <button key={c.id} type="button" aria-pressed={category === c.id}
+        <div className={`grid ${tabs.length > 3 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 border-b border-slate-200 p-3`} role="group" aria-label="자료 종류">
+            {tabs.map(c => <button key={c.id} type="button" aria-pressed={category === c.id}
                 onClick={() => { setCategory(c.id); setSearch(''); onGetViewItems(groups[c.id]); }}
                 className={`min-w-0 rounded-xl border px-2 py-3 text-sm font-bold transition ${category === c.id ? 'border-[#426D36] bg-[#426D36] text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
                 {c.label}<span className="mt-1 block text-xs font-normal opacity-80">{groups[c.id].length}개</span>
             </button>)}
         </div>
         <div className="space-y-2 border-b border-slate-200 p-3">
-            <p className="text-xs text-slate-500">{category === 'national' ? '전국연합·평가원·수능 자료입니다.' : category === 'special' ? '사관학교·경찰대 입학시험 자료입니다.' : '학교별 내신 기출 자료입니다.'} 분류를 바꿔도 선택한 자료는 유지됩니다.</p>
+            <p className="text-xs text-slate-500">{category === 'mine' ? '회원님만 쓰는 전용 개인DB입니다.' : category === 'national' ? '전국연합·평가원·수능 자료입니다.' : category === 'special' ? '사관학교·경찰대 입학시험 자료입니다.' : '학교별 내신 기출 자료입니다.'} 분류를 바꿔도 선택한 자료는 유지됩니다.</p>
             <input aria-label="선택한 분류에서 자료 검색" placeholder="학교명, 연도 등으로 검색..." value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
             <p role="status" className="text-xs text-slate-500">{sourceCategories.find(c => c.id === category)?.label} · {visible.length}개 자료</p>
         </div>

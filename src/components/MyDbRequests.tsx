@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Calendar, MessageSquare } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, MessageSquare, Database } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import { payOrder } from '@/lib/payments/client';
 
 /**
  * 마이페이지 '내 요청' 탭 (2026-10-06) — 개인DB 요청의 처리 상태와 운영자 안내를 보여준다.
@@ -17,12 +20,25 @@ const STATUS_STYLE: Record<string, string> = {
 export default function MyDbRequests() {
     const [rows, setRows] = useState<any[] | null>(null);
     const [error, setError] = useState('');
+    const [paying, setPaying] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetch('/api/db-request', { cache: 'no-store' })
-            .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error || '불러오지 못했습니다.'); setRows(j.requests || []); })
-            .catch(e => setError(e.message || '불러오지 못했습니다.'));
-    }, []);
+    const load = () => fetch('/api/db-request', { cache: 'no-store' })
+        .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error || '불러오지 못했습니다.'); setRows(j.requests || []); })
+        .catch(e => setError(e.message || '불러오지 못했습니다.'));
+    useEffect(() => { void load(); }, []);
+
+    // [10/6] 회원 전용 개인DB 결제 — 기존 장바구니 결제(PortOne)와 같은 주문 경로. 주인 확인은 서버(orders)가 한다.
+    const pay = async (product: any) => {
+        const { data: { user } } = await createClient().auth.getUser();
+        if (!user) { alert('로그인이 필요합니다.'); return; }
+        setPaying(product.id);
+        try {
+            await payOrder(user, { kind: 'cart', items: [{ item_id: product.id }], usedPoints: 0 });
+            alert('결제가 완료되었습니다. 시험지 만들기의 출제 자료에서 ‘내 개인DB’로 이용하실 수 있어요.');
+            await load();
+        } catch (e: any) { alert(e?.message || '결제를 완료하지 못했습니다.'); }
+        finally { setPaying(null); }
+    };
 
     if (error) return <div className="p-10 text-center text-sm text-rose-600 font-bold bg-white rounded-2xl border border-slate-200">{error}</div>;
     if (!rows) return <div className="p-10 text-center text-sm text-slate-400 font-bold bg-white rounded-2xl border border-slate-200">불러오는 중…</div>;
@@ -55,8 +71,24 @@ export default function MyDbRequests() {
                             </p>
                             <p className="text-sm text-slate-700 whitespace-pre-wrap break-keep leading-relaxed">{row.admin_reply}</p>
                         </div>
-                    ) : (
+                    ) : !row.product && (
                         <p className="mt-3 text-xs text-slate-400">운영자가 확인 중입니다. 안내가 등록되면 여기에 표시됩니다.</p>
+                    )}
+                    {row.product && (
+                        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 p-3">
+                            <Database size={18} className="text-brand-600 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-extrabold text-slate-800 break-keep">{row.product.title}</p>
+                                <p className="text-xs text-slate-500">{row.product.paid ? '이용 중 — 시험지 만들기 › 출제 자료 › 내 개인DB' : `회원님 전용 개인DB가 준비됐습니다 · ${Number(row.product.price).toLocaleString()}원`}</p>
+                            </div>
+                            {row.product.paid ? (
+                                <Link href="/question-bank" className="shrink-0 text-sm font-extrabold px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700">시험지 만들기 →</Link>
+                            ) : (
+                                <button onClick={() => pay(row.product)} disabled={paying === row.product.id} className="shrink-0 text-sm font-extrabold px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">
+                                    {paying === row.product.id ? '결제 진행 중…' : '결제하기'}
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             ))}

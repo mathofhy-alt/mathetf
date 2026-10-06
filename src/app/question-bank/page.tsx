@@ -580,7 +580,8 @@ export default function QuestionBankPage() {
                     user_id: 'guest',
                     type: 'personal_db' as const,
                     reference_id: db.id,
-                    name: `${db.school} ${gradePart} ${db.exam_year ? db.exam_year + '년' : ''} ${examPart} ${db.subject || ''} [개인DB]`.replace(/\s+/g, ' ').trim(),
+                    // 회원 전용 개인DB(10/6)는 운영자가 정한 상품 이름 그대로
+                    name: db.private ? `${db.title} [내 개인DB]` : `${db.school} ${gradePart} ${db.exam_year ? db.exam_year + '년' : ''} ${examPart} ${db.subject || ''} [개인DB]`.replace(/\s+/g, ' ').trim(),
                     created_at: '',
                     details: db,
                 };

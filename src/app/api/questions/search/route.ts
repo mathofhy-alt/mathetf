@@ -93,7 +93,8 @@ export async function POST(req: NextRequest) {
         ? supabase.rpc('question_bank_all', { p_excluded: [...wholeExcluded, ...userExcluded] }, wantCount ? {count:'estimated'} : {})
         : supabase.rpc('question_bank_candidates', { p_scope: scope, p_excluded: userExcluded }, wantCount ? {count:'estimated'} : {}))
         .select(SELECT_COLS)
-        .eq('work_status', 'sorted')
+        // private = 회원 전용 개인DB(10/6). 범위 함수가 그 회원 범위(sources 직접 지정)에서만 내주므로 여기선 통과시킨다
+        .in('work_status', ['sorted', 'private'])
         .order('question_number', { ascending: true }).order('id', { ascending: true })
         .range(from, to);
 

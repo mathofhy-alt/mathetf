@@ -8,7 +8,7 @@ export function cartQuote(requested: unknown, materials: any[], usedPoints: unkn
     const map = new Map(materials.map(m => [m.id, m]));
     const items: OrderItem[] = requested.map(input => {
         const material = map.get(input.item_id);
-        const types: Record<string,string> = { DB: 'PERSONAL_DB', HWP: 'HWP_DOC', PDF: 'MOCK_EXAM' };
+        const types: Record<string,string> = { DB: 'PERSONAL_DB', HWP: 'HWP_DOC', PDF: 'MOCK_EXAM', PRIVATE: 'PRIVATE_DB' };   // PRIVATE: 회원 전용 개인DB(10/6, orders 라우트가 주인 확인 후 넘김)
         if (!material || !types[material.file_type] || !Number.isSafeInteger(material.price) || material.price < 0) throw new Error('판매 정보를 확인할 수 없는 자료입니다.');
         // Price, title and file entitlement come only from the server's material record.
         return { item_id: material.id, item_type: types[material.file_type], title: material.title, price: material.price };

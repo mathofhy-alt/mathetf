@@ -2,7 +2,8 @@ import mockLinks from './verified-mock-links.json';
 import verifiedLinks from './verified-source-links.json';
 import type { DbDescriptor } from './dbFilter';
 
-export type CatalogDb = DbDescriptor & { id: string; availability?: string };
+// private: 회원 전용 개인DB(private_dbs, 10/6) — 그 회원 목록에만 붙고 '전체' 빠른길·공용 캐시에서는 빠진다
+export type CatalogDb = DbDescriptor & { id: string; availability?: string; private?: boolean };
 export type ScopeRule = { sources?: string[]; school?: string; grade?: string; year?: string; semesters?: string[]; semesterPrefix?: string; subjects?: string[] };
 const mockSubjects = ['기하', '기하와벡터', '미적분II', '미적분', '확률과통계', '확률과 통계'];
 export const unavailableDbs: Record<string, string> = {

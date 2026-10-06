@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { isPersonalDbFree } from '@/lib/config';
 import { availableCatalog } from './catalog';
+import { privateCatalog } from './privateDb';
 import { resolveScope, type CatalogDb, type ScopeRule } from './scope';
 
 /**
@@ -45,16 +46,18 @@ const requestedIds = (requested: unknown): string[] =>
  * 캐시를 건너뛰고 한 번 더 새 목록으로 확인한다 — 캐시 때문에 새 자료가 '이용할 수 없음' 으로 막히지 않게.
  */
 export async function resolveRequestScope(requested: unknown, mockSlug?: unknown): Promise<{ catalog: CatalogDb[]; scope: ScopeRule[] }> {
+    // 회원 전용 개인DB 는 사람마다 달라 공용 캐시 밖에서 붙인다 (10/6)
+    const mine = await privateCatalog();
     if (!isPersonalDbFree()) {
-        const catalog = await availableCatalog();
+        const catalog = [...await availableCatalog(), ...mine];
         return { catalog, scope: resolveScope(catalog, requested, mockSlug) };
     }
-    let catalog = await cachedFreeCatalog();
+    let catalog = [...await cachedFreeCatalog(), ...mine];
     try { return { catalog, scope: resolveScope(catalog, requested, mockSlug) }; }
     catch (e) {
         const known = new Set(catalog.map(db => db.id));
         if (requestedIds(requested).every(id => known.has(id))) throw e;  // 목록 문제가 아님 → 그대로 에러
-        catalog = await availableCatalog();
+        catalog = [...await availableCatalog(), ...mine];
         return { catalog, scope: resolveScope(catalog, requested, mockSlug) };
     }
 }
@@ -63,7 +66,9 @@ export async function resolveRequestScope(requested: unknown, mockSlug?: unknown
 export function isWholeCatalog(catalog: CatalogDb[], requested: unknown, mockSlug?: unknown): boolean {
     if (mockSlug) return false;
     const ids = new Set(requestedIds(requested));
-    const ready = catalog.filter(db => !db.availability);
+    // 전용 개인DB 를 골랐으면 빠른길(question_bank_all = sorted 만)을 못 쓴다 → 범위 계산 길로
+    if (catalog.some(db => db.private && ids.has(db.id))) return false;
+    const ready = catalog.filter(db => !db.availability && !db.private);
     return ready.length > 0 && ready.every(db => ids.has(db.id));
 }
 
@@ -74,7 +79,7 @@ const missingFunction = (error: any) => ['PGRST202', '42883'].includes(error?.co
  * 에러는 캐시되지 않도록 던진 뒤 여기서 null 로 바꾼다.
  */
 export async function wholeCatalogIneligible(catalog: CatalogDb[]): Promise<string[] | null> {
-    const ready = catalog.filter(db => !db.availability);
+    const ready = catalog.filter(db => !db.availability && !db.private);   // 공용 캐시 — 사람마다 다른 전용 DB 는 뺀다
     const scope = resolveScope(ready, ready.map(db => db.id));
     const load = unstable_cache(async () => {
         const { data, error } = await createAdminClient().rpc('question_bank_scope_ineligible', { p_scope: scope });

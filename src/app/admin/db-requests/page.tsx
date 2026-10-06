@@ -57,6 +57,23 @@ export default function DbRequestsAdmin() {
         setRows(prev => prev.map(x => x.id === row.id ? { ...x, ...j.row } : x));
         setDrafts(prev => { const n = { ...prev }; delete n[row.id]; return n; });
     };
+    // [10/6] 회원 전용 개인DB 연결 — 등록한 문항 묶음(source_db_id)을 이 회원만 결제·이용하게 한다
+    const [linkForm, setLinkForm] = useState<Record<string, { source: string; title: string; price: string }>>({});
+    const formOf = (row: any) => linkForm[row.id] ?? { source: row.private_db?.source_db_id ?? '', title: row.private_db?.title ?? '', price: row.private_db ? String(row.private_db.price) : '' };
+    const link = async (row: any) => {
+        const f = formOf(row);
+        if (!confirm(`'${f.source}' 문항 묶음을 ${row.user_email} 님 전용 개인DB(${Number(f.price).toLocaleString()}원)로 연결할까요?
+
+그 묶음의 문항은 다른 회원의 검색·유사문항·예상문제 등 모든 기능에서 빠집니다.`)) return;
+        setSavingId(row.id);
+        const r = await fetch('/api/admin/db-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'link', id: row.id, source_db_id: f.source, title: f.title, price: Number(f.price) }) });
+        const j = await r.json().catch(() => ({}));
+        setSavingId(null);
+        if (!r.ok) { alert('연결하지 못했습니다: ' + (j.error || r.status)); return; }
+        alert(`연결했습니다. 문항 ${j.questions}개를 이 회원 전용으로 바꿨습니다.`);
+        setRows(prev => prev.map(x => x.id === row.id ? { ...x, private_db: { ...j.privateDb, paid_at: x.private_db?.paid_at ?? null } } : x));
+        setLinkForm(prev => { const n = { ...prev }; delete n[row.id]; return n; });
+    };
     const remove = async (row: any) => {
         if (!confirm('이 요청과 올린 파일을 모두 삭제할까요? (복구 불가)')) return;
         const r = await fetch('/api/admin/db-requests', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id }) });
@@ -109,6 +126,20 @@ export default function DbRequestsAdmin() {
                                         >
                                             {savingId === row.id ? '저장 중…' : '안내 저장'}
                                         </button>
+                                    </div>
+                                </div>
+                                <div className="pt-3 mt-2 border-t border-dashed border-slate-200">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-xs font-bold text-slate-600">회원 전용 개인DB 연결</span>
+                                        {row.private_db && (row.private_db.paid_at
+                                            ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">결제 완료 · {new Date(row.private_db.paid_at).toLocaleDateString('ko-KR')}</span>
+                                            : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">결제 대기 · {Number(row.private_db.price).toLocaleString()}원</span>)}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1.4fr_0.8fr_auto] gap-2">
+                                        <input value={formOf(row).source} onChange={e => setLinkForm(p => ({ ...p, [row.id]: { ...formOf(row), source: e.target.value } }))} placeholder="문항 묶음 (source_db_id)" className="text-xs border border-slate-200 rounded-lg px-2 py-2" />
+                                        <input value={formOf(row).title} onChange={e => setLinkForm(p => ({ ...p, [row.id]: { ...formOf(row), title: e.target.value } }))} placeholder="회원에게 보일 이름 (예: 쎈 공통수학1)" className="text-xs border border-slate-200 rounded-lg px-2 py-2" />
+                                        <input value={formOf(row).price} onChange={e => setLinkForm(p => ({ ...p, [row.id]: { ...formOf(row), price: e.target.value.replace(/[^0-9]/g, '') } }))} placeholder="가격(원)" inputMode="numeric" className="text-xs border border-slate-200 rounded-lg px-2 py-2" />
+                                        <button onClick={() => link(row)} disabled={savingId === row.id || !formOf(row).source || !formOf(row).title || formOf(row).price === ''} className="text-xs font-bold px-3 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-40">{row.private_db ? '수정' : '연결'}</button>
                                     </div>
                                 </div>
                             </div>
