@@ -414,6 +414,10 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 .rd .rd-x-row b { display: block; font-size: 19px; font-weight: 700; }
 .rd .rd-x-row small { display: block; margin-top: 6px; font-size: 16px; color: var(--rd-sub); }
 .rd .rd-x-row svg { flex: none; color: var(--rd-icon); }
+.rd .rd-x-more .rd-lead { margin-top: 16px; }
+.rd .rd-x-report { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding: 32px 36px; border-radius: 28px; background: var(--rd-tint); }
+.rd .rd-x-report h3 { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.4; }
+.rd .rd-x-report p { margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: var(--rd-sub); }
 .rd .rd-x-links { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px 28px; }
 
 @media (max-width: 900px) {
@@ -435,4 +439,6 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
   .rd .rd-x-bar { grid-template-columns: minmax(64px, 110px) minmax(0, 1fr) 52px; gap: 10px; font-size: 15px; }
   .rd .rd-get-card, .rd .rd-op-form { padding: 22px; }
   .rd .rd-x-row { padding: 20px 22px; }
+  .rd .rd-x-report { padding: 24px; }
+  .rd .rd-x-report .rd-btn { width: 100%; }
 }

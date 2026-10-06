@@ -10,6 +10,7 @@ import FreeProblemCTA from '@/components/FreeProblemCTA';
 import PaidMaterialChoice from '@/components/PaidMaterialChoice';
 import { schoolDestination } from '@/lib/discovery';
 import { getSchoolAddress } from '@/lib/school-address';
+import ReportSchoolButton from '@/components/ReportSchoolButton';
 
 type Props = {
   row: any;
@@ -29,6 +30,7 @@ type Props = {
   concepts: string[];
   composition: { total: number; byUnit: { unit: string; count: number }[]; easy: number; mid: number; hard: number } | null;
   relatedExams: { id: string; school: string; exam_year: number; grade: number; semester: number; exam_type: string; subject: string | null }[];
+  nearbyExams?: { id: string; school: string; district: string | null; exam_year: number }[];
   relatedReport: { slug: string; title: string } | null;
 };
 
@@ -42,7 +44,7 @@ function unitHeadline(units: { unit: string; count: number }[]) {
   return <>{units[0].unit} 단원이 가장 많고,<br />{next} 순입니다</>;
 }
 
-export default function ExamDetailV2({ row, previews, questionCount, sourceKey, hasDb, hasSolutionMaterial, canStartWithQuestions, createHref, otherYears, paidMaterials, opinionExamId, opinions, narrative, concepts, composition, relatedExams, relatedReport }: Props) {
+export default function ExamDetailV2({ row, previews, questionCount, sourceKey, hasDb, hasSolutionMaterial, canStartWithQuestions, createHref, otherYears, paidMaterials, opinionExamId, opinions, narrative, concepts, composition, relatedExams, nearbyExams = [], relatedReport }: Props) {
   const editorial = examEditorials[row.id];
   const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
   const period = isMock ? `${row.semester}월` : `${row.semester}학기`;
@@ -54,6 +56,8 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
   const units = composition ? [...composition.byUnit].sort((a, b) => b.count - a.count) : [];
   const maxUnit = Math.max(1, ...units.map(u => u.count));
   const hasMore = otherYears.length > 0 || relatedExams.length > 0;
+  const examName = `${row.grade ? `${row.grade}학년 ` : ''}${period} ${row.exam_type || ''}`.trim();
+  const nearArea = nearbyExams.some(e => e.district && e.district === row.district) ? row.district : row.region;
 
   return (
     <div className="rd rd-x">
@@ -131,17 +135,38 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
 
         <section className="rd-x-more" aria-labelledby="exam-more-title">
           <div className="rd-wrap">
-            <h2 id="exam-more-title" className="rd-x-h2">{row.school}의 다른 시험지</h2>
-            {hasMore && <div className="rd-x-rows">
-              {relatedExams.map(item => <Link key={item.id} href={`/exam/${item.id}`} className="rd-x-row">
-                <span><b>{item.exam_year}년 {item.grade}학년 {item.semester}학기 {item.exam_type}</b><small>{item.subject || '수학'}</small></span>
-                <ChevronRight size={22} aria-hidden="true" />
-              </Link>)}
-              {otherYears.map(year => <Link key={year.id} href={`/exam/${year.id}`} className="rd-x-row">
-                <span><b>{year.exam_year}년 {row.grade ? `${row.grade}학년 ` : ''}{period} {row.exam_type}</b><small>같은 시험, 다른 연도</small></span>
-                <ChevronRight size={22} aria-hidden="true" />
-              </Link>)}
+            {hasMore ? <>
+              <h2 id="exam-more-title" className="rd-x-h2">{row.school}의 다른 시험지</h2>
+              <div className="rd-x-rows">
+                {relatedExams.map(item => <Link key={item.id} href={`/exam/${item.id}`} className="rd-x-row">
+                  <span><b>{item.exam_year}년 {item.grade}학년 {item.semester}학기 {item.exam_type}</b><small>{item.subject || '수학'}</small></span>
+                  <ChevronRight size={22} aria-hidden="true" />
+                </Link>)}
+                {otherYears.map(year => <Link key={year.id} href={`/exam/${year.id}`} className="rd-x-row">
+                  <span><b>{year.exam_year}년 {examName}</b><small>같은 시험, 다른 연도</small></span>
+                  <ChevronRight size={22} aria-hidden="true" />
+                </Link>)}
+              </div>
+            </> : nearbyExams.length > 0 ? <>
+              {/* 학교에 이 시험지 하나뿐일 때: 같은 지역 다른 학교의 같은 시험 */}
+              <h2 id="exam-more-title" className="rd-x-h2">{nearArea} 다른 학교의<br />{examName}</h2>
+              <p className="rd-lead">같은 시기에 치른 이웃 학교 시험지예요. 출제 범위와 난이도를 견주어 보세요.</p>
+              <div className="rd-x-rows">
+                {nearbyExams.map(item => <Link key={item.id} href={`/exam/${item.id}`} className="rd-x-row">
+                  <span><b>{item.school}</b><small>{item.exam_year}년 {examName}{item.district && item.district !== row.district ? `, ${item.district}` : ''}</small></span>
+                  <ChevronRight size={22} aria-hidden="true" />
+                </Link>)}
+              </div>
+            </> : <h2 id="exam-more-title" className="rd-x-h2">다른 기출 둘러보기</h2>}
+
+            {!hasMore && !isMock && <div className="rd-x-report">
+              <div>
+                <h3>{row.school}의 다른 시험지를 갖고 계신가요?</h3>
+                <p>원본을 제보해 주시면 확인 후 이 학교 페이지에 올려 드려요.</p>
+              </div>
+              <ReportSchoolButton label="원본 제보하기" className="rd-btn rd-btn-primary" />
             </div>}
+
             <div className="rd-x-links">
               <Link href={schoolDestination(row.school)} className="rd-link">{row.school} 시험지 전체 보기</Link>
               {relatedReport && <Link href={`/insights/${relatedReport.slug}`} className="rd-link">{relatedReport.title} 출제 동향</Link>}
