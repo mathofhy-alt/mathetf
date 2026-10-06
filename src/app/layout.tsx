@@ -7,6 +7,7 @@ import "./product.css";
 import "./cloud.css";
 import "./atelier.css";
 import "./suite.css";
+import "./redesign.css";
 import SiteSurface from "@/components/SiteSurface";
 import { Noto_Sans_KR } from 'next/font/google';
 
@@ -73,6 +74,9 @@ export default function RootLayout({
     return (
         <html lang="ko">
             <head>
+                {/* [2026-10 개편] Pretendard — 필요한 글자 묶음만 받는 dynamic subset. 새 디자인(.rd, redesign.css)이 쓴다. */}
+                <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
             </head>
             <body className={`${notoSansKr.variable} font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
                 {process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' && <div className="review-environment">{process.env.NEXT_PUBLIC_REVIEW_ORIGINALS === '1' ? '검토 전용 · 실제 문항 읽기 전용 연결 · 로그인·저장은 테스트 환경' : '검토 전용 · 하나고 2025 실제 문항 · 로그인·저장은 테스트 환경'}</div>}

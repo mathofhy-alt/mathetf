@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PromoCarousel from '@/components/PromoCarousel';
 import {unavailableDbs} from '@/lib/questions/scope';
-import HomeStart, { HomeExplore } from '@/components/HomeStart';
+import { RdHomeHero, RdHomeShowcase, RdHomeStats, RdHomeFeatures, RdHomeMore, RdHomeFinale } from '@/components/home/RdHome';
 import type { WeeklyUpload } from '@/lib/home-weekly-uploads';
 import { FREE_ACCESS_LABEL } from '@/lib/config';
 import FeatureCards from '@/components/FeatureCards';
@@ -37,6 +37,7 @@ interface HomeClientProps {
     initialExamData: any[][];   // packHomeRow 로 압축된 행
     initialExamCount: number;
     thisWeekUploads: WeeklyUpload;
+    siteStats: { questionCount: number; schoolCount: number };
     initialSchoolsRaw: any[];
 }
 
@@ -158,7 +159,7 @@ function buildGroupedFiles(packed: any[]): GroupedExam[] {
     return Object.values(groups).sort((a, b) => b.year - a.year || rank(b) - rank(a) || b.date.localeCompare(a.date));
 }
 
-export default function HomeClient({ initialExamData, initialExamCount, thisWeekUploads, initialSchoolsRaw }: HomeClientProps) {
+export default function HomeClient({ initialExamData, initialExamCount, thisWeekUploads, siteStats, initialSchoolsRaw }: HomeClientProps) {
 
     // [SSR·크롤예산 2026-08-26] 예전엔 빈 배열로 시작해 useEffect 에서 채웠다.
     // 그러면 서버 렌더링 시점에 목록이 비어, 구글이 받는 HTML 에 자료도 링크도 한 건도 없었다
@@ -669,7 +670,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
     const checkAccess = (id: string) => purchasedIds.has(id) || user?.email === 'mathofhy@naver.com';
 
     return (
-        <div className="home-page atelier-home min-h-screen text-[#182236] font-sans">
+        <div className="home-page rd min-h-screen">
             <Header
                 user={user}
                 purchasedPoints={purchasedPoints}
@@ -677,7 +678,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                 onUploadClick={handleUploadClick}
             />
 
-            <HomeStart thisWeekUploads={thisWeekUploads} onSearch={(keyword)=>{
+            <RdHomeHero onSearch={(keyword)=>{
                 setSelectedRegion('');setSelectedDistrict('');setSelectedSchool('');
                 setSelectedGrade('');setSelectedExamScope('');setSelectedYear('');setSelectedSubject('');setFreePdfOnly(false);
                 setSearchKeyword(keyword);setCurrentPage(1);
@@ -696,282 +697,152 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                     target?.focus({preventScroll:true});
                 });
             }} />
+            <RdHomeShowcase />
+            <RdHomeStats questionCount={siteStats.questionCount} schoolCount={siteStats.schoolCount} />
+            <RdHomeFeatures />
 
 
 
 
 
-            <section id="catalog" tabIndex={-1} aria-label="기출 아카이브" className="home-catalog max-w-[1200px] mx-auto px-4 pb-20"><div className="catalog-heading"><div><p className="eyebrow">학교별 수학 기출 {initialExamCount.toLocaleString()}회차</p><h2>기출 아카이브.</h2></div><a href="/schools">학교별로 모아 보기 →</a></div>
-                <div className="atelier-catalog-layout">
-                        {/* 검색 필터 박스 */}
-                        <div data-tour="search-filter" className="bg-white rounded-2xl border border-[#C5D8B5] shadow-sm p-5">
-                            <p className="text-xs font-bold text-[#426D36] mb-3 flex items-center gap-1.5">
-                                <Search size={12} /> 기출 자료 검색
-                            </p>
-                            <div className="space-y-2 mb-3">
-                                {/* Row 1: Region, District, School */}
-                                <div className="grid grid-cols-2 md:grid-cols-12 gap-2">
-                                    <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
-                                            <option value="">시/도</option>
-                                            {regions.map(r => <option key={r} value={r}>{r}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="col-span-1 md:col-span-3">
-                                        <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
-                                            <option value="">구/군</option>
-                                            {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="col-span-2 md:col-span-6">
-                                        <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
-                                            <option value="">학교 전체</option>
-                                            {schools.map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-                                {/* Row 2: Grade, Semester, Subject, Year */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
-                                        <option value="">학년 전체</option>
-                                        {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
-                                    </select>
-                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="시험 범위 선택" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
-                                        <option value="">시험 전체</option>
-                                        <option value="1-중간고사">1학기 중간</option>
-                                        <option value="1-기말고사">1학기 기말</option>
-                                        <option value="2-중간고사">2학기 중간</option>
-                                        <option value="2-기말고사">2학기 기말</option>
-                                    </select>
-                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="과목 선택" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
-                                        <option value="">과목 전체</option>
-                                        {subjectGroups.map(g => (
-                                            <optgroup key={g.label} label={g.label}>
-                                                {g.subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                                            </optgroup>
-                                        ))}
-                                    </select>
-                                    <select className="w-full form-select h-10 text-base sm:text-sm" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
-                                        <option value="">년도 전체</option>
-                                        {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                                            <option key={y} value={y}>{y}년</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            {/* Search Input */}
-                            <div className="relative">
-                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#AAAAC4] pointer-events-none" />
-                                <input
-                                    type="text"
-                                    value={searchKeyword}
-                                    onChange={(e) => setSearchKeyword(e.target.value)}
-                                    placeholder="학교명 검색 (예: 경기고)"
-                                    className="w-full pl-9 pr-3 py-2.5 border border-[#C5D8B5] rounded-lg text-base sm:text-sm focus:border-[#426D36] focus:outline-none focus:ring-2 focus:ring-[#426D36]/10 transition-colors"
-                                />
-                            </div>
-                            <label className="free-pdf-filter"><input type="checkbox" checked={freePdfOnly} onChange={e=>{setFreePdfOnly(e.target.checked);setCurrentPage(1);}}/><span>무료 PDF 있는 자료만</span></label>
-                            <p className="free-pdf-filter-note">회원 무료 · 문제만 PDF<br/>해설 포함 PDF·HWP는 별도입니다.</p>
+            <section id="catalog" tabIndex={-1} aria-label="전국 학교 기출" className="rd-catalog rd-wrap">
+                <div className="rd-catalog-head">
+                    <div>
+                        <p className="rd-kicker">학교별 수학 기출 {initialExamCount.toLocaleString()}회차</p>
+                        <h2 className="rd-h2">전국 학교 기출</h2>
+                    </div>
+                    <a href="/schools" className="rd-link">학교별로 모아 보기</a>
+                </div>
+                <div className="rd-catalog-layout">
+                    {/* 검색 조건 */}
+                    <div data-tour="search-filter" className="rd-filter">
+                        <p className="rd-filter-title">조건으로 찾기</p>
+                        <div className="rd-filter-grid">
+                            <select className="rd-select" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
+                                <option value="">시/도</option>
+                                {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                            <select className="rd-select" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
+                                <option value="">구/군</option>
+                                {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                            <select className="rd-select rd-span2" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
+                                <option value="">학교 전체</option>
+                                {schools.map(sc => <option key={sc} value={sc}>{sc}</option>)}
+                            </select>
+                            <select className="rd-select" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
+                                <option value="">학년 전체</option>
+                                {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
+                            </select>
+                            <select className="rd-select" aria-label="시험 범위 선택" value={selectedExamScope} onChange={e => setSelectedExamScope(e.target.value)}>
+                                <option value="">시험 전체</option>
+                                <option value="1-중간고사">1학기 중간</option>
+                                <option value="1-기말고사">1학기 기말</option>
+                                <option value="2-중간고사">2학기 중간</option>
+                                <option value="2-기말고사">2학기 기말</option>
+                            </select>
+                            <select className="rd-select" aria-label="과목 선택" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)}>
+                                <option value="">과목 전체</option>
+                                {subjectGroups.map(g => (
+                                    <optgroup key={g.label} label={g.label}>
+                                        {g.subjects.map(sb => <option key={sb} value={sb}>{sb}</option>)}
+                                    </optgroup>
+                                ))}
+                            </select>
+                            <select className="rd-select" aria-label="년도 선택" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
+                                <option value="">년도 전체</option>
+                                {Array.from({ length: new Date().getFullYear() - 2016 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                    <option key={y} value={y}>{y}년</option>
+                                ))}
+                            </select>
                         </div>
+                        <div className="rd-filter-search">
+                            <Search size={16} color="#B0B8C1" aria-hidden="true" />
+                            <input type="text" aria-label="학교명 검색" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} placeholder="학교명 (예: 경기고)" />
+                        </div>
+                        <label className="rd-check"><input type="checkbox" checked={freePdfOnly} onChange={e=>{setFreePdfOnly(e.target.checked);setCurrentPage(1);}}/><span>무료 PDF 있는 자료만</span></label>
+                        <p className="rd-filter-note">문제 PDF는 회원 무료입니다. 해설이 들어간 PDF와 한글 파일은 따로 구매합니다.</p>
+                    </div>
 
-                        {/* 기출 자료 카드 목록 */}
-                        <div className="atelier-results"><div className="cloud-results-summary" role="status"><span>{targetMaterialId ? '선택한 회차' : freePdfOnly?'무료 PDF 자료':'기출 자료'} <strong>{activeSearch.length>=2&&!searchComplete&&catalogState!=='ready' ? '검색 중…' : targetMaterialId&&catalogState==='loading' ? '확인 중' : `${filteredFiles.length.toLocaleString()}건`}</strong></span>{targetMaterialId ? <button type="button" onClick={() => { setTargetMaterialId(null); history.replaceState(null, '', `${location.pathname}${location.search}`); }} className="text-[#426D36] font-bold underline">전체 자료 보기</button> : <span>{catalogState==='loading'&&!searchComplete ? '먼저 표시한 자료입니다 · 전체 목록 확인 중' : catalogState==='error'&&!searchComplete ? '전체 목록을 불러오지 못했습니다 · 학교명 검색을 이용해 주세요' : '학교 · 학년 · 회차별로 살펴보세요.'}</span>}</div>
-                        <p className="mb-3 text-xs text-[#66776A]">해설 포함 유료 PDF·HWP는 결제 완료 후 즉시 다운로드할 수 있습니다.</p>
-                        <div id="main-list" className="space-y-2">
-                            {activeSearch.length>=2&&!searchComplete&&catalogState!=='ready'&&searchedCatalog?.status!=='error' ? <p role="status" className="rounded-xl border border-[#D6DDE3] bg-white p-6 text-sm text-[#365064]">전체 자료에서 학교명을 검색하고 있습니다…</p> : currentItems.length > 0 ? currentItems.map((group, idx) => (
-                                <div key={group.key} data-tour={idx === 0 ? 'exam-card' : undefined} className="cloud-exam-card">
-                                    <div className="p-3 md:p-4">
-                                        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-                                            {/* Title + meta */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="cloud-exam-heading">
-                                                    {group.title.includes(']') ? (
-                                                        <>
-                                                            {/* [2026-09-08] 학교명 앞에 지역을 항상 적는다(사장님 지정 형식).
-                                                                동명이교(경신고 = 대구 수성구 / 서울 종로구)를 카드에서 바로 가리려면
-                                                                겹치는 이름에만 붙이는 것보다 전부 붙이는 쪽이 읽기 쉽다. */}
-                                                            {(group.region || group.district) && (
-                                                                <span className="cloud-exam-region">
-                                                                    {`${group.region || ''} ${group.district || ''}`.trim()}
-                                                                </span>
-                                                            )}
-                                                            <Link
-                                                                href={group.files.pdfSol ? `/exam/${group.files.pdfSol.id}` : `/school/${encodeURIComponent(group.school)}`}
-                                                                className="text-[#426D36] hover:underline"
-                                                                title="문제 미리보기 보기"
-                                                            >
-                                                                {group.school}
-                                                            </Link>{' '}
-                                                            <span className="cloud-exam-detail">{group.title.split(']')[1].trim()}</span>
-                                                        </>
-                                                    ) : <span className="text-[#294437]">{group.title}</span>}
-                                                </div>
-                                                <div className="cloud-exam-meta flex items-center gap-2 flex-wrap">
-                                                    {group.isVerified && (
-                                                        <span className="text-[10px] bg-teal-50 text-teal-600 border border-teal-200 px-2 py-0.5 rounded-full font-bold">✓ 검수완료</span>
-                                                    )}
-                                                    <span className="text-[11px] text-[#AAAAC4]">{group.date}</span>
-                                                    <span className="text-[11px] text-[#AAAAC4]">·</span>
-                                                    <span className="text-[11px] text-[#AAAAC4]">{group.uploader === 'mathofhy' || group.uploader === 'Anonymous' ? '수학ETF팀' : group.uploader}</span>
-                                                    {user && (
-                                                        <button onClick={(e) => handleReportClick(e, group)} className="text-[10px] text-[#AAAAC4] hover:text-red-400 flex items-center gap-0.5 transition-colors">
-                                                            <AlertTriangle size={9} /> 신고
-                                                        </button>
-                                                    )}
-                                                    {user?.email === 'mathofhy@naver.com' && (
-                                                        <button onClick={(e) => handleVerifyAdmin(e, group)} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${group.isVerified ? 'bg-teal-50 border-teal-200 text-teal-600 hover:bg-teal-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-[#426D36] hover:text-[#426D36]'}`}>
-                                                            {group.isVerified ? '인증 취소' : '관리자 인증'}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Download chips */}
-                                            <div className="cloud-exam-actions flex items-center gap-2 flex-wrap flex-shrink-0">
-                                                <Link href={group.files.pdfSol ? `/exam/${group.files.pdfSol.id}` : `/school/${encodeURIComponent(group.school)}`} className="cloud-exam-view">시험지 전체 보기 <ArrowUpRight size={15}/></Link>
-                                                {/* 문제만 PDF (회원가입 시 무료) — 맨 앞 강조 */}
-                                                <p className="cloud-exam-file-note">{group.files.pdfSol?.hasFreePdf?'전체 문제 PDF는 회원 무료 · 해설 제외':'무료 문제 PDF 준비 중'} · {Object.values(group.files).some((f:any)=>f?.hasPreview)?'미리보기 공개':'미리보기 준비 중'}</p>
-                                                {group.files.pdfSol?.hasFreePdf && (() => {
-                                                    const st = dlState[freePdfDownloadKey(group.files.pdfSol!.id)];
-                                                    return (
-                                                        <button
-                                                            data-free-pdf="true"
-                                                            onClick={() => handleFreeDownload(group.files.pdfSol!)}
-                                                            disabled={st === 'loading'}
-                                                            title={user ? '문제만 PDF 무료 다운로드' : '회원가입하면 문제만 PDF 무료'}
-                                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${st === 'done'
-                                                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                                                : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'} ${st === 'loading' ? 'opacity-60 cursor-wait' : ''}`}
-                                                        >
-                                                            {st === 'loading' ? (
-                                                                <><Loader2 size={13} className="animate-spin" /><span>받는 중…</span></>
-                                                            ) : st === 'done' ? (
-                                                                <><Check size={13} /><span>받았어요</span></>
-                                                            ) : (
-                                                                <><Download size={13} /><span>문제 PDF 무료</span></>
-                                                            )}
-                                                        </button>
-                                                    );
-                                                })()}
-                                                {!group.files.pdfSol?.hasFreePdf && <button type="button" data-free-pdf="pending" disabled title="이 자료의 무료 문제 PDF는 아직 준비되지 않았습니다."><Download size={13}/><span>문제 PDF 준비 중</span></button>}
-
-                                                {(group.files.pdfSol || group.files.hwpSol || group.files.db) && <div className="cloud-exam-more">
-                                                  <div className="cloud-exam-more-grid">
-                                                {/* PDF */}
-                                                {group.files.pdfSol ? (
-                                                    <button
-                                                        data-tour={idx === 0 ? 'pdf-download' : undefined}
-                                                        onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)}
-                                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
-                                                            checkAccess(group.files.pdfSol.id)
-                                                                ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100'
-                                                                : cartItemIds.has(group.files.pdfSol.id)
-                                                                ? 'bg-brand-50 text-brand-600 border-brand-200'
-                                                                : 'bg-red-50 text-red-400 border-red-100 hover:border-red-200 hover:text-red-500'
-                                                        }`}
-                                                    >
-                                                        {dlState[group.files.pdfSol.id] === 'loading'
-                                                            ? <Loader2 size={13} className="animate-spin" />
-                                                            : <PdfFileIcon size={13} purchased={checkAccess(group.files.pdfSol.id)} />}
-                                                        <span>{dlState[group.files.pdfSol.id] === 'loading' ? '받는 중…'
-                                                            : checkAccess(group.files.pdfSol.id) && dlState[group.files.pdfSol.id] === 'done' ? '받았어요'
-                                                            : checkAccess(group.files.pdfSol.id) ? '문제+해설 PDF 받기' : cartItemIds.has(group.files.pdfSol.id) ? 'PDF 장바구니에 담김' : `문제+해설 PDF ${group.files.pdfSol.price}원`}</span>
-                                                    </button>
-                                                ) : null}
-
-                                                {/* HWP */}
-                                                {group.files.hwpSol ? (
-                                                    <button
-                                                        onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)}
-                                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
-                                                            checkAccess(group.files.hwpSol.id)
-                                                                ? 'bg-[#E7EFD9] text-[#638747] border-teal-200 hover:bg-teal-100'
-                                                                : cartItemIds.has(group.files.hwpSol.id)
-                                                                ? 'bg-brand-50 text-brand-600 border-brand-200'
-                                                                : 'bg-[#E7EFD9] text-[#638747] border-teal-100 hover:border-teal-200'
-                                                        }`}
-                                                    >
-                                                        {dlState[group.files.hwpSol.id] === 'loading'
-                                                            ? <Loader2 size={13} className="animate-spin" />
-                                                            : <HwpFileIcon size={13} purchased={checkAccess(group.files.hwpSol.id)} />}
-                                                        <span>{dlState[group.files.hwpSol.id] === 'loading' ? '받는 중…'
-                                                            : dlState[group.files.hwpSol.id] === 'done' ? '받았어요'
-                                                            : checkAccess(group.files.hwpSol.id) ? '문제+해설 HWP 받기' : cartItemIds.has(group.files.hwpSol.id) ? 'HWP 장바구니에 담김' : `문제+해설 HWP ${group.files.hwpSol.price}원`}</span>
-                                                    </button>
-                                                ) : null}
-                                                {group.files.db && <button type="button" onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }}><Info size={13}/> 문항 구성 확인</button>}
-                                                  </div>
-                                                </div>}
-
-                                                {/* DB */}
-                                                {group.files.db && <div className="relative group/db">
-                                                            <button disabled={!!unavailableDbs[group.files.db.id]} onClick={()=>router.push(`/question-bank?material=${group.files.db!.id}&origin=home`)} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
-                                                                checkAccess(group.files.db.id)
-                                                                    ? 'bg-[#EAF1E1] text-[#426D36] border-brand-200 hover:bg-brand-100'
-                                                                    : cartItemIds.has(group.files.db.id)
-                                                                    ? 'bg-brand-50 text-brand-600 border-brand-200'
-                                                                    : 'bg-[#EAF1E1] text-[#426D36] border-brand-100 hover:border-brand-200'
-                                                            }`}>
-                                                                <DbFileIcon size={13} purchased={checkAccess(group.files.db.id)} />
-                                                                <span>{unavailableDbs[group.files.db.id]?'문항 연결 준비 중':'문항 골라 출제'}</span>
-                                                            </button>
-                                                </div>}
-
-                                                {/* Admin raw */}
-                                                {user?.email === 'mathofhy@naver.com' && group.files.raw && (
-                                                    <button onClick={() => handleDownload(group.files.raw!)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-purple-50 text-purple-500 border border-purple-200 hover:bg-purple-100 transition-colors">
-                                                        <Download size={11} /> 원본
-                                                    </button>
-                                                )}
-                                            </div>
+                    {/* 시험지 목록 */}
+                    <div className="rd-results">
+                        <div className="rd-results-summary" role="status">
+                            <span>{targetMaterialId ? '선택한 회차' : freePdfOnly ? '무료 PDF 자료' : '기출 자료'} <strong>{activeSearch.length>=2&&!searchComplete&&catalogState!=='ready' ? '검색 중' : targetMaterialId&&catalogState==='loading' ? '확인 중' : `${filteredFiles.length.toLocaleString()}건`}</strong></span>
+                            {targetMaterialId
+                                ? <button type="button" onClick={() => { setTargetMaterialId(null); history.replaceState(null, '', `${location.pathname}${location.search}`); }} className="rd-text-btn">전체 자료 보기</button>
+                                : <span className="rd-results-hint">{catalogState==='loading'&&!searchComplete ? '먼저 표시한 자료입니다. 전체 목록을 확인하고 있어요.' : catalogState==='error'&&!searchComplete ? '전체 목록을 불러오지 못했습니다. 학교명 검색을 이용해 주세요.' : '학교, 학년, 회차별로 살펴보세요.'}</span>}
+                        </div>
+                        <div id="main-list" className="rd-exam-list">
+                            {activeSearch.length>=2&&!searchComplete&&catalogState!=='ready'&&searchedCatalog?.status!=='error' ? <p role="status" className="rd-empty">전체 자료에서 학교명을 검색하고 있습니다.</p> : currentItems.length > 0 ? currentItems.map((group, idx) => {
+                                const viewHref = group.files.pdfSol ? `/exam/${group.files.pdfSol.id}` : `/school/${encodeURIComponent(group.school)}`;
+                                const freeSt = group.files.pdfSol ? dlState[freePdfDownloadKey(group.files.pdfSol.id)] : undefined;
+                                return (
+                                <article key={group.key} data-tour={idx === 0 ? 'exam-card' : undefined} className="rd-exam">
+                                    <div className="rd-exam-top">
+                                        <div className="rd-exam-title">
+                                            {group.title.includes(']') ? <>
+                                                {/* 학교명 앞 지역은 항상 표시(2026-09-08 사장님 지정, 동명이교 구분) */}
+                                                {(group.region || group.district) && <span className="rd-exam-region">{`${group.region || ''} ${group.district || ''}`.trim()}</span>}
+                                                <Link href={viewHref} className="rd-exam-school" title="문제 미리보기 보기">{group.school}</Link>
+                                                <span className="rd-exam-detail">{group.title.split(']')[1].trim()}</span>
+                                            </> : <span className="rd-exam-school">{group.title}</span>}
+                                        </div>
+                                        <div className="rd-exam-meta">
+                                            {group.isVerified && <span className="rd-badge">검수 완료</span>}
+                                            <span>{group.date}</span>
+                                            <span>{group.uploader === 'mathofhy' || group.uploader === 'Anonymous' ? '수학ETF팀' : group.uploader}</span>
+                                            {Object.values(group.files).some((f:any)=>f?.hasPreview) && <span>미리보기 공개</span>}
+                                            {user && <button onClick={(e) => handleReportClick(e, group)} className="rd-text-btn rd-quiet"><AlertTriangle size={11} aria-hidden="true" /> 신고</button>}
+                                            {user?.email === 'mathofhy@naver.com' && <button onClick={(e) => handleVerifyAdmin(e, group)} className="rd-text-btn">{group.isVerified ? '인증 취소' : '관리자 인증'}</button>}
                                         </div>
                                     </div>
-                                </div>
-                            )) : (
-                                <div className="py-14 text-center bg-white rounded-xl shadow-sm px-6">
-                                    <p className="text-[#66758B]">{targetMaterialId && catalogState === 'loading' ? '선택한 회차를 불러오는 중입니다.' : targetMaterialId && catalogState === 'error' ? '자료를 확인하지 못했습니다. 새로고침해 주세요.' : '검색 결과가 없습니다.'}</p>
-                                    {!(targetMaterialId && catalogState === 'loading') && <div className="mt-4 flex flex-wrap justify-center gap-2"><a href="/" className="rounded-xl bg-[#193740] px-4 py-2.5 text-sm font-bold text-white">전체 자료 보기 →</a><a href="/guide" className="rounded-xl border border-[#D6DDE3] px-4 py-2.5 text-sm font-bold text-[#365064]">자료 찾는 방법</a></div>}
+                                    <div className="rd-exam-actions">
+                                        <Link href={viewHref} className="rd-chip">시험지 보기</Link>
+                                        {group.files.pdfSol?.hasFreePdf ? (
+                                            <button data-free-pdf="true" onClick={() => handleFreeDownload(group.files.pdfSol!)} disabled={freeSt === 'loading'} title={user ? '해설 없는 문제 PDF 무료 다운로드' : '회원가입하면 문제 PDF 무료'} className={`rd-chip rd-chip-accent ${freeSt === 'done' ? 'is-done' : ''}`}>
+                                                {freeSt === 'loading' ? <><Loader2 size={14} className="animate-spin" aria-hidden="true" />받는 중</> : freeSt === 'done' ? <><Check size={14} aria-hidden="true" />받았어요</> : <><Download size={14} aria-hidden="true" />문제 PDF 무료</>}
+                                            </button>
+                                        ) : <button type="button" data-free-pdf="pending" disabled className="rd-chip" title="이 자료의 무료 문제 PDF는 아직 준비되지 않았습니다.">문제 PDF 준비 중</button>}
+                                        {group.files.db && <button type="button" disabled={!!unavailableDbs[group.files.db.id]} onClick={()=>router.push(`/question-bank?material=${group.files.db!.id}&origin=home`)} className="rd-chip">{unavailableDbs[group.files.db.id] ? '문항 연결 준비 중' : '문항 골라 출제'}</button>}
+                                    </div>
+                                    {(group.files.pdfSol || group.files.hwpSol || group.files.db || (user?.email === 'mathofhy@naver.com' && group.files.raw)) && <div className="rd-exam-more">
+                                        {group.files.pdfSol && <button data-tour={idx === 0 ? 'pdf-download' : undefined} onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)} className="rd-text-btn">
+                                            {dlState[group.files.pdfSol.id] === 'loading' ? '받는 중' : checkAccess(group.files.pdfSol.id) && dlState[group.files.pdfSol.id] === 'done' ? '받았어요' : checkAccess(group.files.pdfSol.id) ? '해설 PDF 받기' : cartItemIds.has(group.files.pdfSol.id) ? '해설 PDF 장바구니에 담김' : `해설 PDF ${group.files.pdfSol.price.toLocaleString()}원`}
+                                        </button>}
+                                        {group.files.hwpSol && <button onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)} className="rd-text-btn">
+                                            {dlState[group.files.hwpSol.id] === 'loading' ? '받는 중' : dlState[group.files.hwpSol.id] === 'done' ? '받았어요' : checkAccess(group.files.hwpSol.id) ? '해설 한글 파일 받기' : cartItemIds.has(group.files.hwpSol.id) ? '한글 파일 장바구니에 담김' : `해설 한글 파일 ${group.files.hwpSol.price.toLocaleString()}원`}
+                                        </button>}
+                                        {group.files.db && <button type="button" onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }} className="rd-text-btn">문항 구성 보기</button>}
+                                        {user?.email === 'mathofhy@naver.com' && group.files.raw && <button onClick={() => handleDownload(group.files.raw!)} className="rd-text-btn">원본</button>}
+                                    </div>}
+                                </article>
+                            ); }) : (
+                                <div className="rd-empty">
+                                    <p>{targetMaterialId && catalogState === 'loading' ? '선택한 회차를 불러오는 중입니다.' : targetMaterialId && catalogState === 'error' ? '자료를 확인하지 못했습니다. 새로고침해 주세요.' : '검색 결과가 없습니다.'}</p>
+                                    {!(targetMaterialId && catalogState === 'loading') && <div className="rd-empty-actions"><a href="/" className="rd-btn rd-btn-gray">전체 자료 보기</a><a href="/guide" className="rd-btn rd-btn-gray">자료 찾는 방법</a></div>}
                                 </div>
                             )}
 
-                            {/* 페이지네이션 */}
+                            {/* 페이지 */}
                             {totalPages > 1 && (
-                                <div className="py-6 flex justify-center gap-1.5">
-                                    <button aria-label="이전 페이지" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-9 h-9 border border-[#C5D8B5] rounded-lg hover:bg-[#EAF1E1] flex items-center justify-center text-[#426D36] disabled:opacity-30 transition-colors">
-                                        <ChevronRight size={15} className="rotate-180" />
-                                    </button>
-                                    {pageWindowStart > 1 && (
-                                        <button aria-label="1페이지" onClick={() => setCurrentPage(1)} className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm border border-[#C5D8B5] hover:bg-[#EAF1E1] text-[#426D36]">1</button>
-                                    )}
-                                    {pageWindowStart > 2 && <span className="w-5 flex items-center justify-center text-[#9BB6D4] text-sm">…</span>}
+                                <nav className="rd-pages" aria-label="페이지">
+                                    <button aria-label="이전 페이지" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronRight size={16} className="rotate-180" aria-hidden="true" /></button>
+                                    {pageWindowStart > 1 && <button aria-label="1페이지" onClick={() => setCurrentPage(1)}>1</button>}
+                                    {pageWindowStart > 2 && <span aria-hidden="true">…</span>}
                                     {Array.from({ length: pageWindowEnd - pageWindowStart + 1 }, (_, i) => pageWindowStart + i).map(page => (
-                                        <button key={page} aria-current={currentPage === page ? 'page' : undefined} aria-label={`페이지 ${page}`} onClick={() => setCurrentPage(page)} className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold transition-colors text-sm ${currentPage === page ? 'bg-[#426D36] text-white shadow-sm' : 'border border-[#C5D8B5] hover:bg-[#EAF1E1] text-[#426D36]'}`}>
-                                            {page}
-                                        </button>
+                                        <button key={page} aria-current={currentPage === page ? 'page' : undefined} aria-label={`페이지 ${page}`} onClick={() => setCurrentPage(page)} className={currentPage === page ? 'is-on' : ''}>{page}</button>
                                     ))}
-                                    {pageWindowEnd < totalPages - 1 && <span className="w-5 flex items-center justify-center text-[#9BB6D4] text-sm">…</span>}
-                                    {pageWindowEnd < totalPages && (
-                                        <button aria-label={`${totalPages}페이지`} onClick={() => setCurrentPage(totalPages)} className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm border border-[#C5D8B5] hover:bg-[#EAF1E1] text-[#426D36]">{totalPages}</button>
-                                    )}
-                                    <button
-                                        aria-label="다음 페이지"
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="w-9 h-9 border border-[#C5D8B5] rounded-lg hover:bg-[#EAF1E1] flex items-center justify-center text-[#426D36] disabled:opacity-30 transition-colors"
-                                    >
-                                        <ChevronRight size={15} />
-                                    </button>
-                                </div>
+                                    {pageWindowEnd < totalPages - 1 && <span aria-hidden="true">…</span>}
+                                    {pageWindowEnd < totalPages && <button aria-label={`${totalPages}페이지`} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>}
+                                    <button aria-label="다음 페이지" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight size={16} aria-hidden="true" /></button>
+                                </nav>
                             )}
                         </div>
                     </div>
                 </div>
             </section>
-            <HomeExplore />
-            <section className="atelier-finale" aria-label="시험지 만들기 시작">
-                <div><p>MAKE IT YOURS.</p><h2>수학, 이제 내 손으로.</h2></div>
-                <Link href="/question-bank?demo=1&origin=home">나의 첫 시험지 만들기 <ArrowUpRight size={19}/></Link>
-            </section>
+            <RdHomeMore />
+            <RdHomeFinale />
 
             <UploadModal
                 isOpen={isUploadModalOpen}

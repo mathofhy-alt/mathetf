@@ -16,12 +16,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/components/providers/CartProvider';
 import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
 
-function YoutubeIcon({ size }: { size: number }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
-        <rect x="1" y="4" width="22" height="16" rx="5" fill="#FF0000" />
-        <path d="M10 8.5L16 12L10 15.5Z" fill="#FFFFFF" />
-    </svg>;
-}
 
 interface HeaderProps {
     user?: User | null;
@@ -135,46 +129,43 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
     return (
         <>
-            <header className="site-header bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between gap-4">
+            <header className="site-header rd rd-header sticky top-0 z-50">
+                <div className="rd-header-bar">
                     {/* Logo */}
                     <div className="flex items-center gap-6 min-w-0">
                         <Link href="/" className="flex items-center gap-2 shrink-0">
                             <Image src="/icon.svg" alt="" width={32} height={32} className="h-8 w-8 shrink-0" />
-                            <span className="text-2xl font-bold text-brand-600 tracking-tight whitespace-nowrap">수학ETF</span>
+                            <span className="rd-logo-text">수학ETF</span>
                         </Link>
                         {/* Desktop Nav */}
-                        <nav className="hidden lg:flex items-center gap-1 text-sm font-bold text-slate-600">
+                        <nav className="rd-nav hidden lg:flex" aria-label="주 메뉴">
                             {navItems.map(item => item.children ? (
                                 <div key={item.href} className="relative group">
-                                    <Link href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
+                                    <Link href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="rd-nav-link">
                                         {item.label}
-                                        {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
-                                        <ChevronDown size={13} className="text-slate-400 transition-transform duration-200 group-hover:rotate-180" />
+                                        
+                                        <ChevronDown size={14} className="rd-nav-caret" aria-hidden="true" />
                                     </Link>
                                     {/* 드롭다운 (호버) — pt-1 로 트리거와 패널 사이 틈 없이 연결 */}
                                     <div className="absolute left-0 top-full pt-2 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 transition-all duration-150 z-50">
-                                        <div className="min-w-[180px] bg-white border border-slate-200 rounded-xl shadow-xl ring-1 ring-black/5 py-1.5">
+                                        <div className="rd-dropdown">
                                             {item.children.map(c => (
-                                                <Link key={c.href} href={c.href} className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors whitespace-nowrap">
+                                                <Link key={c.href} href={c.href} className="rd-dropdown-link">
                                                     {c.label}
-                                                    {c.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{c.badge}</span>}
+                                                    
                                                 </Link>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <Link key={item.href} href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="px-2 py-2 rounded-lg hover:text-brand-600 transition-colors whitespace-nowrap flex items-center gap-1">
+                                <Link key={item.href} href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="rd-nav-link">
                                     {item.label}
-                                    {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
+                                    
                                 </Link>
                             ))}
                             {/* 사용법 안내 */}
-                            <a href="/guide"
-                                className="px-2 py-2 rounded-lg text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-colors whitespace-nowrap flex items-center gap-1.5">
-                                <YoutubeIcon size={20} /> 사용법
-                            </a>
+                            <a href="/guide" className="rd-nav-link">사용법</a>
                             {isAdmin && (
                                 <Link href="/admin/inventory" className="px-2 py-2 text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1">🎯 현황판</Link>
                             )}
@@ -182,7 +173,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                     </div>
 
                     {/* Right Side */}
-                    <div className="flex items-center gap-2 md:gap-4 shrink-0">
+                    <div className="rd-header-right">
                         {/* Upload button - show only if logged in, desktop only */}
                         {/* 자료등록은 이제 사용자가 쓰지 않는다(운영자가 스크립트로 등록). 일반 계정에선
                             유튜브 '사용법' 버튼과 맞닿아 겹쳐 보이기까지 해서 관리자에게만 남긴다. */}
@@ -194,23 +185,23 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* 원본 시험지 제보 (회원 누구나) — 운영자는 아래 자료등록을 쓴다 */}
                         {!isAdmin && (
-                            <button type="button" onClick={() => openReport()} title="원본 제보" aria-label="원본 제보" className="hidden lg:flex px-2.5 min-[1400px]:px-3 py-1.5 border border-brand-200 text-brand-700 bg-white rounded text-sm font-bold hover:bg-brand-50 items-center gap-1.5 whitespace-nowrap">
+                            <button type="button" onClick={() => openReport()} title="원본 제보" aria-label="원본 제보" className="rd-quiet-btn hidden lg:inline-flex">
                                 {/* 1400px 아래에선 아이콘만 — 두 버튼이 메뉴(사용법)를 덮었다(10/6 1024·1280 실측) */}
-                                <Camera size={14} /> <span className="hidden min-[1400px]:inline">원본 제보</span>
+                                <Camera size={16} aria-hidden="true" /> <span className="hidden min-[1400px]:inline">원본 제보</span>
                             </button>
                         )}
                         {!isAdmin && (
-                            <button type="button" onClick={openDbRequest} title="개인DB 요청" aria-label="개인DB 요청" className="hidden lg:flex px-2.5 min-[1400px]:px-3 py-1.5 border border-brand-200 text-brand-700 bg-white rounded text-sm font-bold hover:bg-brand-50 items-center gap-1.5 whitespace-nowrap">
-                                <Database size={14} /> <span className="hidden min-[1400px]:inline">개인DB 요청</span>
+                            <button type="button" onClick={openDbRequest} title="개인DB 요청" aria-label="개인DB 요청" className="rd-quiet-btn hidden lg:inline-flex">
+                                <Database size={16} aria-hidden="true" /> <span className="hidden min-[1400px]:inline">개인DB 요청</span>
                             </button>
                         )}
 
                         {/* Shopping Cart Icon */}
                         {user && (
-                            <Link aria-label="장바구니" href="/cart" className="relative p-2 text-slate-600 hover:text-brand-600 transition-colors">
+                            <Link aria-label="장바구니" href="/cart" className="rd-icon-btn relative">
                                 <ShoppingCart size={20} />
                                 {cartCount > 0 && (
-                                    <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4">
+                                    <span className="rd-cart-count">
                                         {cartCount}
                                     </span>
                                 )}
@@ -219,17 +210,17 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* Desktop: User Info or Login */}
                         {user ? (
-                            <div className="hidden lg:flex items-center text-sm font-medium text-slate-600 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors cursor-pointer overflow-hidden whitespace-nowrap">
-                                <Link href="/mypage" className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-200 transition-colors">
-                                    <Coins size={14} className="text-yellow-500" />
+                            <div className="rd-user hidden lg:flex">
+                                <Link href="/mypage" className="rd-user-link">
+                                    <Coins size={15} aria-hidden="true" />
                                     <span className="hidden xl:inline">{earnedPoints.toLocaleString()} P (수익)</span>
-                                    <span className="w-px h-3 bg-slate-300 mx-1 hidden xl:block"></span>
+                                    
                                     <UserIcon size={14} />
                                     <span>마이페이지</span>
                                 </Link>
                                 <button
                                     onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-                                    className="flex items-center gap-1 px-3 py-1.5 border-l border-slate-200 text-slate-500 hover:text-red-500 hover:bg-slate-50 transition-colors"
+                                    className="rd-user-out"
                                     title="로그아웃"
                                 >
                                     <LogOut size={14} />
@@ -239,8 +230,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         ) : (
                             !mobileMenuOpen && !['/login', '/signup'].includes(pathname) && (
                                 <div className="hidden lg:flex items-center gap-2">
-                                    <Link href={`/login?next=${authNext}`} className="px-4 py-1.5 text-slate-600 font-bold text-sm hover:bg-slate-50 border border-slate-200 rounded">로그인</Link>
-                                    <Link href={`/signup?next=${authNext}`} className="px-4 py-1.5 bg-brand-600 text-white font-bold text-sm hover:bg-brand-700 rounded">회원가입</Link>
+                                    <Link href={`/login?next=${authNext}`} className="rd-nav-link">로그인</Link>
+                                    <Link href={`/signup?next=${authNext}`} className="rd-start">무료로 시작</Link>
                                 </div>
                             )
                         )}
@@ -249,15 +240,15 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {!user && !mobileMenuOpen && !['login', 'signup'].some(p => pathname.includes(p)) && (
                             <Link
                                 href={`/signup?next=${authNext}`}
-                                className="lg:hidden px-3 py-3 sm:py-1.5 bg-brand-600 text-white font-bold text-xs rounded-lg hover:bg-brand-700 transition-colors whitespace-nowrap"
+                                className="rd-start lg:hidden"
                             >
-                                무료 시작 →
+                                무료로 시작
                             </Link>
                         )}
 
                         {/* Hamburger Button - Mobile Only */}
                         <button
-                            className="lg:hidden p-3 sm:p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="rd-icon-btn lg:hidden"
                             onClick={() => setMobileMenuOpen(prev => !prev)}
                             aria-label={mobileMenuOpen?'메뉴 닫기':'메뉴 열기'} aria-controls="mobile-navigation" aria-expanded={mobileMenuOpen}
                         >
@@ -267,28 +258,28 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                 </div>
 
                 {/* Mobile Menu Dropdown */}
-                <div id="mobile-navigation" hidden={!mobileMenuOpen} className={`mobile-navigation lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="bg-white border-t border-slate-100 px-4 py-3 space-y-1 shadow-lg">
+                <div id="mobile-navigation" hidden={!mobileMenuOpen} className={`mobile-navigation lg:hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[calc(100dvh-60px)] overflow-y-auto opacity-100' : 'max-h-0 overflow-hidden opacity-0'}`}>
+                    <div className="rd-mobile-menu">
                         {/* Nav Links */}
                         {navItems.map(item => (
                             <div key={item.href}>
                                 <Link
                                     href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined}
-                                    className={`flex items-center gap-1.5 py-3 px-4 rounded-xl text-sm font-bold transition-colors ${pathname === item.href ? 'bg-brand-50 text-brand-600' : 'text-slate-700 hover:bg-slate-50'}`}
+                                    className={`rd-m-link ${pathname === item.href ? 'is-on' : ''}`}
                                 >
                                     {item.label}
-                                    {item.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{item.badge}</span>}
+                                    
                                 </Link>
                                 {item.children && (
-                                    <div className="ml-3 pl-3 border-l border-slate-100 space-y-0.5">
+                                    <div className="rd-m-sub">
                                         {item.children.map(c => (
                                             <Link
                                                 key={c.href}
                                                 href={c.href}
-                                                className={`flex items-center gap-1.5 py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors ${pathname === c.href ? 'bg-brand-50 text-brand-600' : 'text-slate-500 hover:bg-slate-50'}`}
+                                                className={`rd-m-link rd-m-small ${pathname === c.href ? 'is-on' : ''}`}
                                             >
                                                 {c.label}
-                                                {c.badge && <span className="text-[9px] font-extrabold text-white bg-[#2E9E5B] px-1 py-0.5 rounded">{c.badge}</span>}
+                                                
                                             </Link>
                                         ))}
                                     </div>
@@ -298,9 +289,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {/* 사용법 안내 */}
                         <a href="/guide"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors">
-                            <YoutubeIcon size={22} /> 사용법 가이드
-                            <span className="text-[10px] text-slate-400 font-semibold ml-auto">이용 안내</span>
+                            className="rd-m-link">
+                            사용법 가이드
                         </a>
                         {isAdmin && (
                             <Link href="/admin/inventory" className="block py-3 px-4 rounded-xl text-sm font-bold text-purple-600 hover:bg-purple-50">
@@ -308,19 +298,19 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                             </Link>
                         )}
                         {!isAdmin && (
-                            <button type="button" onClick={() => openReport()} className="w-full flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-brand-700 hover:bg-brand-50 transition-colors">
+                            <button type="button" onClick={() => openReport()} className="rd-m-link rd-m-btn">
                                 <Camera size={20} /> 원본 시험지 제보
-                                <span className="text-[10px] text-slate-400 font-semibold ml-auto">채택 시 {REPORT_REWARD_LABEL}</span>
+                                <span className="rd-m-note">채택 시 {REPORT_REWARD_LABEL}</span>
                             </button>
                         )}
                         {!isAdmin && (
-                            <button type="button" onClick={openDbRequest} className="w-full flex items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-brand-700 hover:bg-brand-50 transition-colors">
+                            <button type="button" onClick={openDbRequest} className="rd-m-link rd-m-btn">
                                 <Database size={20} /> 개인DB 요청
                             </button>
                         )}
 
                         {/* Divider */}
-                        <div className="border-t border-slate-100 my-2" />
+                        <div className="rd-m-divider" />
 
                         {/* User Section */}
                         {user ? (
@@ -333,7 +323,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                         <Upload size={14} /> 자료등록
                                     </button>
                                 )}
-                                <Link href="/mypage" className="flex items-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50">
+                                <Link href="/mypage" className="rd-m-link">
                                     <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
                                         <UserIcon size={15} className="text-slate-500" />
                                     </div>
@@ -342,13 +332,13 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                         <div className="text-sm font-bold text-slate-700">마이페이지 · {earnedPoints.toLocaleString()}P</div>
                                     </div>
                                 </Link>
-                                <button onClick={()=>supabase.auth.signOut().then(()=>window.location.reload())} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50"><LogOut size={17}/>로그아웃</button>
+                                <button onClick={()=>supabase.auth.signOut().then(()=>window.location.reload())} className="rd-m-link rd-m-btn"><LogOut size={17}/>로그아웃</button>
                             </>
                         ) : (
                             !['/login', '/signup'].includes(pathname) && (
-                                <div className="flex gap-2 pt-1">
-                                    <Link href={`/login?next=${authNext}`} className="flex-1 py-3 text-center text-slate-600 font-bold text-sm border border-slate-200 rounded-xl hover:bg-slate-50">로그인</Link>
-                                    <Link href={`/signup?next=${authNext}`} className="flex-1 py-3 text-center bg-brand-600 text-white font-bold text-sm rounded-xl hover:bg-brand-700">회원가입</Link>
+                                <div className="rd-m-auth">
+                                    <Link href={`/login?next=${authNext}`} className="rd-m-auth-btn">로그인</Link>
+                                    <Link href={`/signup?next=${authNext}`} className="rd-m-auth-btn is-primary">회원가입</Link>
                                 </div>
                             )
                         )}
