@@ -187,12 +187,12 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {!isAdmin && (
                             <button type="button" onClick={() => openReport()} title="원본 제보" aria-label="원본 제보" className="rd-feature-btn hidden lg:inline-flex">
                                 {/* 1400px 아래에선 아이콘만 — 두 버튼이 메뉴(사용법)를 덮었다(10/6 1024·1280 실측) */}
-                                <Camera size={16} aria-hidden="true" /> <span className="hidden min-[1400px]:inline">원본 제보</span>
+                                <Camera size={16} aria-hidden="true" /> <span className="hidden min-[1200px]:inline">원본 제보</span>
                             </button>
                         )}
                         {!isAdmin && (
                             <button type="button" onClick={openDbRequest} title="개인DB 요청" aria-label="개인DB 요청" className="rd-feature-btn hidden lg:inline-flex">
-                                <Database size={16} aria-hidden="true" /> <span className="hidden min-[1400px]:inline">개인DB 요청</span>
+                                <Database size={16} aria-hidden="true" /> <span className="hidden min-[1200px]:inline">개인DB 요청</span>
                             </button>
                         )}
 

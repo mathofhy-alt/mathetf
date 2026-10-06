@@ -210,3 +210,20 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 .rd .rd-paid:hover { background: var(--rd-tint); }
 .rd .rd-paid.is-in-cart { background: var(--rd-tint); color: var(--rd-ink); font-weight: 700; }
 @media (max-width: 560px) { .rd .rd-paid-cap { width: 100%; } .rd .rd-paid { flex: 1 1 0; justify-content: center; } }
+/* 10/7 — PC에서 시험지 카드 두 장씩(한 장이면 오른쪽이 비어 보였다) */
+@media (min-width: 1100px) {
+  .rd .rd-exam-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+  .rd .rd-exam-list > .rd-empty, .rd .rd-exam-list > .rd-pages, .rd .rd-exam-list > p { grid-column: 1 / -1; }
+  .rd .rd-exam { display: flex; flex-direction: column; padding: 22px; }
+  .rd .rd-exam-detail { width: 100%; }
+  .rd .rd-exam-more { margin-top: auto; padding-top: 10px; }
+}
+@media (min-width: 1100px) {
+  .rd .rd-catalog-layout { grid-template-columns: 264px minmax(0, 1fr); }
+  .rd .rd-exam-list .rd-chip { min-height: 42px; padding: 0 12px; font-size: 14px; gap: 5px; }
+  .rd .rd-exam-actions { gap: 6px; flex-wrap: nowrap; }
+  .rd .rd-exam-actions .rd-chip { flex: 1 1 auto; justify-content: center; white-space: nowrap; }
+  .rd .rd-paid-row { width: 100%; gap: 6px; }
+  .rd .rd-paid-cap { width: 100%; }
+  .rd .rd-paid { flex: 1 1 0; justify-content: center; min-height: 42px; padding: 0 10px; font-size: 14px; }
+}
