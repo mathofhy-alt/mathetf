@@ -2,7 +2,8 @@ import {parseDraft} from '@/lib/questions/draft';
 import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
-import { privateCatalog } from '@/lib/questions/privateDb';
+import { privateCatalog, stripPrivate } from '@/lib/questions/privateDb';
+import { wholeCatalogIneligible } from '@/lib/questions/fastScope';
 import {resolveScope} from '@/lib/questions/scope';
 import {uuidPattern} from '@/lib/payments/order';
 import {productionSite} from '@/lib/analytics/server';
@@ -98,20 +99,68 @@ export async function POST(req: NextRequest) {
         if (ids && ids.length > 0) {
             console.log(`[SaveAPI] Fetching data for ${ids.length} IDs from DB...`);
 
-            const { data: qData, error: qError } = await admin
-                .rpc('question_bank_candidates', {p_scope:scope})
-                .select('*')
-                .in('id', ids).returns<any[]>();
+            // [10/6] 저장 실패 36%(10/6 하루 23/64) 대응. 예전엔 고른 문항 수십 개를 확인하려고 전체 자료 2,212개 규칙으로
+            //   범위를 통째로 계산(question_bank_candidates)한 뒤 거기서 찾았다 → DB 가 바쁘면 제한시간 초과로
+            //   '문항 원본을 불러오지 못했습니다'. 이제 문항만 직접 읽고, 검색과 같은 '범위 밖 문항 목록'(30분 캐시)으로 거른다.
+            //   결과 집합은 같다: sorted 이면서 범위 밖이 아닌 문항 + 이 회원이 쓸 수 있는 전용 개인DB 문항.
+            //   범위 밖 목록 함수가 없으면(null) 예전 길로 간다.
+            const ineligible = await wholeCatalogIneligible(catalog);
+            let qData: any[] | null = null, qError: any = null;
+            if (ineligible) {
+                const out = new Set(ineligible);
+                const res = await admin.from('questions').select('*').in('id', ids);
+                qError = res.error;
+                if (!qError) {
+                    const rows = (res.data || []) as any[];
+                    const okPrivate = new Set((await stripPrivate(rows.filter(r => r.work_status === 'private'))).map(r => r.id));
+                    qData = rows.filter(r => (r.work_status === 'sorted' && !out.has(r.id)) || okPrivate.has(r.id));
+                }
+            } else {
+                const res = await admin.rpc('question_bank_candidates', {p_scope:scope}).select('*').in('id', ids).returns<any[]>();
+                qData = res.data as any[] | null; qError = res.error;
+            }
 
-            if (qError) throw new Error("문항 원본을 불러오지 못했습니다.");
+            if (qError) { console.error('[SaveAPI] question fetch error', qError.code, qError.message); throw new Error("문항 원본을 불러오지 못했습니다."); }
             if(!Array.isArray(qData) || qData.length!==ids.length) throw new Error("선택한 문항 중 이용할 수 없는 문항이 있습니다. 목록을 확인해주세요.");
 
-            const { data: imgData, error: imgError } = await admin
+            const { data: imgRows, error: imgError } = await admin
                 .from('question_images')
                 .select('*')
                 .in('question_id', ids);
 
             if (imgError) throw new Error('문항 그림을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+
+            // [10/6] 저장 실패('문항 그림 원본을 불러오지 못했습니다') 대응.
+            //   예전엔 캡쳐(MANUAL_/AUTO_)까지 문항당 2장을 저장소 주소에서 한꺼번에(24문항 → 48장) 받았고, 한 장이라도
+            //   10초를 넘기면 저장 전체가 실패했다. 그런데 HML 본문은 원본 그림(original_bin_id)만 참조한다.
+            //   · 해설 캡쳐(_S_)는 어디에도 안 쓰인다 → 받지 않는다
+            //   · 문제 캡쳐(_Q_)는 실측 줄 수(layout_lines)가 없는 문항의 줄 높이 추정에만 쓰인다 → 그 문항 것만
+            //   · 캡쳐를 끝내 못 받으면 저장을 막지 않고 기본 줄 수로 간다(generator 폴백). 원본 그림 실패는 그대로 실패.
+            const measured = new Set((qData || []).filter((q: any) => typeof q.layout_lines === 'number' && q.layout_lines > 0).map((q: any) => q.id));
+            const isCapture = (img: any) => /^(MANUAL|AUTO)_/.test(img.original_bin_id || '');
+            const imgData = (imgRows || []).filter((img: any) => {
+                const b = img.original_bin_id || '';
+                if (/^(MANUAL|AUTO)_S_/.test(b)) return false;
+                if (/^(MANUAL|AUTO)_Q_/.test(b)) return !measured.has(img.question_id);
+                return true;
+            });
+            const fetchImage = async (url: string): Promise<Buffer | null> => {
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        const res = await fetch(url, { signal: AbortSignal.timeout(attempt ? 20000 : 10000) });
+                        if (res.ok) return Buffer.from(await res.arrayBuffer());
+                    } catch (e) { console.warn(`[SaveAPI] URL Fetch Fail (${attempt + 1}/2): ${url}`, e); }
+                }
+                return null;
+            };
+            // 동시에 6장까지만 받는다 — 수십 장을 한꺼번에 요청하면 저장소 응답이 늦어져 시간 초과가 난다
+            const runLimited = async <T,>(items: T[], limit: number, work: (item: T) => Promise<void>) => {
+                let next = 0;
+                await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+                    while (next < items.length) await work(items[next++]);
+                }));
+            };
+            const droppedCaptures = new Set<any>();
 
             // [BATCH OPTIMIZATION V3] Delegate Resizing to VPS
             if (imgData && imgData.length > 0) {
@@ -119,15 +168,13 @@ export async function POST(req: NextRequest) {
 
                 const resizeTasks: { input: Buffer, img: any }[] = [];
 
-                await Promise.all(imgData.map(async (img) => {
+                await runLimited(imgData, 6, async (img: any) => {
                     let buffer: Buffer | null = null;
 
                     // Resolve URL to Buffer
                     if (img.data && (img.data.startsWith('http://') || img.data.startsWith('https://'))) {
-                        try {
-                            const res = await fetch(img.data,{signal:AbortSignal.timeout(10000)});
-                            if (res.ok) buffer = Buffer.from(await res.arrayBuffer());
-                        } catch (e) { console.warn(`[SaveAPI] URL Fetch Fail: ${img.data}`, e); }
+                        buffer = await fetchImage(img.data);
+                        if (!buffer && isCapture(img)) { droppedCaptures.add(img); return; }   // 줄 높이 추정용 캡쳐 — 없으면 기본값
                     } else if (img.data && typeof img.data === 'string') {
                         try {
                             buffer = Buffer.from(img.data.replace(/^data:[^,]*,/, ''), 'base64');
@@ -152,7 +199,7 @@ export async function POST(req: NextRequest) {
                         img.data = buffer.toString('base64');
                         img.size_bytes = buffer.length;
                     }
-                }));
+                });
 
                 if (resizeTasks.length > 0 && process.env.NEXT_PUBLIC_LOCAL_PREVIEW !== '1') {
                     console.log(`[SaveAPI] Sending ${resizeTasks.length} images to VPS for batch resize...`);
@@ -197,7 +244,8 @@ export async function POST(req: NextRequest) {
                 }
 
                 // Group images
-                imgData.forEach(img => {
+                imgData.forEach((img: any) => {
+                    if (droppedCaptures.has(img)) return;   // 끝내 못 받은 줄 높이용 캡쳐
                     const qid = img.question_id;
                     if (!finalImagesByQuestion.has(qid)) finalImagesByQuestion.set(qid, []);
                     finalImagesByQuestion.get(qid)!.push(img);
