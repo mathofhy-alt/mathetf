@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Header from '@/components/Header';
 import ReportSchoolButton from '@/components/ReportSchoolButton';
-import { CalendarDays, BookOpen, School as SchoolIcon, PencilRuler, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { NEIS_ACADEMIC_YEAR, NEIS_FETCHED_AT, type NeisSchoolPage, type NeisExam } from '@/lib/neis-school-pages';
 import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
 
@@ -73,52 +73,58 @@ export default function SchoolNeisPage({ s, nearby, toolLinks }: {
     const nextGroup = groups.find(g => groupEnd(g) >= today);
 
     return (
-        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x">
             <Header />
-            <main className="library-page max-w-3xl mx-auto px-4 py-8 sm:py-10">
-                <Link href="/schools" className="text-sm text-[#426D36] hover:underline mb-4 inline-flex items-center gap-1">← 학교별 기출 목록</Link>
+            <div>
+                <section className="rd-wrap rd-x-top">
+                    <Link href="/schools" className="rd-x-back"><ChevronLeft size={18} aria-hidden="true" />학교별 기출 목록</Link>
+                    <h1 className="rd-x-h1 rd-s-h1">{s.name}{' '}<br />수학 내신</h1>
+                    <div className="rd-x-meta">
+                        <span className="rd-pill is-accent">{s.region} {s.district}</span>
+                        {sn && <span className="rd-pill">{sn}</span>}
+                    </div>
+                    <div className="rd-s-prose rd-s-intro">{narrative.map((p, i) => <p key={i}>{p}</p>)}</div>
+                </section>
 
-                <div className="mb-6">
-                    <h1 className="text-2xl sm:text-3xl font-black break-keep">{s.name} 수학 내신</h1>
-                    <p className="mt-2 text-sm text-slate-500 flex items-center gap-1.5"><MapPin size={14} /> {s.region} {s.district}{sn ? ` · ${sn}` : ''}</p>
-                </div>
-
-                {/* 학교 소개 — NEIS 사실 기반 */}
-                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-                    <h2 className="sr-only">{s.name} 학교 정보</h2>
-                    <div className="space-y-2">{narrative.map((p, i) => <p key={i} className="text-sm leading-relaxed text-slate-600 break-keep">{p}</p>)}</div>
+                {/* 원본 제보 — 이 페이지를 연 이유 */}
+                <section className="rd-wrap rd-s-list">
+                    <div className="rd-x-report is-first">
+                        <div>
+                            <h2>{s.name} 시험지가 아직 없어요</h2>
+                            <p>학교에서 받은 수학 시험지를 스캔 PDF나 사진으로 올려 주세요. 채택되면 {REPORT_REWARD_LABEL}를 드리고, 정리한 시험지를 이 페이지에 올립니다.</p>
+                        </div>
+                        <ReportSchoolButton code={s.code} label="이 학교 시험지 제보하기" className="rd-btn rd-btn-primary" />
+                    </div>
                 </section>
 
                 {/* 시험 일정 */}
                 {bySem.length > 0 && (
-                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-                        <h2 className="text-base font-black flex items-center gap-2"><CalendarDays size={18} className="text-[#638747]" /> {NEIS_ACADEMIC_YEAR}학년도 시험 일정</h2>
-                        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    <section className="rd-wrap rd-s-block">
+                        <h2 className="rd-x-h2">{NEIS_ACADEMIC_YEAR}학년도 시험 일정</h2>
+                        <div className="rd-s-sems">
                             {bySem.map(({ sem, list }) => (
                                 <div key={sem}>
-                                    <p className="text-xs font-bold text-[#426D36] mb-1.5">{sem}학기</p>
-                                    <ul className="space-y-1.5">
+                                    <p className="rd-s-yearlabel">{sem}학기</p>
+                                    <ul className="rd-s-sched">
                                         {list.map(g => {
                                             const isNext = g === nextGroup, past = groupEnd(g) < today;
-                                            const badge = (e: NeisExam) => { const d = dday(e.start); return isNext && e.end >= today ? <span className="shrink-0 rounded-full bg-[#638747] px-2 py-0.5 text-[11px] font-black text-white tabular-nums">{d > 0 ? `D-${d}` : '시험 중'}</span> : null; };
+                                            const badge = (e: NeisExam) => { const d = dday(e.start); return isNext && e.end >= today ? <span className="rd-s-dday">{d > 0 ? `D-${d}` : '시험 중'}</span> : null; };
                                             return (
-                                                <li key={g.name + g.parts[0].start} className={`rounded-lg px-3 py-2 text-sm ${isNext ? 'bg-[#EAF1E1] border border-[#C5D8B5]' : 'bg-[#F7F8F5]'} ${past ? 'text-slate-400' : ''}`}>
+                                                <li key={g.name + g.parts[0].start} className={`${isNext ? 'is-next' : ''} ${past ? 'is-past' : ''}`}>
                                                     {g.parts.length === 1 ? (
-                                                        <div className="flex items-start justify-between gap-2">
-                                                            <span className="break-keep"><b className={past ? 'font-semibold' : 'text-[#294437]'}>{g.name}{gradeLabel(g.parts[0].grades)}</b><br /><span className="text-xs tabular-nums">{range(g.parts[0])}</span></span>
+                                                        <div className="rd-s-schedrow">
+                                                            <span><b>{g.name}{gradeLabel(g.parts[0].grades)}</b><small>{range(g.parts[0])}</small></span>
                                                             {badge(g.parts[0])}
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <b className={past ? 'font-semibold' : 'text-[#294437]'}>{g.name}</b>
-                                                            <ul className="mt-1 space-y-1">
-                                                                {g.parts.map(e => (
-                                                                    <li key={e.start} className={`flex items-center justify-between gap-2 ${e.end < today ? 'text-slate-400' : ''}`}>
-                                                                        <span className="text-xs tabular-nums break-keep"><span className="inline-block min-w-[4.2rem] font-bold">{gradeText(e.grades)}</span>{range(e)}</span>
-                                                                        {badge(e)}
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
+                                                            <b>{g.name}</b>
+                                                            {g.parts.map(e => (
+                                                                <div key={e.start} className={`rd-s-schedrow ${e.end < today ? 'is-past' : ''}`}>
+                                                                    <small><em>{gradeText(e.grades)}</em>{range(e)}</small>
+                                                                    {badge(e)}
+                                                                </div>
+                                                            ))}
                                                         </>
                                                     )}
                                                 </li>
@@ -128,65 +134,63 @@ export default function SchoolNeisPage({ s, nearby, toolLinks }: {
                                 </div>
                             ))}
                         </div>
-                        <p className="mt-3 text-[11px] text-slate-400">출처: 나이스 교육정보 개방 포털 학사일정 · {NEIS_FETCHED_AT} 기준. 학교 사정으로 바뀔 수 있으니 학교 공지를 함께 확인하세요.</p>
+                        <p className="rd-x-note">출처: 나이스 교육정보 개방 포털 학사일정, {NEIS_FETCHED_AT} 기준. 학교 사정으로 바뀔 수 있으니 학교 공지를 함께 확인하세요.</p>
                     </section>
                 )}
 
                 {/* 학년별 수학 과목 */}
                 {Object.keys(s.math).length > 0 && (
-                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-                        <h2 className="text-base font-black flex items-center gap-2"><BookOpen size={18} className="text-[#638747]" /> 이번 학기 학년별 수학 과목</h2>
-                        <dl className="mt-3 space-y-2">
+                    <section className="rd-wrap rd-s-block">
+                        <h2 className="rd-x-h2">이번 학기 학년별 수학 과목</h2>
+                        <dl className="rd-s-math">
                             {Object.entries(s.math).map(([g, list]) => (
-                                <div key={g} className="flex gap-3 items-baseline">
-                                    <dt className="w-12 shrink-0 text-xs font-bold text-slate-500">{g}학년</dt>
-                                    <dd className="flex flex-wrap gap-1.5">
-                                        {list.map(m => <span key={m.subject} className={`text-xs px-2 py-1 rounded-full border ${m.elective ? 'bg-white border-slate-200 text-slate-600' : 'bg-[#EAF1E1] border-[#C5D8B5] text-[#294437] font-bold'}`}>{m.subject}{m.elective ? ' · 선택' : ''}</span>)}
-                                    </dd>
+                                <div key={g}>
+                                    <dt>{g}학년</dt>
+                                    <dd>{list.map(m => <span key={m.subject} className={`rd-pill ${m.elective ? '' : 'is-accent'}`}>{m.subject}{m.elective ? ' (선택)' : ''}</span>)}</dd>
                                 </div>
                             ))}
                         </dl>
-                        <p className="mt-3 text-[11px] text-slate-400">출처: 나이스 고등학교 시간표 ({NEIS_ACADEMIC_YEAR}학년도 2학기). 선택은 일부 반만 듣는 과목입니다.</p>
+                        <p className="rd-x-note">출처: 나이스 고등학교 시간표 ({NEIS_ACADEMIC_YEAR}학년도 2학기). 선택은 일부 반만 듣는 과목입니다.</p>
                     </section>
                 )}
 
                 {/* 연습 시험지 — 같은 지역 기출로 */}
                 {toolLinks.length > 0 && (
-                    <section className="bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 mb-4">
-                        <h2 className="text-base font-black flex items-center gap-2"><PencilRuler size={18} className="text-[#638747]" /> 실제 시험 구성 그대로 연습 시험지 만들기</h2>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-600 break-keep">{s.name} 기출은 아직 없어서, 가까운 학교의 실제 시험 한 회차를 기준으로 삼아요. 그 시험과 <b>문항 수·단원·난이도가 같게</b> 다른 학교 기출 문항으로 채워 드립니다. 한글(HML)로 받아 풀거나 수업에 쓸 수 있고, 다른 문항으로 다시 만들려면 시험지 화면에서 ‘비우기’ 후 버튼을 다시 누르세요.</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {toolLinks.map(t => (
-                                <Link key={t.subject} href={t.href} className="rounded-xl border border-[#638747] px-3 py-2 text-sm font-bold text-[#426D36] hover:bg-[#EAF1E1]">
-                                    {t.grade}학년 {t.subject} →
-                                    <span className="block text-xs font-normal text-slate-500">{t.blueprint ? `${t.blueprint} 구성 · ${t.scope} 기출 ${t.count}회차에서` : `내신 기출이 아직 없어 모의고사 ${t.count}회차 문항에서 직접 고르기`}</span>
-                                </Link>
-                            ))}
+                    <section className="rd-wrap rd-s-make">
+                        <div className="rd-s-makebox">
+                            <h2 className="rd-x-h2">실제 시험 구성 그대로<br />연습 시험지 만들기</h2>
+                            <p className="rd-lead">{s.name} 기출은 아직 없어서, 가까운 학교의 실제 시험 한 회차를 기준으로 삼아요. 그 시험과 문항 수, 단원, 난이도가 같게 다른 학교 기출 문항으로 채워 드립니다. 한글(HML)로 받아 풀거나 수업에 쓸 수 있어요.</p>
+                            <div className="rd-x-rows">
+                                {toolLinks.map(t => (
+                                    <Link key={t.subject} href={t.href} className="rd-x-row">
+                                        <span><b>{t.grade}학년 {t.subject}</b><small>{t.blueprint ? `${t.blueprint} 구성, ${t.scope} 기출 ${t.count}회차에서` : `내신 기출이 아직 없어 모의고사 ${t.count}회차 문항에서 직접 고르기`}</small></span>
+                                        <ChevronRight size={22} aria-hidden="true" />
+                                    </Link>
+                                ))}
+                            </div>
+                            <p className="rd-x-note">다른 문항으로 다시 만들려면 시험지 화면에서 '비우기' 후 버튼을 다시 누르세요.</p>
                         </div>
                     </section>
                 )}
 
-                {/* 원본 제보 */}
-                <section className="rounded-2xl bg-[#20354F] text-white p-5 sm:p-6 mb-4">
-                    <h2 className="text-lg font-black break-keep">{s.name} 시험지가 아직 없어요</h2>
-                    <p className="mt-2 text-sm text-white/85 leading-relaxed break-keep">학교에서 받은 수학 시험지를 스캔 PDF나 사진으로 올려 주세요. 채택되면 <b className="text-white">{REPORT_REWARD_LABEL}</b>를 드리고, 정리한 시험지를 이 페이지에 올립니다.</p>
-                    <div className="mt-4"><ReportSchoolButton code={s.code} label="이 학교 시험지 제보하기" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-extrabold text-[#20354F] hover:bg-slate-100" /></div>
-                </section>
-
                 {/* 같은 지역 기출 */}
-                {nearby.length > 0 && (
-                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                        <h2 className="text-base font-black flex items-center gap-2"><SchoolIcon size={18} className="text-[#638747]" /> {s.district} 다른 학교 기출</h2>
-                        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                <section className="rd-x-more rd-s-more" aria-labelledby="neis-more-title">
+                    <div className="rd-wrap">
+                        <h2 id="neis-more-title" className="rd-x-h2">{nearby.length > 0 ? `${s.district} 다른 학교 기출` : '다른 학교 기출도 찾아보세요'}</h2>
+                        {nearby.length > 0 && <div className="rd-x-rows">
                             {nearby.map(n => (
-                                <li key={n.school}><Link href={`/school/${encodeURIComponent(n.school)}`} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3 hover:shadow-sm hover:border-[#C5D8B5]">
-                                    <span className="font-bold text-sm">{n.school}</span><span className="text-xs text-slate-500">{n.count}회차</span>
-                                </Link></li>
+                                <Link key={n.school} href={`/school/${encodeURIComponent(n.school)}`} className="rd-x-row">
+                                    <span><b>{n.school}</b><small>시험지 {n.count}개</small></span>
+                                    <ChevronRight size={22} aria-hidden="true" />
+                                </Link>
                             ))}
-                        </ul>
-                    </section>
-                )}
-            </main>
+                        </div>}
+                        <div className="rd-x-links">
+                            <Link href="/schools" className="rd-link">전국 학교별 기출 보기</Link>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }
