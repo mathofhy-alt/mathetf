@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem, unpackHomeRow } from '../lib/data';
 import { matchesCatalogSearch } from '@/lib/catalog-search';
-import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, AlertTriangle, Search, Loader2, Check, ArrowUpRight } from 'lucide-react';
+import { FileText, Download, X, User as UserIcon, ChevronRight, Info, List, AlertTriangle, Search, Loader2, Check, ArrowUpRight, ShoppingCart } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -807,15 +807,14 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                                     </div>
                                     {(group.files.pdfSol || group.files.hwpSol || group.files.db || (user?.email === 'mathofhy@naver.com' && group.files.raw)) && <div className="rd-exam-more">
                                         {(group.files.pdfSol || group.files.hwpSol) && <span className="rd-paid-row">
+                                        <span className="rd-paid-cap">문제+해설 원본</span>
                                         {group.files.pdfSol && <button data-tour={idx === 0 ? 'pdf-download' : undefined} onClick={() => checkAccess(group.files.pdfSol!.id) ? handleDownload(group.files.pdfSol!) : handleAddToCart(group.files.pdfSol!)} className={`rd-paid ${cartItemIds.has(group.files.pdfSol.id) ? 'is-in-cart' : ''}`}>
-                                            {dlState[group.files.pdfSol.id] === 'loading' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <PdfFileIcon size={20} purchased={checkAccess(group.files.pdfSol.id)} />}
-                                            <span className="rd-paid-label">{checkAccess(group.files.pdfSol.id) ? (dlState[group.files.pdfSol.id] === 'done' ? '받았어요' : '문제+해설 PDF 받기') : cartItemIds.has(group.files.pdfSol.id) ? '장바구니에 담김' : '문제+해설 PDF'}</span>
-                                            {!checkAccess(group.files.pdfSol.id) && !cartItemIds.has(group.files.pdfSol.id) && <b className="rd-paid-price">{group.files.pdfSol.price.toLocaleString()}원</b>}
+                                            {dlState[group.files.pdfSol.id] === 'loading' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : checkAccess(group.files.pdfSol.id) ? <Download size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
+                                            {checkAccess(group.files.pdfSol.id) ? (dlState[group.files.pdfSol.id] === 'done' ? 'PDF 받았어요' : 'PDF 받기') : cartItemIds.has(group.files.pdfSol.id) ? 'PDF 담김' : <>PDF <b>{group.files.pdfSol.price.toLocaleString()}원</b></>}
                                         </button>}
                                         {group.files.hwpSol && <button onClick={() => checkAccess(group.files.hwpSol!.id) ? handleDownload(group.files.hwpSol!) : handleAddToCart(group.files.hwpSol!)} className={`rd-paid ${cartItemIds.has(group.files.hwpSol.id) ? 'is-in-cart' : ''}`}>
-                                            {dlState[group.files.hwpSol.id] === 'loading' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <HwpFileIcon size={20} purchased={checkAccess(group.files.hwpSol.id)} />}
-                                            <span className="rd-paid-label">{checkAccess(group.files.hwpSol.id) ? (dlState[group.files.hwpSol.id] === 'done' ? '받았어요' : '문제+해설 한글 받기') : cartItemIds.has(group.files.hwpSol.id) ? '장바구니에 담김' : '문제+해설 한글 파일'}</span>
-                                            {!checkAccess(group.files.hwpSol.id) && !cartItemIds.has(group.files.hwpSol.id) && <b className="rd-paid-price">{group.files.hwpSol.price.toLocaleString()}원</b>}
+                                            {dlState[group.files.hwpSol.id] === 'loading' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : checkAccess(group.files.hwpSol.id) ? <Download size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
+                                            {checkAccess(group.files.hwpSol.id) ? (dlState[group.files.hwpSol.id] === 'done' ? '한글 받았어요' : '한글 파일 받기') : cartItemIds.has(group.files.hwpSol.id) ? '한글 담김' : <>한글 <b>{group.files.hwpSol.price.toLocaleString()}원</b></>}
                                         </button>}
                                         </span>}
                                         {group.files.db && <button type="button" onClick={(e) => { e.stopPropagation(); fetchDbDetails(group.files.db!); }} className="rd-text-btn">문항 구성 보기</button>}
