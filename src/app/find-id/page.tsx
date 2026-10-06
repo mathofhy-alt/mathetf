@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Search } from 'lucide-react';
 
 export default function FindIdPage() {
     const [phone, setPhone] = useState('');
@@ -109,66 +111,56 @@ export default function FindIdPage() {
         }
     };
 
+    // 아이디 찾기(10/7 새 디자인) — 로그인과 같은 계정 화면 틀(rd-auth). 인증·조회 흐름은 그대로.
     return (
-        <div className="min-h-screen bg-[#f2f3f0] flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-md max-w-md w-full p-8 border border-slate-200 relative">
-                <Link
-                    href="/login"
-                    className="absolute left-6 top-6 text-slate-500 hover:text-slate-700 transition flex items-center gap-1 text-sm font-medium"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    뒤로가기
-                </Link>
-                
-                <h1 className="text-2xl font-bold text-center mt-6 mb-6 text-slate-800">
-                    아이디 찾기
-                </h1>
+        <div className="rd rd-auth">
+            <div className="rd-auth-card">
+                <Link href="/" className="rd-auth-brand"><Image src="/icon.svg" alt="" width={32} height={32} /><span>수학ETF</span></Link>
+                <h1 className="rd-auth-title">아이디 찾기</h1>
 
                 {foundEmails !== null ? (
-                    <div className="text-center py-6 animate-in fade-in zoom-in-95 duration-300">
-                        <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                            🔎
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-800 mb-2">조회된 아이디</h2>
-                        
+                    <div className="rd-auth-done">
+                        <div className="rd-auth-done-icon" aria-hidden="true"><Search size={28} strokeWidth={2.4} /></div>
+                        <h2>조회된 아이디</h2>
+
                         {foundEmails.length > 0 ? (
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 my-6">
+                            <div className="rd-auth-result">
                                 {foundEmails.map((email, idx) => (
-                                    <p key={idx} className="font-medium text-lg text-brand-700">
+                                    <p key={idx}>
                                         {email}
                                     </p>
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 my-6 text-slate-500">
-                                입력하신 핸드폰 번호로 가입된 계정이 없습니다.
+                            <div className="rd-auth-result is-empty">
+                                <p>입력하신 핸드폰 번호로 가입된 계정이 없습니다.</p>
                             </div>
                         )}
 
-                        <div className="flex gap-3 mt-8">
-                            <Link href="/login" className="flex-1 bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">
+                        <div className="rd-auth-actions">
+                            <Link href="/login" className="rd-btn rd-btn-primary">
                                 로그인하러 가기
                             </Link>
                             {foundEmails.length === 0 && (
-                                <Link href="/signup" className="flex-1 bg-white border border-brand-600 text-brand-600 py-3 rounded-lg font-bold hover:bg-brand-50 transition-colors">
+                                <Link href="/signup" className="rd-btn rd-btn-gray">
                                     회원가입
                                 </Link>
                             )}
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-6 pt-2">
-                        <div className="text-sm text-slate-500 text-center mb-6">
+                    <>
+                        <p className="rd-auth-sub">
                             가입 시 등록한 휴대폰 번호로 인증을 진행해주세요.
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-1">휴대폰 번호</label>
-                            <div className="flex gap-2">
+                        </p>
+
+                        <div className="rd-auth-form">
+                            <label htmlFor="find-id-phone" className="rd-auth-label">휴대폰 번호</label>
+                            <div className="rd-auth-row">
                                 <input
+                                    id="find-id-phone"
                                     type="tel"
+                                    inputMode="numeric"
                                     value={phone}
                                     onChange={(e) => {
                                         setPhone(e.target.value.replace(/[^0-9]/g, ''));
@@ -176,36 +168,34 @@ export default function FindIdPage() {
                                         setIsOtpSent(false);
                                     }}
                                     disabled={isPhoneVerified}
-                                    className="flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 disabled:bg-slate-100 disabled:text-slate-500 text-slate-800"
-                                    placeholder="숫자만 입력 (예: 01012345678)"
+                                    className="rd-input"
+                                    placeholder="01012345678"
                                 />
                                 <button
                                     type="button"
                                     onClick={handleSendOtp}
                                     disabled={isPhoneVerified || otpSending || !phone || phone.length < 10}
-                                    className={`px-4 py-3 text-sm font-bold rounded-lg border transition-colors whitespace-nowrap
-                                        ${isPhoneVerified 
-                                            ? 'bg-green-50 text-green-600 border-green-200' 
-                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 disabled:opacity-50'}`}
+                                    className={`rd-btn rd-btn-gray${isPhoneVerified ? ' is-ok' : ''}`}
                                 >
                                     {isPhoneVerified ? '인증완료' : otpSending ? '발송 중...' : isOtpSent ? '재발송' : '인증번호 발송'}
                                 </button>
                             </div>
-                        </div>
-                        
-                        {isOtpSent && !isPhoneVerified && (
-                            <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                                <div className="flex gap-2">
-                                    <div className="relative flex-1">
+
+                            {isOtpSent && !isPhoneVerified && (
+                                <div className="rd-auth-row rd-auth-otp-box">
+                                    <div className="rd-auth-otp">
                                         <input
                                             type="text"
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            aria-label="인증번호"
                                             value={otpCode}
                                             onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 text-slate-800"
+                                            className="rd-input"
                                             placeholder="인증번호 6자리 입력"
                                             maxLength={6}
                                         />
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-rose-500 font-medium tracking-wider">
+                                        <span className="rd-auth-timer">
                                             {formatTime(otpTimer)}
                                         </span>
                                     </div>
@@ -213,22 +203,30 @@ export default function FindIdPage() {
                                         type="button"
                                         onClick={handleVerifyOtp}
                                         disabled={otpVerifying || otpCode.length !== 6}
-                                        className="px-8 py-3 text-sm font-bold bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50 transition-colors whitespace-nowrap"
+                                        className="rd-btn rd-btn-primary"
                                     >
                                         {otpVerifying ? '확인 중...' : '확인'}
                                     </button>
                                 </div>
-                            </div>
-                        )}
-                        
-                        {findingId && (
-                            <div className="text-center py-4 text-sm text-brand-600 font-medium animate-pulse">
-                                유저 정보를 찾고 있습니다...
-                            </div>
-                        )}
+                            )}
+
+                            {findingId && (
+                                <p className="rd-auth-note" role="status">
+                                    유저 정보를 찾고 있습니다...
+                                </p>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {foundEmails === null && (
+                    <div className="rd-auth-links is-gap">
+                        <Link href="/login">로그인으로 돌아가기</Link>
+                        <Link href="/forgot-password">비밀번호 찾기</Link>
                     </div>
                 )}
             </div>
+            <Link className="rd-auth-home" href="/">홈으로 돌아가기</Link>
         </div>
     );
 }

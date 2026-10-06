@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { verifyUnsubToken } from '@/lib/unsub-token';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // 검색엔진에 남을 이유가 없는 페이지다.
 export const metadata = { robots: { index: false, follow: false } };
@@ -31,42 +32,46 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
         }
     }
 
+    // 수신 거부(10/7 새 디자인) — 계정 화면 틀(rd-auth). 처리 로직은 그대로.
     return (
-        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans flex items-center justify-center px-4">
-            <div className="bg-white max-w-md w-full rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
+        <div className="rd rd-auth">
+            <div className="rd-auth-card">
+                <Link href="/" className="rd-auth-brand"><Image src="/icon.svg" alt="" width={32} height={32} /><span>수학ETF</span></Link>
                 {state === 'ok' && (
                     <>
-                        <h1 className="text-xl font-black mb-2">수신거부 처리됐습니다</h1>
-                        <p className="text-slate-500 text-sm break-keep">
-                            {email && <strong className="text-slate-700">{email}</strong>}
+                        <h1 className="rd-auth-title">수신거부 처리됐습니다</h1>
+                        <p className="rd-auth-sub">
+                            {email && <strong className="rd-auth-strong">{email}</strong>}
                             {email && ' 으로'} 앞으로 광고성 메일을 보내지 않습니다.
                             <br />
                             주문·결제·공지 같은 서비스 안내는 계속 발송됩니다.
                         </p>
-                        <p className="text-xs text-slate-400 mt-4 break-keep">
+                        <p className="rd-auth-ok" role="status">
                             다시 받고 싶으시면 마이페이지 &gt; 설정에서 언제든 켜실 수 있어요.
                         </p>
                     </>
                 )}
                 {state === 'bad' && (
                     <>
-                        <h1 className="text-xl font-black mb-2">잘못된 링크입니다</h1>
-                        <p className="text-slate-500 text-sm break-keep">
+                        <h1 className="rd-auth-title">잘못된 링크입니다</h1>
+                        <p className="rd-auth-sub">
                             링크가 잘렸거나 만료됐을 수 있어요. 마이페이지 &gt; 설정에서 직접 끄실 수 있습니다.
                         </p>
                     </>
                 )}
                 {state === 'error' && (
                     <>
-                        <h1 className="text-xl font-black mb-2">처리 중 문제가 생겼습니다</h1>
-                        <p className="text-slate-500 text-sm break-keep">
+                        <h1 className="rd-auth-title">처리 중 문제가 생겼습니다</h1>
+                        <p className="rd-auth-sub">
                             잠시 후 다시 눌러주세요. 계속 안 되면 mathetf.team@gmail.com 으로 알려주시면 직접 처리해 드립니다.
                         </p>
                     </>
                 )}
-                <Link href="/" className="inline-block mt-6 text-sm font-bold text-[#426D36] hover:underline">
-                    수학ETF 홈으로 →
-                </Link>
+                <div className="rd-auth-actions">
+                    <Link href="/" className="rd-btn rd-btn-gray">
+                        수학ETF 홈으로
+                    </Link>
+                </div>
             </div>
         </div>
     );

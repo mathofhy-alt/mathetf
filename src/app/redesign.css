@@ -990,3 +990,55 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 @media (max-width: 480px) { .rd.rd-auth { justify-content: flex-start; padding: 24px 12px; } .rd .rd-auth-card { padding: 28px 22px; border-radius: 24px; } .rd .rd-auth-title { font-size: 26px; } }
 /* suite.css 의 '.site-suite > div { background:#fff }' 가 계정 화면 회색 바탕을 덮었다 */
 .site-suite > .rd.rd-auth { background: var(--rd-zone) !important; }
+
+/* ── 계정 화면 — 회원가입 등 (10/7): 단계 표시·약관 동의 줄·입력+단추 한 줄·인증 타이머·결과 판 ── */
+.rd .rd-auth-steps { margin: 20px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rd .rd-auth-steps li { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 700; color: var(--rd-icon); }
+.rd .rd-auth-steps li::before { content: ''; display: block; height: 6px; border-radius: 999px; background: var(--rd-line); }
+.rd .rd-auth-steps li.is-on { color: var(--rd-ink); }
+.rd .rd-auth-steps li.is-on::before { background: var(--rd-ink); }
+.rd .rd-auth-agree-list { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+.rd .rd-auth-agree { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 14px; background: var(--rd-zone); box-shadow: inset 0 0 0 1px var(--rd-line); cursor: pointer; transition: background .15s, box-shadow .15s; }
+.rd .rd-auth-agree:hover { background: var(--rd-panel); }
+.rd .rd-auth-agree.is-on { background: var(--rd-tint); box-shadow: inset 0 0 0 1px rgba(27, 126, 122, 0.25); }
+.rd .rd-auth-agree input[type="checkbox"] { flex: none; width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--rd-ink); cursor: pointer; }
+.rd .rd-auth-agree-body { flex: 1; min-width: 0; }
+.rd .rd-auth-agree-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.rd .rd-auth-agree-head label { font-size: 16px; font-weight: 700; line-height: 1.45; color: var(--rd-text); cursor: pointer; }
+.rd .rd-auth-tag { margin-right: 6px; font-size: 14px; font-weight: 800; color: var(--rd-ink); }
+.rd .rd-auth-tag.is-opt { color: var(--rd-sub); }
+.rd .rd-auth-agree-body p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; color: var(--rd-sub); }
+.rd .rd-auth-agree-body p b { font-weight: 700; color: var(--rd-nav); }
+.rd .rd-auth-view { flex: none; margin: -12px -8px -12px 0; min-height: 44px; padding: 0 8px; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--rd-nav); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; white-space: nowrap; }
+.rd .rd-auth-view:hover { color: var(--rd-ink); }
+.rd .rd-auth-row { display: flex; gap: 8px; }
+.rd .rd-auth-row > .rd-input, .rd .rd-auth-row > .rd-auth-otp { flex: 1 1 auto; min-width: 0; }
+.rd .rd-auth-row > .rd-btn { flex: none; min-height: 52px; padding: 0 16px; font-size: 15px; white-space: nowrap; }
+.rd .rd-auth-check { margin-top: 8px; min-height: 48px; font-size: 15px; }
+.rd .rd-auth-check.is-ok, .rd .rd-auth-row > .rd-btn.is-ok { background: var(--rd-tint); color: var(--rd-ink); opacity: 1; }
+.rd .rd-auth-otp { position: relative; }
+.rd .rd-auth-otp .rd-input { padding-right: 64px; }
+.rd .rd-auth-timer { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 15px; font-weight: 700; color: #B42318; font-variant-numeric: tabular-nums; pointer-events: none; }
+.rd .rd-auth-otp-box { margin-top: 8px; }
+.rd .rd-input.is-bad { background: #FEF3F2; box-shadow: inset 0 0 0 2px #F04438; }
+.rd .rd-input:disabled { color: var(--rd-sub); cursor: not-allowed; }
+.rd .rd-auth-hint { margin: 8px 0 0 4px; font-size: 14px; font-weight: 600; color: #B42318; }
+.rd .rd-auth-sep { margin: 24px 0 10px; border: 0; border-top: 1px solid var(--rd-line); }
+.rd .rd-auth-sep + .rd-auth-label { margin-top: 0; }
+.rd .rd-auth-actions { margin-top: 24px; display: flex; gap: 8px; }
+.rd .rd-auth-actions > .rd-btn { flex: 1 1 0; min-width: 0; min-height: 54px; }
+.rd .rd-auth-actions > .rd-btn.rd-btn-primary { flex-grow: 1.6; }
+.rd .rd-auth-form > .rd-auth-actions { margin-top: 24px; }
+.rd .rd-auth-done { margin-top: 28px; text-align: center; }
+.rd .rd-auth-done-icon { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 999px; background: var(--rd-tint); color: var(--rd-ink); display: flex; align-items: center; justify-content: center; }
+.rd .rd-auth-done h2 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: var(--rd-text); }
+.rd .rd-auth-done > p { margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: var(--rd-sub); }
+.rd .rd-auth-done .rd-auth-actions { margin-top: 28px; }
+.rd .rd-auth-result { margin: 20px 0 0; padding: 18px 16px; border-radius: 14px; background: var(--rd-panel); display: flex; flex-direction: column; gap: 6px; }
+.rd .rd-auth-result p { margin: 0; font-size: 17px; font-weight: 700; color: var(--rd-ink); overflow-wrap: anywhere; }
+.rd .rd-auth-result.is-empty p { font-size: 15px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-auth-note { margin: 14px 0 0; text-align: center; font-size: 14px; font-weight: 600; color: var(--rd-ink); }
+@media (max-width: 480px) { .rd .rd-auth-agree { padding: 14px; } .rd .rd-auth-row > .rd-btn { padding: 0 14px; } }
+.rd .rd-auth-strong { font-weight: 700; color: var(--rd-text); overflow-wrap: anywhere; }
+.rd .rd-auth-links.is-gap { margin-top: 28px; }
+.rd .rd-auth-row > .rd-btn { min-width: max-content; }
