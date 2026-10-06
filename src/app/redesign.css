@@ -264,3 +264,13 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 /* 초점 표시 — 사이트 공통 파랑(#497ab7) 대신 청록. 닫기 버튼은 창이 열릴 때 초점을 받으므로 안쪽으로 얇게 */
 .rd button:focus-visible, .rd a:focus-visible, .rd input:focus-visible, .rd select:focus-visible, .rd textarea:focus-visible { outline: 3px solid var(--rd-brand); outline-offset: 2px; }
 .rd .rd-modal-x:focus-visible { outline: 2px solid var(--rd-brand); outline-offset: -2px; }
+
+/* 10/7 — 로그인 후 머리글: 계정 버튼 하나 + 펼침 메뉴 */
+.rd .rd-account-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px 0 6px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: 15px; font-weight: 600; color: var(--rd-nav); cursor: pointer; white-space: nowrap; }
+.rd .rd-account-btn:hover, .rd .rd-account-btn[aria-expanded="true"] { background: var(--rd-zone); color: var(--rd-text); }
+.rd .rd-account-ava { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: var(--rd-tint); color: var(--rd-ink); }
+.rd .rd-account-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 220px; z-index: 60; }
+.rd .rd-account-points { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; padding: 12px 14px; border-radius: 12px; background: var(--rd-zone); font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-account-points b { font-size: 18px; font-weight: 800; color: var(--rd-text); }
+.rd .rd-account-out { width: 100%; border: 0; background: transparent; font: inherit; font-size: 15px; font-weight: 600; color: var(--rd-sub); text-align: left; cursor: pointer; }
+.rd .rd-account-menu .rd-m-divider { margin: 6px 0; }

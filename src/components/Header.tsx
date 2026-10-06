@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Upload, Coins, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, Camera, Database } from 'lucide-react';
+import { Upload, User as UserIcon, ShoppingCart, Menu, X, LogOut, ChevronDown, Camera, Database } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // [2026-10-05] 회원 원본 시험지 제보 — 눌렀을 때만 불러온다
@@ -92,6 +92,17 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     const openReport = (code?: string) => { if (!user) { router.push(`/login?next=${authNext}`); return; } setReportSchool(code); setReportOpen(true); setMobileMenuOpen(false); };
     // [10/6] 개인DB 요청 — 회원이 개인DB로 만들고 싶은 자료(시중 교재 등)를 운영자에게 보낸다
     const [dbRequestOpen, setDbRequestOpen] = useState(false);
+    const [accountOpen, setAccountOpen] = useState(false);
+    const accountRef = React.useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!accountOpen) return;
+        const onDown = (e: MouseEvent) => { if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountOpen(false); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAccountOpen(false); };
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('keydown', onKey);
+        return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+    }, [accountOpen]);
+    useEffect(() => { setAccountOpen(false); }, [pathname]);
     const openDbRequest = () => { if (!user) { router.push(`/login?next=${authNext}`); return; } setDbRequestOpen(true); setMobileMenuOpen(false); };
     useEffect(() => { const h = (e: Event) => openReport((e as CustomEvent).detail?.code); window.addEventListener('open-original-report', h); return () => window.removeEventListener('open-original-report', h); });
 
@@ -210,22 +221,25 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* Desktop: User Info or Login */}
                         {user ? (
-                            <div className="rd-user hidden lg:flex">
-                                <Link href="/mypage" className="rd-user-link">
-                                    <Coins size={15} aria-hidden="true" />
-                                    <span className="hidden xl:inline">{earnedPoints.toLocaleString()} P (수익)</span>
-                                    
-                                    <UserIcon size={14} />
-                                    <span>마이페이지</span>
-                                </Link>
-                                <button
-                                    onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-                                    className="rd-user-out"
-                                    title="로그아웃"
-                                >
-                                    <LogOut size={14} />
-                                    <span className="hidden lg:inline text-xs">로그아웃</span>
+                            /* 10/7 — 포인트·마이페이지·로그아웃을 계정 버튼 하나로 묶는다(펼침 메뉴) */
+                            <div ref={accountRef} className="relative hidden lg:block">
+                                <button type="button" className="rd-account-btn" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen(v => !v)}>
+                                    <span className="rd-account-ava" aria-hidden="true"><UserIcon size={16} /></span>
+                                    <span className="hidden xl:inline">내 계정</span>
+                                    <ChevronDown size={14} className="rd-nav-caret" aria-hidden="true" />
                                 </button>
+                                {accountOpen && (
+                                    <div className="rd-dropdown rd-account-menu" role="menu">
+                                        <div className="rd-account-points">
+                                            <span>내 수익 포인트</span>
+                                            <b>{earnedPoints.toLocaleString()} P</b>
+                                        </div>
+                                        <Link href="/mypage" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>마이페이지</Link>
+                                        <Link href="/cart" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>장바구니</Link>
+                                        <div className="rd-m-divider" />
+                                        <button type="button" role="menuitem" className="rd-dropdown-link rd-account-out" onClick={() => supabase.auth.signOut().then(() => window.location.reload())}>로그아웃</button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             !mobileMenuOpen && !['/login', '/signup'].includes(pathname) && (

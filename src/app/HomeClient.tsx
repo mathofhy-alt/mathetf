@@ -893,7 +893,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                             <h3 id="rd-login-title" className="rd-modal-title">로그인하고 이용하세요</h3>
                             <button type="button" className="rd-modal-x" aria-label="닫기" onClick={() => setShowLoginPrompt(false)}><X size={20} /></button>
                         </div>
-                        <p className="rd-modal-text">회원가입은 무료예요. 문제 PDF는 회원이면 무료로 받고, 문제+해설 원본은 장바구니에 담아 결제할 수 있어요. 시험지 만들기는 2027년 5월 26일까지 무료입니다.</p>
+                        <p className="rd-modal-text">회원가입은 무료예요. 문제 PDF는 회원이면 무료로 받고, 문제+해설 원본은 장바구니에 담아 결제할 수 있어요.</p>
                         <div className="rd-modal-actions">
                             <Link href="/signup" className="rd-btn rd-btn-primary rd-btn-block">무료 회원가입</Link>
                             <Link href="/login" className="rd-btn rd-btn-gray rd-btn-block">이미 회원이에요</Link>
@@ -913,8 +913,8 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                             </div>
                             <button type="button" className="rd-modal-x" aria-label="닫기" onClick={() => setSelectedDbForDetail(null)}><X size={20} /></button>
                         </div>
-                        {/* 2027-05-26 까지 개인DB 전량 무료(PERSONAL_DB_FREE_MODE) — 결제도 대기도 없다 */}
-                        <p className="rd-modal-note">시험지 만들기에서 이 회차 문항을 바로 골라 쓸 수 있어요. {FREE_ACCESS_LABEL}.</p>
+                        {/* 무료 기간 동안 개인DB 전량 무료(PERSONAL_DB_FREE_MODE). 종료일은 화면에 쓰지 않는다(10/7) */}
+                        <p className="rd-modal-note">시험지 만들기에서 이 회차 문항을 바로 골라 쓸 수 있어요. {FREE_ACCESS_LABEL}</p>
                         <div className="rd-modal-body">
                             {isLoadingDetails ? (
                                 <div className="rd-qgrid" aria-label="문항 구성 불러오는 중">

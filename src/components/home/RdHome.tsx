@@ -98,7 +98,7 @@ export function RdHomeMore() {
 export function RdHomeFinale() {
     return (
         <section className="rd-wrap rd-finale" aria-label="시험지 만들기 시작">
-            <h2 className="rd-h2">2027년 5월 26일까지<br />시험지 만들기 무료</h2>
+            <h2 className="rd-h2">우리 학교 기출로<br />첫 시험지를 만들어 보세요</h2>
             <Link href="/question-bank?demo=1&origin=home" className="rd-btn rd-btn-primary">지금 시작하기</Link>
         </section>
     );
