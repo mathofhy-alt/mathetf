@@ -884,131 +884,57 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                 examGroup={selectedExamForReport}
             />
 
-            {/* 로그인 유도 - 모바일: 바텀시트, PC: 중앙 모달 */}
+            {/* 로그인 유도 - 모바일: 아래에서 올라오는 시트, PC: 가운데 창 */}
             {showLoginPrompt && (
-                <div
-                    className="fixed inset-0 z-[200] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm"
-                    onClick={() => setShowLoginPrompt(false)}
-                >
-                    {/* 모바일: 바텀시트 / PC: 중앙 모달 */}
-                    <div
-                        className="bg-white w-full md:w-auto md:min-w-[400px] md:max-w-md rounded-t-3xl md:rounded-3xl p-6 pb-10 md:pb-6 shadow-2xl"
-                        style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* 모바일 드래그 핸들 */}
-                        <div className="flex justify-center mb-4 md:hidden">
-                            <div className="w-10 h-1 rounded-full bg-slate-300" />
+                <div className="rd rd-overlay" onClick={() => setShowLoginPrompt(false)}>
+                    <div className="rd-modal rd-modal-sm rd-sheet" role="dialog" aria-modal="true" aria-labelledby="rd-login-title" onClick={e => e.stopPropagation()}>
+                        <div className="rd-sheet-handle" aria-hidden="true" />
+                        <div className="rd-modal-head">
+                            <h3 id="rd-login-title" className="rd-modal-title">로그인하고 이용하세요</h3>
+                            <button type="button" className="rd-modal-x" aria-label="닫기" onClick={() => setShowLoginPrompt(false)}><X size={20} /></button>
                         </div>
-                        {/* PC 닫기 버튼 */}
-                        <div className="hidden md:flex justify-end mb-2">
-                            <button
-                                onClick={() => setShowLoginPrompt(false)}
-                                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100"
-                                aria-label="닫기"
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
-                        </div>
-                        <div className="text-center mb-6">
-                            <div className="text-3xl mb-3">📚</div>
-                            <h3 className="text-xl font-extrabold text-slate-800 mb-2">무료로 이용해보세요</h3>
-                            <p className="text-sm text-slate-500 break-keep leading-relaxed">
-                                전국 내신 기출 즉시 다운로드,<br />
-                                나만의 시험지 제작까지 <strong className="text-brand-600">지금 바로 무료</strong>로 시작하세요.
-                            </p>
-                        </div>
-                        <div className="space-y-3">
-                            <Link
-                                href="/signup"
-                                className="block w-full py-4 bg-brand-600 text-white font-extrabold text-base text-center rounded-2xl hover:bg-brand-700 transition-colors shadow-sm"
-                            >
-                                무료 회원가입 →
-                            </Link>
-                            <Link
-                                href="/login"
-                                className="block w-full py-3.5 border-2 border-slate-200 text-slate-600 font-bold text-sm text-center rounded-2xl hover:bg-slate-50 transition-colors"
-                            >
-                                이미 계정이 있어요 (로그인)
-                            </Link>
+                        <p className="rd-modal-text">회원가입은 무료예요. 문제 PDF는 회원이면 무료로 받고, 문제+해설 원본은 장바구니에 담아 결제할 수 있어요. 시험지 만들기는 2027년 5월 26일까지 무료입니다.</p>
+                        <div className="rd-modal-actions">
+                            <Link href="/signup" className="rd-btn rd-btn-primary rd-btn-block">무료 회원가입</Link>
+                            <Link href="/login" className="rd-btn rd-btn-gray rd-btn-block">이미 회원이에요</Link>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* DB Detail Modal */}
+            {/* 문항 구성 창 */}
             {selectedDbForDetail && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-                        <div className="bg-brand-600 p-4 text-white flex justify-between items-center">
+                <div className="rd rd-overlay" onClick={() => setSelectedDbForDetail(null)}>
+                    <div className="rd-modal rd-modal-lg" role="dialog" aria-modal="true" aria-labelledby="rd-db-title" onClick={e => e.stopPropagation()}>
+                        <div className="rd-modal-head">
                             <div>
-                                <h3 className="font-bold flex items-center gap-2">
-                                    <List size={18} />
-                                    문항 구성 정보
-                                </h3>
-                                <p className="text-[11px] text-brand-100 mt-0.5">{selectedDbForDetail.title}</p>
+                                <h3 id="rd-db-title" className="rd-modal-title">문항 구성</h3>
+                                <p className="rd-modal-sub">{selectedDbForDetail.title.replace(/\s*\[개인DB\]\s*$/, '')}</p>
                             </div>
-                            <button aria-label="닫기" onClick={() => setSelectedDbForDetail(null)} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors">
-                                <X size={20} />
-                            </button>
+                            <button type="button" className="rd-modal-x" aria-label="닫기" onClick={() => setSelectedDbForDetail(null)}><X size={20} /></button>
                         </div>
-
-                        {/* 개인DB 안내 문구 추가 */}
-                        <div className="bg-brand-50 border-b border-brand-100 px-5 py-3 flex items-start gap-2">
-                            <Info size={16} className="text-brand-600 mt-0.5 shrink-0" />
-                            <div className="text-xs text-brand-900 font-medium leading-relaxed">
-                                {/* 예전 문구는 "결제 후 1일(24시간) 이내 제공"이었는데
-                                    PERSONAL_DB_FREE_MODE(config.ts, 2027-05-26 까지)로
-                                    가입 즉시 전량 무료 지급이라 결제도 대기도 없다. */}
-                                <strong className="text-brand-700">🎉 {FREE_ACCESS_LABEL}:</strong> 개인DB는 <strong className="text-brand-700 font-extrabold">공개 기간 내 이용 가능</strong>로 열립니다. '시험지 만들기' 탭에서 바로 문항을 골라 쓰세요.
-                            </div>
-                        </div>
-
-                        <div className="p-5 max-h-[75vh] overflow-y-auto">
+                        {/* 2027-05-26 까지 개인DB 전량 무료(PERSONAL_DB_FREE_MODE) — 결제도 대기도 없다 */}
+                        <p className="rd-modal-note">시험지 만들기에서 이 회차 문항을 바로 골라 쓸 수 있어요. {FREE_ACCESS_LABEL}.</p>
+                        <div className="rd-modal-body">
                             {isLoadingDetails ? (
-                                /* 문항 구성 스켈레톤 (스피너보다 체감 빠름) */
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 animate-pulse" aria-label="문항 구성 분석 중">
-                                    {Array.from({ length: 8 }).map((_, i) => (
-                                        <div key={i} className="bg-white border border-slate-100 rounded-lg p-3 space-y-2">
-                                            <div className="h-3 w-16 bg-slate-200 rounded" />
-                                            <div className="h-3.5 w-11/12 bg-slate-200 rounded" />
-                                            <div className="h-3 w-2/3 bg-slate-100 rounded" />
-                                        </div>
-                                    ))}
+                                <div className="rd-qgrid" aria-label="문항 구성 불러오는 중">
+                                    {Array.from({ length: 8 }).map((_, i) => <div key={i} className="rd-qcell rd-skel" />)}
                                 </div>
                             ) : dbDetails.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                                <div className="rd-qgrid">
                                     {dbDetails.map((q, idx) => (
-                                        <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-brand-200 hover:bg-white transition-all shadow-sm group">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-[13px] font-black text-slate-700 w-8 group-hover:text-brand-600 transition-colors shrink-0">{q.question_number}번</span>
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${q.difficulty >= 7 ? 'bg-red-100 text-red-600' :
-                                                    q.difficulty >= 4 ? 'bg-orange-100 text-orange-600' :
-                                                        'bg-emerald-100 text-emerald-600'
-                                                    }`}>
-                                                    Lv.{q.difficulty}
-                                                </span>
-                                            </div>
-                                            <div className="text-[10px] text-slate-500 font-bold truncate max-w-[100px]" title={q.unit}>
-                                                {q.unit || '-'}
-                                            </div>
+                                        <div key={idx} className="rd-qcell">
+                                            <span className="rd-qnum">{q.question_number}번</span>
+                                            <span className="rd-qunit" title={q.unit}>{q.unit || '-'}</span>
+                                            <span className={`rd-qlv ${q.difficulty >= 7 ? 'is-hard' : q.difficulty >= 4 ? 'is-mid' : ''}`}>난이도 {q.difficulty}</span>
                                         </div>
                                     ))}
                                 </div>
-                            ) : (
-                                <div className="py-20 text-center text-slate-500">
-                                    <p>등록된 문항 정보가 없습니다.</p>
-                                </div>
-                            )}
+                            ) : <p className="rd-modal-text" style={{ textAlign: 'center', padding: '48px 0' }}>등록된 문항 정보가 없습니다.</p>}
                         </div>
-
-                        <div className="p-4 bg-slate-50 border-t flex justify-end">
-                            <button
-                                onClick={() => setSelectedDbForDetail(null)}
-                                className="px-5 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-100 transition-colors shadow-sm"
-                            >
-                                닫기
-                            </button>
+                        <div className="rd-modal-foot">
+                            <button type="button" className="rd-btn rd-btn-gray" onClick={() => setSelectedDbForDetail(null)}>닫기</button>
+                            <button type="button" className="rd-btn rd-btn-primary" disabled={!!unavailableDbs[selectedDbForDetail.id]} onClick={() => { const id = selectedDbForDetail.id; setSelectedDbForDetail(null); router.push(`/question-bank?material=${id}&origin=home-detail`); }}>이 회차로 시험지 만들기</button>
                         </div>
                     </div>
                 </div>

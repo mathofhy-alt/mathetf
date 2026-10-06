@@ -54,60 +54,68 @@ export default function DbRequestModal({ open, onClose }: { open: boolean; onClo
     const close = () => { if (!busy) { onClose(); if (done) { setDone(false); setFiles([]); setNote(''); } } };
 
     return (
-        <div role="dialog" aria-modal="true" aria-label="개인DB 요청" className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50"
+        <div className="rd rd-overlay"
             onClick={e => { if (e.target === e.currentTarget) close(); }}>
-            <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[92dvh] overflow-y-auto shadow-2xl">
-                <div className="sm:hidden flex justify-center pt-3"><div className="w-10 h-1 rounded-full bg-slate-300" /></div>
-                <div className="flex items-center justify-between px-5 sm:px-6 pt-4 pb-3 border-b border-slate-100">
-                    <h2 className="text-lg font-bold text-slate-900">개인DB 요청</h2>
-                    <button type="button" aria-label="닫기" onClick={close} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={22} /></button>
+            <div role="dialog" aria-modal="true" aria-labelledby="db-request-title" className="rd-modal">
+                <div className="rd-sheet-handle" />
+                <div className="rd-modal-head">
+                    <h2 id="db-request-title" className="rd-modal-title">개인DB 요청</h2>
+                    <button type="button" aria-label="닫기" onClick={close} className="rd-modal-x"><X size={20} /></button>
                 </div>
 
                 {done ? (
-                    <div className="px-6 py-12 text-center">
-                        <CheckCircle2 size={48} className="mx-auto text-emerald-500" />
-                        <p className="mt-4 text-lg font-bold text-slate-900">요청이 접수됐어요.</p>
-                        <button type="button" onClick={close} className="mt-8 w-full sm:w-auto px-8 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700">확인</button>
+                    <div style={{ padding: '32px 0 4px', textAlign: 'center' }}>
+                        <CheckCircle2 size={48} style={{ margin: '0 auto', color: 'var(--rd-ink)' }} />
+                        <p style={{ margin: '16px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--rd-text)' }}>요청이 접수됐어요.</p>
+                        <div className="rd-modal-actions" style={{ marginTop: 28 }}>
+                            <button type="button" onClick={close} className="rd-btn rd-btn-primary rd-btn-block">확인</button>
+                        </div>
                     </div>
                 ) : (
-                    <form onSubmit={submit} className="px-5 sm:px-6 py-5 space-y-5">
-                        <div className="rounded-xl bg-brand-50 border border-brand-100 p-4 flex gap-3">
-                            <Database size={20} className="text-brand-600 shrink-0 mt-0.5" />
-                            <p className="text-sm leading-6 text-slate-700">개인DB로 만들고 싶은 자료 파일을 올려주세요.
-                                <span className="block text-xs text-slate-500 mt-1">PDF·한글(HWP)·사진·ZIP · 파일당 50MB까지 · 올린 파일은 운영자만 봅니다.</span></p>
+                    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                        <div className="rd-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <div style={{ display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 20, background: 'var(--rd-tint)' }}>
+                                <Database size={20} style={{ color: 'var(--rd-ink)', flex: 'none', marginTop: 2 }} />
+                                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, fontWeight: 600, color: 'var(--rd-text)' }}>개인DB로 만들고 싶은 자료 파일을 올려주세요.
+                                    <span style={{ display: 'block', marginTop: 4, fontSize: 14, fontWeight: 400, color: 'var(--rd-sub)' }}>PDF, 한글(HWP), 사진, ZIP 파일을 파일당 50MB까지 올릴 수 있어요. 올린 파일은 운영자만 봅니다.</span></p>
+                            </div>
+
+                            <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                <button type="button" onClick={() => pickRef.current?.click()} className="rd-btn rd-btn-gray rd-btn-block" style={{ fontSize: 16 }}>
+                                    <FileText size={18} style={{ color: 'var(--rd-ink)' }} /> 파일 고르기
+                                </button>
+                                <input ref={pickRef} type="file" accept={ACCEPT} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+                                {files.length > 0 && (
+                                    <ul style={{ listStyle: 'none', margin: 0, padding: '4px 0', borderRadius: 14, background: 'var(--rd-zone)' }}>
+                                        {files.map((f, i) => (
+                                            <li key={`${f.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 4px 2px 14px', fontSize: 15 }}>
+                                                <FileText size={16} style={{ flex: 'none', color: 'var(--rd-icon)' }} />
+                                                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--rd-text)' }}>{f.name}</span>
+                                                <span style={{ flex: 'none', fontSize: 14, color: 'var(--rd-sub)', fontVariantNumeric: 'tabular-nums' }}>{mb(f.size)}</span>
+                                                <button type="button" aria-label={`${f.name} 빼기`} onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                                                    style={{ flex: 'none', width: 44, height: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 0, background: 'none', color: 'var(--rd-nav)', cursor: 'pointer', borderRadius: 10 }}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </section>
+
+                            <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--rd-text)' }}>남길 말 <span style={{ fontWeight: 400, color: 'var(--rd-sub)' }}>(선택)</span></h3>
+                                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--rd-ink)' }}>교재 이름, 출판사, 판(연도)과 필요한 단원을 정확히 적어 주시면 더 빨리 DB로 만들어 드려요.</p>
+                                <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder="예: 쎈 공통수학1 (좋은책신사고, 2025년판), 1~3단원"
+                                    style={{ width: '100%', boxSizing: 'border-box', background: 'var(--rd-panel)', border: 0, borderRadius: 14, padding: '13px 14px', fontSize: 16, lineHeight: 1.6, color: 'var(--rd-text)', fontFamily: 'inherit', outline: 'none', resize: 'vertical' }} />
+                            </section>
+
+                            {error && <div role="alert" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 14px', borderRadius: 14, background: '#FDECEC', fontSize: 15, lineHeight: 1.5, color: '#C0392B' }}><AlertCircle size={16} style={{ flex: 'none', marginTop: 3 }} />{error}</div>}
                         </div>
 
-                        <section className="space-y-3">
-                            <button type="button" onClick={() => pickRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed border-brand-200 text-brand-700 font-bold text-sm hover:bg-brand-50">
-                                <FileText size={18} /> 파일 고르기
-                            </button>
-                            <input ref={pickRef} type="file" accept={ACCEPT} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-                            {files.length > 0 && (
-                                <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
-                                    {files.map((f, i) => (
-                                        <li key={`${f.name}-${i}`} className="flex items-center gap-2 px-3 py-2 text-sm">
-                                            <FileText size={16} className="shrink-0 text-slate-400" />
-                                            <span className="flex-1 min-w-0 truncate text-slate-700">{f.name}</span>
-                                            <span className="shrink-0 text-xs text-slate-400 tabular-nums">{mb(f.size)}</span>
-                                            <button type="button" aria-label={`${f.name} 빼기`} onClick={() => setFiles(files.filter((_, j) => j !== i))} className="shrink-0 p-1 text-slate-400 hover:text-rose-600"><Trash2 size={14} /></button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
-
-                        <section className="space-y-2">
-                            <h3 className="text-sm font-bold text-slate-900">남길 말 <span className="font-normal text-slate-400">(선택)</span></h3>
-                            <p className="text-xs leading-5 text-brand-700 break-keep">교재 이름·출판사·판(연도)과 필요한 단원을 정확히 적어 주시면 더 빨리 DB로 만들어 드려요.</p>
-                            <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder="예: 쎈 공통수학1 (좋은책신사고, 2025년판) · 1~3단원" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none" />
-                        </section>
-
-                        {error && <div role="alert" className="flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2.5 text-sm text-rose-700"><AlertCircle size={16} className="shrink-0 mt-0.5" />{error}</div>}
-
-                        <div className="flex gap-2 pt-1" style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
-                            <button type="button" onClick={close} disabled={!!busy} className="px-5 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-50">취소</button>
-                            <button type="submit" disabled={!!busy} className="flex-1 py-3 rounded-xl bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-60">
-                                {busy || `요청하기${files.length ? ` · ${files.length}개` : ''}`}
+                        <div className="rd-modal-foot">
+                            <button type="button" onClick={close} disabled={!!busy} className="rd-btn rd-btn-gray">취소</button>
+                            <button type="submit" disabled={!!busy} className="rd-btn rd-btn-primary" style={{ flex: '1 1 0' }}>
+                                {busy || `요청하기${files.length ? ` (${files.length}개)` : ''}`}
                             </button>
                         </div>
                     </form>

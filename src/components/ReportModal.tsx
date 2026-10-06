@@ -55,57 +55,63 @@ export default function ReportModal({ isOpen, onClose, user, examGroup }: Report
         }
     };
 
+    const labelStyle: React.CSSProperties = { display: 'block', margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: 'var(--rd-nav)' };
+    const fieldStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', background: 'var(--rd-panel)', border: 0, borderRadius: 14, padding: '13px 14px', fontSize: 16, color: 'var(--rd-text)', fontFamily: 'inherit', outline: 'none' };
+
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-                <div className="bg-red-50 p-4 border-b border-red-100 flex justify-between items-center">
-                    <h3 className="font-bold text-red-700 flex items-center gap-2">
-                        <AlertTriangle size={18} />
+        <div className="rd rd-overlay">
+            <div className="rd-modal rd-modal-sm" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
+                <div className="rd-sheet-handle" />
+                <div className="rd-modal-head">
+                    <h2 id="report-modal-title" className="rd-modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <AlertTriangle size={20} style={{ color: 'var(--rd-ink)', flex: 'none' }} />
                         불편/오류 신고하기
-                    </h3>
-                    <button onClick={onClose} className="text-red-400 hover:bg-red-100 hover:text-red-600 p-1.5 rounded-lg transition-colors">
+                    </h2>
+                    <button type="button" onClick={onClose} aria-label="닫기" className="rd-modal-x">
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">신고 대상 자료</label>
-                        <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-700 font-medium break-keep leading-snug">
-                            {examGroup.title}
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                    <div className="rd-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                        <div>
+                            <label style={labelStyle}>신고 대상 자료</label>
+                            <div style={{ padding: '13px 14px', borderRadius: 14, background: 'var(--rd-zone)', fontSize: 15, fontWeight: 600, lineHeight: 1.5, color: 'var(--rd-text)' }}>
+                                {examGroup.title}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style={labelStyle}>신고 유형</label>
+                            <select
+                                value={reportType}
+                                onChange={(e) => setReportType(e.target.value)}
+                                style={{ ...fieldStyle, cursor: 'pointer' }}
+                            >
+                                <option value="오타/오류">문제 오타 및 정답 오류</option>
+                                <option value="화질불량">파일 화질 불량 / 깨짐 현상</option>
+                                <option value="다운로드">다운로드 불가 / 빈 파일</option>
+                                <option value="기타">기타 불편사항</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={labelStyle}>상세 내용</label>
+                            <textarea
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="어떤 파일(PDF, HWP, DB)의 몇 번 문제인지 등 상세한 정보를 적어주시면 빠른 확인에 도움이 됩니다."
+                                style={{ ...fieldStyle, minHeight: 120, resize: 'none', lineHeight: 1.6 }}
+                                required
+                            />
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">신고 유형</label>
-                        <select
-                            value={reportType}
-                            onChange={(e) => setReportType(e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
-                        >
-                            <option value="오타/오류">문제 오타 및 정답 오류</option>
-                            <option value="화질불량">파일 화질 불량 / 깨짐 현상</option>
-                            <option value="다운로드">다운로드 불가 / 빈 파일</option>
-                            <option value="기타">기타 불편사항</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">상세 내용</label>
-                        <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="어떤 파일(PDF, HWP, DB)의 몇 번 문제인지 등 상세한 정보를 적어주시면 빠른 확인에 도움이 됩니다."
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none min-h-[100px] resize-none"
-                            required
-                        />
-                    </div>
-
-                    <div className="pt-2">
+                    <div className="rd-modal-actions" style={{ marginTop: 20 }}>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-bold py-3 rounded-xl transition-all shadow-sm active:scale-95"
+                            className="rd-btn rd-btn-primary rd-btn-block"
                         >
                             {isSubmitting ? '접수 중...' : '신고 접수하기'}
                         </button>

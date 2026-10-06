@@ -33,37 +33,38 @@ export default function NotifyOptIn({ school, visible, onClose }: { school: stri
     };
 
     return (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[150] w-[calc(100%-2rem)] max-w-md">
-            <div className="bg-white rounded-2xl border border-[#C5D8B5] shadow-xl p-4">
+        <div className="rd fixed bottom-4 left-1/2 -translate-x-1/2 z-[150] w-[calc(100%-2rem)] max-w-md" style={{ background: 'transparent' }}>
+            <div className="bg-white rounded-[20px] shadow-[0_20px_60px_rgba(23,32,44,0.18)] p-5">
                 {state === 'done' ? (
-                    <p className="text-sm font-bold text-[#638747] text-center py-1">✅ 알림 설정 완료! 새 기출이 올라오면 알려드릴게요.</p>
+                    <p className="m-0 text-[15px] font-bold text-[#1B7E7A] text-center py-1">알림 설정 완료! 새 기출이 올라오면 알려드릴게요.</p>
                 ) : (
                     <>
-                        <div className="flex items-start gap-2.5">
-                            <span className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-[#EAF1E1] flex items-center justify-center">
-                                <Bell size={15} className="text-[#426D36]" />
+                        <div className="flex items-start gap-3">
+                            <span className="shrink-0 w-10 h-10 rounded-full bg-[#E8F6F5] flex items-center justify-center">
+                                <Bell size={18} className="text-[#1B7E7A]" />
                             </span>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-[#294437] break-keep">
+                                <p className="m-0 text-[16px] font-bold leading-[1.45] text-[#17202C]">
                                     {school ? `${school} 새 기출이 올라오면 알려드릴까요?` : '새 기출이 올라오면 알려드릴까요?'}
                                 </p>
                                 {/* 이 배너의 동의도 marketing_consent_version 을 남긴다(=이메일·문자 모두).
                                     그러니 매체를 여기서 밝혀야 한다 — 안 밝히면 동의 범위와 문구가 어긋난다. */}
-                                <p className="text-xs text-slate-400 mt-0.5">이메일·문자로 새 자료 소식을 보내드려요 (야간 발송 없음 · 언제든 해지)</p>
+                                <p className="m-0 mt-1 text-[14px] leading-[1.5] text-[#5F6B78]">이메일, 문자로 새 자료 소식을 보내드려요 (야간 발송 없음, 언제든 해지)</p>
                             </div>
-                            <button onClick={dismiss} aria-label="닫기" className="text-slate-300 hover:text-slate-500 shrink-0">
-                                <X size={16} />
+                            <button onClick={dismiss} aria-label="닫기" className="rd-modal-x">
+                                <X size={20} />
                             </button>
                         </div>
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-4">
                             <button
                                 onClick={agree}
                                 disabled={state === 'saving'}
-                                className="flex-1 py-2 bg-[#426D36] hover:bg-[#31572E] text-white text-sm font-extrabold rounded-xl transition-colors disabled:opacity-60"
+                                className="rd-btn rd-btn-primary"
+                                style={{ flex: '1 1 0', fontSize: 16, padding: '12px 16px' }}
                             >
                                 {state === 'saving' ? '설정 중…' : '알림 받기'}
                             </button>
-                            <button onClick={dismiss} className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">
+                            <button onClick={dismiss} className="rd-btn rd-btn-gray" style={{ fontSize: 16, padding: '12px 18px' }}>
                                 괜찮아요
                             </button>
                         </div>

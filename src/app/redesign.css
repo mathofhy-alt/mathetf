@@ -227,3 +227,40 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
   .rd .rd-paid-cap { width: 100%; }
   .rd .rd-paid { flex: 1 1 0; justify-content: center; min-height: 42px; padding: 0 10px; font-size: 14px; }
 }
+
+/* 창(모달)·아래 시트 — 사이트 공통. 오버레이에 .rd 를 붙여 어느 화면에서도 같은 규칙 */
+.rd.rd-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(23, 32, 44, 0.48); backdrop-filter: blur(4px); }
+.rd .rd-modal { width: 100%; max-width: 560px; max-height: calc(100dvh - 32px); display: flex; flex-direction: column; background: #fff; border-radius: 28px; padding: 28px; box-shadow: 0 30px 80px rgba(23, 32, 44, 0.25); overflow: hidden; }
+.rd .rd-modal-sm { max-width: 440px; }
+.rd .rd-modal-lg { max-width: 960px; }
+.rd .rd-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.rd .rd-modal-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.35; color: var(--rd-text); }
+.rd .rd-modal-sub { margin: 6px 0 0; font-size: 15px; color: var(--rd-sub); }
+.rd .rd-modal-x { flex: none; width: 40px; height: 40px; margin: -6px -8px 0 0; border: 0; border-radius: 12px; background: transparent; color: var(--rd-nav); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.rd .rd-modal-x:hover { background: var(--rd-zone); color: var(--rd-text); }
+.rd .rd-modal-text { margin: 14px 0 0; font-size: 16px; line-height: 1.7; color: var(--rd-sub); }
+.rd .rd-modal-note { margin: 16px 0 0; padding: 14px 16px; border-radius: 16px; background: var(--rd-tint); font-size: 15px; line-height: 1.6; font-weight: 600; color: var(--rd-ink); }
+.rd .rd-modal-body { margin-top: 18px; overflow-y: auto; min-height: 0; }
+.rd .rd-modal-actions { margin-top: 24px; display: flex; flex-direction: column; gap: 8px; }
+.rd .rd-modal-foot { margin-top: 20px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.rd .rd-btn-block { width: 100%; }
+.rd .rd-btn:disabled { opacity: .45; cursor: not-allowed; }
+.rd .rd-sheet-handle { display: none; }
+.rd .rd-qgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.rd .rd-qcell { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 52px; padding: 0 14px; border-radius: 14px; background: var(--rd-zone); }
+.rd .rd-qcell.rd-skel { background: var(--rd-panel); animation: rd-pulse 1.2s ease-in-out infinite; }
+@keyframes rd-pulse { 50% { opacity: .55; } }
+.rd .rd-qnum { font-size: 15px; font-weight: 800; }
+.rd .rd-qunit { font-size: 14px; font-weight: 600; color: var(--rd-nav); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd .rd-qlv { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 999px; background: var(--rd-tint); color: var(--rd-ink); white-space: nowrap; }
+.rd .rd-qlv.is-mid { background: #BFE5E2; color: #135b58; }
+.rd .rd-qlv.is-hard { background: var(--rd-ink); color: #fff; }
+@media (max-width: 640px) {
+  .rd.rd-overlay { align-items: flex-end; padding: 0; }
+  .rd .rd-modal { max-width: none; border-radius: 28px 28px 0 0; padding: 20px 20px max(24px, env(safe-area-inset-bottom)); max-height: 92dvh; }
+  .rd .rd-sheet-handle { display: block; width: 40px; height: 4px; border-radius: 999px; background: #D5DAE0; margin: 0 auto 14px; }
+  .rd .rd-modal-foot .rd-btn { flex: 1 1 0; }
+}
+/* 초점 표시 — 사이트 공통 파랑(#497ab7) 대신 청록. 닫기 버튼은 창이 열릴 때 초점을 받으므로 안쪽으로 얇게 */
+.rd button:focus-visible, .rd a:focus-visible, .rd input:focus-visible, .rd select:focus-visible, .rd textarea:focus-visible { outline: 3px solid var(--rd-brand); outline-offset: 2px; }
+.rd .rd-modal-x:focus-visible { outline: 2px solid var(--rd-brand); outline-offset: -2px; }

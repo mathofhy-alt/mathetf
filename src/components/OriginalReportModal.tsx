@@ -111,138 +111,143 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
     };
 
     const close = () => { if (!busy) { onClose(); if (done) { setDone(false); setFiles([]); setSchool(null); setQuery(''); setNote(''); } } };
-    const field = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none';
+    const field = 'w-full rounded-[14px] border-0 bg-[#F2F4F6] px-[14px] py-[13px] text-[16px] text-[#17202C] outline-none focus:ring-2 focus:ring-[#1B7E7A]/30';
+    const h3 = 'm-0 text-[15px] font-bold text-[#17202C]';
 
     return (
-        <div role="dialog" aria-modal="true" aria-label="원본 시험지 제보" className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50"
+        <div className="rd rd-overlay"
             onClick={e => { if (e.target === e.currentTarget) close(); }}>
-            <div className="bg-white w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl max-h-[92dvh] overflow-y-auto shadow-2xl">
-                <div className="sm:hidden flex justify-center pt-3"><div className="w-10 h-1 rounded-full bg-slate-300" /></div>
-                <div className="flex items-center justify-between px-5 sm:px-6 pt-4 pb-3 border-b border-slate-100">
-                    <h2 className="text-lg font-bold text-slate-900">원본 시험지 제보</h2>
-                    <button type="button" aria-label="닫기" onClick={close} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={22} /></button>
+            <div role="dialog" aria-modal="true" aria-labelledby="original-report-title" className="rd-modal" style={{ maxWidth: 600 }}>
+                <div className="rd-sheet-handle" />
+                <div className="rd-modal-head">
+                    <h2 id="original-report-title" className="rd-modal-title">원본 시험지 제보</h2>
+                    <button type="button" aria-label="닫기" onClick={close} className="rd-modal-x"><X size={20} /></button>
                 </div>
 
                 {done ? (
-                    <div className="px-6 py-12 text-center">
-                        <CheckCircle2 size={48} className="mx-auto text-emerald-500" />
-                        <p className="mt-4 text-lg font-bold text-slate-900">제보가 접수됐어요. 고맙습니다!</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">검토 후 채택되면 <b className="text-slate-900">{REPORT_REWARD_LABEL}</b>를 넣어 드려요.<br />채택된 시험지는 정리해서 사이트에 올라갑니다.</p>
-                        <button type="button" onClick={close} className="mt-8 w-full sm:w-auto px-8 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700">확인</button>
+                    <div className="text-center" style={{ padding: '32px 0 4px' }}>
+                        <CheckCircle2 size={48} className="mx-auto text-[#1B7E7A]" />
+                        <p className="mt-4 text-[18px] font-bold text-[#17202C]">제보가 접수됐어요. 고맙습니다!</p>
+                        <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 채택되면 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드려요.<br />채택된 시험지는 정리해서 사이트에 올라갑니다.</p>
+                        <div className="rd-modal-actions" style={{ marginTop: 28 }}>
+                            <button type="button" onClick={close} className="rd-btn rd-btn-primary rd-btn-block">확인</button>
+                        </div>
                     </div>
                 ) : (
-                    <form onSubmit={submit} className="px-5 sm:px-6 py-5 space-y-6">
-                        <div className="rounded-xl bg-brand-50 border border-brand-100 p-4 flex gap-3">
-                            <Gift size={20} className="text-brand-600 shrink-0 mt-0.5" />
-                            <p className="text-sm leading-6 text-slate-700">
-                                학교에서 받은 수학 시험지를 <b className="text-slate-900">스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-slate-900">채택되면 {REPORT_REWARD_LABEL}</b>를 드려요.
-                                <span className="block text-xs text-slate-500 mt-1">제보한 파일은 운영자만 봅니다.</span>
-                            </p>
+                    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                        <div className="rd-modal-body space-y-6">
+                            <div className="flex gap-3 rounded-[20px] bg-[#E8F6F5] px-4 py-[14px]">
+                                <Gift size={20} className="text-[#1B7E7A] shrink-0 mt-0.5" />
+                                <p className="m-0 text-[15px] leading-[1.6] text-[#17202C]">
+                                    학교에서 받은 수학 시험지를 <b>스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-[#1B7E7A]">채택되면 {REPORT_REWARD_LABEL}</b>를 드려요.
+                                    <span className="block text-[14px] text-[#5F6B78] mt-1">제보한 파일은 운영자만 봅니다.</span>
+                                </p>
+                            </div>
+
+                            <section className="space-y-3">
+                                <h3 className={h3}>1. 어느 학교 시험인가요?</h3>
+                                {school ? (
+                                    <div className="flex items-center justify-between gap-2 rounded-[14px] bg-[#E8F6F5] pl-[14px] pr-1 py-0.5">
+                                        <span className="text-[15px] py-3"><b className="text-[#17202C]">{school.name}</b><span className="ml-2 text-[#5F6B78]">{school.region} {school.district}</span></span>
+                                        <button type="button" onClick={() => { setSchool(null); setQuery(''); setListOpen(true); }} className="min-h-[44px] px-3 text-[14px] font-bold text-[#1B7E7A] hover:underline">다시 고르기</button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <input aria-label="학교 검색" value={query} onChange={e => { setQuery(e.target.value); setListOpen(true); }} onFocus={() => setListOpen(true)}
+                                            placeholder="학교 이름으로 검색 (예: 휘문)" className={field} autoComplete="off" />
+                                        {listOpen && query.trim() && (() => {
+                                            const q = query.replace(/\s/g, '');
+                                            const hits = schools.filter(sc => sc.name.replace(/\s/g, '').includes(q)).slice(0, 12);
+                                            return (
+                                                <ul role="listbox" aria-label="학교 목록" className="absolute z-10 mt-1.5 w-full max-h-64 overflow-y-auto rounded-[14px] bg-white p-1 shadow-[0_12px_32px_rgba(23,32,44,0.16)]">
+                                                    {hits.length ? hits.map(sc => (
+                                                        <li key={sc.code} role="option" aria-selected={false}>
+                                                            <button type="button" onClick={() => { setSchool(sc); setListOpen(false); }} className="w-full min-h-[44px] text-left px-3 py-2.5 text-[15px] rounded-[10px] hover:bg-[#F2F4F6] flex justify-between gap-2">
+                                                                <span className="font-semibold text-[#17202C]">{sc.name}</span><span className="text-[#5F6B78] shrink-0">{sc.region} {sc.district}</span>
+                                                            </button>
+                                                        </li>
+                                                    )) : <li className="px-3 py-3 text-[15px] text-[#5F6B78]">찾는 학교가 없어요. 학교 이름을 다시 확인해주세요 (전국 고등학교에서 찾아요).</li>}
+                                                </ul>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <select aria-label="연도" value={year} onChange={e => setYear(Number(e.target.value))} className={field}>
+                                        {Array.from({ length: thisYear - REPORT_MIN_YEAR + 1 }, (_, i) => thisYear - i).map(y => <option key={y} value={y}>{y}년</option>)}
+                                    </select>
+                                    <select aria-label="학년" value={grade} onChange={e => setGrade(Number(e.target.value))} className={field}>
+                                        {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
+                                    </select>
+                                    <select aria-label="학기" value={semester} onChange={e => setSemester(Number(e.target.value))} className={field}>
+                                        <option value={1}>1학기</option><option value={2}>2학기</option>
+                                    </select>
+                                    <select aria-label="시험" value={examType} onChange={e => setExamType(e.target.value)} className={field}>
+                                        <option value="중간고사">중간고사</option><option value="기말고사">기말고사</option>
+                                    </select>
+                                </div>
+                                <select aria-label="과목" value={subject} onChange={e => setSubject(e.target.value)} className={field} required>
+                                    <option value="">과목 선택</option>
+                                    {CURRICULA.map(c => <optgroup key={c.id} label={c.label}>{c.subjects.map(s => { const st = stateOf(s); return <option key={s} value={s} disabled={!!st}>{s}{st === 'owned' ? ' (이미 있음)' : st === 'pending' ? ' (제보 접수됨)' : ''}</option>; })}</optgroup>)}
+                                    <option value="모름">잘 모르겠어요</option>
+                                </select>
+                                {school && taken && (() => {
+                                    const all = CURRICULA.flatMap(c => c.subjects); const owned = all.filter(x => stateOf(x) === 'owned');
+                                    return owned.length > 0 ? <p className="m-0 text-[14px] leading-[1.6] text-[#5F6B78]">이 시험은 <b className="text-[#17202C]">{owned.join(', ')}</b>이(가) 이미 수학ETF에 있어요. 없는 과목만 고를 수 있어요.</p> : null;
+                                })()}
+                            </section>
+
+                            <section className="space-y-3">
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <h3 className={h3}>2. 시험지 파일 <span className="font-normal text-[#5F6B78]">(스캔 PDF가 있으면 가장 좋아요)</span></h3>
+                                    <span className="shrink-0 text-[14px] text-[#5F6B78] tabular-nums">{files.length} / {MAX_FILES}장</span>
+                                </div>
+                                <div className="flex items-start gap-2 rounded-[14px] bg-[#F7F8FA] px-[14px] py-3 text-[14px] leading-[1.6] text-[#4E5968]">
+                                    <ShieldCheck size={16} className="shrink-0 mt-[3px] text-[#1B7E7A]" />
+                                    <ul className="m-0 space-y-0.5 list-disc pl-4">
+                                        <li>스캔 PDF가 있으면 그걸 올려주세요. 사진보다 선명해서 더 빨리 반영돼요.</li>
+                                        <li>사진은 <b className="text-[#17202C]">기울이지 말고 정면에서</b>, 한 쪽이 화면에 꽉 차게 찍어주세요.</li>
+                                        <li>그림자 없이 밝은 곳에서, 글자가 흔들리지 않게 찍어주세요.</li>
+                                        <li>모든 쪽을 빠짐없이 찍어주세요.</li>
+                                        <li><b className="text-[#17202C]">이름, 학번, 점수는 가리고</b> 찍어주세요.</li>
+                                    </ul>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button type="button" onClick={() => cameraRef.current?.click()} className="flex items-center justify-center gap-2 min-h-[48px] py-3 rounded-[14px] bg-[#E8F6F5] text-[#1B7E7A] font-bold text-[15px] hover:bg-[#d9f0ee]">
+                                        <Camera size={18} /> 사진 찍기
+                                    </button>
+                                    <button type="button" onClick={() => pickRef.current?.click()} className="flex items-center justify-center gap-2 min-h-[48px] py-3 rounded-[14px] bg-[#F2F4F6] text-[#17202C] font-bold text-[15px] hover:bg-[#e7eaee]">
+                                        <FileText size={18} /> 스캔 PDF, 사진 고르기
+                                    </button>
+                                </div>
+                                <input ref={cameraRef} type="file" accept="image/*" capture="environment" multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+                                <input ref={pickRef} type="file" accept={ACCEPT} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+                                {files.length > 0 && (
+                                    <ul className="m-0 p-0 list-none grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {files.map((f, i) => (
+                                            <li key={f.key} className="relative aspect-[3/4] rounded-[10px] overflow-hidden bg-[#F2F4F6]">
+                                                {f.url ? <img src={f.url} alt={`${i + 1}번째 사진`} className="w-full h-full object-cover" />
+                                                    : <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center"><FileText size={22} className="text-[#B0B8C1]" /><span className="text-[12px] text-[#5F6B78] break-all line-clamp-2">{f.file.name}</span></div>}
+                                                <span className="absolute left-1 top-1 rounded-[6px] bg-[#17202C]/70 px-1.5 text-[12px] font-bold text-white tabular-nums">{i + 1}</span>
+                                                <button type="button" aria-label={`${i + 1}번째 사진 빼기`} onClick={() => removeFile(f.key)} className="absolute right-0 top-0 w-11 h-11 flex items-center justify-center"><span className="rounded-full bg-white/90 p-1.5 text-[#4E5968] hover:text-[#C0392B] shadow"><Trash2 size={14} /></span></button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </section>
+
+                            <section className="space-y-2">
+                                <h3 className={h3}>3. 남길 말 <span className="font-normal text-[#5F6B78]">(선택)</span></h3>
+                                <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder="예: 서술형 답안지는 따로 찍었어요" className={field} />
+                            </section>
+
+                            {error && <div role="alert" className="flex items-start gap-2 rounded-[14px] bg-[#FDECEC] px-[14px] py-3 text-[15px] text-[#C0392B]"><AlertCircle size={16} className="shrink-0 mt-[3px]" />{error}</div>}
                         </div>
 
-                        <section className="space-y-3">
-                            <h3 className="text-sm font-bold text-slate-900">1. 어느 학교 시험인가요?</h3>
-                            {school ? (
-                                <div className="flex items-center justify-between gap-2 rounded-lg border border-brand-300 bg-brand-50 px-3 py-2.5">
-                                    <span className="text-sm"><b className="text-slate-900">{school.name}</b><span className="ml-2 text-slate-500">{school.region} {school.district}</span></span>
-                                    <button type="button" onClick={() => { setSchool(null); setQuery(''); setListOpen(true); }} className="text-xs font-bold text-brand-700 hover:underline">다시 고르기</button>
-                                </div>
-                            ) : (
-                                <div className="relative">
-                                    <input aria-label="학교 검색" value={query} onChange={e => { setQuery(e.target.value); setListOpen(true); }} onFocus={() => setListOpen(true)}
-                                        placeholder="학교 이름으로 검색 (예: 휘문)" className={field} autoComplete="off" />
-                                    {listOpen && query.trim() && (() => {
-                                        const q = query.replace(/\s/g, '');
-                                        const hits = schools.filter(sc => sc.name.replace(/\s/g, '').includes(q)).slice(0, 12);
-                                        return (
-                                            <ul role="listbox" aria-label="학교 목록" className="absolute z-10 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                                                {hits.length ? hits.map(sc => (
-                                                    <li key={sc.code} role="option" aria-selected={false}>
-                                                        <button type="button" onClick={() => { setSchool(sc); setListOpen(false); }} className="w-full text-left px-3 py-2.5 text-sm hover:bg-brand-50 flex justify-between gap-2">
-                                                            <span className="font-medium text-slate-800">{sc.name}</span><span className="text-slate-400 shrink-0">{sc.region} {sc.district}</span>
-                                                        </button>
-                                                    </li>
-                                                )) : <li className="px-3 py-3 text-sm text-slate-500">찾는 학교가 없어요. 학교 이름을 다시 확인해주세요 (전국 고등학교에서 찾아요).</li>}
-                                            </ul>
-                                        );
-                                    })()}
-                                </div>
-                            )}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                <select aria-label="연도" value={year} onChange={e => setYear(Number(e.target.value))} className={field}>
-                                    {Array.from({ length: thisYear - REPORT_MIN_YEAR + 1 }, (_, i) => thisYear - i).map(y => <option key={y} value={y}>{y}년</option>)}
-                                </select>
-                                <select aria-label="학년" value={grade} onChange={e => setGrade(Number(e.target.value))} className={field}>
-                                    {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
-                                </select>
-                                <select aria-label="학기" value={semester} onChange={e => setSemester(Number(e.target.value))} className={field}>
-                                    <option value={1}>1학기</option><option value={2}>2학기</option>
-                                </select>
-                                <select aria-label="시험" value={examType} onChange={e => setExamType(e.target.value)} className={field}>
-                                    <option value="중간고사">중간고사</option><option value="기말고사">기말고사</option>
-                                </select>
-                            </div>
-                            <select aria-label="과목" value={subject} onChange={e => setSubject(e.target.value)} className={field} required>
-                                <option value="">과목 선택</option>
-                                {CURRICULA.map(c => <optgroup key={c.id} label={c.label}>{c.subjects.map(s => { const st = stateOf(s); return <option key={s} value={s} disabled={!!st}>{s}{st === 'owned' ? ' (이미 있음)' : st === 'pending' ? ' (제보 접수됨)' : ''}</option>; })}</optgroup>)}
-                                <option value="모름">잘 모르겠어요</option>
-                            </select>
-                            {school && taken && (() => {
-                                const all = CURRICULA.flatMap(c => c.subjects); const owned = all.filter(x => stateOf(x) === 'owned');
-                                return owned.length > 0 ? <p className="text-xs text-slate-500">이 시험은 <b className="text-slate-700">{owned.join(', ')}</b>이(가) 이미 수학ETF에 있어요. 없는 과목만 고를 수 있어요.</p> : null;
-                            })()}
-                        </section>
-
-                        <section className="space-y-3">
-                            <div className="flex items-baseline justify-between">
-                                <h3 className="text-sm font-bold text-slate-900">2. 시험지 파일 <span className="font-normal text-slate-500">— 스캔 PDF가 있으면 가장 좋아요</span></h3>
-                                <span className="text-xs text-slate-500 tabular-nums">{files.length} / {MAX_FILES}장</span>
-                            </div>
-                            <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2.5 text-xs leading-5 text-amber-900">
-                                <ShieldCheck size={16} className="shrink-0 mt-0.5" />
-                                <ul className="space-y-0.5 list-disc pl-4">
-                                    <li>스캔 PDF가 있으면 그걸 올려주세요. 사진보다 선명해서 더 빨리 반영돼요.</li>
-                                    <li>사진은 <b>기울이지 말고 정면에서</b>, 한 쪽이 화면에 꽉 차게 찍어주세요.</li>
-                                    <li>그림자 없이 밝은 곳에서, 글자가 흔들리지 않게 찍어주세요.</li>
-                                    <li>모든 쪽을 빠짐없이 찍어주세요.</li>
-                                    <li><b>이름·학번·점수는 가리고</b> 찍어주세요.</li>
-                                </ul>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button type="button" onClick={() => cameraRef.current?.click()} className="flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 text-brand-700 font-bold text-sm hover:bg-brand-50">
-                                    <Camera size={18} /> 사진 찍기
-                                </button>
-                                <button type="button" onClick={() => pickRef.current?.click()} className="flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50">
-                                    <FileText size={18} /> 스캔 PDF·사진 고르기
-                                </button>
-                            </div>
-                            <input ref={cameraRef} type="file" accept="image/*" capture="environment" multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-                            <input ref={pickRef} type="file" accept={ACCEPT} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-                            {files.length > 0 && (
-                                <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                    {files.map((f, i) => (
-                                        <li key={f.key} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
-                                            {f.url ? <img src={f.url} alt={`${i + 1}번째 사진`} className="w-full h-full object-cover" />
-                                                : <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 text-center"><FileText size={22} className="text-slate-400" /><span className="text-[10px] text-slate-500 break-all line-clamp-2">{f.file.name}</span></div>}
-                                            <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 text-[11px] font-bold text-white tabular-nums">{i + 1}</span>
-                                            <button type="button" aria-label={`${i + 1}번째 사진 빼기`} onClick={() => removeFile(f.key)} className="absolute right-1 top-1 rounded-full bg-white/90 p-1 text-slate-600 hover:text-rose-600 shadow"><Trash2 size={14} /></button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
-
-                        <section className="space-y-2">
-                            <h3 className="text-sm font-bold text-slate-900">3. 남길 말 <span className="font-normal text-slate-400">(선택)</span></h3>
-                            <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder="예: 서술형 답안지는 따로 찍었어요" className={field} />
-                        </section>
-
-                        {error && <div role="alert" className="flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2.5 text-sm text-rose-700"><AlertCircle size={16} className="shrink-0 mt-0.5" />{error}</div>}
-
-                        <div className="flex gap-2 pt-1" style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
-                            <button type="button" onClick={close} disabled={!!busy} className="px-5 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-50">취소</button>
-                            <button type="submit" disabled={!!busy} className="flex-1 py-3 rounded-xl bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-60">
-                                {busy || `제보하기${files.length ? ` · ${files.length}장` : ''}`}
+                        <div className="rd-modal-foot">
+                            <button type="button" onClick={close} disabled={!!busy} className="rd-btn rd-btn-gray">취소</button>
+                            <button type="submit" disabled={!!busy} className="rd-btn rd-btn-primary" style={{ flex: '1 1 0' }}>
+                                {busy || `제보하기${files.length ? ` (${files.length}장)` : ''}`}
                             </button>
                         </div>
                     </form>
