@@ -2,6 +2,7 @@ import {questionBankHref} from '@/lib/discovery';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/Header';
 import SubjectExamCatalog from '@/components/SubjectExamCatalog';
 import { getSubjectHub, HUB_SUBJECTS, SUBJECT_INFO, type HubSubject } from '@/lib/subject-hub';
@@ -60,6 +61,8 @@ export default async function SubjectHubPage({ params }: Props) {
     const richer = hub.midtermCount >= hub.finalCount ? '중간' : '기말';
     const poorer = richer === '중간' ? '기말' : '중간';
     const poorCount = Math.min(hub.midtermCount, hub.finalCount);
+    const units = hub.byUnit.slice(0, 14);
+    const maxUnit = Math.max(1, ...units.map(u => Math.max(u.midterm, u.final)));
 
     const jsonLd = [
         {
@@ -78,43 +81,50 @@ export default async function SubjectHubPage({ params }: Props) {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="library-page max-w-3xl mx-auto px-4 py-8 sm:py-10">
-                <div className="mb-6">
-                    <Link href="/" className="text-sm text-brand-600 hover:underline mb-3 inline-block">← 전체 기출</Link>
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 break-keep">
+            <main className="rd-ct-main">
+                <section className="rd-wrap rd-x-top">
+                    <Link href="/" className="rd-x-back"><ChevronLeft size={18} aria-hidden="true" />전체 기출</Link>
+                    <h1 className="rd-x-h1 rd-s-h1">
                         {subject} 기출문제
-                    </h1><p className="mt-4 text-sm leading-relaxed text-slate-600">보유 기출의 회차와 단원을 확인하고 필요한 문항만 골라 출제할 수 있습니다. <Link className="underline" href="/guide">만드는 순서·무료 범위·결과물 보기</Link> · <Link className="underline" href="/question-bank?demo=1&origin=content">5문항 체험</Link></p>
-                    <p className="text-sm text-slate-500 mt-2 break-keep">
-                        {info.grade} {info.when} · 보유 학교 <strong className="text-[#294437]">{hub.schoolCount}개교</strong> · 분류 문항{' '}
-                        <strong className="text-[#294437]">{hub.total.toLocaleString()}문항</strong>
-                    </p>
-                </div>
+                    </h1>
+                    <div className="rd-x-meta">
+                        <span className="rd-pill is-accent">{info.grade} {info.when}</span>
+                        <span className="rd-pill">보유 학교 <strong>{hub.schoolCount}개교</strong></span>
+                        <span className="rd-pill">분류 문항{' '}<strong>{hub.total.toLocaleString()}문항</strong></span>
+                    </div>
+                    <p className="rd-lead rd-ct-lead">보유 기출의 회차와 단원을 확인하고 필요한 문항만 골라 출제할 수 있습니다.</p>
+                    <div className="rd-x-links rd-ct-toplinks">
+                        <Link className="rd-link" href="/guide">만드는 순서·무료 범위·결과물 보기</Link>
+                        <Link className="rd-link" href="/question-bank?demo=1&origin=content">5문항 체험</Link>
+                    </div>
 
-                <nav aria-label="과목별 기출 검색" className="mb-4 flex flex-wrap gap-2">
-                    {HUB_SUBJECTS.map(s => <Link key={s} href={`/subject/${encodeURIComponent(s)}#subject-exams`} aria-current={s === subject ? 'page' : undefined} className={`rounded-lg border px-4 py-2 text-sm font-bold ${s === subject ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'}`}>{s}</Link>)}
-                </nav>
+                    <nav aria-label="과목별 기출 검색" className="rd-ct-subjnav">
+                        {HUB_SUBJECTS.map(s => <Link key={s} href={`/subject/${encodeURIComponent(s)}#subject-exams`} aria-current={s === subject ? 'page' : undefined}>{s}</Link>)}
+                    </nav>
+                </section>
+
                 <SubjectExamCatalog key={subject} exams={hub.exams} subject={subject} />
 
                 {/* 과목 소개 — '이 과목이 뭐냐' 는 검색 의도에 답한다 */}
-                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                    <h2 className="text-base font-bold text-slate-800 mb-3">{subject}{info.eun} 어떤 과목인가요?</h2>
-                    <div className="space-y-3 text-sm text-slate-600 leading-relaxed break-keep">
+                <section className="rd-wrap rd-s-about rd-ct-about">
+                    <h2 className="rd-s-h2sm">{subject}{info.eun} 어떤 과목인가요?</h2>
+                    <div className="rd-s-prose">
                         <p>{info.blurb}</p>
                         <p>
                             수학ETF는 {subject} 기출 {hub.total.toLocaleString()}문항을
                             단원과 난이도로 분류해 두었습니다. 지금 보유한 자료는{' '}
-                            <strong className="text-[#294437]">중간고사 {hub.midtermCount.toLocaleString()}문항</strong>,{' '}
-                            <strong className="text-[#294437]">기말고사 {hub.finalCount.toLocaleString()}문항</strong>입니다.
+                            <strong>중간고사 {hub.midtermCount.toLocaleString()}문항</strong>,{' '}
+                            <strong>기말고사 {hub.finalCount.toLocaleString()}문항</strong>입니다.
                         </p>
                         <p>
                             {hub.midtermCount + hub.finalCount === 0 ? (
                                 <>아래 문항은 중간·기말 회차가 식별되지 않아 시험별 단원 표에 수치가 표시되지 않습니다.</>
                             ) : lopsided ? (
                                 <>
-                                    아래 단원 분포는 <strong className="text-[#294437]">{`${richer}고사`} 자료를 기준으로</strong> 읽어야 합니다.
+                                    아래 단원 분포는 <strong>{`${richer}고사`} 자료를 기준으로</strong> 읽어야 합니다.
                                     {poorCount === 0
                                         ? `${poorer}고사 회차가 아직 없어서, ${poorer}고사에서 다루는 단원은 표에 나타나지 않습니다.`
                                         : `${poorer}고사 회차가 아직 ${poorCount.toLocaleString()}문항뿐이라, ${poorer}고사에서 다루는 단원은 실제 출제 비중보다 적게 잡혀 있습니다.`}
@@ -130,58 +140,72 @@ export default async function SubjectHubPage({ params }: Props) {
                             분류 문항 수에는 교과 외 문항 등이 포함되어 실제 출제 검색 결과와 다를 수 있습니다. 제공 회차의 미리보기는 로그인 없이 볼 수 있고, 해설 없는 전체 문제 PDF는 회원 무료입니다.
                         </p>
                     </div>
+
+                    {relatedInsight && (
+                        <Link href={`/insights/${relatedInsight.slug}`} className="rd-ct-insight">
+                            <span><b>{relatedInsight.title}</b>{' '}<small>실제 보유 시험지 집계 보기</small></span>
+                            <ChevronRight size={22} aria-hidden="true" />
+                        </Link>
+                    )}
                 </section>
 
-                {relatedInsight && (
-                    <Link href={`/insights/${relatedInsight.slug}`} className="block bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6 text-sm font-semibold text-[#426D36] hover:underline">
-                        {relatedInsight.title} · 실제 보유 시험지 집계 보기 →
-                    </Link>
-                )}
-
                 {/* 단원별 출제 분포 */}
-                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                    <h2 className="text-sm font-bold text-slate-700 mb-1">📊 {subject} 단원별 출제 분포</h2>
-                    <p className="text-xs text-slate-400 mb-4 break-keep">
-                        보유한 {subject} 분류 문항 {hub.total.toLocaleString()}개를 집계했습니다.
-                        과목 전체의 출제 비중이 아니라 <strong>지금 보유한 회차</strong>의 분포입니다.
-                    </p>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="text-[11px] text-slate-400 border-b border-slate-200">
-                                <th className="py-1.5 text-left font-bold">단원</th>
-                                <th className="py-1.5 text-right font-bold w-20">중간고사</th>
-                                <th className="py-1.5 text-right font-bold w-20">기말고사</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {hub.byUnit.slice(0, 14).map((u) => (
-                                <tr key={u.unit} className="border-b border-slate-100 last:border-0">
-                                    <td className="py-2 text-slate-600 break-keep">{u.unit}</td>
-                                    <td className="py-2 text-right font-bold text-[#426D36] tabular-nums">
-                                        {u.midterm > 0 ? u.midterm.toLocaleString() : <span className="text-slate-300 font-normal">·</span>}
-                                    </td>
-                                    <td className="py-2 text-right font-bold text-[#638747] tabular-nums">
-                                        {u.final > 0 ? u.final.toLocaleString() : <span className="text-slate-300 font-normal">·</span>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    <div className="flex flex-wrap gap-2 text-xs mt-4">
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 font-bold">쉬움 {hub.easy.toLocaleString()}</span>
-                        <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 font-bold">보통 {hub.mid.toLocaleString()}</span>
-                        <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 font-bold">어려움 {hub.hard.toLocaleString()}</span>
+                <section className="rd-s-zone rd-ct-zone">
+                    <div className="rd-wrap">
+                        <h2 className="rd-x-h2">{subject} 단원별 출제 분포</h2>
+                        <p className="rd-x-note">
+                            보유한 {subject} 분류 문항 {hub.total.toLocaleString()}개를 집계했습니다.
+                            과목 전체의 출제 비중이 아니라 <strong>지금 보유한 회차</strong>의 분포입니다.
+                        </p>
+                        <div className="rd-ct-panel is-white rd-ct-unitpanel">
+                            <div className="rd-ct-legend" aria-hidden="true"><span><i className="is-mid" />중간고사</span><span><i className="is-fin" />기말고사</span></div>
+                            <div className="rd-ct-tablewrap">
+                                <table className="rd-ct-table rd-ct-unittable">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">단원</th>
+                                            <th scope="col" className="is-num">중간고사</th>
+                                            <th scope="col" className="is-num">기말고사</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {units.map((u) => (
+                                            <tr key={u.unit}>
+                                                <td>
+                                                    <span className="rd-ct-uname">{u.unit}</span>
+                                                    <span className="rd-ct-pair" aria-hidden="true">
+                                                        <span className="rd-x-track rd-ct-mini"><span style={{ width: `${Math.round(u.midterm / maxUnit * 100)}%` }} /></span>
+                                                        <span className="rd-x-track rd-ct-mini is-fin"><span style={{ width: `${Math.round(u.final / maxUnit * 100)}%` }} /></span>
+                                                    </span>
+                                                </td>
+                                                <td className="is-num is-strong">
+                                                    {u.midterm > 0 ? u.midterm.toLocaleString() : <span className="rd-ct-dash">·</span>}
+                                                </td>
+                                                <td className="is-num is-strong">
+                                                    {u.final > 0 ? u.final.toLocaleString() : <span className="rd-ct-dash">·</span>}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="rd-ct-diff">
+                                <span className="is-easy">쉬움 {hub.easy.toLocaleString()}</span>
+                                <span className="is-mid">보통 {hub.mid.toLocaleString()}</span>
+                                <span className="is-hard">어려움 {hub.hard.toLocaleString()}</span>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 {/* 출제 개념 */}
                 {hub.concepts.length > 0 && (
-                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                        <h2 className="text-sm font-bold text-slate-700 mb-1">🧩 {subject}에서 자주 나오는 개념·유형</h2>
-                        <p className="text-xs text-slate-400 mb-3 break-keep">출제 빈도 순입니다.</p>
-                        <div className="flex flex-wrap gap-1.5">
+                    <section className="rd-wrap rd-ct-block">
+                        <h2 className="rd-s-h2sm">{subject}에서 자주 나오는 개념·유형</h2>
+                        <p className="rd-x-note">출제 빈도 순입니다.</p>
+                        <div className="rd-x-concepts">
                             {hub.concepts.map((c) => (
-                                <span key={c} className="text-[11px] bg-[#EAF1E1] text-[#426D36] font-bold px-2.5 py-1 rounded-full">{c}</span>
+                                <span key={c}>{c}</span>
                             ))}
                         </div>
                     </section>
@@ -189,13 +213,12 @@ export default async function SubjectHubPage({ params }: Props) {
 
                 {/* 학교별 기출 — 내부 링크 */}
                 {hub.schools.length > 0 && (
-                    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
-                        <h2 className="text-sm font-bold text-slate-700 mb-1">🏫 {subject} 기출이 있는 학교</h2>
-                        <p className="text-xs text-slate-400 mb-3 break-keep">{hub.schoolCount}개교. 학교를 누르면 그 학교 기출 전체를 볼 수 있습니다.</p>
-                        <div className="flex flex-wrap gap-1.5">
+                    <section className="rd-wrap rd-ct-block">
+                        <h2 className="rd-s-h2sm">{subject} 기출이 있는 학교</h2>
+                        <p className="rd-x-note">{hub.schoolCount}개교. 학교를 누르면 그 학교 기출 전체를 볼 수 있습니다.</p>
+                        <div className="rd-rg-chips rd-ct-schools">
                             {hub.schools.map((s) => (
-                                <Link key={s} href={`/school/${encodeURIComponent(s)}`}
-                                    className="text-xs bg-slate-50 hover:bg-[#EAF1E1] text-slate-600 hover:text-[#426D36] border border-slate-200 font-semibold px-2.5 py-1 rounded-lg transition-colors">
+                                <Link key={s} href={`/school/${encodeURIComponent(s)}`} className="rd-rg-chip">
                                     {s}
                                 </Link>
                             ))}
@@ -203,25 +226,32 @@ export default async function SubjectHubPage({ params }: Props) {
                     </section>
                 )}
 
-                {/* 다른 과목 */}
-                <nav className="flex flex-wrap gap-2 mb-6">
-                    {HUB_SUBJECTS.filter((s) => s !== subject).map((s) => (
-                        <Link key={s} href={`/subject/${encodeURIComponent(s)}`}
-                            className="text-xs bg-white border border-slate-200 hover:border-[#426D36] text-slate-600 hover:text-[#426D36] font-bold px-3 py-2 rounded-lg transition-colors">
-                            {s} 기출 →
-                        </Link>
-                    ))}
-                </nav>
+                <section className="rd-wrap rd-s-make">
+                    <div className="rd-s-makebox">
+                        <p className="rd-ct-ctatitle">{subject} 기출로 나만의 시험지를 만들어 보세요</p>
+                        <p className="rd-lead">
+                            단원·난이도로 문항을 골라 편집용 HML로 받을 수 있습니다. PDF는 한글에서 저장하세요.
+                        </p>
+                        <div className="rd-s-actions">
+                            <Link href={questionBankHref({subject,origin:'subject'})} className="rd-btn rd-btn-primary">
+                                시험지 만들러 가기
+                            </Link>
+                        </div>
+                    </div>
+                </section>
 
-                <div className="library-cta bg-[#20354F] rounded-2xl p-6 text-center text-white">
-                    <p className="font-bold break-keep">{subject} 기출로 나만의 시험지를 만들어 보세요</p>
-                    <p className="text-sm text-white/80 mt-1.5 break-keep">
-                        단원·난이도로 문항을 골라 편집용 HML로 받을 수 있습니다. PDF는 한글에서 저장하세요.
-                    </p>
-                    <Link href={questionBankHref({subject,origin:'subject'})}
-                        className="inline-block mt-4 bg-white text-[#426D36] font-black px-6 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
-                        시험지 만들러 가기 →
-                    </Link>
+                {/* 다른 과목 */}
+                <div className="rd-x-more rd-s-more">
+                    <div className="rd-wrap">
+                        <p className="rd-ct-morelabel">다른 과목 기출</p>
+                        <nav className="rd-x-links rd-ct-otherlinks" aria-label="다른 과목 기출">
+                            {HUB_SUBJECTS.filter((s) => s !== subject).map((s) => (
+                                <Link key={s} href={`/subject/${encodeURIComponent(s)}`} className="rd-link">
+                                    {s} 기출
+                                </Link>
+                            ))}
+                        </nav>
+                    </div>
                 </div>
             </main>
         </div>

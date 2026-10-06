@@ -60,71 +60,69 @@ export default function SuggestionWritePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f2f3f0]">
-            <Header/><div className="suite-local-header">
-                <div className="max-w-[800px] mx-auto px-4 h-16 flex items-center gap-4">
-                    <Link href="/suggestion" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
-                    <h1 className="text-xl font-bold text-slate-800">건의사항 등록</h1>
-                </div>
-            </div>
+        <div className="rd rd-x rd-bd">
+            <Header />
+            <section className="rd-wrap rd-x-top rd-bd-read">
+                <Link href="/suggestion" className="rd-x-back"><ArrowLeft size={18} /> 건의사항</Link>
+                <h1 className="rd-x-h1 rd-bd-form-h1">건의사항 등록</h1>
 
-            <main className="max-w-[800px] mx-auto px-4 py-8">
-                <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden p-8 space-y-6">
-                    <div className="bg-brand-50 p-4 rounded text-sm text-brand-700 mb-6">
-                        <p className="font-bold mb-1">🔒 비밀글로 등록됩니다.</p>
-                        <p>제목은 목록에 공개됩니다. 본문은 글 비밀번호로 확인하며, 관리자도 확인할 수 있습니다.</p>
+                <form onSubmit={handleSubmit} className="rd-bd-form">
+                    <div className="rd-bd-note">
+                        <Lock size={16} aria-hidden />
+                        <span><b>비밀글로 등록됩니다.</b> 제목은 목록에 공개됩니다. 본문은 글 비밀번호로 확인하며, 관리자도 확인할 수 있습니다.</span>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">제목</label>
+                    <div className="rd-bd-field">
+                        <label htmlFor="suggestion-title" className="rd-bd-label">제목</label>
                         <input
+                            id="suggestion-title"
                             type="text"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded focus:border-brand-500 focus:outline-none"
+                            className="rd-input"
                             placeholder="제목을 입력하세요"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">비밀번호 설정</label>
-                        <div className="relative">
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded focus:border-brand-500 focus:outline-none"
-                                placeholder="글 확인용 비밀번호 입력"
-                            />
-                            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        </div>
-                        <p className="text-xs text-slate-400 mt-1">* 게시글 확인 시 필요하므로 꼭 기억해주세요.</p>
+                    <div className="rd-bd-field">
+                        <label htmlFor="suggestion-password" className="rd-bd-label">비밀번호 설정</label>
+                        <input
+                            id="suggestion-password"
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            className="rd-input"
+                            placeholder="글 확인용 비밀번호 입력"
+                            aria-describedby="suggestion-password-hint"
+                        />
+                        <p id="suggestion-password-hint" className="rd-bd-hint">게시글을 확인할 때 필요하니 꼭 기억해 주세요.</p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">내용</label>
+                    <div className="rd-bd-field">
+                        <label htmlFor="suggestion-content" className="rd-bd-label">내용</label>
                         <textarea
+                            id="suggestion-content"
                             value={content}
                             onChange={e => setContent(e.target.value)}
-                            className="w-full h-80 px-4 py-2 border border-slate-300 rounded focus:border-brand-500 focus:outline-none resize-none"
+                            className="rd-input rd-bd-textarea"
                             placeholder="내용을 입력하세요"
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                        <Link href="/suggestion" className="px-6 py-2 border border-slate-300 rounded text-sm font-bold text-slate-600 hover:bg-slate-50">
+                    <div className="rd-bd-actions">
+                        <Link href="/suggestion" className="rd-btn rd-btn-gray">
                             취소
                         </Link>
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="px-6 py-2 bg-brand-600 text-white rounded text-sm font-bold hover:bg-brand-700 disabled:opacity-50"
+                            className="rd-btn rd-btn-primary"
                         >
                             {submitting ? '등록 중...' : '등록하기'}
                         </button>
                     </div>
                 </form>
-            </main>
+            </section>
         </div>
     );
 }
