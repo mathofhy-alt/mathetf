@@ -91,7 +91,6 @@ export default function QuestionBankPage() {
     const [filterVersion,setFilterVersion]=useState(0);
     const [entryLabel,setEntryLabel]=useState('');
     const [entryFailure,setEntryFailure]=useState(false);
-    const [zoomQuestion,setZoomQuestion]=useState<any>(null);
     const [cart, setCart] = useState<any[]>([]);
     const [draftReady, setDraftReady] = useState(false);
     const restoredDraftRef=useRef(false);
@@ -269,8 +268,7 @@ export default function QuestionBankPage() {
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                if (zoomQuestion) setZoomQuestion(null);
-                else if (solutionTarget) setSolutionTarget(null);
+                if (solutionTarget) setSolutionTarget(null);
                 else if (similarTarget) setSimilarTarget(null);
                 else if (showConfigModal) setShowConfigModal(false);
                 else if (showSaveModal) {if(!saveInFlight.current)setShowSaveModal(false);}
@@ -280,7 +278,7 @@ export default function QuestionBankPage() {
         };
         document.addEventListener('keydown', handleEsc);
         return () => document.removeEventListener('keydown', handleEsc);
-    }, [zoomQuestion, solutionTarget, similarTarget, showConfigModal, showSaveModal, showAutoModal, showStorageModal]);
+    }, [solutionTarget, similarTarget, showConfigModal, showSaveModal, showAutoModal, showStorageModal]);
 
     // Pre-fetch Storage Data for Instant Feel — DB/시험지 모달 데이터를 미리 받아 열자마자 표시
     // (storageRefreshKey 변경 시 재프리페치 → 저장 직후에도 최신 유지)
@@ -1907,7 +1905,7 @@ export default function QuestionBankPage() {
                                                     <button onClick={(e) => { e.stopPropagation(); moveInCart(idx, 1); }} disabled={idx === cart.length - 1} aria-label="아래로" className="w-10 h-9 rounded-lg bg-white border border-slate-200 text-slate-600 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"><ChevronDown size={16} /></button>
                                                 </div>
                                             )}
-                                            <button aria-label={`${idx+1}번 문항 상세보기`} className="question-action" onClick={e=>{e.stopPropagation();setZoomQuestion(q);}}><FileText size={14} aria-hidden="true"/>상세보기</button>
+                                            {/* [10/7] 상세보기 버튼 제거 — 카드가 문제 전체를 보여 줘 같은 문제를 크게 띄우는 것뿐이었다(사용자) */}
                                             {/* [10/6] 검토 화면에서도 해설보기 — 예전엔 검색 화면에서만 보여 '해설보기가 어디 갔냐'(사용자) */}
                                             <div className="flex items-center gap-2 transition-opacity" data-no-drag="true">
                                                 <button
@@ -2088,8 +2086,6 @@ export default function QuestionBankPage() {
 
 
 
-                {/* [10/7] 해설 보기 창(SolutionViewerModal)과 같은 모양 — 제목·학교 줄·X 닫기·같은 너비·같은 본문 틀(사용자: 두 창이 달라 보임) */}
-                {zoomQuestion&&<div role="dialog" aria-modal="true" aria-label="문항 상세보기" className="rd rd-overlay" onWheel={e=>e.stopPropagation()} onClick={e=>{if(e.target===e.currentTarget)setZoomQuestion(null);}}><div className="rd-modal rd-modal-flush" style={{maxWidth:720}}><div className="rd-sheet-handle"/><div className="rd-modal-band rd-modal-head"><div style={{minWidth:0}}><h2 className="rd-modal-title">문항 보기</h2><p className="rd-modal-sub">{zoomQuestion.school} {zoomQuestion.year||zoomQuestion.exam_year} #{zoomQuestion.question_number||'?'}</p></div><button autoFocus aria-label="문항 닫기" className="rd-modal-x" onClick={()=>setZoomQuestion(null)}><X size={20}/></button></div><div data-modal-scroll style={{flex:1,minHeight:0,overflow:'auto',padding:'0 20px 20px'}}><div className="rd-qview"><QuestionRenderer xmlContent={zoomQuestion.content_xml} externalImages={zoomQuestion.question_images} displayMode="question" showDownloadAction={false} className="border-none shadow-none p-0"/></div></div></div></div>}
                 {savedExam && (
                     <div role="dialog" aria-modal="true" aria-labelledby="saved-exam-title" className="rd rd-overlay">
                         <div className="rd-modal rd-modal-sm">
