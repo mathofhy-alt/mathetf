@@ -81,7 +81,7 @@ export function RdHomeFeatures() {
                         <h2 className="rd-h2">받은 뒤에도<br />한글에서 편집하세요</h2>
                         <p className="rd-lead">정답과 해설이 미주로 들어간 편집용 HML 파일로 받아요. 줄바꿈만 다듬어 바로 인쇄하면 됩니다.</p>
                     </div>
-                    <div className="rd-pic"><div className="rd-paper"><Image src="/home/paper.webp" alt="한글에서 만든 시험지 첫 쪽" width={1200} height={1052} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                    <div className="rd-pic"><div className="rd-paper"><Image src="/home/paper-2.webp" alt="한글에서 만든 시험지 첫 쪽" width={1200} height={1052} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
             {/* [10/7] 헤더 버튼으로만 있던 두 기능 설명(사용자 제안) */}
@@ -104,7 +104,7 @@ export function RdHomeFeatures() {
                         <p className="rd-lead">수업에 쓰는 프린트나 자료를 올려 주시면 문항 DB로 만들어 회원님의 시험지 만들기에만 넣어 드려요. 다른 회원에게는 보이지 않고, 처리 결과는 마이페이지에서 안내해 드려요.</p>
                         <OpenEventButton event="open-db-request" className="rd-btn rd-btn-primary rd-feature-cta">개인DB 요청하기</OpenEventButton>
                     </div>
-                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/dbreq.webp" alt="자료 파일을 올리고 필요한 범위를 적는 개인DB 요청 창" width={1120} height={1036} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/dbreq-2.webp" alt="자료 파일을 올리고 필요한 범위를 적는 개인DB 요청 창" width={1120} height={1036} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
         </>

@@ -31,7 +31,7 @@ const STEPS = [
         label: '내려받은 뒤에도, 한글에서 편집하세요',
         description: '로그인 후 저장하고 내려받아 한글에서 여세요. 줄바꿈과 페이지 배치를 다듬어 인쇄하면 됩니다. 직접 만든 시험지의 다운로드 형식은 HML이고, PDF가 필요하면 한글에서 저장하세요.',
         tip: '수식과 그림, 페이지 배치는 출력 전에 한 번 확인하세요.',
-        image: { src: '/home/paper.webp', width: 1200, height: 1052, alt: '한글에서 연 시험지 첫 쪽' },
+        image: { src: '/home/paper-2.webp', width: 1200, height: 1052, alt: '한글에서 연 시험지 첫 쪽' },
         wide: false,
     },
 ];
