@@ -78,10 +78,10 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
             <div className="rd-x-left">
               <section id="exam-preview" className="rd-x-prev" aria-labelledby="exam-preview-title">
                 <div className="rd-x-prev-head">
-                  <h2 id="exam-preview-title">시험지 전체 미리보기</h2>
+                  <h2 id="exam-preview-title">시험지 미리보기</h2>
                   <p>로그인 없이 볼 수 있어요. 해설은 빠져 있습니다.</p>
                 </div>
-                {previews.length > 0 ? <ExamPreview images={previews} label={previewLabel} /> : <p className="rd-x-empty">미리보기를 준비 중입니다.</p>}
+                {previews.length > 0 ? <ExamPreview examId={row.id} first={previews[0]} total={previews.length} label={previewLabel} /> : <p className="rd-x-empty">미리보기를 준비 중입니다.</p>}
               </section>
 
               {editorial && <ExamEditorialArticle editorial={editorial} />}

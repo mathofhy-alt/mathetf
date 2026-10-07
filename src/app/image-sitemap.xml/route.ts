@@ -37,7 +37,8 @@ export async function GET() {
         }
 
         const body = rows.map((r) => {
-            const urls: string[] = Array.isArray(r.preview_urls) ? r.preview_urls : [];
+            // [10/7] 미리보기 2쪽부터는 회원만 — 검색엔진에도 1쪽만 알린다
+            const urls: string[] = Array.isArray(r.preview_urls) ? r.preview_urls.slice(0, 1) : [];
             if (!urls.length) return '';
             const label = `${r.school} ${r.exam_year}년 ${r.grade}학년 ${r.semester}학기 ${r.exam_type} ${r.subject}`;
             const imgs = urls.map((u, i) =>

@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description =
         `${subject}로 등록된 기출 자료입니다. ` +
         `${hub.schoolCount}개교를 포함한 보유 기출 ${hub.total.toLocaleString()}문항을 단원·난이도로 분류해 ` +
-        `실제 출제 분포를 정리했습니다. 시험지 미리보기는 공개이며, 제공 회차의 해설 없는 전체 문제 PDF는 회원 무료입니다.`;
+        `실제 출제 분포를 정리했습니다. 시험지 미리보기 1쪽은 공개(전체는 회원)이며, 제공 회차의 해설 없는 전체 문제 PDF는 회원 무료입니다.`;
     return {
         title,
         description,

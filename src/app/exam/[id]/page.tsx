@@ -260,7 +260,7 @@ export default async function ExamDetailPage({ params }: Props) {
             '@context': 'https://schema.org',
             '@type': 'LearningResource',
             name: `${label} 수학 기출문제 미리보기`,
-            description: `${label} 문제 미리보기는 전체 공개됩니다. 문제만 있는 PDF는 로그인 회원에게 무료이며, 해설 포함 자료는 별도 제공됩니다. ${narrative[0] || ''}`.trim(),
+            description: `${label} 문제 미리보기 1쪽은 누구나, 전체 쪽은 회원이 볼 수 있습니다. 문제만 있는 PDF는 로그인 회원에게 무료이며, 해설 포함 자료는 별도 제공됩니다. ${narrative[0] || ''}`.trim(),
             url,
             learningResourceType: '기출문제',
             educationalUse: '시험 대비',
@@ -270,7 +270,7 @@ export default async function ExamDetailPage({ params }: Props) {
             isAccessibleForFree: true,
             provider: { '@type': 'Organization', name: '수학ETF', url: 'https://mathetf.com' },
             ...(row.exam_year ? { dateCreated: String(row.exam_year) } : {}),
-            ...(previews.length ? { image: previews } : {}),
+            ...(previews.length ? { image: previews.slice(0, 1) } : {}),   // [10/7] 2쪽부터는 회원만 — 구조화 데이터에도 1쪽만
         },
         {
             '@context': 'https://schema.org',

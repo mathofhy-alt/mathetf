@@ -33,7 +33,7 @@ export default function GuidePage() {
                     <p className="rd-kicker">시험지 만들기 사용법</p>
                     <h1 id="guide-title" className="rd-tc-h1 rd-gd-h1">고르는 순간부터,<br />시험지를 받는 순간까지.</h1>
                     <p className="rd-lead">우리 학교 시험지를 찾거나, 기출 5문항으로 먼저 체험하세요. 필요한 문항을 담아 나만의 시험지로 만들 수 있습니다.</p>
-                    <p className="rd-gd-note">시험지 전체 미리보기는 비회원도 볼 수 있습니다. 회원은 제공 회차의 <strong>해설 없는 전체 문제 PDF</strong>를 무료로 받을 수 있고, <strong>문제+해설 원본 PDF와 HWP</strong>는 별도 구매입니다. 직접 만든 시험지는 편집용 <strong>HML</strong>로 받습니다.</p>
+                    <p className="rd-gd-note">시험지 미리보기 1쪽은 누구나, 전체 쪽은 회원이 볼 수 있습니다. 회원은 제공 회차의 <strong>해설 없는 전체 문제 PDF</strong>를 무료로 받을 수 있고, <strong>문제+해설 원본 PDF와 HWP</strong>는 별도 구매입니다. 직접 만든 시험지는 편집용 <strong>HML</strong>로 받습니다.</p>
                     <div className="rd-tc-actions">
                         <Link className="rd-btn rd-btn-primary" href="/question-bank?demo=1&origin=guide">기출 5문항으로 시작</Link>
                         <Link className="rd-btn rd-btn-gray" href="/schools">우리 학교 기출 찾기</Link>

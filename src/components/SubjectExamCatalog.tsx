@@ -42,6 +42,6 @@ export default function SubjectExamCatalog({ exams, subject }: { exams: SubjectH
             <Link href={`/exam/${exam.id}`} className="rd-btn rd-btn-gray rd-ct-exbtn">{exam.hasPreview?'미리보기·자료 보기':'자료 확인'}</Link>
         </article>)}
         {!filtered.length&&<p className="rd-ct-none">이 조건의 자료는 아직 없습니다. 학교명이나 시험 조건을 바꿔보세요.</p>}</div>
-        <p className="rd-x-note rd-ct-catfoot">문제 미리보기는 로그인 없이 볼 수 있습니다. 제공 회차의 전체 문제 PDF는 회원 무료이며, 문제+해설 PDF·HWP는 별도 구매입니다. 시험지 상세 페이지에서 문항을 골라 출제로 이어갈 수 있습니다.</p>
+        <p className="rd-x-note rd-ct-catfoot">문제 미리보기 1쪽은 로그인 없이, 전체 쪽은 회원이 볼 수 있습니다. 제공 회차의 전체 문제 PDF는 회원 무료이며, 문제+해설 PDF·HWP는 별도 구매입니다. 시험지 상세 페이지에서 문항을 골라 출제로 이어갈 수 있습니다.</p>
     </section>;
 }
