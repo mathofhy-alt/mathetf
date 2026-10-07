@@ -162,9 +162,9 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
             {!hasMore && !isMock && <div className="rd-x-report">
               <div>
                 <h3>{row.school}의 다른 시험지를 갖고 계신가요?</h3>
-                <p>원본을 제보해 주시면 확인 후 이 학교 페이지에 올려 드려요.</p>
+                <p>시험지 사진을 보내 주시면 수식·그림까지 한글 파일로 만들어 드리고, 이 학교 페이지에도 올려 드려요.</p>
               </div>
-              <ReportSchoolButton label="원본 제보하기" className="rd-btn rd-btn-primary" />
+              <ReportSchoolButton label="무료 타이핑 신청" className="rd-btn rd-btn-primary" />
             </div>}
 
             <div className="rd-x-links">

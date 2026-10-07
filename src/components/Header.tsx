@@ -204,9 +204,9 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
                         {/* 원본 시험지 제보 (회원 누구나) — 운영자는 아래 자료등록을 쓴다 */}
                         {!isAdmin && (
-                            <button type="button" onClick={() => openReport()} title="원본 제보" aria-label="원본 제보" className="rd-feature-btn hidden lg:inline-flex">
+                            <button type="button" onClick={() => openReport()} title="무료 타이핑" aria-label="무료 타이핑" className="rd-feature-btn hidden lg:inline-flex">
                                 {/* 1400px 아래에선 아이콘만 — 두 버튼이 메뉴(사용법)를 덮었다(10/6 1024·1280 실측) */}
-                                <Camera size={16} aria-hidden="true" /> <span className="hidden min-[1200px]:inline">원본 제보</span>
+                                <Camera size={16} aria-hidden="true" /> <span className="hidden min-[1200px]:inline">무료 타이핑</span>
                             </button>
                         )}
                         {!isAdmin && (
@@ -323,8 +323,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         )}
                         {!isAdmin && (
                             <button type="button" onClick={() => openReport()} className="rd-m-link rd-m-btn">
-                                <Camera size={20} /> 원본 시험지 제보
-                                <span className="rd-m-note">채택 시 {REPORT_REWARD_LABEL}</span>
+                                <Camera size={20} /> 무료 타이핑 신청
+                                <span className="rd-m-note">한글 파일 + {REPORT_REWARD_LABEL}</span>
                             </button>
                         )}
                         {!isAdmin && (

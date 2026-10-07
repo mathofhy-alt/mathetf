@@ -100,12 +100,12 @@ export function RdHomeFeatures() {
             <section className="rd-feature">
                 <div className="rd-wrap rd-split rd-reverse">
                     <div className="rd-txt">
-                        <p className="rd-kicker">원본 제보</p>
-                        <h2 className="rd-h2">우리 학교 시험지가 없나요?<br />사진으로 보내 주세요</h2>
-                        <p className="rd-lead">학교에서 받은 수학 시험지를 스캔 PDF나 휴대폰 사진으로 올려 주세요. 정리해서 사이트에 올리고, 채택되면 {REPORT_REWARD_LABEL}를 드려요.</p>
-                        <OpenEventButton event="open-original-report" className="rd-btn rd-btn-primary rd-feature-cta">원본 제보하기</OpenEventButton>
+                        <p className="rd-kicker">무료 타이핑</p>
+                        <h2 className="rd-h2">시험지 사진만 보내면<br />한글 파일로 만들어 드려요</h2>
+                        <p className="rd-lead">학교에서 받은 수학 시험지를 스캔 PDF나 휴대폰 사진으로 보내 주세요. 채택되면 수식과 그림까지 타이핑한 한글 파일을 마이페이지로 보내 드리고, {REPORT_REWARD_LABEL}도 드려요.</p>
+                        <OpenEventButton event="open-original-report" className="rd-btn rd-btn-primary rd-feature-cta">무료 타이핑 신청</OpenEventButton>
                     </div>
-                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/report.webp" alt="학교와 시험을 고르고 시험지 사진을 올리는 원본 제보 창" width={1200} height={1360} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/report-2.webp" alt="학교와 시험을 고르고 시험지 사진을 올리는 무료 타이핑 신청 창" width={1200} height={1360} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
             <section className="rd-feature rd-zone">

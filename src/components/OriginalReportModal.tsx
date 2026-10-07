@@ -125,15 +125,15 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
             <div role="dialog" aria-modal="true" aria-labelledby="original-report-title" className="rd-modal" style={{ maxWidth: 600 }}>
                 <div className="rd-sheet-handle" />
                 <div className="rd-modal-head">
-                    <h2 id="original-report-title" className="rd-modal-title">원본 시험지 제보</h2>
+                    <h2 id="original-report-title" className="rd-modal-title">무료 타이핑 신청</h2>
                     <button type="button" aria-label="닫기" onClick={close} className="rd-modal-x"><X size={20} /></button>
                 </div>
 
                 {done ? (
                     <div className="text-center" style={{ padding: '32px 0 4px' }}>
                         <CheckCircle2 size={48} className="mx-auto text-[#1B7E7A]" />
-                        <p className="mt-4 text-[18px] font-bold text-[#17202C]">제보가 접수됐어요. 고맙습니다!</p>
-                        <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 채택되면 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드려요.<br />채택된 시험지는 정리해서 사이트에 올라갑니다.</p>
+                        <p className="mt-4 text-[18px] font-bold text-[#17202C]">신청이 접수됐어요. 고맙습니다!</p>
+                        <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 채택되면 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>
                         <div className="rd-modal-actions" style={{ marginTop: 28 }}>
                             <button type="button" onClick={close} className="rd-btn rd-btn-primary rd-btn-block">확인</button>
                         </div>
@@ -144,8 +144,8 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                             <div className="flex gap-3 rounded-[20px] bg-[#E8F6F5] px-4 py-[14px]">
                                 <Gift size={20} className="text-[#1B7E7A] shrink-0 mt-0.5" />
                                 <p className="m-0 text-[15px] leading-[1.6] text-[#17202C]">
-                                    학교에서 받은 수학 시험지를 <b>스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-[#1B7E7A]">채택되면 {REPORT_REWARD_LABEL}</b>를 드려요.
-                                    <span className="block text-[14px] text-[#5F6B78] mt-1">제보한 파일은 운영자만 봅니다.</span>
+                                    학교에서 받은 수학 시험지를 <b>스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-[#1B7E7A]">채택되면 수식·그림까지 타이핑한 한글 파일과 {REPORT_REWARD_LABEL}</b>를 드려요.
+                                    <span className="block text-[14px] text-[#5F6B78] mt-1">완성 파일은 마이페이지 › 내 요청에서 받아요. 올린 파일은 운영자만 봅니다.</span>
                                 </p>
                             </div>
 

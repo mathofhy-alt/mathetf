@@ -63,6 +63,29 @@ export default function RawUploadsAdmin() {
     const reportReply = (row: any): { text: string; at: string | null } => { try { const d = JSON.parse(row.description || '{}'); return { text: d.admin_reply || '', at: d.replied_at || null }; } catch { return { text: '', at: null }; } };
     const [drafts, setDrafts] = useState<Record<string, string>>({});
     const [savingReply, setSavingReply] = useState<string | null>(null);
+    // [10/8] 무료 타이핑 완성 파일 — 올리면 회원 마이페이지 › 내 요청에서 받는다
+    const typedFiles = (row: any): any[] => { try { const d = JSON.parse(row.description || '{}'); return Array.isArray(d.typed_files) ? d.typed_files : []; } catch { return []; } };
+    const [typedBusy, setTypedBusy] = useState<string | null>(null);
+    const setTyped = (id: string, list: any[]) => setUploads(prev => prev.map(x => { if (x.id !== id) return x; let d: any = {}; try { d = JSON.parse(x.description || '{}'); } catch { } return { ...x, description: JSON.stringify({ ...d, typed_files: list }) }; }));
+    const uploadTyped = async (row: any, file: File) => {
+        setTypedBusy(row.id);
+        try {
+            const call = (b: any) => fetch('/api/admin/raw-uploads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, ...b }) }).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || r.status); return j; });
+            const { path, token } = await call({ action: 'typed-upload-url', filename: file.name });
+            const { error } = await supabase.storage.from('exam-materials').uploadToSignedUrl(path, token, file, { contentType: file.type || 'application/octet-stream' });
+            if (error) throw new Error(error.message);
+            const j = await call({ action: 'typed-attach', path, name: file.name, size: file.size });
+            setTyped(row.id, j.typed_files);
+        } catch (e: any) { alert('파일을 올리지 못했습니다: ' + (e?.message || e)); }
+        setTypedBusy(null);
+    };
+    const removeTyped = async (row: any, path: string) => {
+        if (!confirm('이 완성 파일을 지울까요? 회원 마이페이지에서도 사라집니다.')) return;
+        const r = await fetch('/api/admin/raw-uploads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, action: 'typed-remove', path }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { alert('지우지 못했습니다: ' + (j.error || r.status)); return; }
+        setTyped(row.id, j.typed_files);
+    };
     // [10/7] 채택(보상 지급)한 제보는 '채택됨' 탭으로 — 할 일만 먼저 보이게(사용자 요청)
     const [tab, setTab] = useState<'open' | 'done'>('open');
     const shown = uploads.filter(u => (tab === 'done') === rewardedIds.has(u.id));
@@ -229,6 +252,16 @@ export default function RawUploadsAdmin() {
                                                             <span className="text-xs text-slate-400">{reportReply(file).at ? `저장됨 · ${new Date(reportReply(file).at!).toLocaleString('ko-KR')}` : '아직 안내 없음'}</span>
                                                             <button onClick={() => saveReply(file)} disabled={savingReply === file.id || drafts[file.id] === undefined} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-brand-600 text-white disabled:opacity-40">안내 저장</button>
                                                         </div>
+                                                    </div>
+                                                    <div className="mt-3">
+                                                        <div className="text-xs font-bold text-slate-600 mb-1">무료 타이핑 완성 파일 <span className="font-normal text-slate-400">— 올리면 회원이 마이페이지 &gt; 내 요청에서 받습니다</span></div>
+                                                        <ul className="space-y-1">
+                                                            {typedFiles(file).map((t: any) => <li key={t.path} className="flex items-center gap-2 text-xs"><span className="font-semibold text-slate-700">📄 {t.name}</span>{t.size ? <span className="text-slate-400">{Math.max(1, Math.round(t.size / 1024))}KB</span> : null}<button onClick={() => removeTyped(file, t.path)} className="text-rose-500 hover:underline">지우기</button></li>)}
+                                                        </ul>
+                                                        <label className={`mt-1 inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 ${typedBusy === file.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                            {typedBusy === file.id ? '올리는 중…' : '+ 완성 파일 올리기 (HWP·HWPX·HML·PDF·ZIP)'}
+                                                            <input type="file" accept=".hwp,.hwpx,.hml,.pdf,.zip" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void uploadTyped(file, f); }} />
+                                                        </label>
                                                     </div>
                                                     <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
                                                         <UserIcon size={11} />

@@ -91,9 +91,9 @@ export default function SchoolNeisPage({ s, nearby, toolLinks }: {
                     <div className="rd-x-report is-first">
                         <div>
                             <h2>{s.name} 시험지가 아직 없어요</h2>
-                            <p>학교에서 받은 수학 시험지를 스캔 PDF나 사진으로 올려 주세요. 채택되면 {REPORT_REWARD_LABEL}를 드리고, 정리한 시험지를 이 페이지에 올립니다.</p>
+                            <p>학교에서 받은 수학 시험지를 스캔 PDF나 사진으로 올려 주세요. 채택되면 수식·그림까지 타이핑한 한글 파일과 {REPORT_REWARD_LABEL}를 드리고, 이 페이지에도 올립니다.</p>
                         </div>
-                        <ReportSchoolButton code={s.code} label="이 학교 시험지 제보하기" className="rd-btn rd-btn-primary" />
+                        <ReportSchoolButton code={s.code} label="이 학교 시험지 무료 타이핑 신청" className="rd-btn rd-btn-primary" />
                     </div>
                 </section>
 

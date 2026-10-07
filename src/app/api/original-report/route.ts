@@ -77,6 +77,7 @@ export async function GET(req: NextRequest) {
                 title: `${r.school} ${r.exam_year}년 ${r.grade}학년 ${r.semester}학기 ${r.exam_type} ${r.subject}`,
                 count: Array.isArray(d.files) ? d.files.length : 1, note: d.note || null,
                 admin_reply: d.admin_reply || null, replied_at: d.replied_at || null,
+                typed_files: (Array.isArray(d.typed_files) ? d.typed_files : []).map((f: any, i: number) => ({ i, name: f?.name || '타이핑 파일', size: f?.size ?? null, at: f?.at ?? null })),
                 reward: reward.get(r.id) ?? null,
             };
         });
