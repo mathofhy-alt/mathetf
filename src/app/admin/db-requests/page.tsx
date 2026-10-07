@@ -32,6 +32,10 @@ export default function DbRequestsAdmin() {
     const [dForm, setDForm] = useState({ source: '', title: '', email: '', price: '0' });
     const [dSaving, setDSaving] = useState(false);
     const [progress, setProgress] = useState('');
+    // [10/7] 처리 끝난 요청(완료·반려)은 '완료' 탭으로 — 할 일만 먼저 보이게(사용자 요청)
+    const [tab, setTab] = useState<'open' | 'done'>('open');
+    const isDone = (r: any) => r.status === '완료' || r.status === '반려';
+    const shown = rows.filter(r => (tab === 'done') === isDone(r));
 
     const load = async () => {
         setLoading(true); setError('');
@@ -151,11 +155,19 @@ export default function DbRequestsAdmin() {
                     </li>)}
                 </ul>}
             </section>
+            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-1" role="group" aria-label="요청 구분">
+                {([['open', '처리 중'], ['done', '완료']] as const).map(([k, label]) => (
+                    <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)}
+                        className={`px-4 py-1.5 text-sm font-bold rounded-md ${tab === k ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
+                        {label} <span className="text-xs font-semibold text-slate-400">{rows.filter(r => (k === 'done') === isDone(r)).length}</span>
+                    </button>
+                ))}
+            </div>
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm divide-y divide-slate-100">
                 {loading ? <div className="p-16 text-center text-slate-400 font-bold">불러오는 중…</div>
                     : error ? <div className="p-16 text-center text-rose-600 font-bold">{error}</div>
-                    : rows.length === 0 ? <div className="p-16 text-center text-slate-500">요청이 없습니다.</div>
-                    : rows.map(row => (
+                    : shown.length === 0 ? <div className="p-16 text-center text-slate-500">{tab === 'open' ? '처리할 요청이 없습니다.' : '완료한 요청이 없습니다.'}</div>
+                    : shown.map(row => (
                         <div key={row.id} className="p-4 flex items-start gap-4">
                             <div className="flex-1 min-w-0 space-y-1">
                                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">

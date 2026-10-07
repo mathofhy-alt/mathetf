@@ -1883,3 +1883,4 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-my-sec-title { margin: 8px 0 12px; font-size: 18px; font-weight: 800; color: var(--rd-text); }
 .rd .rd-my-status svg { vertical-align: -2px; margin-right: 2px; }
 .rd .rd-my-pass span { white-space: nowrap; }
+.rd .rd-my-reqsec .rd-my-empty { padding-top: 28px; padding-bottom: 28px; } .rd .rd-my-reqsec .rd-my-empty-icon { display: none; }

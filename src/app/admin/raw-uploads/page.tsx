@@ -63,6 +63,9 @@ export default function RawUploadsAdmin() {
     const reportReply = (row: any): { text: string; at: string | null } => { try { const d = JSON.parse(row.description || '{}'); return { text: d.admin_reply || '', at: d.replied_at || null }; } catch { return { text: '', at: null }; } };
     const [drafts, setDrafts] = useState<Record<string, string>>({});
     const [savingReply, setSavingReply] = useState<string | null>(null);
+    // [10/7] 채택(보상 지급)한 제보는 '채택됨' 탭으로 — 할 일만 먼저 보이게(사용자 요청)
+    const [tab, setTab] = useState<'open' | 'done'>('open');
+    const shown = uploads.filter(u => (tab === 'done') === rewardedIds.has(u.id));
     const saveReply = async (row: any) => {
         setSavingReply(row.id);
         const r = await fetch('/api/admin/raw-uploads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, admin_reply: drafts[row.id] ?? reportReply(row).text }) });
@@ -182,15 +185,23 @@ export default function RawUploadsAdmin() {
                     </button>
                 </div>
 
+                <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-1" role="group" aria-label="제보 구분">
+                    {([['open', '검토 중'], ['done', '채택됨']] as const).map(([k, label]) => (
+                        <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)}
+                            className={`px-4 py-1.5 text-sm font-bold rounded-md ${tab === k ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
+                            {label} <span className="text-xs font-semibold text-slate-400">{uploads.filter(u => (k === 'done') === rewardedIds.has(u.id)).length}</span>
+                        </button>
+                    ))}
+                </div>
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     {isLoading ? (
                         <div className="p-20 text-center text-slate-400 font-bold animate-pulse text-lg">데이터를 스캔하는 중입니다...</div>
                     ) : (
                         <div className="divide-y divide-slate-100">
-                            {uploads.length === 0 && (
-                                <div className="py-20 text-center text-slate-500 font-medium">제보된 파일이 없습니다.</div>
+                            {shown.length === 0 && (
+                                <div className="py-20 text-center text-slate-500 font-medium">{tab === 'open' ? '검토할 제보가 없습니다.' : '채택한 제보가 없습니다.'}</div>
                             )}
-                            {uploads.map(file => {
+                            {shown.map(file => {
                                 return (
                                     <div key={file.id}>
                                         {/* 메인 행 */}
