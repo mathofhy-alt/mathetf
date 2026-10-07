@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 const key = (userId: string, kind: string) => `mathetf_pending_payment_${userId}_${kind}`;
-export async function payOrder(user: User, input: { kind: 'cart'; [key: string]: unknown }) {
+// [10/8] phone: 회원 정보에 휴대폰 번호가 없을 때 결제 창에서 받은 번호(포트원 카드 결제는 구매자 전화번호가 필수 — 비면 'phoneNumber' 오류)
+export async function payOrder(user: User, input: { kind: 'cart'; [key: string]: unknown }, phone?: string) {
     const complete = async (paymentId: string) => {
         const res = await fetch('/api/payments/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId }) });
         const data = await res.json();
@@ -24,7 +25,7 @@ export async function payOrder(user: User, input: { kind: 'cart'; [key: string]:
             paymentId: order.paymentId, orderName: order.name, totalAmount: order.amount, currency: 'CURRENCY_KRW', payMethod: 'CARD',
             products:order.products, customData: { orderId: order.paymentId },
             redirectUrl: `${window.location.origin}/payments/return`,
-            customer: { customerId: user.id, fullName: user.email?.split('@')[0] || 'User', email: user.email, phoneNumber: user.user_metadata?.phone || user.phone },
+            customer: { customerId: user.id, fullName: user.email?.split('@')[0] || 'User', email: user.email, phoneNumber: user.user_metadata?.phone || user.phone || phone },
         });
         if (response?.code != null) {
             return complete(order.paymentId); // Verify even an SDK failure before allowing a fresh payment.

@@ -1941,3 +1941,6 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 @media (prefers-reduced-motion: reduce) { .rd .rd-pass-bubble, .rd .rd-pass-dot { animation: none; } }
 @media (max-width: 640px) { .rd .rd-pass-card { margin-top: 30px; } }
 .rd .rd-pass-card:has(.rd-pass-bubble) { margin-top: 30px; }
+.rd .rd-pass-phone { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.rd .rd-pass-phone > span { font-size: 14px; font-weight: 700; color: var(--rd-text); }
+.rd .rd-pass-phone small { margin-left: 6px; font-size: 12px; font-weight: 500; color: var(--rd-sub); }

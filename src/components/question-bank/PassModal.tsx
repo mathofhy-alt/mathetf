@@ -5,6 +5,7 @@ import { Check, X } from 'lucide-react';
 import { payOrder } from '@/lib/payments/client';
 import { QB_PASS } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
+import { createClient } from '@/utils/supabase/client';
 
 export type PassInfo = { unlimited: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string; viewers?: number | null };
 
@@ -28,10 +29,18 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
     // [10/7] 환불 불가 동의 — 사용자 결정(사용 0회여도 환불 안 함). 동의해야 결제 버튼이 눌린다.
     const [agree, setAgree] = useState(false);
     const [showRefund, setShowRefund] = useState(false);
+    // [10/8] 휴대폰 번호가 없는 계정(회원 1,319명 중 6명, 예전 가입) — 포트원 카드 결제가 전화번호를 필수로 요구한다
+    const needPhone = !(user?.user_metadata?.phone || user?.phone);
+    const [phone, setPhone] = useState('');
+    const phoneOk = !needPhone || /^01[016789]\d{7,8}$/.test(phone.replace(/[^0-9]/g, ''));
     const buy = async () => {
-        if (busy || !agree) return;
+        if (busy || !agree || !phoneOk) return;
         setBusy(true); setErr('');
-        try { await payOrder(user, { kind: 'cart', items: [{ item_id: QB_PASS.itemId }], usedPoints: 0 }); onPaid(); }
+        try {
+            const digits = phone.replace(/[^0-9]/g, '');
+            if (needPhone) await createClient().auth.updateUser({ data: { phone: digits } }).catch(() => null);   // 다음 결제부터는 묻지 않게
+            await payOrder(user, { kind: 'cart', items: [{ item_id: QB_PASS.itemId }], usedPoints: 0 }, needPhone ? digits : undefined); onPaid();
+        }
         catch (e: any) { setErr(e?.message || '결제를 마치지 못했습니다.'); }
         setBusy(false);
     };
@@ -59,13 +68,17 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                         <li><Check size={16} aria-hidden="true" /> 기간 중에 다시 사면 끝나는 날에 {QB_PASS.days}일이 이어 붙어요</li>
                     </ul>
                 </div>
+                {needPhone && <label className="rd-pass-phone">
+                    <span>결제에 쓸 휴대폰 번호 <small>카드 결제에 꼭 필요해요</small></span>
+                    <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="01012345678" value={phone} onChange={e => setPhone(e.target.value)} className="rd-input" />
+                </label>}
                 <label className="rd-pass-agree">
                     <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} />
                     <span>이용권은 결제 즉시 이용이 시작되어, <b>결제 후에는 사용하지 않았더라도 환불되지 않는다</b>는 데 동의합니다. <button type="button" onClick={() => setShowRefund(true)}>환불 정책 보기</button></span>
                 </label>
                 {err && <p className="rd-pass-err" role="alert">{err}</p>}
                 <div className="rd-modal-actions">
-                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy || !agree}>{busy ? '결제 진행 중…' : `${QB_PASS.salePrice.toLocaleString()}원 결제하기`}</button>
+                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy || !agree || !phoneOk}>{busy ? '결제 진행 중…' : `${QB_PASS.salePrice.toLocaleString()}원 결제하기`}</button>
                     <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={onClose}>{out ? '다음 주에 할게요' : '닫기'}</button>
                 </div>
                 <p className="rd-pass-fine">담아 둔 문항은 그대로 남아 있어요. 결제 후 다시 저장을 누르면 됩니다.</p>
