@@ -64,8 +64,25 @@ export default function RawUploadsAdmin() {
     const [drafts, setDrafts] = useState<Record<string, string>>({});
     const [savingReply, setSavingReply] = useState<string | null>(null);
     // [10/7] 채택(보상 지급)한 제보는 '채택됨' 탭으로 — 할 일만 먼저 보이게(사용자 요청)
-    const [tab, setTab] = useState<'open' | 'done'>('open');
-    const shown = uploads.filter(u => (tab === 'done') === rewardedIds.has(u.id));
+    const [tab, setTab] = useState<'open' | 'done' | 'rejected'>('open');
+    // [10/8] 반려 — 사유를 남기고 파일은 지우고 같은 시험을 다시 신청할 수 있게 연다
+    const isRejected = (row: any) => { try { return JSON.parse(row.description || '{}').rejected === true; } catch { return false; } };
+    const tabOf = (u: any) => rewardedIds.has(u.id) ? 'done' : isRejected(u) ? 'rejected' : 'open';
+    const shown = uploads.filter(u => tabOf(u) === tab);
+    const rejectReport = async (row: any) => {
+        const reason = (drafts[row.id] ?? reportReply(row).text).trim();
+        if (!reason) { alert('반려 사유를 위 "회원에게 보낼 안내" 칸에 먼저 적어 주세요. 회원 마이페이지에 그대로 보입니다.'); return; }
+        if (!confirm(`이 신청을 반려할까요?
+
+· 사유: ${reason}
+· 올린 사진·PDF는 지워집니다(복구 불가)
+· 같은 시험을 다시 신청할 수 있게 열립니다`)) return;
+        const r = await fetch('/api/admin/raw-uploads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, admin_reply: reason, reject: true }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { alert('반려하지 못했습니다: ' + (j.error || r.status)); return; }
+        setUploads(prev => prev.map(x => x.id === row.id ? { ...x, description: j.description } : x));
+        setDrafts(prev => { const n = { ...prev }; delete n[row.id]; return n; });
+    };
     const saveReply = async (row: any) => {
         setSavingReply(row.id);
         const r = await fetch('/api/admin/raw-uploads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, admin_reply: drafts[row.id] ?? reportReply(row).text }) });
@@ -186,10 +203,10 @@ export default function RawUploadsAdmin() {
                 </div>
 
                 <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-1" role="group" aria-label="제보 구분">
-                    {([['open', '검토 중'], ['done', '채택됨']] as const).map(([k, label]) => (
+                    {([['open', '검토 중'], ['done', '채택됨'], ['rejected', '반려']] as const).map(([k, label]) => (
                         <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)}
                             className={`px-4 py-1.5 text-sm font-bold rounded-md ${tab === k ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
-                            {label} <span className="text-xs font-semibold text-slate-400">{uploads.filter(u => (k === 'done') === rewardedIds.has(u.id)).length}</span>
+                            {label} <span className="text-xs font-semibold text-slate-400">{uploads.filter(u => tabOf(u) === k).length}</span>
                         </button>
                     ))}
                 </div>
@@ -199,7 +216,7 @@ export default function RawUploadsAdmin() {
                     ) : (
                         <div className="divide-y divide-slate-100">
                             {shown.length === 0 && (
-                                <div className="py-20 text-center text-slate-500 font-medium">{tab === 'open' ? '검토할 제보가 없습니다.' : '채택한 제보가 없습니다.'}</div>
+                                <div className="py-20 text-center text-slate-500 font-medium">{tab === 'open' ? '검토할 제보가 없습니다.' : tab === 'done' ? '채택한 제보가 없습니다.' : '반려한 제보가 없습니다.'}</div>
                             )}
                             {shown.map(file => {
                                 return (
@@ -239,7 +256,9 @@ export default function RawUploadsAdmin() {
 
                                                 {/* 액션 버튼 */}
                                                 <div className="flex items-center gap-2 shrink-0">
-                                                    {rewardedIds.has(file.id) ? (
+                                                    {isRejected(file) ? (
+                                                        <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 text-slate-500 border border-slate-200">반려됨</span>
+                                                    ) : rewardedIds.has(file.id) ? (
                                                         <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-amber-100 text-amber-700 border border-amber-200">
                                                             <Coins size={13} /> 채택됨 · {REPORT_REWARD_LABEL}
                                                         </span>
@@ -253,6 +272,8 @@ export default function RawUploadsAdmin() {
                                                             <Coins size={13} /> {rewardingId === file.id ? '지급 중…' : `채택 +${REPORT_REWARD_LABEL}`}
                                                         </button>
                                                     )}
+                                                    {!isRejected(file) && !rewardedIds.has(file.id) && <button onClick={() => rejectReport(file)} title="반려 — 사유를 남기고 파일을 지우고 재신청을 연다"
+                                                        className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-lg bg-white text-slate-600 border border-slate-200 hover:bg-slate-100">반려</button>}
                                                     <button
                                                         onClick={() => handleDownloadAll(file)}
                                                         title={`다운로드 (${reportFiles(file).length}장)`}

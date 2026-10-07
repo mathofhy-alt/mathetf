@@ -47,10 +47,11 @@ async function examsOf(picked: NeisSchool) {
     const stem = picked.district.replace(/(특별자치시|시|군|구)$/, '');
     const full = Array.from(new Set([picked.name, picked.region + picked.name, stem + picked.name]));
     const twin = SCHOOLS.filter(x => x.name === picked.name).length > 1;   // 동명이교면 지역도 같아야 같은 학교
-    const { data } = await createAdminClient().from('exam_materials').select('exam_year, grade, semester, exam_type, subject, content_type, region').in('school', full);
+    const { data } = await createAdminClient().from('exam_materials').select('exam_year, grade, semester, exam_type, subject, content_type, region, description').in('school', full);
     const owned = new Set<string>(), pending = new Set<string>();
     for (const r of data || []) {
         if (twin && r.region && r.region !== picked.region) continue;
+        if (r.content_type === '원본제보' && /"rejected"\s*:\s*true/.test(r.description || '')) continue;   // [10/8] 반려된 신청은 다시 받는다
         const key = `${r.exam_year}-${r.grade}-${r.semester}-${r.exam_type}-${r.subject}`;
         (r.content_type === '원본제보' ? pending : owned).add(key);
     }
@@ -79,8 +80,9 @@ export async function GET(req: NextRequest) {
             return {
                 id: r.id, created_at: r.created_at,
                 title: `${r.school} ${r.exam_year}년 ${r.grade}학년 ${r.semester}학기 ${r.exam_type} ${r.subject}`,
-                count: Array.isArray(d.files) ? d.files.length : 1, note: d.note || null,
+                count: d.rejected ? (Number(d.removed_files) || 0) : Array.isArray(d.files) ? d.files.length : 1,   // 반려 때 파일은 지우지만 올린 장수는 그대로 보여 준다 note: d.note || null,
                 admin_reply: d.admin_reply || null, replied_at: d.replied_at || null,
+                rejected: d.rejected === true,
                 reward: reward.get(r.id) ?? null,
                 typed: typed.get(r.id) ?? null,
             };
