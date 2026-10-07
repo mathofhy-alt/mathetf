@@ -1504,7 +1504,7 @@ export default function QuestionBankPage() {
                     {user&&<details className="m-3 rounded-xl bg-white border p-3" open={recentOpen} onToggle={e=>setRecentOpen(e.currentTarget.open)}><summary className="cursor-pointer text-sm">최근 시험지 · 수정·재출제</summary><RecentExams refresh={storageRefreshKey} onRestore={restoreRecent} onCount={setSavedCount}/></details>}
 
                     {viewMode === 'search' ? (
-                        <header className="sticky top-0 z-10 flex justify-between items-center px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#BFE5E2]/60 shadow-sm">
+                        <header className="sticky top-0 z-10 flex flex-wrap justify-between items-center gap-2 px-3 sm:px-6 py-2 sm:py-4 bg-white/90 backdrop-blur-sm border-b border-[#BFE5E2]/60 shadow-sm">
                             <div className="flex items-center gap-2 min-w-0">
                                 <button
                                     className="md:hidden flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 flex-shrink-0"
@@ -1529,7 +1529,7 @@ export default function QuestionBankPage() {
                                 <h2 className="hidden sm:block sm:text-2xl font-bold text-gray-800 truncate">
                                     {selectedDbIds.length > 0 ? '문항 고르기' : '전체 문제 검색'}
                                 </h2>
-                                {(loading || hasSearched) && <span role="status" className="inline-flex shrink-0 rounded-full bg-[#E8F6F5] px-2.5 py-1 text-xs font-bold text-[#1B7E7A]">{loading ? '문항 검색 중…' : `검색 결과 ${countIsEstimate ? '약 ' : ''}${totalQuestions.toLocaleString()}문항`}</span>}
+                                {(loading || hasSearched) && <span role="status" className="inline-flex shrink-0 rounded-full bg-[#E8F6F5] px-2.5 py-1 text-xs font-bold text-[#1B7E7A]">{loading ? '검색 중…' : <><span className="sm:hidden">{countIsEstimate ? '약 ' : ''}{totalQuestions.toLocaleString()}문항</span><span className="hidden sm:inline">검색 결과 {countIsEstimate ? '약 ' : ''}{totalQuestions.toLocaleString()}문항</span></>}</span>}
                             </div>
                             <div className="flex gap-1.5 sm:gap-2 items-center">
                                 {/* 카드 크기(열 수) 토글 — lg 이상에서만 의미 있음 */}
@@ -1633,7 +1633,7 @@ export default function QuestionBankPage() {
                                                 {Object.entries(SORT_OPTIONS).map(([k, v]) => (
                                                     <option key={k} value={k} disabled={
                                                         (sortKeys.includes(k) && sortKeys[idx] !== k) ||
-                                                        (sortKeys[idx] !== k && sortKeys.some(sk => (SORT_CONFLICTS[sk] || []).includes(k)))
+                                                        (sortKeys[idx] !== k && sortKeys.some((sk, j) => j !== idx && (SORT_CONFLICTS[sk] || []).includes(k)))
                                                     }>{v.label}</option>
                                                 ))}
                                             </select>
