@@ -14,7 +14,7 @@ import { Search } from 'lucide-react';
 /** [10/8] 홈 맨 위 안내 띠 — 유료화 공지(10/13 0시). 10/20 지나면 저절로 숨는다 */
 export function RdAnnounce() {
     if (Date.now() > new Date('2026-10-20T00:00:00+09:00').getTime()) return null;
-    return <Link href="/notice/change-2026-10" className="rd-announce">10월 13일(월)부터 시험지 만들기 무료는 주 2회로 바뀝니다. 시험지 원본을 보내 주시면 포인트를 드려요<b>자세히 →</b></Link>;
+    return <Link href="/notice/change-2026-10" className="rd-announce">10월 12일(월)부터 시험지 만들기 무료는 주 2회로 바뀝니다. 시험지 원본을 보내 주시면 포인트를 드려요<b>자세히 →</b></Link>;
 }
 
 export function RdHomeHero({ onSearch, onFindFreePdf }: { onSearch: (keyword: string) => void; onFindFreePdf: () => void }) {
