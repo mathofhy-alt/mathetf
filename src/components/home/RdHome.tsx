@@ -4,6 +4,8 @@
  * 2026-10 디자인 개편 — 홈 새 화면 조각들. 디자인: 캔버스 'A안 다듬기'(A2.dc.html) + 디자인 규칙(Rules.dc.html).
  * 스타일은 src/app/redesign.css 의 .rd 아래 클래스. 기능(학교 검색·무료 PDF 찾기)은 예전 HomeStart 와 같은 콜백을 쓴다.
  */
+import OpenEventButton from './OpenEventButton';
+import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, type FormEvent } from 'react';
@@ -80,6 +82,29 @@ export function RdHomeFeatures() {
                         <p className="rd-lead">정답과 해설이 미주로 들어간 편집용 HML 파일로 받아요. 줄바꿈만 다듬어 바로 인쇄하면 됩니다.</p>
                     </div>
                     <div className="rd-pic"><div className="rd-paper"><Image src="/home/paper.webp" alt="한글에서 만든 시험지 첫 쪽" width={1200} height={1052} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                </div>
+            </section>
+            {/* [10/7] 헤더 버튼으로만 있던 두 기능 설명(사용자 제안) */}
+            <section className="rd-feature rd-zone">
+                <div className="rd-wrap rd-split">
+                    <div className="rd-txt">
+                        <p className="rd-kicker">원본 제보</p>
+                        <h2 className="rd-h2">우리 학교 시험지가 없나요?<br />사진으로 보내 주세요</h2>
+                        <p className="rd-lead">학교에서 받은 수학 시험지를 스캔 PDF나 휴대폰 사진으로 올려 주세요. 정리해서 사이트에 올리고, 채택되면 {REPORT_REWARD_LABEL}를 드려요.</p>
+                        <OpenEventButton event="open-original-report" className="rd-btn rd-btn-primary rd-feature-cta">원본 제보하기</OpenEventButton>
+                    </div>
+                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/report.webp" alt="학교와 시험을 고르고 시험지 사진을 올리는 원본 제보 창" width={1200} height={1360} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                </div>
+            </section>
+            <section className="rd-feature">
+                <div className="rd-wrap rd-split rd-reverse">
+                    <div className="rd-txt">
+                        <p className="rd-kicker">개인DB 요청</p>
+                        <h2 className="rd-h2">가진 교재와 프린트도<br />시험지 재료로</h2>
+                        <p className="rd-lead">쓰고 있는 시중 교재나 프린트를 올려 주시면 문항 DB로 만들어 회원님의 시험지 만들기에만 넣어 드려요. 다른 회원에게는 보이지 않고, 처리 결과는 마이페이지에서 안내해 드려요.</p>
+                        <OpenEventButton event="open-db-request" className="rd-btn rd-btn-primary rd-feature-cta">개인DB 요청하기</OpenEventButton>
+                    </div>
+                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/dbreq.webp" alt="교재 파일을 올리고 교재 이름을 적는 개인DB 요청 창" width={1120} height={1036} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
         </>

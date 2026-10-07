@@ -1884,3 +1884,8 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-my-status svg { vertical-align: -2px; margin-right: 2px; }
 .rd .rd-my-pass span { white-space: nowrap; }
 .rd .rd-my-reqsec .rd-my-empty { padding-top: 28px; padding-bottom: 28px; } .rd .rd-my-reqsec .rd-my-empty-icon { display: none; }
+/* 10/7 홈 — 원본 제보·개인DB 요청 설명 칸 */
+.rd .rd-feature-cta { margin-top: 24px; }
+.rd .rd-paper-modal { padding-bottom: 48px; }
+.rd .rd-paper-modal img { width: 78%; border-radius: 20px; }
+@media (max-width: 760px) { .rd .rd-paper-modal { padding-bottom: 28px; } .rd .rd-paper-modal img { width: 92%; } }

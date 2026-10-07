@@ -106,6 +106,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     useEffect(() => { setAccountOpen(false); }, [pathname]);
     const openDbRequest = () => { if (!user) { router.push(`/login?next=${authNext}`); return; } setDbRequestOpen(true); setMobileMenuOpen(false); };
     useEffect(() => { const h = (e: Event) => openReport((e as CustomEvent).detail?.code); window.addEventListener('open-original-report', h); return () => window.removeEventListener('open-original-report', h); });
+    // [10/7] 홈 설명 칸의 '개인DB 요청하기' 버튼도 같은 창을 연다
+    useEffect(() => { const h = () => openDbRequest(); window.addEventListener('open-db-request', h); return () => window.removeEventListener('open-db-request', h); });
 
     const handleDefaultUploadClick = () => {
         if (onUploadClick) {
