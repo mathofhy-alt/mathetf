@@ -13,6 +13,7 @@ import PasswordSettings from '@/components/PasswordSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import { deletePurchase } from './actions';
 import MyDbRequests from '@/components/MyDbRequests';
+import MyReports from '@/components/MyReports';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 
 export default function MyPage() {
@@ -337,7 +338,11 @@ export default function MyPage() {
                 </div>
 
                 <div className="rd-my-panel">
-                    {activeTab === 'requests' && <MyDbRequests />}
+                    {/* [10/7] 내 요청 = 원본 제보 + 개인DB 요청 — 둘 다 운영자 안내가 붙는다 */}
+                    {activeTab === 'requests' && <div className="rd-my-stack">
+                        <section aria-labelledby="my-reports-h"><h2 id="my-reports-h" className="rd-my-sec-title">원본 제보</h2><MyReports /></section>
+                        <section aria-labelledby="my-dbreq-h"><h2 id="my-dbreq-h" className="rd-my-sec-title">개인DB 요청</h2><MyDbRequests /></section>
+                    </div>}
 
                     {activeTab === 'settings' && (
                         <div className="rd-my-stack">

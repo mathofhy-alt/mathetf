@@ -1879,3 +1879,7 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-x-lock p b { font-size: 18px; font-weight: 800; color: var(--rd-text); }
 .rd .rd-x-lock-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .rd .rd-x-pager-note { font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+/* 10/7 마이페이지 내 요청 — 원본 제보·개인DB 요청 두 묶음 */
+.rd .rd-my-sec-title { margin: 8px 0 12px; font-size: 18px; font-weight: 800; color: var(--rd-text); }
+.rd .rd-my-status svg { vertical-align: -2px; margin-right: 2px; }
+.rd .rd-my-pass span { white-space: nowrap; }

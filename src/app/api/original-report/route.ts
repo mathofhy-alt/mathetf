@@ -57,6 +57,31 @@ async function examsOf(picked: NeisSchool) {
 }
 
 export async function GET(req: NextRequest) {
+    // [10/7] 마이페이지 › 내 요청 — 내가 올린 원본 제보와 운영자 안내·채택 여부(본인 것만)
+    if (req.nextUrl.searchParams.get('mine')) {
+        const { data: { user } } = await createClient().auth.getUser();
+        if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+        const admin = createAdminClient();
+        const { data, error } = await admin.from('exam_materials')
+            .select('id, school, exam_year, grade, semester, exam_type, subject, description, created_at')
+            .eq('content_type', '원본제보').eq('uploader_id', user.id).order('created_at', { ascending: false }).limit(100);
+        if (error) return NextResponse.json({ error: '제보 내역을 불러오지 못했습니다.' }, { status: 500 });
+        const ids = (data || []).map(r => r.id);
+        const { data: rewards } = ids.length ? await admin.from('point_transactions').select('related_id, amount').eq('user_id', user.id).eq('type', 'submission_reward').in('related_id', ids) : { data: [] as any[] };
+        const reward = new Map((rewards || []).map(r => [r.related_id, r.amount]));
+        const reports = (data || []).map(r => {
+            let d: any = {};
+            try { d = JSON.parse(r.description || '{}') || {}; } catch { }
+            return {
+                id: r.id, created_at: r.created_at,
+                title: `${r.school} ${r.exam_year}년 ${r.grade}학년 ${r.semester}학기 ${r.exam_type} ${r.subject}`,
+                count: Array.isArray(d.files) ? d.files.length : 1, note: d.note || null,
+                admin_reply: d.admin_reply || null, replied_at: d.replied_at || null,
+                reward: reward.get(r.id) ?? null,
+            };
+        });
+        return NextResponse.json({ reports }, { headers: { 'Cache-Control': 'private, no-store' } });
+    }
     const code = req.nextUrl.searchParams.get('code');
     if (code) {   // 학교를 고르면: 이미 있는/접수된 회차를 먼저 알려 줘 고를 수 없게 한다
         const picked = BY_CODE.get(code);
