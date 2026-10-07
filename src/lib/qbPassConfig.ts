@@ -22,3 +22,9 @@ export const QB_PASS_TERMS = [
 export const passTerm = (itemId: string) => QB_PASS_TERMS.find(t => t.itemId === itemId);
 export const termPrice = (months: number) => QB_PASS.salePrice * months;
 export const termTitle = (months: number) => `시험지 만들기 이용권 ${months}개월`;
+
+/** [10/8] 이용권 혜택 — 한 시험지 문항 수·보관함 개수(사용자 제안: 이용권 50·100). 문항 100은 저장 시간 실측 뒤 확정 */
+export const QB_LIMITS = {
+    free: { questions: 50, saved: 20 },
+    pass: { questions: 100, saved: 50 },
+} as const;

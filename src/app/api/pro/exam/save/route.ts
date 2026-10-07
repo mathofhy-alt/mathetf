@@ -4,6 +4,7 @@ import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
 import { privateCatalog, stripPrivate } from '@/lib/questions/privateDb';
 import { passStatus, recordUsage, QB_PASS } from '@/lib/qbPass';
+import { QB_LIMITS } from '@/lib/qbPassConfig';
 import { wholeCatalogIneligible } from '@/lib/questions/fastScope';
 import {resolveScope} from '@/lib/questions/scope';
 import {uuidPattern} from '@/lib/payments/order';
@@ -56,7 +57,9 @@ export async function POST(req: NextRequest) {
         console.log('[SaveAPI] Request received');
         const body = await req.json();
         const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
-        if (!Array.isArray(ids) || ids.length<1 || ids.length>50 || ids.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id)) || new Set(ids).size!==ids.length) return NextResponse.json({success:false,error:'서로 다른 문항을 1~50개 선택해주세요.'},{status:400});
+        // [10/8] 이용권이 있으면(또는 운영자) 한 시험지 문항 한도를 늘린다(QB_LIMITS)
+        const maxQ = (pass.passUntil || pass.unlimited) ? QB_LIMITS.pass.questions : QB_LIMITS.free.questions;
+        if (!Array.isArray(ids) || ids.length<1 || ids.length>maxQ || ids.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id)) || new Set(ids).size!==ids.length) return NextResponse.json({success:false,error:`서로 다른 문항을 1~${maxQ}개 선택해주세요.`},{status:400});
         if (typeof title!=='string' || !title.trim() || title.length>100 || ![1,2,3].includes(questionsPerColumn)) return NextResponse.json({success:false,error:'제목은 100자 이내, 열당 문항 수는 1~3개로 설정해주세요.'},{status:400});
         if (folderId && folderId!=='root') {
             if (!uuidPattern.test(folderId)) throw new Error('저장 폴더를 확인해주세요.');
@@ -70,7 +73,7 @@ export async function POST(req: NextRequest) {
 
 
         // [V74] Limit: Max 50 questions per exam
-        const MAX_QUESTIONS_PER_EXAM = 50;
+        const MAX_QUESTIONS_PER_EXAM = maxQ;
         const questionCount = ids?.length ?? rawQuestions?.length ?? 0;
         if (questionCount > MAX_QUESTIONS_PER_EXAM) {
             return NextResponse.json({

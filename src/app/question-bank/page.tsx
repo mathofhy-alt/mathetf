@@ -42,11 +42,11 @@ import { formatFileSize } from '@/lib/discovery';
 import UploadModal from '@/components/UploadModal';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 import LadderModal from '@/components/question-bank/LadderModal';
+import { QB_LIMITS } from '@/lib/qbPassConfig';
 import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
 
 
-const MAX_CART_SIZE = 50;
 
 // A/B형·가/나형 회차는 같은 학년·월·번호를 공유해서 카드 라벨이 완전히 똑같아진다
 // (2010 6월 가형 2번 = 나형 2번). 형은 source_db_id 끝토막에만 있으므로 그걸 꺼내 붙인다.
@@ -102,6 +102,8 @@ export default function QuestionBankPage() {
     // [10/7] 시험지 만들기 이용권 — 남은 무료 횟수·이용권 기간, 다 쓰면 결제 창
     const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
     const [showPass, setShowPass] = useState(false);
+    // [10/8] 이용권이 있으면 한 시험지 문항 한도가 늘어난다(QB_LIMITS) — 서버도 같은 기준으로 다시 확인
+    const MAX_CART_SIZE: number = (passInfo?.passUntil || passInfo?.unlimited) ? QB_LIMITS.pass.questions : QB_LIMITS.free.questions;
     const loadPass = useCallback(async () => {
         try { const r = await fetch('/api/qb-pass', { cache: 'no-store' }); const j = await r.json(); setPassInfo(r.ok && j.loggedIn && !j.error ? j : null); } catch { setPassInfo(null); }
     }, []);
