@@ -48,11 +48,12 @@ export function RdHomeShowcase() {
     );
 }
 
-export function RdHomeStats({ questionCount, schoolCount }: { questionCount: number; schoolCount: number }) {
+// [10/7] 사용자 요청: 보유 문항 수 · 최근 7일 업로드 문항 수 · 전국연합·평가원·수능 (학교 수는 뺌)
+export function RdHomeStats({ questionCount, recentCount }: { questionCount: number; recentCount: number }) {
     return (
         <section className="rd-wrap rd-stats" aria-label="수학ETF 자료 규모">
-            <div className="rd-stat"><b>{questionCount.toLocaleString()}</b><span>분류된 기출 문항</span></div>
-            <div className="rd-stat"><b>{schoolCount.toLocaleString()}</b><span>기출을 보유한 학교</span></div>
+            <div className="rd-stat"><b>{questionCount.toLocaleString()}</b><span>보유 문항 수</span></div>
+            <div className="rd-stat"><b>{recentCount.toLocaleString()}</b><span>최근 7일간 업로드된 문항 수</span></div>
             <div className="rd-stat"><b>2006–2026</b><span>전국연합, 평가원, 수능</span></div>
         </section>
     );

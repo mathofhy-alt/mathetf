@@ -9,7 +9,7 @@ import { countThisWeekUploads } from '@/lib/home-weekly-uploads';
 import { getSiteStats } from '@/lib/stats';
 
 // 홈 첫 화면 숫자(문항 수·학교 수) — 1시간 캐시, /teacher 와 같은 기준
-const getCachedStats = unstable_cache(async () => { const s = await getSiteStats(); return { questionCount: s.questionCount, schoolCount: s.schoolCount }; }, ['home-site-stats'], { revalidate: 3600 });
+const getCachedStats = unstable_cache(async () => { const s = await getSiteStats(); return { questionCount: s.questionCount, schoolCount: s.schoolCount, recentCount: s.recentCount }; }, ['home-site-stats-v2'], { revalidate: 3600 });
 
 // [PERF] 홈 ISR — 쿠키(auth) 읽기를 클라이언트로 내려 CDN 캐시 히트 확보 (TTFB ~900ms → ~150ms)
 // 업로드·삭제는 revalidatePath로 즉시 반영되므로 주기 재생성은 보험용 1시간이면 충분

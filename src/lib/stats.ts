@@ -21,17 +21,23 @@ export const NOT_A_SCHOOL = new Set(['경찰대학교', '사관학교', '전국�
 
 const PAGE = 1000;
 
-export type SiteStats = { questionCount: number; schoolCount: number; topSchools: string[] };
+// recentCount: 최근 7일 새로 등록된 문항 수(created_at 기준 — 교체 재등록은 id·created_at 유지라 안 섞임). 홈 숫자 칸(10/7).
+export type SiteStats = { questionCount: number; schoolCount: number; recentCount: number; topSchools: string[] };
 
 export async function getSiteStats(): Promise<SiteStats> {
     const supabase = createAdminClient();
-    const empty: SiteStats = { questionCount: 0, schoolCount: 0, topSchools: [] };
+    const empty: SiteStats = { questionCount: 0, schoolCount: 0, recentCount: 0, topSchools: [] };
 
     try {
         const { count } = await supabase
             .from('questions')
             .select('id', { count: 'exact', head: true })
             .eq('work_status', 'sorted');
+        const { count: recent } = await supabase
+            .from('questions')
+            .select('id', { count: 'exact', head: true })
+            .eq('work_status', 'sorted')
+            .gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString());
 
         // range 로 끝까지. 1,565행이면 2번이면 끝난다.
         const bySchool: Record<string, number> = {};
@@ -55,6 +61,7 @@ export async function getSiteStats(): Promise<SiteStats> {
 
         return {
             questionCount: count ?? 0,
+            recentCount: recent ?? 0,
             schoolCount: Object.keys(bySchool).length,
             topSchools: Object.entries(bySchool)
                 .sort((a, b) => b[1] - a[1])

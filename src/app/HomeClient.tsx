@@ -37,7 +37,7 @@ interface HomeClientProps {
     initialExamData: any[][];   // packHomeRow 로 압축된 행
     initialExamCount: number;
     thisWeekUploads: WeeklyUpload;
-    siteStats: { questionCount: number; schoolCount: number };
+    siteStats: { questionCount: number; schoolCount: number; recentCount: number };
     initialSchoolsRaw: any[];
 }
 
@@ -698,7 +698,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                 });
             }} />
             <RdHomeShowcase />
-            <RdHomeStats questionCount={siteStats.questionCount} schoolCount={siteStats.schoolCount} />
+            <RdHomeStats questionCount={siteStats.questionCount} recentCount={siteStats.recentCount} />
             <RdHomeFeatures />
 
 
