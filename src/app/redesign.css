@@ -1892,3 +1892,27 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 /* 10/7 문항 보기·해설 보기 창 본문 — 캡쳐가 폭을 꽉 채우게(rd-paper 는 홈 사진용이라 여백이 크고 그림을 82% 로 줄인다) */
 .rd .rd-qview { min-width: 0; background: var(--rd-panel); border-radius: 20px; padding: 12px; }
 .rd .rd-qview img { display: block; width: 100% !important; max-width: none !important; height: auto !important; margin: 0 auto; background: #fff; border-radius: 8px; }
+
+/* 10/7 수업 사다리 창 */
+.rd .rd-ladder { height: min(860px, calc(100dvh - 32px)); }
+.rd .rd-ladder-bar { flex: none; display: flex; align-items: center; gap: 12px; padding: 0 28px 14px; font-size: 14px; font-weight: 700; color: var(--rd-nav); }
+.rd .rd-ladder-body { flex: 1; min-height: 0; overflow: auto; padding: 4px 28px 20px; display: flex; flex-direction: column; gap: 18px; }
+.rd .rd-ladder-msg { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 40px 0; margin: 0; font-size: 15px; color: var(--rd-sub); }
+.rd .rd-ladder-step { border-radius: 20px; background: var(--rd-zone); padding: 16px; }
+.rd .rd-ladder-step.is-goal { background: var(--rd-tint); }
+.rd .rd-ladder-step header { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 12px; }
+.rd .rd-ladder-step header b { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; color: var(--rd-text); }
+.rd .rd-ladder-step header small { font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-ladder-no { width: 26px; height: 26px; border-radius: 8px; background: var(--rd-ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+.rd .rd-ladder-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.rd .rd-ladder-item { display: flex; flex-direction: column; gap: 8px; background: #fff; border-radius: 16px; padding: 12px; min-width: 0; }
+.rd .rd-ladder-item .rd-qview { padding: 6px; }
+.rd .rd-ladder-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--rd-sub); }
+.rd .rd-ladder-meta em { font-style: normal; padding: 2px 8px; border-radius: 999px; background: var(--rd-tint); color: var(--rd-ink); }
+.rd .rd-ladder-meta em.is-in { background: var(--rd-panel); color: var(--rd-nav); }
+.rd .rd-ladder-swap { align-self: flex-start; min-height: 36px; padding: 0 12px; font-size: 13px; }
+.rd .rd-ladder-sum { font-size: 14px; font-weight: 700; color: var(--rd-nav); }
+@media (max-width: 640px) {
+  .rd .rd-ladder-bar, .rd .rd-ladder-body { padding-left: 16px; padding-right: 16px; }
+  .rd .rd-ladder-items { grid-template-columns: minmax(0, 1fr); }
+}
