@@ -498,6 +498,11 @@ export function generateHmlFromTemplate(
             .replace(/ColumnBreak\s*=\s*"true"/gi, '')
             .replace(/ColumnBreak\s*=\s*"1"/gi, '')
             .replace(/PageBreak\s*=\s*"true"/gi, '')
+            // [10/8] '새 번호로 시작'(NEWNUM) 제거 — 시중교재(쎈)는 단원 파일마다 미주 번호를 115·1210 처럼 이어 붙이려고
+            //   각 단원 첫 문항에 넣어 두었다. 시험지에 섞이면 그 문항부터 번호가 115, 116… 으로 튄다(사용자 걱정, 실측 확인).
+            //   시험지 안에서 번호를 새로 시작할 일은 없으므로 종류와 상관없이 지운다(일반 기출 문항에는 원래 없음).
+            .replace(/<(?:hp:)?NEWNUM[^>]*?\/>/gi, '')
+            .replace(/<(?:hp:)?NEWNUM[^>]*?>[\s\S]*?<\/(?:hp:)?NEWNUM>/gi, '')
             .replace(/<TEXT\s+CharShape="[^"]*"(\s[^>]*)?>(<ENDNOTE>|<hp:ENDNOTE>)/gi,
                 (match: string) => match.replace(/CharShape="[^"]*"/, 'CharShape="14"'));
 
