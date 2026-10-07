@@ -1821,3 +1821,15 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-qb-rhead .rd-qb-sort { order: 3; flex-basis: 100%; }
   .rd .rd-qb-rhead .rd-qb-ractions { order: 2; }
 }
+
+/* 10/7 폰 지적: 기출 자료 선택 창에서 탭·검색·거르기가 고정돼 목록 볼 자리가 너무 적다
+   → 폰·낮은 화면에서는 창 전체가 한 덩어리로 스크롤(목록만 따로 스크롤하지 않음) */
+@media (max-width: 640px), (max-height: 720px) {
+  .rd .rd-cat { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; gap: 8px; }
+  .rd .rd-cat > * { flex-shrink: 0; }
+  .rd .rd-cat-list { flex: none; min-height: auto; overflow: visible; }
+  .rd .rd-cat-tabs button { min-height: 42px; }
+  .rd .rd-cat-search { min-height: 46px; }
+  .rd .rd-cat-filters select { min-height: 36px; }
+  .rd .rd-cat-reset { min-height: 32px; }
+}
