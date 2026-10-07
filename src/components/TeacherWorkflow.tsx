@@ -13,7 +13,7 @@ const STEPS = [
         label: '학교와 회차를 정하고, 필요한 카드만 담으세요',
         description: '출제 자료에서 원하는 학교와 시험 회차를 선택하세요. 단원과 난이도를 더하면 필요한 문제만 좁혀 볼 수 있습니다. 문항 카드를 누르면 담기고, 다시 누르면 빠집니다.',
         tip: '여러 학교의 자료를 함께 선택할 수도 있어요.',
-        image: { src: '/home/cards.webp', width: 1800, height: 343, alt: '휘문고 2025년 고1 1학기 중간고사 실제 기출 문항 카드에 단원과 난이도가 표시된 화면' },
+        image: { src: '/home/cards.webp', width: 1800, height: 343, alt: '고1 1학기 중간고사 실제 기출 문항 카드에 단원과 난이도가 표시된 화면' },
         wide: true,
     },
     {
@@ -42,7 +42,7 @@ export default function TeacherWorkflow() {
             <div className="rd-wrap">
                 <p className="rd-kicker">실제 화면으로 미리 보기</p>
                 <h2 id="workflow-title" className="rd-h2">이렇게 골라서,<br />내 시험지로</h2>
-                <p className="rd-lead">휘문고 2025년 고1 1학기 중간고사 실제 기출로 시험지를 만든 과정입니다.</p>
+                <p className="rd-lead">한 학교의 고1 1학기 중간고사 실제 기출로 시험지를 만든 과정입니다.</p>
             </div>
             {STEPS.map((step) => (
                 <div key={step.no} className="rd-tc-step">

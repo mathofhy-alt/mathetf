@@ -109,10 +109,10 @@ export default async function TeacherLandingPage() {
                 <section className="rd-wrap" aria-label="실제 서비스 화면">
                     <div className="rd-showcase">
                         <div className="rd-showcase-head">
-                            <span>실제 서비스 화면, 휘문고 2025 고1 1학기 중간</span>
+                            <span>실제 서비스 화면, 고1 1학기 중간고사 기출</span>
                             <span className="rd-pill">담은 문항을 검토하는 화면</span>
                         </div>
-                        <Image src="/home/review.webp" alt="휘문고 기출 문항을 담아 검토하는 시험지 만들기 화면" width={2200} height={653} priority sizes="(max-width: 1160px) 100vw, 1048px" />
+                        <Image src="/home/review.webp" alt="학교 기출 문항을 담아 검토하는 시험지 만들기 화면" width={2200} height={653} priority sizes="(max-width: 1160px) 100vw, 1048px" />
                     </div>
                 </section>
 

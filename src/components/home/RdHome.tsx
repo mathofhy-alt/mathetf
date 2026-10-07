@@ -41,10 +41,10 @@ export function RdHomeShowcase() {
         <section className="rd-wrap" aria-label="실제 서비스 화면">
             <div className="rd-showcase">
                 <div className="rd-showcase-head">
-                    <span>실제 서비스 화면, 휘문고 2025 고1 1학기 중간</span>
+                    <span>실제 서비스 화면, 고1 1학기 중간고사 기출</span>
                     <span className="rd-pill">20문항을 담은 검토 화면</span>
                 </div>
-                <Image src="/home/review.webp" alt="휘문고 기출 20문항을 담아 검토하는 시험지 만들기 화면" width={2200} height={653} priority sizes="(max-width: 1160px) 100vw, 1048px" />
+                <Image src="/home/review.webp" alt="학교 기출 20문항을 담아 검토하는 시험지 만들기 화면" width={2200} height={653} priority sizes="(max-width: 1160px) 100vw, 1048px" />
             </div>
         </section>
     );
@@ -100,11 +100,11 @@ export function RdHomeFeatures() {
                 <div className="rd-wrap rd-split rd-reverse">
                     <div className="rd-txt">
                         <p className="rd-kicker">개인DB 요청</p>
-                        <h2 className="rd-h2">가진 교재와 프린트도<br />시험지 재료로</h2>
-                        <p className="rd-lead">쓰고 있는 시중 교재나 프린트를 올려 주시면 문항 DB로 만들어 회원님의 시험지 만들기에만 넣어 드려요. 다른 회원에게는 보이지 않고, 처리 결과는 마이페이지에서 안내해 드려요.</p>
+                        <h2 className="rd-h2">내가 가진 자료도<br />시험지 재료로</h2>
+                        <p className="rd-lead">수업에 쓰는 프린트나 자료를 올려 주시면 문항 DB로 만들어 회원님의 시험지 만들기에만 넣어 드려요. 다른 회원에게는 보이지 않고, 처리 결과는 마이페이지에서 안내해 드려요.</p>
                         <OpenEventButton event="open-db-request" className="rd-btn rd-btn-primary rd-feature-cta">개인DB 요청하기</OpenEventButton>
                     </div>
-                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/dbreq.webp" alt="교재 파일을 올리고 교재 이름을 적는 개인DB 요청 창" width={1120} height={1036} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/dbreq.webp" alt="자료 파일을 올리고 필요한 범위를 적는 개인DB 요청 창" width={1120} height={1036} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
         </>
