@@ -104,7 +104,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school, co
                 <p className={compact ? 'font-extrabold text-slate-900 text-sm break-keep' : 'font-extrabold text-slate-900 text-lg break-keep'}>문제 전체 PDF · 워터마크 없음</p>
             </div>
             <p className={compact ? 'text-xs leading-5 text-slate-600 break-keep mb-3' : 'text-sm text-slate-600 break-keep mb-4'}>
-                회원이면 <strong className="text-emerald-700">워터마크 없는 전체 문제 PDF</strong>를 하루 10회까지 무료로 받을 수 있어요. <span className="text-slate-500">이 파일에는 해설이 없습니다. 문제+해설 원본 파일은 별도 구매입니다.</span>
+                회원이면 <strong className="text-emerald-700">워터마크 없는 전체 문제 PDF</strong>를 무료로 받을 수 있어요. <span className="text-slate-500">이 파일에는 해설이 없습니다. 문제+해설 원본 파일은 별도 구매입니다.</span>
             </p>
 
             {authed ? (
