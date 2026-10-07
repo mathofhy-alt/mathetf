@@ -1889,3 +1889,6 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-paper-modal { padding-bottom: 48px; }
 .rd .rd-paper-modal img { width: 78%; border-radius: 20px; }
 @media (max-width: 760px) { .rd .rd-paper-modal { padding-bottom: 28px; } .rd .rd-paper-modal img { width: 92%; } }
+/* 10/7 문항 보기·해설 보기 창 본문 — 캡쳐가 폭을 꽉 채우게(rd-paper 는 홈 사진용이라 여백이 크고 그림을 82% 로 줄인다) */
+.rd .rd-qview { min-width: 0; background: var(--rd-panel); border-radius: 20px; padding: 12px; }
+.rd .rd-qview img { display: block; width: 100% !important; max-width: none !important; height: auto !important; margin: 0 auto; background: #fff; border-radius: 8px; }

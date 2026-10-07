@@ -50,7 +50,7 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
 
                 {/* Body */}
                 <div data-modal-scroll style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 20px 20px' }}>
-                    <div className="rd-paper" style={{ minWidth: 0 }}>
+                    <div className="rd-qview">
                         {images === null ? (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '40px 0', fontSize: 15, color: 'var(--rd-sub)' }}><Loader2 size={18} className="animate-spin" />해설을 불러오는 중</div>
                         ) : (
