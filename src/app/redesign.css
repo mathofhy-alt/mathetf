@@ -1971,3 +1971,6 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-nt ul { list-style: disc; }
 .rd .rd-nt ul ul { list-style: circle; }
 .rd .rd-nt ul + p { margin-top: 28px; }
+/* 10/8 글 화면: 돌아가기 링크와 '공지' 표시가 한 줄에 붙어 어긋나 보이던 것 — 링크는 위 한 줄, 표시는 제목 바로 위 */
+.rd .rd-bd-read > .rd-x-back { display: flex; width: fit-content; margin-bottom: 20px; }
+.rd .rd-bd-read > .rd-bd-tag { display: inline-flex; margin-bottom: 10px; }
