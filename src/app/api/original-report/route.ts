@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import neis from '@/lib/neis-high-schools.json';
 import { REPORT_MIN_YEAR } from '@/lib/report-reward';
+import { grantTypedFile } from '@/lib/typedGrant';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,9 @@ export async function GET(req: NextRequest) {
         const ids = (data || []).map(r => r.id);
         const { data: rewards } = ids.length ? await admin.from('point_transactions').select('related_id, amount').eq('user_id', user.id).eq('type', 'submission_reward').in('related_id', ids) : { data: [] as any[] };
         const reward = new Map((rewards || []).map(r => [r.related_id, r.amount]));
+        // [10/8] 무료 타이핑 — 채택된 것은 판매용 한글 파일을 0원 구매로 넣어 준다(이미 있으면 그대로)
+        const typed = new Map<string, any>();
+        await Promise.all((data || []).filter(r => reward.has(r.id)).map(async r => { typed.set(r.id, await grantTypedFile(r.id).catch(() => ({ status: 'working' }))); }));
         const reports = (data || []).map(r => {
             let d: any = {};
             try { d = JSON.parse(r.description || '{}') || {}; } catch { }
@@ -77,8 +81,8 @@ export async function GET(req: NextRequest) {
                 title: `${r.school} ${r.exam_year}년 ${r.grade}학년 ${r.semester}학기 ${r.exam_type} ${r.subject}`,
                 count: Array.isArray(d.files) ? d.files.length : 1, note: d.note || null,
                 admin_reply: d.admin_reply || null, replied_at: d.replied_at || null,
-                typed_files: (Array.isArray(d.typed_files) ? d.typed_files : []).map((f: any, i: number) => ({ i, name: f?.name || '타이핑 파일', size: f?.size ?? null, at: f?.at ?? null })),
                 reward: reward.get(r.id) ?? null,
+                typed: typed.get(r.id) ?? null,
             };
         });
         return NextResponse.json({ reports }, { headers: { 'Cache-Control': 'private, no-store' } });

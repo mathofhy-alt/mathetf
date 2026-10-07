@@ -1927,3 +1927,4 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 /* 10/8 무료 타이핑 — 마이페이지 완성 파일 받기 */
 .rd .rd-my-typed { margin-top: 12px; padding: 14px 16px; border-radius: 16px; background: var(--rd-tint); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .rd .rd-my-typed-btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.rd .rd-my-typed-sub { margin: 0; font-size: 14px; color: var(--rd-nav); }

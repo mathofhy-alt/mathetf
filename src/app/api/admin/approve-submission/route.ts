@@ -1,3 +1,4 @@
+import { grantTypedFile } from '@/lib/typedGrant';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/utils/admin-auth';
 import { createAdminClient } from '@/utils/supabase/server-admin';
@@ -75,6 +76,8 @@ export async function POST(req: NextRequest) {
             throw e;
         }
 
+        // [10/8] 무료 타이핑 — 판매용 한글 파일이 이미 등록돼 있으면 바로 0원 구매로(없으면 회원이 마이페이지를 열 때 다시 확인)
+        await grantTypedFile(id).catch(() => null);
         return NextResponse.json({ ok: true, rewarded: REWARD_POINTS });
     } catch (e: any) {
         console.error('[approve-submission]', e);

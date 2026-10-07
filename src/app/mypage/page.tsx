@@ -32,6 +32,7 @@ export default function MyPage() {
     const loadPass = () => fetch('/api/qb-pass', { cache: 'no-store' }).then(r => r.json()).then(j => setPassInfo(j.loggedIn && !j.error ? j : null)).catch(() => {});
     useEffect(() => { void loadPass(); try { if (new URLSearchParams(window.location.search).get('pass')) setShowPass(true); } catch { } }, []);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
+    const [reloadKey, setReloadKey] = useState(0);
 
     // Edit Modal State
 
@@ -180,7 +181,7 @@ export default function MyPage() {
 
         init();
         fetchSchoolData();
-    }, [router, supabase]);
+    }, [router, supabase, reloadKey]);   // reloadKey: 무료 타이핑 파일이 막 들어왔을 때 구매 내역을 다시 읽는다(10/8)
 
     const handleDownload = async (purchase: any) => {
         const file = purchase.exam;
@@ -340,7 +341,7 @@ export default function MyPage() {
                 <div className="rd-my-panel">
                     {/* [10/7] 내 요청 = 원본 제보 + 개인DB 요청 — 둘 다 운영자 안내가 붙는다 */}
                     {activeTab === 'requests' && <div className="rd-my-stack">
-                        <section className="rd-my-reqsec" aria-labelledby="my-reports-h"><h2 id="my-reports-h" className="rd-my-sec-title">무료 타이핑</h2><MyReports /></section>
+                        <section className="rd-my-reqsec" aria-labelledby="my-reports-h"><h2 id="my-reports-h" className="rd-my-sec-title">무료 타이핑</h2><MyReports onOpenPurchases={() => { setReloadKey(k => k + 1); setActiveTab('purchases'); setPurchaseTab('material'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></section>
                         <section className="rd-my-reqsec" aria-labelledby="my-dbreq-h"><h2 id="my-dbreq-h" className="rd-my-sec-title">개인DB 요청</h2><MyDbRequests /></section>
                     </div>}
 
