@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest) {
     const { id, admin_reply, reject } = await req.json().catch(() => ({}));
     if (typeof id !== 'string') return NextResponse.json({ error: 'id가 없습니다.' }, { status: 400 });
     const admin = createAdminClient();
-    const { data: row } = await admin.from('exam_materials').select('description, content_type').eq('id', id).maybeSingle();
+    const { data: row } = await admin.from('exam_materials').select('description, content_type, file_path').eq('id', id).maybeSingle();
     if (!row || row.content_type !== '원본제보') return NextResponse.json({ error: '원본 제보를 찾지 못했습니다.' }, { status: 404 });
     let desc: Record<string, unknown> = {};
     try { desc = JSON.parse(row.description || '{}') || {}; } catch { desc = {}; }
@@ -55,7 +55,8 @@ export async function PATCH(req: NextRequest) {
     // [10/8] 반려 — 사유(안내)는 남기고, 올린 파일은 지우고, 같은 시험을 다시 신청할 수 있게 연다(examsOf 가 rejected 를 건너뜀)
     if (reject === true) {
         if (!text) return NextResponse.json({ error: '반려 사유를 회원 안내 칸에 적어 주세요.' }, { status: 400 });
-        const files: string[] = Array.isArray(desc.files) ? (desc.files as unknown[]).filter((f): f is string => typeof f === 'string') : [];
+        let files: string[] = Array.isArray(desc.files) ? (desc.files as unknown[]).filter((f): f is string => typeof f === 'string') : [];
+        if (!files.length && row.file_path && !desc.rejected) files = [row.file_path];   // 옛 제보는 파일 경로가 file_path 에만 있다(10/8 백마고 — 반려했는데 파일이 남음)
         if (files.length) {
             const { error: rmErr } = await admin.storage.from('exam-materials').remove(files);
             if (rmErr) return NextResponse.json({ error: `파일을 지우지 못했습니다: ${rmErr.message}` }, { status: 500 });
