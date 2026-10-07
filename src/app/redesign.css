@@ -1956,3 +1956,18 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-pass-points span { flex: 1; font-size: 14px; font-weight: 700; color: var(--rd-text); }
 .rd .rd-pass-points small { margin-left: 6px; font-weight: 500; color: var(--rd-sub); }
 .rd .rd-pass-points b { font-size: 15px; color: var(--rd-ink); }
+/* 10/8 고정 공지 본문 */
+.rd .rd-nt h2 { margin: 28px 0 10px; font-size: 19px; font-weight: 800; color: var(--rd-text); }
+.rd .rd-nt h2 small { margin-left: 8px; font-size: 13px; font-weight: 700; color: var(--rd-ink); }
+.rd .rd-nt ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.rd .rd-nt ul ul { margin-top: 6px; }
+.rd .rd-nt p { margin: 0 0 12px; }
+.rd .rd-nt a { color: var(--rd-ink); font-weight: 700; text-decoration: underline; }
+.rd .rd-bd-row.is-pinned { background: var(--rd-tint); }
+/* 홈 맨 위 안내 띠 */
+.rd .rd-announce { display: block; padding: 11px 16px; background: var(--rd-text); color: #fff; text-align: center; font-size: 14px; font-weight: 600; text-decoration: none; }
+.rd .rd-announce b { color: #7FE3DD; margin-left: 6px; }
+.rd .rd-announce:hover { background: #0f1720; }
+.rd .rd-nt ul { list-style: disc; }
+.rd .rd-nt ul ul { list-style: circle; }
+.rd .rd-nt ul + p { margin-top: 28px; }

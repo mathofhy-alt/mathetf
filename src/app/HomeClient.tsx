@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PromoCarousel from '@/components/PromoCarousel';
 import {unavailableDbs} from '@/lib/questions/scope';
-import { RdHomeHero, RdHomeShowcase, RdHomeStats, RdHomeFeatures, RdHomeMore, RdHomeFinale } from '@/components/home/RdHome';
+import { RdAnnounce, RdHomeHero, RdHomeShowcase, RdHomeStats, RdHomeFeatures, RdHomeMore, RdHomeFinale } from '@/components/home/RdHome';
 import type { WeeklyUpload } from '@/lib/home-weekly-uploads';
 import { FREE_ACCESS_LABEL } from '@/lib/config';
 import FeatureCards from '@/components/FeatureCards';
@@ -684,6 +684,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                 onUploadClick={handleUploadClick}
             />
 
+            <RdAnnounce />
             <RdHomeHero onSearch={(keyword)=>{
                 setSelectedRegion('');setSelectedDistrict('');setSelectedSchool('');
                 setSelectedGrade('');setSelectedExamScope('');setSelectedYear('');setSelectedSubject('');setFreePdfOnly(false);
