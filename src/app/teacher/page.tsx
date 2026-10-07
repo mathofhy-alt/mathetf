@@ -62,7 +62,7 @@ export default async function TeacherLandingPage() {
     // 실데이터 통계 (얇은 페이지 방지 + 신뢰도)
     // 예전엔 여기서 exam_materials 를 .limit(5000) 으로 받아 학교를 셌는데,
     // PostgREST 가 1,000행에서 잘라 120개로 나왔다(실제 121). 세는 일은 lib/stats 로 옮겼다.
-    const { questionCount, schoolCount, topSchools } = await getSiteStats();
+    const { questionCount, recentCount, topSchools } = await getSiteStats();
 
     const jsonLd = [
         {
@@ -117,10 +117,12 @@ export default async function TeacherLandingPage() {
                     </div>
                 </section>
 
-                {(questionCount > 0 || schoolCount > 0) && (
+                {/* [10/7] 홈과 같은 세 칸(사용자 요청) */}
+                {questionCount > 0 && (
                     <section className="rd-wrap rd-stats rd-tc-stats" aria-label="수학ETF 자료 규모">
-                        {questionCount > 0 && <div className="rd-stat"><b>{questionCount.toLocaleString()}</b><span>분류된 기출 문항</span></div>}
-                        {schoolCount > 0 && <div className="rd-stat"><b>{schoolCount.toLocaleString()}</b><span>기출 보유 학교</span></div>}
+                        <div className="rd-stat"><b>{questionCount.toLocaleString()}</b><span>보유 문항 수</span></div>
+                        <div className="rd-stat"><b>{recentCount.toLocaleString()}</b><span>최근 7일간 업로드된 문항 수</span></div>
+                        <div className="rd-stat"><b>2006–2026</b><span>전국연합, 평가원, 수능</span></div>
                     </section>
                 )}
 

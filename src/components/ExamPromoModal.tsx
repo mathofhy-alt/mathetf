@@ -1,5 +1,6 @@
 'use client';
 
+import { QB_PASS } from '@/lib/qbPassConfig';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { Save, MousePointerClick, FileEdit, X } from 'lucide-react';
@@ -94,7 +95,7 @@ export default function ExamPromoModal({ onClose, src, school, allowHideToday = 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderRadius: 20, background: 'var(--rd-panel)' }}>
                                 <p style={{ flex: 1, margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--rd-sub)' }}>
-                                    런칭 기념으로 현재 무료로 제공되는 <strong style={{ color: 'var(--rd-ink)' }}>시험지출제</strong>를 통해 <strong style={{ color: 'var(--rd-text)' }}>정답과 해설</strong>을 받을 수 있습니다.
+                                    <strong style={{ color: 'var(--rd-ink)' }}>시험지 만들기</strong>(한 주 {QB_PASS.freePerWeek}회 무료)를 통해 <strong style={{ color: 'var(--rd-text)' }}>정답과 해설</strong>을 받을 수 있습니다.
                                 </p>
                                 <Link href={href} onClick={() => logClick('answer')}
                                     className="rd-btn rd-btn-primary"

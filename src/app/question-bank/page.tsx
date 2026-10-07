@@ -1602,6 +1602,7 @@ export default function QuestionBankPage() {
                         <header className="rd-qb-rhead sticky top-0 z-10">
                             {/* [10/7] 한 줄로 — 예전엔 제목·설명·정렬 상자가 3층이라 카드 볼 자리가 너무 적었다(사용자 지적) */}
                             <h2 title="문항을 더하거나 순서를 바꾼 뒤 편집용 HML로 저장하세요. PDF는 한글에서 저장할 수 있습니다.">시험지 문항 검토 <small>{cart.length}문항</small></h2>
+                            {passLine(passInfo) && <button type="button" className={`rd-qb-passline ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => setShowPass(true)}>{passLine(passInfo)}</button>}
                             <div className="rd-qb-ractions">
                                     <button
                                         onClick={() => { setViewMode('search'); setStorageModalMode('db'); setShowStorageModal(true); }}
@@ -2073,9 +2074,11 @@ export default function QuestionBankPage() {
                     {viewMode === 'search' && cart.length > 0 && (
                         <div className="rd-qb-bar" role="region" aria-label="담은 문항">
                             <div className="rd-qb-bar-in">
-                                <span className="rd-qb-bar-count">{cart.length}문항 담음</span>
+                                <span className="rd-qb-bar-info">
+                                    <span className="rd-qb-bar-count">{cart.length}문항 담음</span>
+                                    {passLine(passInfo) && <button type="button" className={`rd-qb-bar-pass ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => setShowPass(true)}>{passLine(passInfo)}</button>}
+                                </span>
                                 <span className="rd-qb-bar-nums" aria-hidden="true">{cart.slice(-6).map((q: any, i: number) => <span key={q.id || i}>{q.question_number ? `${q.question_number}번` : i + 1}</span>)}</span>
-                                {passLine(passInfo) && <button type="button" className={`rd-qb-bar-pass ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => setShowPass(true)}>{passLine(passInfo)}</button>}
                                 <button type="button" onClick={handleGenerate} disabled={isGenerating} className="rd-qb-bar-go">시험지 만들기</button>
                             </div>
                         </div>

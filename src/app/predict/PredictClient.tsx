@@ -146,7 +146,7 @@ export default function PredictClient({ richSchools }: Props) {
                 <h1 className="rd-tl-h1">우리 학교의 다음 연습.</h1>
                 <p className="rd-lead rd-tl-lead">학교와 시험 범위를 선택하면, 같은 유형의 기존 기출문항을 찾아 한 세트로 모아드립니다.</p>
                 <div className="rd-tl-actions">
-                    <span className="rd-pill is-accent">런칭 기간 무료 이용</span>
+                    <span className="rd-pill is-accent">회원 무료</span>
                     <button className="rd-btn rd-btn-tint" disabled={!results?.length} onClick={()=>sendToExamCart((results||[]).map(q=>q.id),`${school} 유사 기출`,'predict')}>결과로 시험지 만들기</button>
                 </div>
                 <div className="rd-tl-explain"><FeatureExplanation/></div>
@@ -316,17 +316,17 @@ export default function PredictClient({ richSchools }: Props) {
                                 {isLoggedIn ? (
                                     <>
                                         <p className="rd-tl-cta-title">예상문제 세트 다운로드</p>
-                                        <p className="rd-tl-cta-text">런칭 기념 — <strong>문제 + 해설</strong> 한글파일 회원 무료!</p>
+                                        <p className="rd-tl-cta-text"><strong>문제 + 해설</strong> 한글파일 회원 무료</p>
                                         <button onClick={downloadHwp} disabled={hwpLoading}
                                             className="rd-btn rd-btn-primary rd-tl-cta-btn">
                                             {hwpLoading ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글(HWP) 다운로드</>}
                                         </button>
-                                        <p className="rd-tl-cta-note">문제+해설 포함, 회원 무료 (런칭 기념)</p>
+                                        <p className="rd-tl-cta-note">문제+해설 포함, 회원 무료</p>
                                         <p className="rd-tl-cta-note">한글(HWP) 파일이라 한글 프로그램이 설치된 PC에서 열려요</p>
                                     </>
                                 ) : (
                                     <>
-                                        <p className="rd-tl-cta-title">런칭 기념 — 가입하면 <span className="rd-tl-u">문제 + 해설</span> 한글파일 무료</p>
+                                        <p className="rd-tl-cta-title">가입하면 <span className="rd-tl-u">문제 + 해설</span> 한글파일 무료</p>
                                         <p className="rd-tl-cta-text">회원가입만 하면 예상문제 전체(나머지 {Math.max(0, results.length - freeCount)}문항 포함)를 문제·해설까지 한글파일로 받아요.</p>
                                         <Link href="/signup" className="rd-btn rd-btn-primary rd-tl-cta-btn">무료로 가입하고 전체 받기</Link>
                                     </>

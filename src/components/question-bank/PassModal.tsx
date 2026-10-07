@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { payOrder } from '@/lib/payments/client';
 import { QB_PASS } from '@/lib/qbPassConfig';
+import RefundPolicyModal from '@/components/RefundPolicyModal';
 
 export type PassInfo = { unlimited: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string };
 
@@ -24,8 +25,11 @@ export function passLine(p: PassInfo | null): string {
 export default function PassModal({ user, info, onClose, onPaid }: { user: any; info: PassInfo | null; onClose: () => void; onPaid: () => void }) {
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState('');
+    // [10/7] 환불 불가 동의 — 사용자 결정(사용 0회여도 환불 안 함). 동의해야 결제 버튼이 눌린다.
+    const [agree, setAgree] = useState(false);
+    const [showRefund, setShowRefund] = useState(false);
     const buy = async () => {
-        if (busy) return;
+        if (busy || !agree) return;
         setBusy(true); setErr('');
         try { await payOrder(user, { kind: 'cart', items: [{ item_id: QB_PASS.itemId }], usedPoints: 0 }); onPaid(); }
         catch (e: any) { setErr(e?.message || '결제를 마치지 못했습니다.'); }
@@ -53,13 +57,18 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                         <li><Check size={16} aria-hidden="true" /> 기간 중에 다시 사면 끝나는 날에 {QB_PASS.days}일이 이어 붙어요</li>
                     </ul>
                 </div>
+                <label className="rd-pass-agree">
+                    <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} />
+                    <span>이용권은 결제 즉시 이용이 시작되어, <b>결제 후에는 사용하지 않았더라도 환불되지 않는다</b>는 데 동의합니다. <button type="button" onClick={() => setShowRefund(true)}>환불 정책 보기</button></span>
+                </label>
                 {err && <p className="rd-pass-err" role="alert">{err}</p>}
                 <div className="rd-modal-actions">
-                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy}>{busy ? '결제 진행 중…' : `${QB_PASS.price.toLocaleString()}원 결제하기`}</button>
+                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy || !agree}>{busy ? '결제 진행 중…' : `${QB_PASS.price.toLocaleString()}원 결제하기`}</button>
                     <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={onClose}>{out ? '다음 주에 할게요' : '닫기'}</button>
                 </div>
                 <p className="rd-pass-fine">담아 둔 문항은 그대로 남아 있어요. 결제 후 다시 저장을 누르면 됩니다.</p>
             </div>
+            {showRefund && <div style={{ position: 'relative', zIndex: 310 }}><RefundPolicyModal isOpen onClose={() => setShowRefund(false)} /></div>}
         </div>
     );
 }

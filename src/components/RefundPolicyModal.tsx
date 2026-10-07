@@ -1,5 +1,6 @@
 "use client"
 
+import { QB_PASS } from '@/lib/qbPassConfig';
 import { X } from "lucide-react"
 
 import { useState } from "react"
@@ -42,6 +43,17 @@ export default function RefundPolicyModal({ isOpen, onClose }: RefundPolicyModal
                             <ul className="list-disc pl-5 space-y-2">
                                 <li>결제한 자료를 이미 다운로드하거나 1회 이상 열람한 경우</li>
                                 <li>회원의 귀책 사유로 인해 서비스 권한이 정지 또는 해지된 경우 (예: 무단 배포, 계정 공유 등)</li>
+                            </ul>
+                        </section>
+
+                        {/* [10/7] 시험지 만들기 이용권 — 사용자 결정: 사용 0회여도 환불 안 함. 결제 창에서 동의를 받는다(PassModal). */}
+                        <section>
+                            <h3 className="font-bold text-base mb-2">제2조의2 (시험지 만들기 이용권)</h3>
+                            <ul className="list-disc pl-5 space-y-2">
+                                <li>시험지 만들기 이용권은 결제가 완료되는 즉시 이용 기간이 시작되는 기간제 디지털 콘텐츠입니다.</li>
+                                <li>회원은 결제 전에 무료 이용(한 주 {QB_PASS.freePerWeek}회 시험지 만들기)으로 서비스를 미리 이용해 볼 수 있으며, 결제 화면에서 아래 내용에 동의한 후 결제합니다.</li>
+                                <li><span className="text-rose-600 font-bold">이용권은 결제 즉시 제공이 시작되므로, 이용 여부와 관계없이 결제 후에는 청약철회(환불)가 제한됩니다</span>(전자상거래법 제17조 제2항 제5호).</li>
+                                <li>다만 회사의 귀책 사유(중복 결제, 시스템 오류로 이용권이 적용되지 않은 경우 등)로 이용하지 못한 경우에는 확인 후 환불하거나 이용 기간을 연장합니다.</li>
                             </ul>
                         </section>
 

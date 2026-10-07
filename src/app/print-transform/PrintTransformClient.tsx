@@ -164,7 +164,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                         {/* 화면 제목은 h2 — 이 페이지의 h1 은 page.tsx 의 sr-only 하나뿐이다.
                             여기까지 h1 이면 거의 같은 문장의 h1 이 한 페이지에 둘이 된다. */}
                         <h2>프린트와 비슷한 기출 찾기</h2>
-                        <p>회원가입 후 이용할 수 있어요 (런칭 기념 무료).</p>
+                        <p>회원가입 후 무료로 이용할 수 있어요.</p>
                         <Link href="/signup" className="rd-btn rd-btn-primary">무료로 가입하기</Link>
                     </div>
                 </div>
@@ -179,7 +179,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                 <h2 className="rd-tl-h1">한 장의 프린트에서,<br/>새로운 연습으로.</h2>
                 <p className="rd-lead rd-tl-lead">PDF를 올리고 연습할 문제를 잘라내세요. 비슷한 유형의 기존 기출문항을 찾아 시험지로 이어갑니다.</p>
                 <div className="rd-tl-actions">
-                    <span className="rd-pill is-accent">런칭 기간 회원 무료</span>
+                    <span className="rd-pill is-accent">회원 무료</span>
                     <button className="rd-btn rd-btn-tint" disabled={!totalSelected} onClick={()=>sendToExamCart(crops.flatMap(c=>c.selected),'프린트 유사 기출','print')}>선택 문항으로 시험지 만들기</button>
                 </div>
                 <div className="rd-tl-explain"><FeatureExplanation/></div>

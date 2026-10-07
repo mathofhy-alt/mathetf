@@ -1253,7 +1253,7 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .site-suite .rd h1.rd-tc-h1.rd-gd-h1, .rd h1.rd-tc-h1.rd-gd-h1 { font-size: clamp(34px, 5.4vw, 68px); }
 .rd .rd-tc-actions { margin-top: 36px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .rd .rd-tc-actions .rd-btn { padding: 16px 26px; }
-.rd .rd-tc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 760px; text-align: center; padding-bottom: 40px; }
+.rd .rd-tc-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 1000px; text-align: center; padding-bottom: 40px; }
 .rd .rd-tc-sec { padding-top: clamp(80px, 10vw, 128px); }
 .rd .rd-tc-sec > .rd-lead { margin-top: 16px; }
 
@@ -1327,7 +1327,7 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-gd-steps { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
-  .rd .rd-tc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding-top: 56px; }
+  .rd .rd-tc-stats { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-top: 56px; }
   .rd .rd-tc-stats .rd-stat b { font-size: 34px; }
   .rd .rd-tc-stats .rd-stat span { font-size: 15px; }
   .rd .rd-tc-diff, .rd .rd-tc-faq, .rd .rd-gd-roles { grid-template-columns: minmax(0, 1fr); }
@@ -1852,9 +1852,22 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-pass-card li svg { flex: none; margin-top: 3px; color: var(--rd-ink); }
 .rd .rd-pass-err { margin: 12px 0 0; font-size: 14px; font-weight: 600; color: #B42318; }
 .rd .rd-pass-fine { margin: 12px 0 0; font-size: 13px; color: var(--rd-sub); text-align: center; }
-.rd .rd-qb-bar-pass { flex: none; border: 0; background: transparent; padding: 0 4px; font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-sub); cursor: pointer; white-space: nowrap; }
-.rd .rd-qb-bar-pass.is-out { color: #B42318; }
-@media (max-width: 640px) { .rd .rd-qb-bar-pass { display: none; } }
+/* 하단 바(어두운 바탕) — 담은 수 옆에 이용권 한 줄, 폰에서는 담은 수 아래로 */
+.rd .rd-qb-bar-info { flex: none; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rd .rd-qb-bar-pass { flex: none; border: 0; background: transparent; padding: 0; font: inherit; font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.72); cursor: pointer; white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.3); }
+.rd .rd-qb-bar-pass.is-out { color: #FCA5A5; }
+@media (max-width: 640px) {
+  .rd .rd-qb-bar-info { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .rd .rd-qb-bar-pass { font-size: 12px; }
+}
 .rd .rd-my-pass { background: var(--rd-zone); }
 .rd .rd-my-pass .rd-btn { min-height: 36px; padding: 0 14px; font-size: 14px; }
 .rd .rd-my-head { flex-wrap: wrap; }
+.rd .rd-pass-agree { margin-top: 16px; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: #FFF7ED; cursor: pointer; }
+.rd .rd-pass-agree input { flex: none; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--rd-ink); }
+.rd .rd-pass-agree span { font-size: 14px; line-height: 1.55; color: var(--rd-text); }
+.rd .rd-pass-agree b { color: #B42318; }
+.rd .rd-pass-agree button { border: 0; background: transparent; padding: 0; margin-left: 4px; font: inherit; font-weight: 700; color: var(--rd-ink); text-decoration: underline; cursor: pointer; }
+/* 검토 화면 머리줄의 이용권 한 줄(밝은 바탕) */
+.rd .rd-qb-passline { flex: none; border: 0; background: var(--rd-panel); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-nav); cursor: pointer; white-space: nowrap; }
+.rd .rd-qb-passline.is-out { background: #FEF3F2; color: #B42318; }
