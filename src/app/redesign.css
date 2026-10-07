@@ -1807,3 +1807,17 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-ct-roadmap p { font-size: 16px; }
   .rd .rd-ct-table { font-size: 15px; }
 }
+
+/* ── 404 (10/7) ── */
+.rd .rd-nf { padding-top: clamp(64px, 12vw, 140px); padding-bottom: clamp(80px, 12vw, 160px); text-align: center; }
+.rd .rd-nf-code { margin: 0; font-size: clamp(64px, 10vw, 120px); font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: var(--rd-tint); -webkit-text-stroke: 2px var(--rd-brand); }
+.site-suite .rd h1.rd-x-h1.rd-nf-title { margin-top: 24px; font-size: clamp(30px, 4vw, 48px); font-weight: 800; color: var(--rd-text); }
+.rd .rd-nf .rd-lead { margin-left: auto; margin-right: auto; max-width: 520px; }
+.rd .rd-nf-actions { margin-top: 36px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+@media (max-width: 480px) { .rd .rd-nf-actions .rd-btn { width: 100%; } }
+/* 10/7 태블릿 점검 수정: 404 글자는 단색(외곽선이 가변 글꼴 안쪽 윤곽까지 그려 지저분했다), 검토 머리는 1100px 아래에서 정렬 줄을 따로 */
+.rd .rd-nf-code { -webkit-text-stroke: 0; color: #BFE5E2; }
+@media (max-width: 1100px) {
+  .rd .rd-qb-rhead .rd-qb-sort { order: 3; flex-basis: 100%; }
+  .rd .rd-qb-rhead .rd-qb-ractions { order: 2; }
+}
