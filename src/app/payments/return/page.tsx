@@ -27,7 +27,7 @@ export default function PaymentReturn() {
             if (!res.ok || !data.success) throw new Error(data.message);
             const {data:{user}} = await createClient().auth.getUser();
             if(user) localStorage.removeItem(`mathetf_pending_payment_${user.id}_${data.kind}`);
-            setDone(true); setMessage(data.kind==='topup' ? `${data.points.toLocaleString()} 포인트 충전이 완료되었습니다.` : '구매가 완료되었습니다. 내 보관함에서 자료를 확인해주세요.');
+            setDone(true); setMessage(data.kind==='topup' ? `${data.points.toLocaleString()} 포인트 충전이 완료되었습니다.` : '결제가 완료되었습니다. 이용권은 시험지 만들기에 바로 적용되고, 자료는 마이페이지 구매 내역에서 받을 수 있습니다.');
         } catch (e:any) { setMessage(e.message || '같은 주문의 결과를 다시 확인해주세요.'); }
         finally { setBusy(false); }
     }

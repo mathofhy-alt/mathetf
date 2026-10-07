@@ -1841,3 +1841,20 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-cat-book b { display: block; font-size: 17px; font-weight: 800; color: var(--rd-text); }
 .rd .rd-cat-book small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--rd-sub); }
 .rd .rd-cat-book .rd-cat-all { background: #fff; }
+
+/* 10/7 시험지 만들기 이용권 */
+.rd .rd-pass-card { margin-top: 18px; padding: 20px; border-radius: 20px; background: var(--rd-zone); }
+.rd .rd-pass-name { margin: 0; font-size: 15px; font-weight: 700; color: var(--rd-sub); }
+.rd .rd-pass-price { margin: 4px 0 0; font-size: 16px; font-weight: 700; color: var(--rd-text); }
+.rd .rd-pass-price b { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; margin-right: 2px; }
+.rd .rd-pass-card ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.rd .rd-pass-card li { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; font-weight: 600; color: var(--rd-text); line-height: 1.5; }
+.rd .rd-pass-card li svg { flex: none; margin-top: 3px; color: var(--rd-ink); }
+.rd .rd-pass-err { margin: 12px 0 0; font-size: 14px; font-weight: 600; color: #B42318; }
+.rd .rd-pass-fine { margin: 12px 0 0; font-size: 13px; color: var(--rd-sub); text-align: center; }
+.rd .rd-qb-bar-pass { flex: none; border: 0; background: transparent; padding: 0 4px; font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-sub); cursor: pointer; white-space: nowrap; }
+.rd .rd-qb-bar-pass.is-out { color: #B42318; }
+@media (max-width: 640px) { .rd .rd-qb-bar-pass { display: none; } }
+.rd .rd-my-pass { background: var(--rd-zone); }
+.rd .rd-my-pass .rd-btn { min-height: 36px; padding: 0 14px; font-size: 14px; }
+.rd .rd-my-head { flex-wrap: wrap; }

@@ -40,6 +40,7 @@ import RecentExams from '@/components/question-bank/RecentExams';
 import { hasEntryContext } from '@/lib/questions/entry';
 import { formatFileSize } from '@/lib/discovery';
 import UploadModal from '@/components/UploadModal';
+import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
 
@@ -98,6 +99,12 @@ export default function QuestionBankPage() {
     const resumeSearchRef=useRef(false);
     const [catalogNotice, setCatalogNotice] = useState('');
     const [savedExam, setSavedExam] = useState<{ id: string; name: string; bytes?:number; count?:number } | null>(null);
+    // [10/7] 시험지 만들기 이용권 — 남은 무료 횟수·이용권 기간, 다 쓰면 결제 창
+    const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
+    const [showPass, setShowPass] = useState(false);
+    const loadPass = useCallback(async () => {
+        try { const r = await fetch('/api/qb-pass', { cache: 'no-store' }); const j = await r.json(); setPassInfo(r.ok && j.loggedIn && !j.error ? j : null); } catch { setPassInfo(null); }
+    }, []);
     const [hasSearched, setHasSearched] = useState(false);
     const [searchError, setSearchError] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -330,6 +337,7 @@ export default function QuestionBankPage() {
         // Check auth
         supabase.auth.getUser().then(({ data }) => {
             setUser(data.user);
+            if (data.user) void loadPass();
             if (data.user) {
                 // [10/7] 예전엔 여기서 /api/storage/sync 로 전체 자료(약 2,200개)를 회원마다 user_items 에 복사했다.
                 //   지금 출제 자료 창(SourceCatalog)은 /api/questions/catalog 를 바로 읽어서 그 복사본을 아무도 안 쓴다.
@@ -1152,6 +1160,13 @@ export default function QuestionBankPage() {
 
             const result = await response.json();
 
+            if (response.status === 402 && result.code === 'QB_PASS_REQUIRED') {
+                // 무료 횟수를 다 씀 — 오류가 아니라 결제 안내. 담은 문항은 그대로 둔다.
+                logQb('qb_save_fail', 'QB_PASS_REQUIRED');
+                if (result.pass) setPassInfo(result.pass);
+                setShowSaveModal(false); setShowPass(true);
+                return;
+            }
             if (!response.ok || !result.success) {
                 // [퍼널] 저장까지 왔는데 실패한 건 가장 아까운 이탈이라 따로 남긴다
                 logQb('qb_save_fail', String(result.error || response.status).slice(0, 120));
@@ -1159,6 +1174,7 @@ export default function QuestionBankPage() {
             }
 
             logQuestionBankEvent('qb_save', { exam_id: result.item.id, question_count: cart.length });
+            void loadPass();
             setSavedExam({ id: result.item.id, name: result.savedTitle || examTitle,bytes:result.fileBytes,count:cart.length });
             // 이름이 겹쳐 번호가 붙었으면 그대로 알려준다. 조용히 바꾸면 보관함에서 못 찾는다.
             const saved = result.savedTitle as string | undefined;
@@ -2059,6 +2075,7 @@ export default function QuestionBankPage() {
                             <div className="rd-qb-bar-in">
                                 <span className="rd-qb-bar-count">{cart.length}문항 담음</span>
                                 <span className="rd-qb-bar-nums" aria-hidden="true">{cart.slice(-6).map((q: any, i: number) => <span key={q.id || i}>{q.question_number ? `${q.question_number}번` : i + 1}</span>)}</span>
+                                {passLine(passInfo) && <button type="button" className={`rd-qb-bar-pass ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => setShowPass(true)}>{passLine(passInfo)}</button>}
                                 <button type="button" onClick={handleGenerate} disabled={isGenerating} className="rd-qb-bar-go">시험지 만들기</button>
                             </div>
                         </div>
@@ -2108,6 +2125,7 @@ export default function QuestionBankPage() {
                     />
                 )}
 
+                {showPass && user && <PassModal user={user} info={passInfo} onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); showToast('이용권이 시작되었습니다. 다시 저장을 눌러 주세요.', 'success'); }} />}
                 {showAutoModal && (
                     <AutoGenModal
                         initialFilters={regenerateItem?.filters||filterState}

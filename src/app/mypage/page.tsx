@@ -13,6 +13,7 @@ import PasswordSettings from '@/components/PasswordSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import { deletePurchase } from './actions';
 import MyDbRequests from '@/components/MyDbRequests';
+import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
@@ -24,6 +25,11 @@ export default function MyPage() {
     const [loading, setLoading] = useState(true);
     const [purchases, setPurchases] = useState<any[]>([]);
     const [earnedPoints, setEarnedPoints] = useState(0);
+    // [10/7] 시험지 만들기 이용권
+    const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
+    const [showPass, setShowPass] = useState(false);
+    const loadPass = () => fetch('/api/qb-pass', { cache: 'no-store' }).then(r => r.json()).then(j => setPassInfo(j.loggedIn && !j.error ? j : null)).catch(() => {});
+    useEffect(() => { void loadPass(); }, []);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
 
     // Edit Modal State
@@ -66,6 +72,7 @@ export default function MyPage() {
                 .from('purchased_items')
                 .select('*')
                 .eq('user_id', user.id)
+                .neq('item_type', 'QB_PASS')   // 이용권은 위 '시험지 만들기' 칸에 따로(10/7) — 목록에서 지우면 기간이 사라진다
                 .order('created_at', { ascending: false });
 
             let finalPurchases = purchaseDataOld || [];
@@ -297,6 +304,13 @@ export default function MyPage() {
                 <Link href="/" className="rd-x-back" aria-label="홈으로"><ArrowLeft size={18} /> 홈</Link>
                 <div className="rd-my-head">
                     <h1 className="rd-x-h1 rd-my-h1">나의 수학 서재.</h1>
+                    {user && passInfo && !(passInfo.unlimited && !passInfo.passUntil) && (
+                        <div className="rd-my-points rd-my-pass">
+                            <span>시험지 만들기</span>
+                            <b>{passInfo.passUntil ? passLine(passInfo) : `무료 ${passInfo.freeLeft}/${passInfo.freePerWeek}회 남음`}</b>
+                            <button type="button" className="rd-btn rd-btn-primary" onClick={() => setShowPass(true)}>{passInfo.passUntil ? '기간 늘리기' : '이용권 보기'}</button>
+                        </div>
+                    )}
                     {user && (
                         <div className="rd-my-points">
                             <span>결제에 사용 가능한 포인트</span>
@@ -306,6 +320,7 @@ export default function MyPage() {
                 </div>
             </section>
 
+            {showPass && user && <PassModal user={user} info={passInfo} onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); }} />}
             <main className="rd-wrap rd-my-main">
                 <div className="rd-seg rd-my-tabs" role="group" aria-label="마이페이지 메뉴">
                     <button type="button" aria-pressed={activeTab === 'purchases'} onClick={() => setActiveTab('purchases')}>

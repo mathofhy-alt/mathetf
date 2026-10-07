@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { cartQuote, uuidPattern } from '@/lib/payments/order';
 import { PRIVATE_ITEM_TYPE } from '@/lib/questions/privateDb';
+import { QB_PASS } from '@/lib/qbPass';
 
 export async function POST(req: NextRequest) {
     const { data: { user } } = await createClient().auth.getUser();
@@ -24,7 +25,9 @@ export async function POST(req: NextRequest) {
             if (paid?.length) throw new Error('이미 결제한 개인DB입니다.');
         }
         const privateRows = (privs || []).map(p => ({ id: p.id, title: p.title, price: p.price, file_type: 'PRIVATE' }));
-        const quote = cartQuote(body.items, [...(materials || []), ...privateRows], body.usedPoints);
+        // [10/7] 시험지 만들기 이용권 — 가격·이름은 서버 상수에서만
+        const passRows = itemIds.includes(QB_PASS.itemId) ? [{ id: QB_PASS.itemId, title: QB_PASS.title, price: QB_PASS.price, file_type: 'PASS' }] : [];
+        const quote = cartQuote(body.items, [...(materials || []), ...privateRows, ...passRows], body.usedPoints);
         const { data: profile, error: profileError } = await sb.from('profiles').select('earned_points').eq('id', user.id).single();
         if (profileError || !profile || profile.earned_points < quote.used_points) throw new Error('보유 포인트가 부족합니다.');
         const paymentId = `order-${crypto.randomUUID().replace(/-/g, '')}`;

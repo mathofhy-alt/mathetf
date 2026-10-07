@@ -3,6 +3,7 @@ import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
 import { privateCatalog, stripPrivate } from '@/lib/questions/privateDb';
+import { passStatus, recordUsage, QB_PASS } from '@/lib/qbPass';
 import { wholeCatalogIneligible } from '@/lib/questions/fastScope';
 import {resolveScope} from '@/lib/questions/scope';
 import {uuidPattern} from '@/lib/payments/order';
@@ -43,6 +44,14 @@ export async function POST(req: NextRequest) {
                 error: '시험지는 최대 20개까지만 생성할 수 있습니다. 기존 시험지를 삭제한 후 다시 시도해주세요.'
             }, { status: 403 });
         }
+
+        // [10/7] 시험지 만들기 이용권 — 이용권이 없으면 한 주 무료 횟수까지만 (lib/qbPass)
+        const pass = await passStatus(user).catch(() => null);
+        if (!pass) return NextResponse.json({ success: false, error: '이용 현황을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
+        if (!pass.unlimited && pass.freeLeft <= 0) return NextResponse.json({
+            success: false, code: 'QB_PASS_REQUIRED', pass,
+            error: `이번 주 무료 시험지 ${QB_PASS.freePerWeek}회를 모두 쓰셨습니다. 이용권(${QB_PASS.days}일 ${QB_PASS.price.toLocaleString()}원)으로 계속 만들 수 있어요.`,
+        }, { status: 402 });
 
         console.log('[SaveAPI] Request received');
         const body = await req.json();
@@ -360,6 +369,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (itemError) throw new Error(`Item creation failed: ${itemError.message}`);
+        await recordUsage(user.id, (itemData as any)?.id ?? null);
 
         console.log('[SaveAPI] Success!');
         // savedTitle — 이름이 겹쳐 번호가 붙었으면 클라이언트가 그걸 알려줄 수 있게 돌려준다.
