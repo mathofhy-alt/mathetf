@@ -71,10 +71,11 @@ export async function POST(req: NextRequest) {
         ]);
         if (listError) throw listError;
         // 회원 전용 개인DB 문항 그림은 쓸 수 있는 사람에게만 (10/6)
-        const { data: privRows } = await supabase.from('questions').select('id, work_status, source_db_id').in('id', ids).eq('work_status', 'private');
+        // [10/7] 공개(sorted)가 아닌 문항은 전부 막고, 전용(private)만 쓸 수 있는 사람에게 연다 — 등록 대기(pending) 시중교재 보호
+        const { data: privRows } = await supabase.from('questions').select('id, work_status, source_db_id').in('id', ids).neq('work_status', 'sorted');
         const blocked = new Set<string>();
         if (privRows?.length) {
-            const ok = new Set((await stripPrivate(privRows)).map(r => r.id));
+            const ok = new Set((await stripPrivate(privRows.filter(r => r.work_status === 'private'))).map(r => r.id));
             for (const r of privRows) if (!ok.has(r.id)) blocked.add(r.id);
         }
         const byQuestion: Record<string, any[]> = {};

@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     let q = supabase.from('questions').select(SELECT_COLS);
     q = src
         ? q.eq('source_db_id', src).eq('work_status', 'sorted').order('question_number', { ascending: true }).limit(MAX_IDS)
-        : q.in('id', ids);
+        : q.in('id', ids).in('work_status', ['sorted', 'private']);   // [10/7] 등록 대기(pending) 문항은 id 를 알아도 안 준다 — 시중교재가 연결 전 pending 으로 있다
     // [보안 2026-10-02] 해설 캡쳐는 로그인한 사람에게만 (이미지 API 와 같은 규칙: lib/questions/imageAccess)
     const [withSolutions, { data: rows, error }] = await Promise.all([canSeeSolutions(), q]);
     // 회원 전용 개인DB 문항은 쓸 수 있는 사람에게만 (10/6)
