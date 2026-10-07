@@ -1928,3 +1928,16 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-my-typed { margin-top: 12px; padding: 14px 16px; border-radius: 16px; background: var(--rd-tint); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .rd .rd-my-typed-btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
 .rd .rd-my-typed-sub { margin: 0; font-size: 14px; color: var(--rd-nav); }
+/* 10/8 이용권 — 출시 할인 표기·최근 이용자 말풍선 */
+.rd .rd-pass-card { position: relative; }
+.rd .rd-pass-tag { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: #FEF3F2; color: #B42318; font-size: 12px; font-weight: 800; vertical-align: 1px; }
+.rd .rd-pass-price s { margin-right: 10px; font-size: 18px; font-weight: 600; color: var(--rd-sub); text-decoration-thickness: 2px; }
+.rd .rd-pass-bubble { position: absolute; top: -18px; right: 14px; margin: 0; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; background: var(--rd-text); color: #fff; font-size: 12.5px; font-weight: 600; box-shadow: 0 10px 24px rgba(23, 32, 44, 0.22); animation: rd-float 3s ease-in-out infinite; max-width: calc(100% - 28px); }
+.rd .rd-pass-bubble b { color: #7FE3DD; }
+.rd .rd-pass-bubble::after { content: ''; position: absolute; bottom: -5px; right: 26px; width: 10px; height: 10px; background: var(--rd-text); transform: rotate(45deg); border-radius: 2px; }
+.rd .rd-pass-dot { width: 7px; height: 7px; border-radius: 50%; background: #34D399; box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.25); animation: rd-pulse 1.6s ease-in-out infinite; }
+@keyframes rd-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes rd-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .rd .rd-pass-bubble, .rd .rd-pass-dot { animation: none; } }
+@media (max-width: 640px) { .rd .rd-pass-card { margin-top: 30px; } }
+.rd .rd-pass-card:has(.rd-pass-bubble) { margin-top: 30px; }

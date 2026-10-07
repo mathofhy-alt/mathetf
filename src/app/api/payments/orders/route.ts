@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { cartQuote, uuidPattern } from '@/lib/payments/order';
 import { PRIVATE_ITEM_TYPE } from '@/lib/questions/privateDb';
-import { QB_PASS } from '@/lib/qbPass';
+import { QB_PASS, currentOffer } from '@/lib/qbPass';
 
 export async function POST(req: NextRequest) {
     const { data: { user } } = await createClient().auth.getUser();
@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
         }
         const privateRows = (privs || []).map(p => ({ id: p.id, title: p.title, price: p.price, file_type: 'PRIVATE' }));
         // [10/7] 시험지 만들기 이용권 — 가격·이름은 서버 상수에서만
-        const passRows = itemIds.includes(QB_PASS.itemId) ? [{ id: QB_PASS.itemId, title: QB_PASS.title, price: QB_PASS.price, file_type: 'PASS' }] : [];
+        // [10/8] 가격은 지금 시간대의 선착순 특가를 서버가 다시 계산(currentOffer) — 특가 자리가 다 찼으면 정가
+        const passRows = itemIds.includes(QB_PASS.itemId) ? [{ id: QB_PASS.itemId, title: QB_PASS.title, price: (await currentOffer()).price, file_type: 'PASS' }] : [];
         const quote = cartQuote(body.items, [...(materials || []), ...privateRows, ...passRows], body.usedPoints);
         const { data: profile, error: profileError } = await sb.from('profiles').select('earned_points').eq('id', user.id).single();
         if (profileError || !profile || profile.earned_points < quote.used_points) throw new Error('보유 포인트가 부족합니다.');

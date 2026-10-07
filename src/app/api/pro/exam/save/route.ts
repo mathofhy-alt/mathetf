@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         if (!pass) return NextResponse.json({ success: false, error: '이용 현황을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
         if (!pass.unlimited && pass.freeLeft <= 0) return NextResponse.json({
             success: false, code: 'QB_PASS_REQUIRED', pass,
-            error: `이번 주 무료 시험지 ${QB_PASS.freePerWeek}회를 모두 쓰셨습니다. 이용권(${QB_PASS.days}일 ${QB_PASS.price.toLocaleString()}원)으로 계속 만들 수 있어요.`,
+            error: `이번 주 무료 시험지 ${QB_PASS.freePerWeek}회를 모두 쓰셨습니다. 이용권(${QB_PASS.days}일 ${QB_PASS.salePrice.toLocaleString()}원)으로 계속 만들 수 있어요.`,
         }, { status: 402 });
 
         console.log('[SaveAPI] Request received');

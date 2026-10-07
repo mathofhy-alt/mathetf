@@ -32,7 +32,26 @@ export type PassStatus = {
     resetsAt: string;            // 다음 주 월요일 0시(한국 시간)
     price: number;
     days: number;
+    offer: Offer;
+    viewers: number | null;    // 최근 30분 동안 시험지 만들기 화면에 들어온 사람(방문 단위). 3명 미만이면 null
 };
+
+export type Offer = { price: number; listPrice: number };
+
+/** 지금 가격 — 출시 할인가(salePrice), 정가(price)는 줄 그어 보여 준다. 결제 주문도 이걸로 서버가 정한다. */
+export async function currentOffer(): Promise<Offer> {
+    return { price: QB_PASS.salePrice, listPrice: QB_PASS.price };
+}
+
+/** 최근 30분 동안 시험지 만들기 화면에 들어온 사람 수(운영 사이트 qb_enter, 방문 단위로 중복 제거). 3명 미만이면 null */
+export async function recentViewers(): Promise<number | null> {
+    const since = new Date(Date.now() - 30 * 60_000).toISOString();
+    const { data, error } = await createAdminClient().from('question_bank_events').select('session_id')
+        .eq('event', 'qb_enter').gte('created_at', since).limit(2000);
+    if (error) return null;
+    const n = new Set((data || []).map(r => r.session_id).filter(Boolean)).size;
+    return n >= 3 ? n : null;
+}
 
 /** 결제 기록을 이어 붙여 이용권 끝나는 시각 */
 export function passUntilFrom(purchases: { created_at: string }[]): Date | null {
@@ -53,6 +72,7 @@ export async function passStatus(user: { id: string; email?: string | null }): P
     ]);
     // 횟수 표를 못 읽으면 막지 않고 통과시킨다(강사가 저장을 못 하는 쪽이 더 나쁘다) — 대신 로그를 남긴다
     if (error) console.error('[qb_usage] 읽기 실패 — 무료 횟수를 세지 못함', error.code, error.message);
+    const [offer, viewers] = await Promise.all([currentOffer(), recentViewers().catch(() => null)]);
     const until = passUntilFrom(buys || []);
     const active = !!until && until.getTime() > Date.now();
     const used = count ?? 0;
@@ -63,8 +83,9 @@ export async function passStatus(user: { id: string; email?: string | null }): P
         usedThisWeek: used,
         freeLeft: Math.max(0, QB_PASS.freePerWeek - used),
         resetsAt: new Date(start.getTime() + 7 * DAY).toISOString(),
-        price: QB_PASS.price,
+        price: offer.price,
         days: QB_PASS.days,
+        offer, viewers,
     };
 }
 

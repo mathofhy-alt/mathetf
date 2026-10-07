@@ -6,7 +6,7 @@ import { payOrder } from '@/lib/payments/client';
 import { QB_PASS } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 
-export type PassInfo = { unlimited: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string };
+export type PassInfo = { unlimited: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string; viewers?: number | null };
 
 const md = (iso: string) => { const d = new Date(iso); return `${d.getMonth() + 1}월 ${d.getDate()}일`; };
 
@@ -49,8 +49,10 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                         : <>이용권이 있으면 기간 동안 시험지를 횟수 제한 없이 만들 수 있어요.</>}
                 </p>
                 <div className="rd-pass-card">
-                    <p className="rd-pass-name">{QB_PASS.days}일 이용권</p>
-                    <p className="rd-pass-price"><b>{QB_PASS.price.toLocaleString()}</b>원</p>
+                    {/* [10/8] 최근 30분 이용자 수 — 사실 그대로의 문구, 3명 미만이면 서버가 null(숨김) */}
+                    {info?.viewers ? <p className="rd-pass-bubble" role="status"><span className="rd-pass-dot" aria-hidden="true" />최근 30분 동안 <b>{info.viewers}명</b>이 시험지 만들기를 이용했어요</p> : null}
+                    <p className="rd-pass-name">{QB_PASS.days}일 이용권 <span className="rd-pass-tag">출시 할인</span></p>
+                    <p className="rd-pass-price"><s>{QB_PASS.price.toLocaleString()}원</s><b>{QB_PASS.salePrice.toLocaleString()}</b>원</p>
                     <ul>
                         <li><Check size={16} aria-hidden="true" /> 시험지 만들기 횟수 제한 없음</li>
                         <li><Check size={16} aria-hidden="true" /> 결제한 날부터 {QB_PASS.days}일, 자동 결제 없음</li>
@@ -63,7 +65,7 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                 </label>
                 {err && <p className="rd-pass-err" role="alert">{err}</p>}
                 <div className="rd-modal-actions">
-                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy || !agree}>{busy ? '결제 진행 중…' : `${QB_PASS.price.toLocaleString()}원 결제하기`}</button>
+                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy || !agree}>{busy ? '결제 진행 중…' : `${QB_PASS.salePrice.toLocaleString()}원 결제하기`}</button>
                     <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={onClose}>{out ? '다음 주에 할게요' : '닫기'}</button>
                 </div>
                 <p className="rd-pass-fine">담아 둔 문항은 그대로 남아 있어요. 결제 후 다시 저장을 누르면 됩니다.</p>
