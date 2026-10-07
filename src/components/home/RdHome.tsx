@@ -84,9 +84,21 @@ export function RdHomeFeatures() {
                     <div className="rd-pic"><div className="rd-paper"><Image src="/home/paper-2.webp" alt="한글에서 만든 시험지 첫 쪽" width={1200} height={1052} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
-            {/* [10/7] 헤더 버튼으로만 있던 두 기능 설명(사용자 제안) */}
+            {/* [10/7] 수업 사다리 홍보(사용자 요청) — 강사가 수업을 짤 때 쓰는 기능 */}
             <section className="rd-feature rd-zone">
                 <div className="rd-wrap rd-split">
+                    <div className="rd-txt">
+                        <p className="rd-kicker">수업 사다리</p>
+                        <h2 className="rd-h2">어려운 한 문제로<br />수업 하나를 짜세요</h2>
+                        <p className="rd-lead">목표 문항을 고르면 같은 개념의 쉬운 문항부터 비슷한 유형, 목표 문항까지 올라가는 순서로 찾아 줘요. 단계별 문항 수를 고르고, 마음에 안 드는 문항은 바꿔서 한 번에 담으세요.</p>
+                        <Link href="/question-bank" className="rd-btn rd-btn-primary rd-feature-cta">시험지 만들기에서 써 보기</Link>
+                    </div>
+                    <div className="rd-pic"><div className="rd-paper rd-paper-modal rd-paper-fade"><Image src="/home/ladder.webp" alt="기초·유형·목표 순서로 문항을 보여 주고 단계별 문항 수를 고르는 수업 사다리 창" width={1092} height={1560} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                </div>
+            </section>
+            {/* [10/7] 헤더 버튼으로만 있던 두 기능 설명(사용자 제안) */}
+            <section className="rd-feature">
+                <div className="rd-wrap rd-split rd-reverse">
                     <div className="rd-txt">
                         <p className="rd-kicker">원본 제보</p>
                         <h2 className="rd-h2">우리 학교 시험지가 없나요?<br />사진으로 보내 주세요</h2>
@@ -96,8 +108,8 @@ export function RdHomeFeatures() {
                     <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/report.webp" alt="학교와 시험을 고르고 시험지 사진을 올리는 원본 제보 창" width={1200} height={1360} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
-            <section className="rd-feature">
-                <div className="rd-wrap rd-split rd-reverse">
+            <section className="rd-feature rd-zone">
+                <div className="rd-wrap rd-split">
                     <div className="rd-txt">
                         <p className="rd-kicker">개인DB 요청</p>
                         <h2 className="rd-h2">내가 가진 자료도<br />시험지 재료로</h2>

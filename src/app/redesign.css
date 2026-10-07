@@ -1904,7 +1904,7 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-ladder-step header b { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; color: var(--rd-text); }
 .rd .rd-ladder-step header small { font-size: 13px; font-weight: 600; color: var(--rd-sub); }
 .rd .rd-ladder-no { width: 26px; height: 26px; border-radius: 8px; background: var(--rd-ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
-.rd .rd-ladder-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.rd .rd-ladder-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .rd .rd-ladder-item { display: flex; flex-direction: column; gap: 8px; background: #fff; border-radius: 16px; padding: 12px; min-width: 0; }
 .rd .rd-ladder-item .rd-qview { padding: 6px; }
 .rd .rd-ladder-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--rd-sub); }
@@ -1916,3 +1916,5 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-ladder-bar, .rd .rd-ladder-body { padding-left: 16px; padding-right: 16px; }
   .rd .rd-ladder-items { grid-template-columns: minmax(0, 1fr); }
 }
+.rd .rd-ladder-item .rd-qview img { width: auto !important; max-width: 100% !important; }
+.rd .rd-paper-fade img { -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent); mask-image: linear-gradient(180deg, #000 82%, transparent); border-radius: 20px 20px 0 0; }
