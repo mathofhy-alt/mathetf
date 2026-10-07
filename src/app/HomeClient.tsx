@@ -1,5 +1,6 @@
 "use client";
 
+import { openPdfLimit } from '@/components/PdfLimitModal';
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem, unpackHomeRow } from '../lib/data';
 import { matchesCatalogSearch } from '@/lib/catalog-search';
@@ -591,7 +592,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
         if (dlState[stateKey] === 'loading') return;   // 진행 중 재클릭 무시 (연타 방지)
         setDlState(prev => ({ ...prev, [stateKey]: 'loading' }));
         try {
-            // [2026-09-02] URL 발급을 서버로 옮겼다. 하루 상한(10건)을 서버에서 걸기 위함 —
+            // [2026-09-02] URL 발급을 서버로 옮겼다. 하루 상한(config FREE_PDF_DAILY_LIMIT)을 서버에서 걸기 위함 —
             // 예전처럼 클라이언트가 free_pdf_url 을 직접 읽으면 화면에서 막아도 우회된다.
             // 다운로드 로그도 이 라우트가 직접 남기므로 아래의 별도 로깅 호출은 없앴다.
             const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_문제.pdf`;
@@ -600,6 +601,11 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                 body: JSON.stringify({ id: file.id, title: filename }),
             });
             const issuedJson = await issued.json();
+            // [10/7] 하루 한도 — 경고창 대신 안내 창(횟수는 이때만 알린다)
+            if (issued.status === 429 && issuedJson?.limited) {
+                setDlState(prev => { const n = { ...prev }; delete n[stateKey]; return n; });
+                openPdfLimit(issuedJson.limit); return;
+            }
             if (!issued.ok) throw new Error(issuedJson?.error || '무료 PDF를 준비 중입니다');
             const url = issuedJson.url as string;
             const response = await fetch(url);

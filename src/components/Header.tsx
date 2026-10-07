@@ -1,5 +1,6 @@
 "use client";
 
+import PdfLimitModal from '@/components/PdfLimitModal';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -140,6 +141,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
 
     return (
         <>
+            <PdfLimitModal />
             <header className="site-header rd rd-header sticky top-0 z-50">
                 <div className="rd-header-bar">
                     {/* Logo */}

@@ -1,4 +1,5 @@
 "use client";
+import { openPdfLimit } from '@/components/PdfLimitModal';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Download } from 'lucide-react';
@@ -47,13 +48,15 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school }: 
     const handleDownload = async () => {
         setDownloading(true);
         try {
-            // [2026-09-02] URL 을 서버에서 발급받는다. 하루 상한(10건)을 서버에서 걸기 위함 —
+            // [2026-09-02] URL 을 서버에서 발급받는다. 하루 상한(config FREE_PDF_DAILY_LIMIT)을 서버에서 걸기 위함 —
             // 예전엔 free_pdf_url 을 그대로 넘겨받아 받았기 때문에 상한을 걸 자리가 없었다.
             const issued = await fetch('/api/free-pdf', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: examId, title: filename }),
             });
             const issuedJson = await issued.json();
+            // [10/7] 하루 한도 — 경고창 대신 안내 창(횟수는 이때만 알린다)
+            if (issued.status === 429 && issuedJson?.limited) { openPdfLimit(issuedJson.limit); return; }
             if (!issued.ok) throw new Error(issuedJson?.error || '무료 PDF를 준비 중입니다.');
             const res = await fetch(issuedJson.url as string);
             if (!res.ok) throw new Error(`status ${res.status}`);
@@ -99,7 +102,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school }: 
             {resumeDownload && authed && <p role="status" className="rd-get-status">로그인했습니다. 아래 버튼을 누르면 바로 받을 수 있어요.</p>}
             <p className="rd-get-kicker">회원 무료</p>
             <h2 className="rd-get-title">문제 전체 PDF</h2>
-            <p className="rd-get-text">워터마크 없는 깨끗한 문제지예요. 하루 10회까지 받을 수 있고, 해설은 없습니다.</p>
+            <p className="rd-get-text">워터마크 없는 깨끗한 문제지예요. 해설은 없습니다.</p>
             {authed ? (
                 <button type="button" onClick={handleDownload} disabled={downloading} className="rd-btn rd-btn-primary rd-btn-block">
                     <Download size={18} aria-hidden="true" /> {downloading ? '받는 중' : '무료로 받기'}

@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { FREE_ACCESS_LABEL, FREE_PDF_DAILY_LIMIT, SAVED_EXAM_LIMIT, PERSONAL_DB_FREE_MODE } from '@/lib/config';
+import { FREE_ACCESS_LABEL, SAVED_EXAM_LIMIT, PERSONAL_DB_FREE_MODE } from '@/lib/config';
 
 /**
  * 2026-10 새 디자인용 이용 범위 안내 — 강사 안내(/teacher)·사용법(/guide#access) 전용.
@@ -8,7 +8,7 @@ import { FREE_ACCESS_LABEL, FREE_PDF_DAILY_LIMIT, SAVED_EXAM_LIMIT, PERSONAL_DB_
 export default function RdAccessPolicy({ headingId, title = '이용 범위와 파일 형식' }: { headingId: string; title?: string }) {
     const items = [
         '시험지 미리보기 1쪽은 누구나, 전체 쪽은 회원이 볼 수 있습니다.',
-        `회원은 제공 회차의 해설 없는 전체 문제 PDF를 무료로 받습니다. 하루 ${FREE_PDF_DAILY_LIMIT}회까지입니다.`,
+        '회원은 제공 회차의 해설 없는 전체 문제 PDF를 무료로 받습니다.',
         '문제+해설 PDF와 HWP는 자료별로 따로 구매합니다.',
         '직접 만든 시험지는 한글 호환 HML로 받고, PDF는 한글에서 저장합니다.',
         `만든 시험지는 최대 ${SAVED_EXAM_LIMIT}개까지 보관됩니다.`,

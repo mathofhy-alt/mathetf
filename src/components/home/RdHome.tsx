@@ -89,7 +89,7 @@ export function RdHomeFeatures() {
 export function RdHomeMore() {
     return (
         <section className="rd-wrap rd-cards" aria-label="더 볼 수 있는 자료">
-            <Link href="/guide#access" className="rd-card"><p>회원 무료</p><h3>해설 없는 전체 문제 PDF</h3><p>제공 회차의 문제 PDF를 하루 10회까지 받을 수 있어요.</p></Link>
+            <Link href="/guide#access" className="rd-card"><p>회원 무료</p><h3>해설 없는 전체 문제 PDF</h3><p>제공 회차의 문제 PDF를 회원이면 무료로 받을 수 있어요.</p></Link>
             <Link href="/모의고사" className="rd-card"><p>모의고사</p><h3>전국연합, 평가원, 수능</h3><p>2006년부터 2026년까지 회차별로 골라 담을 수 있어요.</p></Link>
             <Link href="/모의고사/사관학교" className="rd-card"><p>입학시험</p><h3>사관학교와 경찰대</h3><p>입학시험 수학 기출을 같은 방식으로 출제해요.</p></Link>
         </section>

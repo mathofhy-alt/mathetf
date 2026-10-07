@@ -262,7 +262,7 @@ function buildSchoolNarrative(
 ): string[] {
     const paras: string[] = [];
     if (specialIntro) {
-        paras.push(`${specialIntro} 현재 ${examCount}개 회차의 문제와 해설을 제공하며, 제공되는 문제 PDF는 회원 무료로 하루 10회까지 받을 수 있으며, 해설·원본 파일 가격은 자료마다 다릅니다.`);
+        paras.push(`${specialIntro} 현재 ${examCount}개 회차의 문제와 해설을 제공하며, 제공되는 문제 PDF는 회원 무료로 받을 수 있으며, 해설·원본 파일 가격은 자료마다 다릅니다.`);
     } else {
         const yearStr = years.length === 1 ? `${years[0]}년 ` : years.length > 0 ? `${years[years.length - 1]}년부터 ${years[0]}년까지 ` : '';
         const subjStr = subjects.length > 0 ? `${subjects.join('·')} 등 ` : '';
@@ -271,7 +271,7 @@ function buildSchoolNarrative(
         paras.push(
             `${schoolName}${sn ? `(${sn})` : ''}${region ? ` (${region})` : ''}의 수학 내신 기출문제 모음입니다. ` +
             `${yearStr}${subjStr}총 ${examCount}개 시험지의 문제와 해설을 제공하며, ` +
-            `미리보기와 무료 문제 PDF는 준비된 회차에서 제공됩니다. 무료 PDF는 회원당 하루 10회까지이며, 해설 PDF·HWP 가격은 자료별로 확인하세요.`
+            `미리보기와 무료 문제 PDF는 준비된 회차에서 제공됩니다. 무료 PDF는 회원이 받을 수 있으며, 해설 PDF·HWP 가격은 자료별로 확인하세요.`
         );
     }
     if (subjUnits.length > 0) {

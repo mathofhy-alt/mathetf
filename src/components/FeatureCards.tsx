@@ -32,7 +32,7 @@ export default function FeatureCards({ user }: { user: User | null }) {
         },
         {
             icon: Gift, title: '가입하면 문제 PDF 무료', badge: '무료',
-            desc: '제공되는 회차의 문제 PDF는 회원당 하루 10회 무료입니다. 해설 파일은 별도 구매입니다.',
+            desc: '제공되는 회차의 문제 PDF는 회원 무료입니다. 해설 파일은 별도 구매입니다.',
             href: user ? '#main-list' : '/signup', grad: 'from-[#BE7A1C] to-[#D89328]',
         },
         {
