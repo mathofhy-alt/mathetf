@@ -117,7 +117,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
         }
     };
 
-    type NavChild = { href: string; label: string; badge?: string };
+    type NavChild = { href: string; label: string; badge?: string; desc?: string };
     type NavItem = { href: string; label: string; badge?: string; children?: NavChild[] };
     const navItems: NavItem[] = [
         { href: '/', label: '내신기출' },
@@ -125,16 +125,20 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
             // [2026-09-08] '시험지 출제' 자식을 뺐다 — 부모와 같은 /question-bank 라 한 화면에
             //   같은 곳으로 가는 링크가 두 줄이었다(외부 감사 지적). 부모는 데스크톱·모바일 모두
             //   실제 Link 라 도달성 손실은 없다.
+            // [10/7] 펼침 메뉴에 '시험지 만들기'도 넣고 한 줄 설명을 붙인다 — 아래 두 개만 메뉴처럼 보이고
+            //   정작 시험지 만들기는 제목처럼 보였다(사용자). 설명이 있어 같은 곳 링크 두 줄과는 구분된다.
             href: '/question-bank', label: '시험지 만들기', children: [
-                { href: '/predict', label: '예상문제 뽑기' },
-                { href: '/print-transform', label: '학교프린트 변형', badge: 'NEW' },
+                { href: '/question-bank', label: '시험지 만들기', desc: '기출 문항을 골라 한글 파일로' },
+                { href: '/predict', label: '예상문제 뽑기', desc: '학교·시험 범위로 예상문제 세트' },
+                { href: '/print-transform', label: '학교프린트 변형', desc: '프린트 문제와 같은 유형의 기출 찾기' },
             ]
         },
         {
             href: '/모의고사', label: '모의고사', badge: 'NEW', children: [
-                { href: '/모의고사/전국연합', label: '전국연합학력평가' },
-                { href: '/모의고사/경찰대', label: '경찰대' },
-                { href: '/모의고사/사관학교', label: '사관학교' },
+                { href: '/모의고사', label: '모의고사 전체', desc: '전국연합·평가원·수능·입학시험' },
+                { href: '/모의고사/전국연합', label: '전국연합학력평가', desc: '고1~고3 회차별' },
+                { href: '/모의고사/경찰대', label: '경찰대', desc: '입학시험 수학' },
+                { href: '/모의고사/사관학교', label: '사관학교', desc: '입학시험 수학' },
             ]
         },
         { href: '/notice', label: '공지사항' },
@@ -165,9 +169,9 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                     <div className="absolute left-0 top-full pt-2 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 transition-all duration-150 z-50">
                                         <div className="rd-dropdown">
                                             {item.children.map(c => (
-                                                <Link key={c.href} href={c.href} className="rd-dropdown-link">
-                                                    {c.label}
-                                                    
+                                                <Link key={c.href + c.label} href={c.href} className={`rd-dropdown-link ${c.desc ? 'has-desc' : ''}`}>
+                                                    <span>{c.label}</span>
+                                                    {c.desc && <small>{c.desc}</small>}
                                                 </Link>
                                             ))}
                                         </div>
@@ -292,7 +296,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                 </Link>
                                 {item.children && (
                                     <div className="rd-m-sub">
-                                        {item.children.map(c => (
+                                        {item.children.filter(c => c.href !== item.href).map(c => (   /* 폰은 부모 줄이 이미 같은 곳 링크 */
                                             <Link
                                                 key={c.href}
                                                 href={c.href}
