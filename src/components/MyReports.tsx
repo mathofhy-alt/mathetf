@@ -34,7 +34,8 @@ export default function MyReports({ onOpenPurchases }: { onOpenPurchases?: () =>
                             <p className="rd-my-title">{row.title} <small className="rd-my-muted">· 사진 {row.count}장</small></p>
                             {row.note && <p className="rd-my-req-note">내가 남긴 메모: {row.note}</p>}
                         </div>
-                        {row.typed?.status === 'ready' ? <span className="rd-my-status is-done">타이핑 완료</span>
+                        {row.rejected ? <span className="rd-my-status is-no">반려</span>
+                            : row.typed?.status === 'ready' ? <span className="rd-my-status is-done">타이핑 완료</span>
                             : row.reward ? <span className="rd-my-status is-done"><Coins size={13} /> 채택 +{Number(row.reward).toLocaleString()}P</span>
                             : <span className="rd-my-status is-wait">검토 중</span>}
                     </div>
@@ -46,7 +47,8 @@ export default function MyReports({ onOpenPurchases }: { onOpenPurchases?: () =>
                             </p>
                             <p className="rd-my-reply-body">{row.admin_reply}</p>
                         </div>
-                    ) : !row.reward && <p className="rd-my-req-wait">운영자가 확인 중입니다. 채택되면 한글 파일과 포인트를 드려요.</p>}
+                    ) : !row.reward && !row.rejected && <p className="rd-my-req-wait">운영자가 확인 중입니다. 채택되면 한글 파일과 포인트를 드려요.</p>}
+                    {row.rejected && <p className="rd-my-req-wait">이 시험은 다시 신청하실 수 있어요.</p>}
                     {/* [10/8] 무료 타이핑 — 채택되면 판매용 한글 파일이 0원 구매로 들어간다 → 구매 내역에서 30일 받기 */}
                     {row.typed?.status === 'ready' && <div className="rd-my-typed">
                         <p className="rd-my-reply-head"><Download size={15} /> 한글 파일이 준비됐어요</p>

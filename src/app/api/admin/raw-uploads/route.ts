@@ -42,17 +42,31 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
-    const { id, admin_reply } = await req.json().catch(() => ({}));
+    const { id, admin_reply, reject } = await req.json().catch(() => ({}));
     if (typeof id !== 'string') return NextResponse.json({ error: 'id가 없습니다.' }, { status: 400 });
     const admin = createAdminClient();
-    const { data: row } = await admin.from('exam_materials').select('description, content_type').eq('id', id).maybeSingle();
+    const { data: row } = await admin.from('exam_materials').select('description, content_type, file_path').eq('id', id).maybeSingle();
     if (!row || row.content_type !== '원본제보') return NextResponse.json({ error: '원본 제보를 찾지 못했습니다.' }, { status: 404 });
     let desc: Record<string, unknown> = {};
     try { desc = JSON.parse(row.description || '{}') || {}; } catch { desc = {}; }
     const text = String(admin_reply ?? '').trim().slice(0, 2000);
     desc.admin_reply = text || null;
     desc.replied_at = text ? new Date().toISOString() : null;
+    // [10/8] 반려 — 사유(안내)는 남기고, 올린 파일은 지우고, 같은 시험을 다시 신청할 수 있게 연다(examsOf 가 rejected 를 건너뜀)
+    if (reject === true) {
+        if (!text) return NextResponse.json({ error: '반려 사유를 회원 안내 칸에 적어 주세요.' }, { status: 400 });
+        let files: string[] = Array.isArray(desc.files) ? (desc.files as unknown[]).filter((f): f is string => typeof f === 'string') : [];
+        if (!files.length && row.file_path && !desc.rejected) files = [row.file_path];   // 옛 제보는 파일 경로가 file_path 에만 있다(10/8 백마고 — 반려했는데 파일이 남음)
+        if (files.length) {
+            const { error: rmErr } = await admin.storage.from('exam-materials').remove(files);
+            if (rmErr) return NextResponse.json({ error: `파일을 지우지 못했습니다: ${rmErr.message}` }, { status: 500 });
+        }
+        desc.rejected = true;
+        desc.rejected_at = new Date().toISOString();
+        desc.removed_files = files.length;
+        desc.files = [];
+    }
     const { error } = await admin.from('exam_materials').update({ description: JSON.stringify(desc) }).eq('id', id);
     if (error) return NextResponse.json({ error: '저장하지 못했습니다.' }, { status: 500 });
-    return NextResponse.json({ ok: true, admin_reply: desc.admin_reply, replied_at: desc.replied_at });
+    return NextResponse.json({ ok: true, admin_reply: desc.admin_reply, replied_at: desc.replied_at, rejected: desc.rejected === true, description: JSON.stringify(desc) });
 }
