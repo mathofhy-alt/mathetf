@@ -21,22 +21,28 @@ export const NOT_A_SCHOOL = new Set(['경찰대학교', '사관학교', '전국�
 
 const PAGE = 1000;
 
-// recentCount: 최근 7일 새로 등록된 문항 수(created_at 기준 — 교체 재등록은 id·created_at 유지라 안 섞임). 홈 숫자 칸(10/7).
-export type SiteStats = { questionCount: number; schoolCount: number; recentCount: number; topSchools: string[] };
+// holdingCount·recentCount: 홈·강사 안내 숫자 칸(10/7). 시중교재(회원 전용, work_status='private')까지 '보유'로 센다(사용자 결정).
+//   recentCount 는 created_at 기준 7일 — 교체 재등록은 id·created_at 유지라 안 섞인다.
+//   questionCount 는 그대로 공개(sorted)만 — 검색 화면 등 '지금 찾을 수 있는 문항' 자리에 쓴다.
+export type SiteStats = { questionCount: number; holdingCount: number; schoolCount: number; recentCount: number; topSchools: string[] };
 
 export async function getSiteStats(): Promise<SiteStats> {
     const supabase = createAdminClient();
-    const empty: SiteStats = { questionCount: 0, schoolCount: 0, recentCount: 0, topSchools: [] };
+    const empty: SiteStats = { questionCount: 0, holdingCount: 0, schoolCount: 0, recentCount: 0, topSchools: [] };
 
     try {
         const { count } = await supabase
             .from('questions')
             .select('id', { count: 'exact', head: true })
             .eq('work_status', 'sorted');
+        const { count: privateCount } = await supabase
+            .from('questions')
+            .select('id', { count: 'exact', head: true })
+            .eq('work_status', 'private');
         const { count: recent } = await supabase
             .from('questions')
             .select('id', { count: 'exact', head: true })
-            .eq('work_status', 'sorted')
+            .in('work_status', ['sorted', 'private'])
             .gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString());
 
         // range 로 끝까지. 1,565행이면 2번이면 끝난다.
@@ -61,6 +67,7 @@ export async function getSiteStats(): Promise<SiteStats> {
 
         return {
             questionCount: count ?? 0,
+            holdingCount: (count ?? 0) + (privateCount ?? 0),
             recentCount: recent ?? 0,
             schoolCount: Object.keys(bySchool).length,
             topSchools: Object.entries(bySchool)
