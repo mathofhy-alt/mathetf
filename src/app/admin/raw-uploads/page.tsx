@@ -59,10 +59,19 @@ export default function RawUploadsAdmin() {
     // [2026-10-05] 회원 제보는 사진 여러 장 = 행 1개. 나머지 경로는 description(JSON).files 에 있다.
     const reportFiles = (row: any): string[] => { try { const d = JSON.parse(row.description || '{}'); if (Array.isArray(d.files) && d.files.length) return d.files; } catch { } return row.file_path ? [row.file_path] : []; };
     const reportNote = (row: any): string => { try { return JSON.parse(row.description || '{}').note || ''; } catch { return ''; } };
+    // [10/7] 받은 파일 이름에 시도·구군·연도·시험·학교·학년·과목이 다 보이게(사용자 요청)
+    //   예: 대구_수성구_2026년_2중간_대구혜화여자고등학교1_공통수학2_원본제보(_01 — 여러 장일 때만)
+    const shortRegion = (r: string) => String(r || '').replace(/(특별자치시|특별자치도|특별시|광역시|자치시|자치도)$/, '')
+        .replace(/^(충청|전라|경상)(북|남)도$/, (_m, a, b) => ({ 충청: '충', 전라: '전', 경상: '경' } as Record<string, string>)[a] + b).replace(/도$/, '');
+    const reportFileBase = (row: any) => {
+        const kind = String(row.exam_type || '').includes('중간') ? '중간' : String(row.exam_type || '').includes('기말') ? '기말' : String(row.exam_type || '');
+        return [shortRegion(row.region), row.district, row.exam_year ? `${row.exam_year}년` : '', `${row.semester || ''}${kind}`, `${row.school || ''}${row.grade || ''}`, row.subject, '원본제보']
+            .filter(Boolean).join('_');
+    };
     const handleDownloadAll = async (row: any) => {
         const paths = reportFiles(row);
         for (let i = 0; i < paths.length; i++) {
-            await handleDownload(paths[i], `${row.title}_${String(i + 1).padStart(2, '0')}.${paths[i].split('.').pop()}`);
+            await handleDownload(paths[i], `${reportFileBase(row)}${paths.length > 1 ? `_${String(i + 1).padStart(2, '0')}` : ''}.${paths[i].split('.').pop()}`);
             await new Promise(r => setTimeout(r, 400));   // 브라우저가 연속 다운로드를 막지 않게
         }
     };
