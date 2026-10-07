@@ -30,7 +30,7 @@ export default function MyPage() {
     const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
     const [showPass, setShowPass] = useState(false);
     const loadPass = () => fetch('/api/qb-pass', { cache: 'no-store' }).then(r => r.json()).then(j => setPassInfo(j.loggedIn && !j.error ? j : null)).catch(() => {});
-    useEffect(() => { void loadPass(); }, []);
+    useEffect(() => { void loadPass(); try { if (new URLSearchParams(window.location.search).get('pass')) setShowPass(true); } catch { } }, []);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
 
     // Edit Modal State

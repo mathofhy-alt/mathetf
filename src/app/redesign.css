@@ -1918,3 +1918,5 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 }
 .rd .rd-ladder-item .rd-qview img { width: auto !important; max-width: 100% !important; }
 .rd .rd-paper-fade img { -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent); mask-image: linear-gradient(180deg, #000 82%, transparent); border-radius: 20px 20px 0 0; }
+/* 10/7 시험지 만들기 윗줄 이용권 단추 */
+.rd .rd-qb-ctxpass { border: 0; border-radius: 999px; padding: 3px 10px; background: var(--rd-tint); font: inherit; font-size: 12px; font-weight: 800; color: var(--rd-ink); cursor: pointer; }
