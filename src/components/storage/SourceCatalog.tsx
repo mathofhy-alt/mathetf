@@ -115,7 +115,12 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
         for (const item of visible) {
             const d = item.details || {};
             let key: string, title: string, sub = '', sort: string;
-            if (d.private) { key = 'mine'; title = '내 개인DB'; sort = '0'; }
+            // 교재 폴더(10/7): '교재 > 단원 > 스텝' — 단원이 한 묶음, 스텝이 칸. 교재 머리줄은 목록에서 따로 그린다.
+            if (d.private && Array.isArray(d.path) && d.path.length) {
+                const unit = d.path.length > 1 ? d.path[0] : '';
+                key = `${d.book}|${unit}`; title = unit || d.book; sub = d.book; sort = `${d.book}|${unit}`;
+            }
+            else if (d.private) { key = 'mine'; title = '내 개인DB'; sort = '0'; }
             else if (category === 'special') { key = `${d.school}|${d.exam_year}`; title = `${d.exam_year}학년도 ${d.school}`; sort = `${9999 - (d.exam_year || 0)}|${d.school}`; }
             else if (isNational) {
                 key = `${d.exam_year}|${d.grade}|${d.semester}|${d.school}`;
@@ -139,6 +144,7 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
     // 칩(회차) 이름 — 묶음 제목에 이미 있는 말은 빼고 남는 것만
     const chipLabel = (item: UserItem): [string, string] => {
         const d = item.details || {};
+        if (d.private && Array.isArray(d.path) && d.path.length) return [d.path.length > 1 ? d.path.slice(1).join(' › ') : d.path[0], d.question_count ? `${d.question_count}문항` : ''];
         if (d.private || !d.exam_year) return [(item.name || '').replace(/\s*\[[^\]]*\]\s*$/, ''), ''];
         if (!isSchool) return [d.subject === '전과정' ? '전 범위' : (d.subject || '수학'), ''];
         return [`${d.exam_year} ${d.grade ? `${d.grade}학년 ` : ''}${d.semester ? `${d.semester}학기 ` : ''}${shortType(String(d.exam_type || ''))}`.replace(/\s+/g, ' ').trim(), d.subject || ''];
@@ -159,8 +165,15 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
         if (sourceCategory(d) === 'school') return `${String(d.school || '').replace(/고등학교$/, '고')} ${chipLabel(i)[0]}`;
         if (sourceCategory(d) === 'national') return `${d.exam_year} 고${d.grade} ${d.semester}월 ${d.subject === '전과정' ? '' : d.subject || ''}`.trim();
         if (sourceCategory(d) === 'special') return `${d.exam_year} ${String(d.school || '').replace(/학교$/, '')} ${d.subject || ''}`.trim();
+        if (d.private && Array.isArray(d.path)) return `${d.book} ${d.path.join(' ')}`;
         return (i.name || '').replace(/\s*\[[^\]]*\]\s*$/, '');
     };
+    // 교재 머리줄(내 개인DB) — 교재마다 묶음 수·문항 수와 '교재 전체 담기'
+    const books = useMemo(() => {
+        const m = new Map<string, UserItem[]>();
+        for (const i of visible) { const d = i.details || {}; if (d.private && d.book) (m.get(d.book) || m.set(d.book, []).get(d.book)!).push(i); }
+        return m;
+    }, [visible]);
 
     return <section className="rd-cat" aria-label="출제 자료 고르기">
         <div className="rd-seg rd-cat-tabs" role="group" aria-label="자료 종류">
@@ -172,7 +185,7 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
 
         <div className="rd-cat-search">
             <Search size={18} aria-hidden="true" />
-            <input aria-label="자료 찾기" placeholder={isSchool ? '학교 이름으로 찾기 (예: 휘문)' : '연도나 과목으로 찾기 (예: 2024 미적분)'} value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
+            <input aria-label="자료 찾기" placeholder={isSchool ? '학교 이름으로 찾기 (예: 휘문)' : category === 'mine' ? '단원 이름으로 찾기 (예: 인수분해)' : '연도나 과목으로 찾기 (예: 2024 미적분)'} value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
             {search && <button type="button" aria-label="검색어 지우기" onClick={() => setSearch('')}><X size={16} /></button>}
         </div>
 
@@ -180,9 +193,9 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
             {uniq(pool, d => d.grade).length > 1 && <select aria-label="학년" value={grade} onChange={e => setGrade(e.target.value)}>
                 <option value="">모든 학년</option>{uniq(pool, d => d.grade).sort((a, b) => a - b).map(g => <option key={g} value={String(g)}>{isSchool ? `${g}학년` : `고${g}`}</option>)}
             </select>}
-            <select aria-label="연도" value={year} onChange={e => setYear(e.target.value)}>
+            {uniq(pool, d => d.exam_year).length > 0 && <select aria-label="연도" value={year} onChange={e => setYear(e.target.value)}>
                 <option value="">모든 연도</option>{uniq(pool, d => d.exam_year).sort((a, b) => b - a).map(y => <option key={y} value={String(y)}>{y}년</option>)}
-            </select>
+            </select>}
             {isSchool && <select aria-label="시험" value={term} onChange={e => setTerm(e.target.value)}>
                 <option value="">모든 시험</option>{TERMS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select>}
@@ -236,11 +249,20 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
             </div>
             <div className="rd-cat-list">
                 {groups.length === 0 ? <p className="rd-cat-empty">조건에 맞는 자료가 없습니다. 검색어나 거르기 조건을 바꿔 보세요.</p>
-                    : groups.map(g => {
+                    : groups.map((g, gi) => {
+                        const book = category === 'mine' && g.sub && books.has(g.sub) && g.sub !== groups[gi - 1]?.sub ? g.sub : '';
+                        const bookItems = book ? books.get(book)! : [];
+                        const bookPicked = bookItems.filter(i => selected.has(i.id)).length;
+                        const bookHead = book && <div className="rd-cat-book">
+                            <p><b>{book}</b><small>{bookItems.length}묶음 · {bookItems.reduce((n, i) => n + (i.details?.question_count || 0), 0).toLocaleString()}문항{bookPicked ? ` · ${bookPicked}개 고름` : ''}</small></p>
+                            <button type="button" className={`rd-cat-all ${bookPicked === bookItems.length ? 'is-on' : ''}`} onClick={() => onGroupSelect(bookPicked === bookItems.length ? bookItems : bookItems.filter(i => !selected.has(i.id)), bookPicked !== bookItems.length)}>
+                                {bookPicked === bookItems.length ? '교재 모두 빼기' : '교재 전체 담기'}
+                            </button>
+                        </div>;
                         const isOpen = autoOpen || !isSchool || open.has(g.key);
                         const n = g.items.filter(i => selected.has(i.id)).length;
                         const all = n === g.items.length;
-                        return <div key={g.key} className={`rd-cat-school ${n ? 'has-pick' : ''}`}>
+                        return <div key={g.key} style={{ display: 'contents' }}>{bookHead}<div className={`rd-cat-school ${n ? 'has-pick' : ''}`}>
                             <div className="rd-cat-head">
                                 <button type="button" className="rd-cat-name" aria-expanded={isOpen} onClick={() => isSchool && toggleOpen(g.key)} style={isSchool ? undefined : { cursor: 'default' }}>
                                     {isSchool && (isOpen ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />)}
@@ -261,7 +283,7 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
                                     </button>;
                                 })}
                             </div>}
-                        </div>;
+                        </div></div>;
                     })}
             </div>
         </>}

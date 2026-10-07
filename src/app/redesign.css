@@ -1833,3 +1833,11 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-cat-filters select { min-height: 36px; }
   .rd .rd-cat-reset { min-height: 32px; }
 }
+
+/* 10/7 내 개인DB 교재 폴더 — 교재 머리줄 */
+.rd .rd-cat-book { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 10px 8px; }
+.rd .rd-cat-book:not(:first-child) { margin-top: 10px; }
+.rd .rd-cat-book p { margin: 0; min-width: 0; }
+.rd .rd-cat-book b { display: block; font-size: 17px; font-weight: 800; color: var(--rd-text); }
+.rd .rd-cat-book small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-cat-book .rd-cat-all { background: #fff; }
