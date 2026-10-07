@@ -51,8 +51,8 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                 <div className="rd-pass-card">
                     {/* [10/8] 최근 30분 이용자 수 — 사실 그대로의 문구, 3명 미만이면 서버가 null(숨김) */}
                     {info?.viewers ? <p className="rd-pass-bubble" role="status"><span className="rd-pass-dot" aria-hidden="true" />최근 30분 동안 <b>{info.viewers}명</b>이 시험지 만들기를 이용했어요</p> : null}
-                    <p className="rd-pass-name">{QB_PASS.days}일 이용권 <span className="rd-pass-tag">출시 할인</span></p>
-                    <p className="rd-pass-price"><s>{QB_PASS.price.toLocaleString()}원</s><b>{QB_PASS.salePrice.toLocaleString()}</b>원</p>
+                    <p className="rd-pass-name">{QB_PASS.days}일 이용권</p>
+                    <p className="rd-pass-price"><b>{QB_PASS.salePrice.toLocaleString()}</b>원</p>
                     <ul>
                         <li><Check size={16} aria-hidden="true" /> 시험지 만들기 횟수 제한 없음</li>
                         <li><Check size={16} aria-hidden="true" /> 결제한 날부터 {QB_PASS.days}일, 자동 결제 없음</li>
