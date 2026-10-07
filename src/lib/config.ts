@@ -10,4 +10,4 @@ export const SAVED_EXAM_LIMIT = 20;
 export const EXAM_QUESTION_LIMIT = 50;
 // [10/7] 날짜(무료 종료일)는 화면에 쓰지 않는다 — 그 전에 유료화할 수도 있음(사용자 지시)
 // [10/7 브랜치] 시험지 만들기 이용권 — 문구도 숫자를 따라간다(lib/qbPassConfig)
-export const FREE_ACCESS_LABEL = `문항 고르기는 무료, 시험지 만들기는 한 주 ${QB_PASS.freePerWeek}회까지 무료예요. 더 만들려면 ${QB_PASS.days}일 이용권(${QB_PASS.price.toLocaleString()}원).`;
+export const FREE_ACCESS_LABEL = `문항 고르기와 시험지 만들기를 무료로 써 볼 수 있어요. 더 많이 만들려면 ${QB_PASS.days}일 이용권(${QB_PASS.price.toLocaleString()}원).`;   // [10/7] 무료 횟수는 화면에 미리 쓰지 않는다 — 넘길 때 결제 창이 알린다(사용자)
