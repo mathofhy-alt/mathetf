@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { Save, MousePointerClick, FileEdit } from 'lucide-react';
+import { Save, MousePointerClick, FileEdit, X } from 'lucide-react';
 import { getStoredRole } from '@/components/RoleOnboardingModal';
 
 const HIDE_KEY = 'examPromoHideDate';
@@ -68,100 +68,94 @@ export default function ExamPromoModal({ onClose, src, school, allowHideToday = 
     };
     return (
         <div
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in duration-200"
+            className="rd rd-overlay"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className="bg-white w-full sm:w-[440px] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
-                {/* 헤더 */}
-                <div className="relative bg-gradient-to-br from-[#426D36] to-[#638747] px-6 pt-6 pb-5 text-white text-center">
-                    <button
-                        onClick={onClose}
-                        aria-label="닫기"
-                        className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:bg-white/15 text-xl font-bold leading-none"
-                    >
-                        ×
+            <div className="rd-modal rd-modal-sm" role="dialog" aria-modal="true" aria-labelledby="exam-promo-title">
+                <div className="rd-sheet-handle" />
+                <div className="rd-modal-head">
+                    <div>
+                        <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: 'var(--rd-ink)' }}>다운로드 완료</p>
+                        <h2 id="exam-promo-title" className="rd-modal-title">
+                            {!src ? '‘시험지 만들기’도 써보셨어요?'
+                                : '정답과 해설이 필요하신가요?'}
+                        </h2>
+                    </div>
+                    <button type="button" onClick={onClose} aria-label="닫기" className="rd-modal-x">
+                        <X size={20} />
                     </button>
-                    <p className="text-sm font-bold text-white/85 mb-1">다운로드 완료! 🎉</p>
-                    <h3 className="text-xl font-black break-keep">
-                        {!src ? '‘시험지 만들기’도 써보셨어요?'
-                            : '정답·해설이 필요하신가요?'}
-                    </h3>
                 </div>
 
-                {/* 본문 */}
-                <div className="px-6 py-5">
+                <div className="rd-modal-body" style={{ marginTop: 14 }}>
                     {src ? (
                         // [2026-10-06] 무료PDF 경로 — 사용자 지정 문구 두 줄 + 각 줄 옆 버튼.
                         //   ① 이 회차 문항 전부 담긴 채 시험지출제(?src=) → HML 저장 시 정답·해설 포함(generator 미주)
                         //   ② '유사문제' — 각 문항을 유사 1순위로 바꾼 시험지가 담긴 채(?src=&variant=similar1, api/questions/by-ids)
-                        <div className="flex flex-col gap-2.5 mb-4">
-                            <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
-                                <p className="flex-1 text-sm text-slate-700 leading-relaxed break-keep">
-                                    런칭 기념으로 현재 무료로 제공되는 <strong className="text-[#426D36]">시험지출제</strong>를 통해 <strong>정답과 해설</strong>을 받을 수 있습니다.
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderRadius: 20, background: 'var(--rd-panel)' }}>
+                                <p style={{ flex: 1, margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--rd-sub)' }}>
+                                    <strong style={{ color: 'var(--rd-ink)' }}>시험지 만들기</strong>를 통해 <strong style={{ color: 'var(--rd-text)' }}>정답과 해설</strong>을 받을 수 있습니다.
                                 </p>
                                 <Link href={href} onClick={() => logClick('answer')}
-                                    className="shrink-0 bg-gradient-to-r from-[#426D36] to-[#638747] text-white text-sm font-extrabold px-3.5 py-2.5 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+                                    className="rd-btn rd-btn-primary"
+                                    style={{ flex: 'none', fontSize: 15, padding: '12px 16px', minHeight: 44, whiteSpace: 'nowrap' }}>
                                     정답·해설 받기
                                 </Link>
                             </div>
-                            <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
-                                <p className="flex-1 text-sm text-slate-700 leading-relaxed break-keep">
-                                    <strong>유사문제</strong>까지 자동생성으로 풀 수 있어요.
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderRadius: 20, background: 'var(--rd-panel)' }}>
+                                <p style={{ flex: 1, margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--rd-sub)' }}>
+                                    <strong style={{ color: 'var(--rd-text)' }}>유사문제</strong>까지 자동생성으로 풀 수 있어요.
                                 </p>
                                 <Link href={`${href}&variant=similar1`} onClick={() => logClick('similar1')}
-                                    className="shrink-0 bg-white border-2 border-[#638747] text-[#426D36] text-sm font-extrabold px-3.5 py-2 rounded-lg hover:bg-[#638747]/10 transition-colors whitespace-nowrap">
+                                    className="rd-btn"
+                                    style={{ flex: 'none', fontSize: 15, padding: '12px 16px', minHeight: 44, whiteSpace: 'nowrap', background: '#fff', color: 'var(--rd-ink)' }}>
                                     유사문제 풀기
                                 </Link>
                             </div>
                         </div>
                     ) : (
                         <>
-                            <p className="text-slate-600 text-sm leading-relaxed mb-4 break-keep">
-                                방금 받은 건 <strong>맛보기</strong>예요. <strong className="text-[#426D36]">시험지 출제</strong>로 가면
+                            <p className="rd-modal-text" style={{ marginTop: 0 }}>
+                                방금 받은 건 <strong style={{ color: 'var(--rd-text)' }}>맛보기</strong>예요. <strong style={{ color: 'var(--rd-ink)' }}>시험지 출제</strong>로 가면
                                 훨씬 자유롭게 나만의 시험지를 만들 수 있어요.
                             </p>
-                            <ul className="space-y-2.5 mb-5">
-                                <li className="flex items-start gap-2.5 text-sm text-slate-700">
-                                    <MousePointerClick size={18} className="text-[#638747] shrink-0 mt-0.5" />
+                            <ul style={{ listStyle: 'none', margin: '16px 0 0', padding: 16, borderRadius: 20, background: 'var(--rd-panel)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <li style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 15, lineHeight: 1.5, color: 'var(--rd-text)' }}>
+                                    <MousePointerClick size={18} style={{ color: 'var(--rd-ink)', flex: 'none', marginTop: 2 }} />
                                     <span><strong>문제를 직접 골라</strong> 원하는 것만 담기</span>
                                 </li>
-                                <li className="flex items-start gap-2.5 text-sm text-slate-700">
-                                    <Save size={18} className="text-[#638747] shrink-0 mt-0.5" />
+                                <li style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 15, lineHeight: 1.5, color: 'var(--rd-text)' }}>
+                                    <Save size={18} style={{ color: 'var(--rd-ink)', flex: 'none', marginTop: 2 }} />
                                     <span>만든 시험지를 <strong>저장하고 다시 편집</strong></span>
                                 </li>
-                                <li className="flex items-start gap-2.5 text-sm text-slate-700">
-                                    <FileEdit size={18} className="text-[#638747] shrink-0 mt-0.5" />
-                                    <span>문항 순서·난이도·구성을 바꾸고, PDF는 한글에서 저장</span>
+                                <li style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 15, lineHeight: 1.5, color: 'var(--rd-text)' }}>
+                                    <FileEdit size={18} style={{ color: 'var(--rd-ink)', flex: 'none', marginTop: 2 }} />
+                                    <span>문항 순서, 난이도, 구성을 바꾸고, PDF는 한글에서 저장</span>
                                 </li>
                             </ul>
                         </>
                     )}
-                    <div className="flex flex-col gap-2">
-                        {!src && (
-                            <Link
-                                href={href}
-                                onClick={() => logClick()}
-                                className="w-full text-center bg-gradient-to-r from-[#426D36] to-[#638747] text-white font-extrabold py-3 rounded-xl hover:opacity-90 transition-opacity"
-                            >
-                                시험지 만들기 시작 →
-                            </Link>
-                        )}
-                        <div className={`flex items-center pt-0.5 ${allowHideToday ? 'justify-between' : 'justify-end'}`}>
-                            {allowHideToday && (
-                                <button
-                                    onClick={hideToday}
-                                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-                                >
-                                    오늘 하루 보지 않기
-                                </button>
-                            )}
-                            <button
-                                onClick={onClose}
-                                className="text-sm text-slate-500 font-bold hover:text-slate-700 transition-colors"
-                            >
-                                다음에 할게요
+                </div>
+
+                <div className="rd-modal-actions" style={{ marginTop: 20 }}>
+                    {!src && (
+                        <Link
+                            href={href}
+                            onClick={() => logClick()}
+                            className="rd-btn rd-btn-primary rd-btn-block"
+                        >
+                            시험지 만들기 시작
+                        </Link>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: allowHideToday ? 'space-between' : 'flex-end' }}>
+                        {allowHideToday && (
+                            <button type="button" onClick={hideToday} className="rd-text-btn rd-quiet" style={{ minHeight: 44, fontSize: 14 }}>
+                                오늘 하루 보지 않기
                             </button>
-                        </div>
+                        )}
+                        <button type="button" onClick={onClose} className="rd-text-btn" style={{ minHeight: 44 }}>
+                            다음에 할게요
+                        </button>
                     </div>
                 </div>
             </div>

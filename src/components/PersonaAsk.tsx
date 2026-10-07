@@ -56,28 +56,30 @@ export default function PersonaAsk({ visible, onDone }: { visible: boolean; onDo
     if (!show) return null;
 
     return (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-md">
-            <div className="bg-white rounded-2xl border border-[#C5D8B5] shadow-xl p-4">
+        <div className="rd fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-md" style={{ background: 'transparent' }}>
+            <div className="bg-white rounded-[20px] shadow-[0_20px_60px_rgba(23,32,44,0.18)] p-5">
                 <div className="flex items-start gap-2">
-                    <p className="flex-1 text-sm font-bold text-[#294437] break-keep">
+                    <p className="m-0 flex-1 pt-2 text-[16px] font-bold leading-[1.45] text-[#17202C]">
                         어느 쪽이신가요? 자료를 그쪽에 맞춰 보여드립니다.
                     </p>
-                    <button onClick={dismiss} aria-label="닫기" className="text-slate-300 hover:text-slate-500 shrink-0">
-                        <X size={16} />
+                    <button onClick={dismiss} aria-label="닫기" className="rd-modal-x">
+                        <X size={20} />
                     </button>
                 </div>
-                <div className="flex gap-2 mt-3">
+                <div className="flex gap-2 mt-4">
                     <button
                         onClick={() => choose('teacher')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#638747] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
+                        className="rd-btn"
+                        style={{ flex: '1 1 0', fontSize: 16, padding: '12px 14px', background: 'var(--rd-tint)', color: 'var(--rd-ink)' }}
                     >
-                        <PencilRuler size={15} /> 선생님·강사
+                        <PencilRuler size={18} /> 선생님, 강사
                     </button>
                     <button
                         onClick={() => choose('student')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#426D36] hover:bg-[#31572E] text-white text-sm font-extrabold rounded-xl transition-colors"
+                        className="rd-btn"
+                        style={{ flex: '1 1 0', fontSize: 16, padding: '12px 14px', background: 'var(--rd-tint)', color: 'var(--rd-ink)' }}
                     >
-                        <GraduationCap size={15} /> 학생·학부모
+                        <GraduationCap size={18} /> 학생, 학부모
                     </button>
                 </div>
             </div>

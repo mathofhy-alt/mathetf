@@ -7,12 +7,15 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileItem } from '@/lib/data';
-import { Download, FileText, User as UserIcon, ArrowLeft, Trash2, Database, Settings, Edit, MessageSquare } from 'lucide-react';
+import { Download, FileText, ArrowLeft, Trash2, Database, Settings, MessageSquare } from 'lucide-react';
 import MarketingSettings from '@/components/MarketingSettings';
 import PasswordSettings from '@/components/PasswordSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import { deletePurchase } from './actions';
 import MyDbRequests from '@/components/MyDbRequests';
+import MyReports from '@/components/MyReports';
+import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
+import { paywallOn } from '@/lib/qbPassConfig';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
@@ -24,7 +27,13 @@ export default function MyPage() {
     const [loading, setLoading] = useState(true);
     const [purchases, setPurchases] = useState<any[]>([]);
     const [earnedPoints, setEarnedPoints] = useState(0);
+    // [10/7] 시험지 만들기 이용권
+    const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
+    const [showPass, setShowPass] = useState(false);
+    const loadPass = () => fetch('/api/qb-pass', { cache: 'no-store' }).then(r => r.json()).then(j => setPassInfo(j.loggedIn && !j.error ? j : null)).catch(() => {});
+    useEffect(() => { void loadPass(); try { if (new URLSearchParams(window.location.search).get('pass') && paywallOn()) setShowPass(true); } catch { } }, []);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
+    const [reloadKey, setReloadKey] = useState(0);
 
     // Edit Modal State
 
@@ -66,6 +75,7 @@ export default function MyPage() {
                 .from('purchased_items')
                 .select('*')
                 .eq('user_id', user.id)
+                .neq('item_type', 'QB_PASS')   // 이용권은 위 '시험지 만들기' 칸에 따로(10/7) — 목록에서 지우면 기간이 사라진다
                 .order('created_at', { ascending: false });
 
             let finalPurchases = purchaseDataOld || [];
@@ -172,7 +182,7 @@ export default function MyPage() {
 
         init();
         fetchSchoolData();
-    }, [router, supabase]);
+    }, [router, supabase, reloadKey]);   // reloadKey: 무료 타이핑 파일이 막 들어왔을 때 구매 내역을 다시 읽는다(10/8)
 
     const handleDownload = async (purchase: any) => {
         const file = purchase.exam;
@@ -278,134 +288,119 @@ export default function MyPage() {
 
 
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">로딩중...</div>;
+    if (loading) return (
+        <div className="rd rd-x rd-my">
+            <Header />
+            <p className="rd-my-loading" role="status">로딩중...</p>
+        </div>
+    );
+
+    const isDbPurchase = (p: any) => p.exam?.file_type === 'DB' || p.exam?.content_type === '개인DB';
+    const materialCount = purchases.filter(p => !isDbPurchase(p)).length;
+    const dbCount = purchases.filter(p => isDbPurchase(p)).length;
+    const shownPurchases = purchases.filter(p => (purchaseTab === 'db' ? isDbPurchase(p) : !isDbPurchase(p)));
 
     return (
-        <div className="min-h-screen bg-[#f2f3f0]">
-            <Header/><div className="suite-local-header">
-                <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
-                        <h1 className="text-xl font-bold text-slate-800">나의 수학 서재.</h1>
-                    </div>
+        <div className="rd rd-x rd-my">
+            <Header />
+            <section className="rd-wrap rd-x-top rd-my-top">
+                <Link href="/" className="rd-x-back" aria-label="홈으로"><ArrowLeft size={18} /> 홈</Link>
+                <div className="rd-my-head">
+                    <h1 className="rd-x-h1 rd-my-h1">나의 수학 서재.</h1>
+                    {user && passInfo && !(passInfo.unlimited && !passInfo.passUntil) && (
+                        <div className="rd-my-points rd-my-pass">
+                            <span>시험지 만들기</span>
+                            <b>{passInfo.passUntil ? passLine(passInfo) : `무료 ${passInfo.freeLeft}/${passInfo.freePerWeek}회 남음`}</b>
+                            <button type="button" className="rd-btn rd-btn-primary" onClick={() => setShowPass(true)}>{passInfo.passUntil ? '기간 늘리기' : '이용권 보기'}</button>
+                        </div>
+                    )}
                     {user && (
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center text-sm font-medium text-slate-600 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                                <span className="flex items-center gap-2 px-3 py-1.5 border-r border-slate-200">
-                                    <span className="text-xs text-slate-500">결제에 사용 가능한 포인트</span>
-                                    <span className="font-bold text-brand-600">{earnedPoints.toLocaleString()} P</span>
-                                </span>
-
-                            </div>
+                        <div className="rd-my-points">
+                            <span>결제에 사용 가능한 포인트</span>
+                            <b>{earnedPoints.toLocaleString()} P</b>
                         </div>
                     )}
                 </div>
-            </div>
+            </section>
 
-            <main className="account-dashboard max-w-[1200px] mx-auto px-4 py-8">
-                <div className="account-tabs flex gap-2 sm:gap-4 mb-6 border-b border-slate-200 overflow-x-auto">
-                    <button
-                        onClick={() => setActiveTab('purchases')}
-                        className={`pb-3 px-2 font-bold text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${activeTab === 'purchases' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
-                    >
-                        구매 내역
+            {showPass && user && <PassModal user={user} info={passInfo} onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); }} />}
+            <main className="rd-wrap rd-my-main">
+                <div className="rd-seg rd-my-tabs" role="group" aria-label="마이페이지 메뉴">
+                    <button type="button" aria-pressed={activeTab === 'purchases'} onClick={() => setActiveTab('purchases')}>
+                        <FileText size={16} aria-hidden /> 구매 내역
                     </button>
-                    <button
-                        onClick={() => setActiveTab('requests')}
-                        className={`pb-3 px-2 font-bold text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${activeTab === 'requests' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
-                    >
-                        <MessageSquare size={14} /> 내 요청
+                    <button type="button" aria-pressed={activeTab === 'requests'} onClick={() => setActiveTab('requests')}>
+                        <MessageSquare size={16} aria-hidden /> 내 요청
                     </button>
                     {/* [수신설정] 2026-09-05 배포한 마케팅 동의문이 "마이페이지 > 설정에서" 끄라고
                         안내하는데 그 화면이 없었다. 법이 요구하는 '수신 거부 방법'이기도 하다. */}
-                    <button
-                        onClick={() => setActiveTab('settings')}
-                        className={`pb-3 px-2 font-bold text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${activeTab === 'settings' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
-                    >
-                        <Settings size={14} /> 설정
+                    <button type="button" aria-pressed={activeTab === 'settings'} onClick={() => setActiveTab('settings')}>
+                        <Settings size={16} aria-hidden /> 설정
                     </button>
                 </div>
 
-                {activeTab === 'requests' && <MyDbRequests />}
+                <div className="rd-my-panel">
+                    {/* [10/7] 내 요청 = 원본 제보 + 개인DB 요청 — 둘 다 운영자 안내가 붙는다 */}
+                    {activeTab === 'requests' && <div className="rd-my-stack">
+                        <section className="rd-my-reqsec" aria-labelledby="my-reports-h"><h2 id="my-reports-h" className="rd-my-sec-title">무료 타이핑</h2><MyReports onOpenPurchases={() => { setReloadKey(k => k + 1); setActiveTab('purchases'); setPurchaseTab('material'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></section>
+                        <section className="rd-my-reqsec" aria-labelledby="my-dbreq-h"><h2 id="my-dbreq-h" className="rd-my-sec-title">개인DB 요청</h2><MyDbRequests /></section>
+                    </div>}
 
-                {activeTab === 'settings' && (
-                    <div className="space-y-4">
-                        <MarketingSettings />
-                        <PasswordSettings />
-                    </div>
-                )}
-
-                {activeTab === 'purchases' && (
-                    <div className="space-y-4">
-                        {/* Sub-tabs for Purchases */}
-                        <div className="flex gap-2 p-1 bg-slate-200/50 rounded-xl w-fit">
-                            <button
-                                onClick={() => setPurchaseTab('material')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${purchaseTab === 'material' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                문항 자료 ({purchases.filter(p => p.exam?.file_type !== 'DB' && p.exam?.content_type !== '개인DB').length})
-                            </button>
-                            <button
-                                onClick={() => setPurchaseTab('db')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${purchaseTab === 'db' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                개인DB 소스 ({purchases.filter(p => p.exam?.file_type === 'DB' || p.exam?.content_type === '개인DB').length})
-                            </button>
+                    {activeTab === 'settings' && (
+                        <div className="rd-my-stack">
+                            <MarketingSettings />
+                            <PasswordSettings />
                         </div>
+                    )}
 
-                        <div className="bg-white rounded-lg shadow-sm border border-slate-200 divide-y divide-slate-100">
-                            {purchases.filter(p => {
-                                const isDb = p.exam?.file_type === 'DB' || p.exam?.content_type === '개인DB';
-                                return purchaseTab === 'db' ? isDb : !isDb;
-                            }).length === 0 ? (
-                                <div className="p-16 text-center">
-                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                                        {purchaseTab === 'db' ? <Database size={32} /> : <FileText size={32} />}
-                                    </div>
-                                    <p className="text-slate-400 font-medium">
-                                        {purchaseTab === 'db' ? '구매한 개인DB 자료가 없습니다.' : '구매한 문항 자료가 없습니다.'}
-                                    </p>
-                                    <a href="/#catalog" className="mt-4 inline-block rounded-xl bg-[#193740] px-5 py-2.5 text-sm font-bold text-white">출제자료 살펴보기 →</a>
+                    {activeTab === 'purchases' && (
+                        <div className="rd-my-stack">
+                            {/* Sub-tabs for Purchases */}
+                            <div className="rd-seg rd-seg-inline rd-my-sub" role="group" aria-label="구매 내역 종류">
+                                <button type="button" aria-pressed={purchaseTab === 'material'} onClick={() => setPurchaseTab('material')}>
+                                    문항 자료 <b>{materialCount}</b>
+                                </button>
+                                <button type="button" aria-pressed={purchaseTab === 'db'} onClick={() => setPurchaseTab('db')}>
+                                    개인DB 소스 <b>{dbCount}</b>
+                                </button>
+                            </div>
+
+                            {shownPurchases.length === 0 ? (
+                                <div className="rd-my-empty">
+                                    <span className="rd-my-empty-icon">
+                                        {purchaseTab === 'db' ? <Database size={28} /> : <FileText size={28} />}
+                                    </span>
+                                    <p>{purchaseTab === 'db' ? '구매한 개인DB 자료가 없습니다.' : '구매한 문항 자료가 없습니다.'}</p>
+                                    <a href="/#catalog" className="rd-btn rd-btn-primary">출제자료 살펴보기</a>
                                 </div>
                             ) : (
-                                purchases
-                                    .filter(p => {
-                                        const isDb = p.exam?.file_type === 'DB' || p.exam?.content_type === '개인DB';
-                                        return purchaseTab === 'db' ? isDb : !isDb;
-                                    })
-                                    .map(p => {
+                                <ul className="rd-my-list">
+                                    {shownPurchases.map(p => {
                                         const file = p.exam;
                                         if (!file) return null;
+                                        const isDb = file.file_type === 'DB' || file.content_type === '개인DB';
                                         return (
-                                            <div key={p.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 flex items-center justify-center rounded ${file.file_type === 'DB' || file.content_type === '개인DB' ? 'bg-brand-50 text-brand-400' : 'bg-slate-100 text-slate-400'}`}>
-                                                        {file.file_type === 'PDF' ? <PdfFileIcon size={20} /> : (file.file_type === 'DB' ? <Database size={20} /> : <HwpFileIcon size={20} />)}
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${file.file_type === 'DB' ? 'bg-brand-100 text-brand-600' : 'bg-brand-50 text-brand-600'}`}>
-                                                                {file.school}
-                                                            </span>
-                                                            <span className="text-[11px] text-slate-500 font-medium">{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>
-                                                        </div>
-                                                        <div className="font-bold text-slate-800 text-sm">{file.title}</div>
-                                                        <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-2 font-medium">
-                                                            <span>구매일: {new Date(p.created_at).toLocaleDateString()}</span>
-                                                            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                                            <span>{file.subject}</span>
-                                                            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                                            <span className="text-slate-500">-{p.price?.toLocaleString()}P</span>
-                                                        </div>
-                                                    </div>
+                                            <li key={p.id} className="rd-my-item">
+                                                <span className={`rd-my-ficon${isDb ? ' is-db' : ''}`}>
+                                                    {file.file_type === 'PDF' ? <PdfFileIcon size={26} /> : (file.file_type === 'DB' ? <Database size={22} /> : <HwpFileIcon size={26} />)}
+                                                </span>
+                                                <div className="rd-my-info">
+                                                    <p className="rd-my-meta">
+                                                        <span className="rd-my-school">{file.school}</span>
+                                                        <span>{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>
+                                                    </p>
+                                                    <p className="rd-my-title">{file.title}</p>
+                                                    <p className="rd-my-facts">
+                                                        <span>구매일: {new Date(p.created_at).toLocaleDateString()}</span>
+                                                        {file.subject && <span>{file.subject}</span>}
+                                                        <span>-{p.price?.toLocaleString()}P</span>
+                                                    </p>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    {file.file_type === 'DB' || file.content_type === '개인DB' ? (
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <span className="px-3 py-1.5 bg-brand-50 text-brand-600 rounded-lg text-xs font-extrabold border border-brand-100 flex items-center gap-1.5">
-                                                                <Database size={12} /> DB 소스용
-                                                            </span>
-                                                            <Link href="/" className="text-[10px] text-slate-400 hover:text-brand-600 underline font-medium">
+                                                <div className="rd-my-actions">
+                                                    {isDb ? (
+                                                        <div className="rd-my-act">
+                                                            <span className="rd-my-dbtag"><Database size={14} /> DB 소스용</span>
+                                                            <Link href="/" className="rd-my-act-note rd-my-act-link">
                                                                 '시험지 만들기'에서 문항 추출
                                                             </Link>
                                                         </div>
@@ -419,43 +414,42 @@ export default function MyPage() {
                                                             const isExpired = daysLeft === 0;
 
                                                             return (
-                                                                <div className="flex flex-col items-end gap-1">
+                                                                <div className="rd-my-act">
                                                                     <button
+                                                                        type="button"
                                                                         onClick={() => handleDownload(p)}
                                                                         disabled={isExpired}
-                                                                        className={`px-4 py-2.5 border rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-sm ${
-                                                                            isExpired 
-                                                                                ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed' 
-                                                                                : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50 active:scale-95'
-                                                                        }`}
+                                                                        className="rd-btn rd-my-dl"
                                                                     >
-                                                                        <Download size={14} /> 다운로드
+                                                                        <Download size={18} /> 다운로드
                                                                     </button>
                                                                     {isExpired ? (
-                                                                        <span className="text-[10px] text-red-500 font-bold">다운로드 기간 만료</span>
+                                                                        <span className="rd-my-act-note is-bad">다운로드 기간 만료</span>
                                                                     ) : (
-                                                                        <span className="text-[10px] text-slate-500 font-medium">{daysLeft}일 남음</span>
+                                                                        <span className="rd-my-act-note">{daysLeft}일 남음</span>
                                                                     )}
                                                                 </div>
                                                             );
                                                         })()
                                                     )}
                                                     <button
+                                                        type="button"
                                                         onClick={() => handleDeletePurchase(p.id)}
-                                                        className="px-2.5 py-2.5 border border-red-100 rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 transition-all active:scale-95"
+                                                        className="rd-my-del"
                                                         title="구매 내역 삭제"
+                                                        aria-label="구매 내역 삭제"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash2 size={18} />
                                                     </button>
                                                 </div>
-                                            </div>
+                                            </li>
                                         );
-                                    })
+                                    })}
+                                </ul>
                             )}
                         </div>
-                    </div>
-                )}
-
+                    )}
+                </div>
             </main>
         </div>
     );

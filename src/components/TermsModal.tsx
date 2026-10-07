@@ -1,5 +1,7 @@
 "use client"
 
+import { X } from "lucide-react"
+
 import { useState } from "react"
 
 interface TermsModalProps {
@@ -13,13 +15,15 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
-                <div className="p-6 border-b">
-                    <h2 className="text-xl font-bold">서비스 이용약관 동의</h2>
+        <div className="rd rd-overlay" style={{ zIndex: 300 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="rd-modal rd-modal-lg rd-legal" role="dialog" aria-modal="true" aria-labelledby="TermsModal-title">
+                <div className="rd-sheet-handle" aria-hidden="true" />
+                <div className="rd-modal-head">
+                    <h2 id="TermsModal-title" className="rd-modal-title">서비스 이용약관 동의</h2>
+                    <button type="button" className="rd-modal-x" aria-label="닫기" onClick={onClose}><X size={20} /></button>
                 </div>
 
-                <div className="p-6 overflow-y-auto flex-1 text-sm leading-relaxed space-y-4">
+                <div className="rd-modal-body rd-legal-body">
                     <p className="font-bold mb-4">수학ETF 서비스 이용을 위해 아래 약관에 동의해주세요.</p>
                     <div className="space-y-6 text-foreground/90">
                         <section>
@@ -83,17 +87,17 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                     </div>
                 </div>
 
-                <div className="p-6 border-t flex justify-end gap-2">
+                <div className="rd-modal-foot">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-foreground/70 hover:text-foreground transition-colors"
+                        type="button" className="rd-btn rd-btn-gray"
                     >
                         {readonly ? '닫기' : '취소'}
                     </button>
                     {!readonly && onAgree && (
                         <button
                             onClick={onAgree}
-                            className="bg-green-700 text-white px-6 py-2 rounded-md hover:bg-green-800 transition-colors font-semibold"
+                            type="button" className="rd-btn rd-btn-primary"
                         >
                             동의하고 가입하기
                         </button>

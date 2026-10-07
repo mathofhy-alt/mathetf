@@ -1,14 +1,13 @@
-import PageHeading from "@/components/PageHeading";
 import { mockQuestionHref } from '@/lib/mock-question-link';
 import {questionBankHref} from '@/lib/discovery';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Download, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import Header from '@/components/Header';
 import MockExamCard, { MOCK_CATEGORIES, MockCategory, CATEGORY_DESC } from '@/components/mock/MockExamCard';
 import { getMockCategoryStats } from '@/lib/mock-category-stats';
-import ExamPreviewCarousel from '@/components/ExamPreviewCarousel';
+import ExamPreview from '@/components/exam/ExamPreview';
 import MockAdminControls from '@/components/mock/MockAdminControls';
 import { fetchMockExamsByCategory, fetchMockExamBySlug, fetchAllMockExams } from '@/lib/mock-exams';
 import { proxiedOgImage } from '@/lib/og-image';
@@ -130,98 +129,58 @@ async function CategoryView({ category }: { category: MockCategory }) {
             },
         ],
     };
+    const maxSubj = Math.max(1, ...(stats?.bySubject || []).map(x => x.count));
+    const maxUnit = Math.max(1, ...(stats?.byUnit || []).map(x => x.count));
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#EEF3FA] to-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="max-w-[1140px] mx-auto px-4 py-7 sm:py-9">
-                <Link href="/모의고사" className="inline-flex items-center gap-1 text-sm text-[#426D36] font-bold hover:underline mb-4">
-                    <ArrowLeft size={15} /> 모의고사 전체
-                </Link>
-                <PageHeading eyebrow="THE EXAM COLLECTION" title={`${category} 수학 자료실.`} description={`${CATEGORY_DESC[category]||''} 원본 파일과 문항별 출제 자료 ${items.length}회차를 모았습니다.`}/>
-                {items.length === 0 ? (
-                    <div className="py-20 text-center bg-white rounded-2xl border border-slate-200 text-slate-400 font-semibold">
-                        아직 {category} 자료가 없어요.
-                    </div>
-                ) : (
-                    <div className="mock-result-grid">
-                        {items.map((e) => <MockExamCard key={e.slug} exam={e} />)}
-                    </div>
-                )}
+            <div>
+                <section className="rd-wrap rd-x-top">
+                    <Link href="/모의고사" className="rd-x-back"><ChevronLeft size={18} aria-hidden="true" />모의고사 전체</Link>
+                    <h1 className="rd-x-h1 rd-s-h1">{category} 수학<br />기출 자료실</h1>
+                    <p className="rd-lead">{CATEGORY_DESC[category] || ''} 원본 파일과 문항별 출제 자료 {items.length}회차를 모았습니다.</p>
+                </section>
+
+                <section className="rd-wrap rd-s-list">
+                    {items.length === 0 ? <p className="rd-cat-empty">아직 {category} 자료가 없어요.</p>
+                        : <div className="rd-mk-grid">{items.map((e) => <MockExamCard key={e.slug} exam={e} />)}</div>}
+                </section>
 
                 {/* 우리 분류 데이터로 만든 출제 분석. 문제 원문이 아니라 통계라 저작권 문제가 없다.
                     이 페이지가 본문 981자로 사이트에서 제일 얇았는데, '사관학교 기출' 은 월 6,650회로
                     우리가 가진 단일 키워드 중 수요가 가장 크다(네이버 유기 12등). */}
-                {stats && (
-                    <section className="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
-                        <h2 className="text-base font-bold text-slate-800 mb-3">{category} 수학 기출 출제 분석</h2>
-                        <div className="space-y-3 text-sm text-slate-600 leading-relaxed break-keep">
-                            <p>
-                                수학ETF가 보유한 {category} 수학 기출{' '}
-                                <strong className="text-[#294437]">{stats.total.toLocaleString()}문항</strong>을
-                                과목·단원·난이도로 분류한 결과입니다. 다운로드 파일 수가 아닌 시험지 출제용 문항 수이며, 원본·변형 PDF와 HWP는 별도로 등록된 회차에서만 받을 수 있습니다.
-                                {stats.years.length > 1 && (
-                                    <> {stats.years[stats.years.length - 1].year}년부터 {stats.years[0].year}년까지
-                                    {' '}{stats.years.length}개년, 연도당 평균 {Math.round(stats.total / stats.years.length)}문항입니다.</>
-                                )}
-                            </p>
-                            <p>
-                                평균 난이도는 10점 만점에 <strong className="text-[#294437]">{stats.avgDifficulty.toFixed(1)}점</strong>이고,
-                                난이도 분포는 쉬움 {Math.round(stats.easy / stats.total * 100)}% ·
-                                보통 {Math.round(stats.mid / stats.total * 100)}% ·
-                                어려움 {Math.round(stats.hard / stats.total * 100)}% 입니다.
-                                출제 비중이 큰 단원은{' '}
-                                {stats.byUnit.slice(0, 3).map((u, i) => (
-                                    <span key={u.unit}>{i > 0 ? ', ' : ''}<strong className="text-[#294437]">{u.unit}</strong> {u.count}문항</span>
-                                ))}
-                                {' '}순입니다.
-                            </p>
+                {stats && <section className="rd-s-zone" aria-labelledby="mock-analysis-title">
+                    <div className="rd-wrap">
+                        <p className="rd-kicker">출제 분석</p>
+                        <h2 id="mock-analysis-title" className="rd-x-h2">{category} 수학 기출 출제 분석</h2>
+                        <div className="rd-s-prose">
+                            <p>수학ETF가 보유한 {category} 수학 기출 <b>{stats.total.toLocaleString()}문항</b>을 과목·단원·난이도로 분류한 결과입니다. 다운로드 파일 수가 아닌 시험지 출제용 문항 수이며, 원본·변형 PDF와 HWP는 별도로 등록된 회차에서만 받을 수 있습니다.
+                                {stats.years.length > 1 && <> {stats.years[stats.years.length - 1].year}년부터 {stats.years[0].year}년까지 {stats.years.length}개년, 연도당 평균 {Math.round(stats.total / stats.years.length)}문항입니다.</>}</p>
+                            <p>평균 난이도는 10점 만점에 <b>{stats.avgDifficulty.toFixed(1)}점</b>이고, 난이도 분포는 쉬움 {Math.round(stats.easy / stats.total * 100)}%, 보통 {Math.round(stats.mid / stats.total * 100)}%, 어려움 {Math.round(stats.hard / stats.total * 100)}%입니다.
+                                {' '}출제 비중이 큰 단원은 {stats.byUnit.slice(0, 3).map((u, i) => <span key={u.unit}>{i > 0 ? ', ' : ''}<b>{u.unit}</b> {u.count}문항</span>)} 순입니다.</p>
                         </div>
-
-                        <div className="grid sm:grid-cols-2 gap-5 mt-5">
-                            <div>
-                                <h3 className="text-xs font-bold text-slate-500 mb-2">과목별 출제</h3>
-                                <table className="w-full text-sm">
-                                    <tbody>
-                                        {stats.bySubject.slice(0, 7).map((x) => (
-                                            <tr key={x.subject} className="border-b border-slate-100 last:border-0">
-                                                <td className="py-1.5 text-slate-600 break-keep">{x.subject}</td>
-                                                <td className="py-1.5 text-right font-bold text-[#426D36] tabular-nums">{x.count}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        <div className="rd-mk-stats">
+                            <div className="rd-s-unitcard">
+                                <div className="rd-s-unithead"><h3>과목별 출제</h3></div>
+                                <div className="rd-x-bars is-tight">{stats.bySubject.slice(0, 7).map(x => <div key={x.subject} className="rd-x-bar is-small">
+                                    <span title={x.subject}>{x.subject}</span><div className="rd-x-track"><span style={{ width: `${Math.round(x.count / maxSubj * 100)}%` }} /></div><span>{x.count}</span>
+                                </div>)}</div>
                             </div>
-                            <div>
-                                <h3 className="text-xs font-bold text-slate-500 mb-2">단원별 출제</h3>
-                                <table className="w-full text-sm">
-                                    <tbody>
-                                        {stats.byUnit.slice(0, 7).map((x) => (
-                                            <tr key={x.unit} className="border-b border-slate-100 last:border-0">
-                                                <td className="py-1.5 text-slate-600 break-keep">{x.unit}</td>
-                                                <td className="py-1.5 text-right font-bold text-[#638747] tabular-nums">{x.count}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="rd-s-unitcard">
+                                <div className="rd-s-unithead"><h3>단원별 출제</h3></div>
+                                <div className="rd-x-bars is-tight">{stats.byUnit.slice(0, 7).map(x => <div key={x.unit} className="rd-x-bar is-small">
+                                    <span title={x.unit}>{x.unit}</span><div className="rd-x-track"><span style={{ width: `${Math.round(x.count / maxUnit * 100)}%` }} /></div><span>{x.count}</span>
+                                </div>)}</div>
                             </div>
                         </div>
-
-                        {stats.years.length > 1 && (
-                            <div className="mt-5">
-                                <h3 className="text-xs font-bold text-slate-500 mb-2">연도별 보유 문항</h3>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {stats.years.map((y) => (
-                                        <span key={y.year} className="text-[11px] bg-slate-50 border border-slate-200 text-slate-600 font-semibold px-2.5 py-1 rounded-lg">
-                                            {y.year} <strong className="text-[#426D36]">{y.count}</strong>
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </section>
-                )}
-            </main>
+                        {stats.years.length > 1 && <>
+                            <h3 className="rd-x-sub">연도별 보유 문항</h3>
+                            <div className="rd-x-concepts">{stats.years.map(y => <span key={y.year}>{y.year}년 <b>{y.count}</b></span>)}</div>
+                        </>}
+                    </div>
+                </section>}
+            </div>
         </div>
     );
 }
@@ -265,24 +224,22 @@ async function DetailView({ slug }: { slug: string }) {
         ...(previews.length ? { image: previews } : {}),
     };
 
+    const meta = [String(exam.year), exam.grade, exam.month ? `${exam.month}월` : '', exam.subject || ''].filter(Boolean);
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#EEF3FA] to-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="max-w-[900px] mx-auto px-4 py-7 sm:py-9">
-                {/* 브레드크럼 */}
-                <nav className="text-xs text-slate-400 font-medium mb-3">
-                    <Link href="/모의고사" className="hover:text-[#426D36]">모의고사</Link>
-                    <span className="mx-1.5">›</span>
-                    <Link href={`/모의고사/${exam.category}`} className="hover:text-[#426D36]">{exam.category}</Link>
-                    <span className="mx-1.5">›</span>
-                    <span className="text-slate-500">{exam.year} {exam.grade}</span>
-                </nav>
-
-                {/* 헤더 + 설명 */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
-                    <div className="flex items-start justify-between gap-3">
-                        <span className={`text-[11px] font-extrabold text-white px-2.5 py-1 rounded-full bg-gradient-to-r ${cat.grad}`}>{exam.category}</span>
+            <div>
+                <section className="rd-wrap rd-x-top">
+                    <nav className="rd-mk-crumb" aria-label="위치">
+                        <Link href="/모의고사">모의고사</Link><ChevronRight size={14} aria-hidden="true" />
+                        <Link href={`/모의고사/${exam.category}`}>{exam.category}</Link><ChevronRight size={14} aria-hidden="true" />
+                        <span>{exam.year} {exam.grade}</span>
+                    </nav>
+                    <h1 className="rd-x-h1">{exam.title}</h1>
+                    <div className="rd-x-meta">
+                        <span className="rd-pill is-accent">{exam.category}</span>
+                        {meta.map(m => <span key={m} className="rd-pill">{m}</span>)}
                         {!exam.materialOnly && <MockAdminControls exam={{
                             id: exam.id, category: exam.category, year: exam.year, grade: exam.grade,
                             month: exam.month, subject: exam.subject || '', title: exam.title,
@@ -290,96 +247,62 @@ async function DetailView({ slug }: { slug: string }) {
                             hasVariantPdf: !!exam.variant_pdf_path, hasVariantHwp: !!exam.variant_hwp_path,
                         }} />}
                     </div>
-                    <h1 className="mt-3 text-xl sm:text-2xl font-black break-keep">{exam.title}</h1>
-                    <div className="mt-4 rounded-xl border bg-brand-50 p-4 text-sm">
-                        {createHref ? <>
-                            <p className="font-bold mb-2">이 회차 문항으로 시험지 만들기</p>
-                            <p className="mb-3 text-xs text-slate-600">해당 회차 문항을 바로 불러옵니다. 필요한 문제를 골라 나만의 시험지를 만드세요.</p>
-                            <Link className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 font-bold text-white hover:bg-brand-700" href={createHref}>문항 골라 출제 →</Link>
-                        </> : <p>이 회차의 출제 문항은 준비 중입니다. 등록된 파일은 아래에서 받을 수 있습니다.</p>}
+                    <p className="rd-lead rd-mk-intro">{intro}</p>
+                </section>
 
+                <section className="rd-wrap">
+                    <div className="rd-x-main">
+                        <div className="rd-x-left">
+                            <section id="exam-preview" className="rd-x-prev" aria-labelledby="mock-preview-title">
+                                <div className="rd-x-prev-head">
+                                    <h2 id="mock-preview-title">문제 미리보기</h2>
+                                    <p>{exam.materialOnly ? '이 회차는 문항을 골라 시험지로 만들 수 있어요.' : '로그인 없이 볼 수 있어요.'}</p>
+                                </div>
+                                {previews.length > 0 ? <ExamPreview images={previews} label={exam.title} /> : <p className="rd-x-empty">{exam.materialOnly ? '원본 파일은 아직 등록되지 않았습니다.' : '미리보기를 준비 중이에요.'}</p>}
+                            </section>
+                        </div>
+
+                        <aside id="exam-side" className="rd-x-side" aria-label="시험지 만들기와 파일 받기">
+                            <div className="rd-get-stack">
+                                {createHref ? <div className="rd-get-card">
+                                    <p className="rd-get-kicker">시험지 만들기</p>
+                                    <h2 className="rd-get-title">이 회차 문항으로 시험지 만들기</h2>
+                                    <p className="rd-get-text">이 회차 문항을 바로 불러옵니다. 필요한 문제만 골라 나만의 시험지를 만드세요.</p>
+                                    <Link href={createHref} className="rd-btn rd-btn-primary rd-btn-block">문항 골라 만들기</Link>
+                                </div> : <p className="rd-get-card is-zone rd-get-text">이 회차의 출제 문항은 준비 중입니다. 등록된 파일은 아래에서 받을 수 있습니다.</p>}
+
+                                {!exam.materialOnly && <div className="rd-get-card is-zone">
+                                    <p className="rd-get-kicker is-gray">회원 무료</p>
+                                    <h2 className="rd-get-title">파일 받기</h2>
+                                    {downloads.length === 0 ? <p className="rd-get-text">등록된 파일이 없어요.</p> : (['원본', '변형'] as const).map(group => {
+                                        const list = downloads.filter(d => d.group === group);
+                                        if (!list.length) return null;
+                                        return <div key={group} className="rd-mk-dl">
+                                            <p><b>{group}</b> {group === '변형' ? '같은 유형·난이도의 새 문제' : '실제 시험 문제 그대로'}</p>
+                                            <div>{list.map(d => <a key={d.kind} href={`/api/mock/download?slug=${encodeURIComponent(exam.slug)}&kind=${d.kind}`} className="rd-cart-btn">
+                                                <Download size={17} aria-hidden="true" />{group} {d.fmt}
+                                            </a>)}</div>
+                                        </div>;
+                                    })}
+                                    <p className="rd-get-foot">로그인 후 받을 수 있어요.</p>
+                                </div>}
+                            </div>
+                        </aside>
                     </div>
-                    <p className="mt-1.5 text-sm text-slate-400 font-medium">
-                        {exam.year} · {exam.grade}{exam.month ? ` · ${exam.month}월` : ''}{exam.subject ? ` · ${exam.subject}` : ''}
-                    </p>
-                    <p className="mt-4 text-sm text-slate-600 leading-relaxed break-keep">{intro}</p>
-                </div>
+                </section>
 
-                {exam.materialOnly && <p className="mb-5 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">이 회차는 문항 골라 출제를 이용할 수 있습니다. 원본·변형 PDF/HWP 파일은 아직 등록되지 않았습니다.</p>}
-                {/* 다운로드 */}
-                {!exam.materialOnly && <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
-                    <h2 className="font-extrabold text-[#294437] mb-1">자료 다운로드</h2>
-                    <p className="text-xs text-slate-400 mb-4">로그인 후 다운로드할 수 있어요 · 무료</p>
-                    {downloads.length === 0 ? (
-                        <p className="text-sm text-slate-400">등록된 파일이 없어요.</p>
-                    ) : (
-                        <div className="grid sm:grid-cols-2 gap-3">
-                            {(['원본', '변형'] as const).map((group) => {
-                                const items = downloads.filter((d) => d.group === group);
-                                if (items.length === 0) return null;
-                                const isVariant = group === '변형';
-                                return (
-                                    <div
-                                        key={group}
-                                        className={`rounded-2xl border p-4 ${isVariant
-                                            ? 'border-[#88A96D]/50 bg-gradient-to-br from-[#426D36]/5 to-[#638747]/10'
-                                            : 'border-slate-200 bg-slate-50/60'}`}
-                                    >
-                                        <div className="flex items-baseline gap-2 mb-0.5">
-                                            <span className={`text-sm font-extrabold ${isVariant ? 'text-[#638747]' : 'text-[#294437]'}`}>{group}</span>
-                                            {isVariant && <span className="text-[10px] font-extrabold text-white bg-gradient-to-r from-[#426D36] to-[#638747] px-2 py-0.5 rounded-full">한 번 더 연습</span>}
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 mb-3 break-keep">
-                                            {isVariant ? '같은 유형·난이도의 새 문제' : '실제 시험 문제 그대로'}
-                                        </p>
-                                        <div className="flex gap-2">
-                                            {items.map((d) => (
-                                                <a
-                                                    key={d.kind}
-                                                    href={`/api/mock/download?slug=${encodeURIComponent(exam.slug)}&kind=${d.kind}`}
-                                                    className="group/dl flex-1 flex items-center justify-center gap-1.5 bg-white rounded-xl px-3 py-2.5 border border-slate-200 shadow-sm font-extrabold text-sm text-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all"
-                                                >
-                                                    <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-black text-white ${d.fmt === 'PDF' ? 'bg-rose-500' : 'bg-[#638747]'}`}>
-                                                        {d.fmt === 'PDF' ? 'P' : 'H'}
-                                                    </span>
-                                                    {d.fmt}
-                                                    <Download size={14} className="text-slate-400 group-hover/dl:text-[#426D36] transition-colors" />
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                {related.length > 0 && <section className="rd-x-more" aria-labelledby="mock-related-title">
+                    <div className="rd-wrap">
+                        <h2 id="mock-related-title" className="rd-x-h2">같은 {exam.category} 다른 회차</h2>
+                        <div className="rd-mk-grid rd-mk-grid-related">{related.map((e) => <MockExamCard key={e.slug} exam={e} />)}</div>
+                        <div className="rd-x-links">
+                            <Link href={`/모의고사/${exam.category}`} className="rd-link">{exam.category} 자료실 전체 보기</Link>
+                            <Link href="/모의고사" className="rd-link">모의고사 전체 보기</Link>
                         </div>
-                    )}
-                </div>}
-
-                {/* 미리보기 (캐러셀) */}
-                {!exam.materialOnly && <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-5">
-                    <h2 className="font-extrabold text-[#294437] mb-4">문제 미리보기</h2>
-                    {previews.length === 0 ? (
-                        <div className="py-12 text-center text-slate-300 text-sm">미리보기 준비 중이에요.</div>
-                    ) : (
-                        <ExamPreviewCarousel images={previews} label={exam.title} />
-                    )}
-                </div>}
-
-                {/* 관련 회차 */}
-                {related.length > 0 && (
-                    <div className="mb-2">
-                        <div className="flex items-center gap-2.5 mb-4">
-                            <span className={`w-1.5 h-5 rounded-full bg-gradient-to-b ${cat.bar}`} />
-                            <h2 className="text-lg font-extrabold">같은 {exam.category} 다른 회차</h2>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {related.map((e) => <MockExamCard key={e.slug} exam={e} />)}
-                        </div>
+                        <p className="rd-x-note">자료 출처: 해당 시험 주관 기관, 학습 목적 제공</p>
                     </div>
-                )}
-
-                {/* 출처 */}
-                <p className="text-center text-xs text-slate-300 mt-8">자료 출처: 해당 시험 주관 기관 · 학습 목적 제공</p>
-            </main>
+                </section>}
+            </div>
         </div>
     );
 }

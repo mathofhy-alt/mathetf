@@ -11,18 +11,38 @@ import { FileDown, Trash2, RefreshCw, User as UserIcon, Calendar } from 'lucide-
 const STATUSES = ['접수', '처리중', '완료', '반려'] as const;
 const mb = (n?: number | null) => !n ? '' : n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`;
 
+/** 연결 요청 — 문항을 나눠 숨기느라 202(남은 수)가 오면 0 이 될 때까지 다시 부른다(10/7) */
+async function postLink(body: Record<string, unknown>, onProgress: (remaining: number) => void) {
+    for (let i = 0; i < 200; i++) {
+        const r = await fetch('/api/admin/db-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 202 && j.inProgress) { onProgress(j.remaining); continue; }
+        return { r, j };
+    }
+    throw new Error('너무 오래 걸립니다. 다시 눌러 주세요(이어서 진행됩니다).');
+}
+
 export default function DbRequestsAdmin() {
     const supabase = useMemo(() => createClient(), []);
     const [rows, setRows] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    // [10/7] 요청 없이 회원 이메일로 바로 연결한 교재(전용 개인DB)
+    const [direct, setDirect] = useState<any[]>([]);
+    const [dForm, setDForm] = useState({ source: '', title: '', email: '', price: '0' });
+    const [dSaving, setDSaving] = useState(false);
+    const [progress, setProgress] = useState('');
+    // [10/7] 처리 끝난 요청(완료·반려)은 '완료' 탭으로 — 할 일만 먼저 보이게(사용자 요청)
+    const [tab, setTab] = useState<'open' | 'done'>('open');
+    const isDone = (r: any) => r.status === '완료' || r.status === '반려';
+    const shown = rows.filter(r => (tab === 'done') === isDone(r));
 
     const load = async () => {
         setLoading(true); setError('');
         try {
             const r = await fetch('/api/admin/db-requests', { cache: 'no-store' });
             const j = await r.json(); if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-            setRows(j.requests || []);
+            setRows(j.requests || []); setDirect(j.direct || []);
         } catch (e: any) { setError(e.message || '불러오지 못했습니다.'); }
         setLoading(false);
     };
@@ -66,13 +86,36 @@ export default function DbRequestsAdmin() {
 
 그 묶음의 문항은 다른 회원의 검색·유사문항·예상문제 등 모든 기능에서 빠집니다.`)) return;
         setSavingId(row.id);
-        const r = await fetch('/api/admin/db-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'link', id: row.id, source_db_id: f.source, title: f.title, price: Number(f.price) }) });
-        const j = await r.json().catch(() => ({}));
-        setSavingId(null);
+        const { r, j } = await postLink({ action: 'link', id: row.id, source_db_id: f.source, title: f.title, price: Number(f.price) }, n => setProgress(`문항 숨기는 중… ${n.toLocaleString()}개 남음`))
+            .catch(e => ({ r: { ok: false, status: 0 } as Response, j: { error: e.message } }));
+        setSavingId(null); setProgress('');
         if (!r.ok) { alert('연결하지 못했습니다: ' + (j.error || r.status)); return; }
         alert(`연결했습니다. 문항 ${j.questions}개를 이 회원 전용으로 바꿨습니다.`);
         setRows(prev => prev.map(x => x.id === row.id ? { ...x, private_db: { ...j.privateDb, paid_at: x.private_db?.paid_at ?? null } } : x));
         setLinkForm(prev => { const n = { ...prev }; delete n[row.id]; return n; });
+    };
+    const linkDirect = async () => {
+        const f = dForm;
+        if (!confirm(`'${f.source}' 교재를 ${f.email} 님 전용 개인DB(${Number(f.price).toLocaleString()}원)로 연결할까요?
+
+교재 이름으로 넣으면 그 아래 단원·스텝 묶음이 전부 포함됩니다. 그 문항은 연결한 회원 말고는 아무에게도 안 보입니다.`)) return;
+        setDSaving(true);
+        const { r, j } = await postLink({ action: 'link', email: f.email, source_db_id: f.source, title: f.title, price: Number(f.price) }, n => setProgress(`문항 숨기는 중… ${n.toLocaleString()}개 남음`))
+            .catch(e => ({ r: { ok: false, status: 0 } as Response, j: { error: e.message } }));
+        setDSaving(false); setProgress('');
+        if (!r.ok) { alert('연결하지 못했습니다: ' + (j.error || r.status)); return; }
+        alert(`연결했습니다. 문항 ${j.questions}개가 이 회원 전용입니다.`);
+        setDForm(p => ({ ...p, email: '' }));
+        void load();
+    };
+    const unlink = async (d: any) => {
+        if (!confirm(`${d.owner_email || '이 회원'} 님의 '${d.title}' 연결을 끊을까요?
+
+그 회원의 출제 자료에서 바로 사라집니다(문항은 그대로, 다른 회원에게도 안 보임).`)) return;
+        const r = await fetch('/api/admin/db-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'unlink', privateDbId: d.id }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { alert('끊지 못했습니다: ' + (j.error || r.status)); return; }
+        setDirect(prev => prev.filter(x => x.id !== d.id));
     };
     const remove = async (row: any) => {
         if (!confirm('이 요청과 올린 파일을 모두 삭제할까요? (복구 불가)')) return;
@@ -91,11 +134,40 @@ export default function DbRequestsAdmin() {
                 </div>
                 <button onClick={load} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600 px-3 py-2 rounded-lg border border-slate-200"><RefreshCw size={14} /> 새로고침</button>
             </div>
+            <section className="mb-6 bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+                <h2 className="text-base font-black text-slate-800">회원에게 교재 바로 연결</h2>
+                <p className="text-xs text-slate-500 mt-1">요청 없이, 고른 회원에게만 교재(전용 개인DB)를 엽니다. 교재 이름(예: 쎈 공통수학1)을 넣으면 그 아래 단원·스텝이 전부 들어갑니다. 가격 0원이면 결제 없이 바로 보입니다.</p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1.2fr_1.2fr_1.4fr_0.6fr_auto] gap-2">
+                    <input value={dForm.source} onChange={e => setDForm(p => ({ ...p, source: e.target.value, title: p.title === p.source ? e.target.value : p.title }))} placeholder="교재 이름 (source_db_id 맨 앞)" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                    <input value={dForm.title} onChange={e => setDForm(p => ({ ...p, title: e.target.value }))} placeholder="회원에게 보일 이름" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                    <input value={dForm.email} onChange={e => setDForm(p => ({ ...p, email: e.target.value }))} placeholder="회원 이메일" type="email" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                    <input value={dForm.price} onChange={e => setDForm(p => ({ ...p, price: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="가격" inputMode="numeric" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                    <button onClick={linkDirect} disabled={dSaving || !dForm.source || !dForm.title || !dForm.email || dForm.price === ''} className="text-sm font-bold px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-40">연결</button>
+                </div>
+                {progress && <p className="mt-2 text-sm font-bold text-brand-600" role="status">{progress} (창을 닫지 마세요 — 처음 연결하는 교재는 몇 분 걸립니다)</p>}
+                {direct.length > 0 && <ul className="mt-4 divide-y divide-slate-100 border-t border-slate-100">
+                    {direct.map(d => <li key={d.id} className="py-2 flex items-center gap-3 text-sm">
+                        <span className="font-bold text-slate-800">{d.title}</span>
+                        <span className="text-slate-400 text-xs">{d.source_db_id}</span>
+                        <span className="text-slate-600">{d.owner_email || d.owner_user_id}</span>
+                        <span className="text-slate-500 text-xs">{d.price ? `${Number(d.price).toLocaleString()}원 · ${d.paid_at ? '결제함' : '결제 전'}` : '무료'}</span>
+                        <button onClick={() => unlink(d)} className="ml-auto text-xs font-bold px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50">연결 끊기</button>
+                    </li>)}
+                </ul>}
+            </section>
+            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-1" role="group" aria-label="요청 구분">
+                {([['open', '처리 중'], ['done', '완료']] as const).map(([k, label]) => (
+                    <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)}
+                        className={`px-4 py-1.5 text-sm font-bold rounded-md ${tab === k ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
+                        {label} <span className="text-xs font-semibold text-slate-400">{rows.filter(r => (k === 'done') === isDone(r)).length}</span>
+                    </button>
+                ))}
+            </div>
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm divide-y divide-slate-100">
                 {loading ? <div className="p-16 text-center text-slate-400 font-bold">불러오는 중…</div>
                     : error ? <div className="p-16 text-center text-rose-600 font-bold">{error}</div>
-                    : rows.length === 0 ? <div className="p-16 text-center text-slate-500">요청이 없습니다.</div>
-                    : rows.map(row => (
+                    : shown.length === 0 ? <div className="p-16 text-center text-slate-500">{tab === 'open' ? '처리할 요청이 없습니다.' : '완료한 요청이 없습니다.'}</div>
+                    : shown.map(row => (
                         <div key={row.id} className="p-4 flex items-start gap-4">
                             <div className="flex-1 min-w-0 space-y-1">
                                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">

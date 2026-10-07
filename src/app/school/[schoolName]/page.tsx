@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
-import { ChevronRight, PencilRuler } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import SchoolExamList, { type SchoolExamLocation } from '@/components/school/SchoolExamList';
+import SchoolUnits from '@/components/school/SchoolUnits';
 import { examYearOf, examGroupKey } from '@/lib/exam-groups';
 import { proxiedOgImage } from '@/lib/og-image';
 import { NOT_A_SCHOOL } from '@/lib/stats';
@@ -353,7 +355,6 @@ export default async function SchoolPage({ params }: Props) {
         }
         loc.items.push(g);
     }
-    const multiRegion = locations.length > 1;
 
     // [SEO] 학교 지역 + 단원 분포 (얇은 콘텐츠 방지용 고유 텍스트)
     // [2026-09-08] 자료에 있는 지역을 먼저 쓴다. schools 테이블 첫 행을 쓰면 동명이교일 때
@@ -417,182 +418,111 @@ export default async function SchoolPage({ params }: Props) {
         },
     ];
 
+    // 새 디자인 목록 줄 — 연도 안에서는 학년·학기·중간→기말 순
+    const typeOrder = (t: string) => (t === '중간고사' ? 0 : t === '기말고사' ? 1 : 2);
+    const listLocations: SchoolExamLocation[] = locations.map(loc => ({
+        key: loc.key,
+        label: loc.label,
+        items: [...loc.items]
+            .sort((a: any, b: any) => b.year - a.year || a.grade - b.grade || a.semester - b.semester || typeOrder(a.examType) - typeOrder(b.examType))
+            .map((group: any, idx: number) => {
+                const isMock = group.examType === '모의고사' || group.examType === '수능';
+                const semLabel = isMock ? `${group.semester}월` : `${group.semester}학기`;
+                // 상세페이지(/exam/[id]) 앵커 = 해설 PDF 행
+                const detailFile = group.files.find((f: any) => f.file_type === 'PDF' && f.content_type === '해설') || group.files.find((f: any) => f.file_type === 'PDF');
+                return {
+                    key: `${loc.key}-${idx}`,
+                    href: detailFile ? `/exam/${detailFile.id}` : `/?school=${encodeURIComponent(schoolName)}`,
+                    year: group.year,
+                    grade: Number(group.grade) || 0,
+                    title: `${group.year}년 ${group.grade}학년 ${semLabel} ${group.examType}`,
+                    subject: group.subject,
+                    free: group.files.some((f: any) => !!f.free_pdf_url),
+                };
+            }),
+    }));
+    const shortName = shortSchoolName(schoolName);
+    const yearText = years.length > 1 ? `${years[years.length - 1]}년부터 ${years[0]}년까지 ` : years.length === 1 ? `${years[0]}년 ` : '';
+    const qbHref = `/question-bank?school=${encodeURIComponent(schoolName)}`;
+
+    // 같은 지역 다른 학교 기출 — 학교 페이지끼리 잇는다(자료가 있는 첫 지역 기준)
+    let nearby: { school: string; count: number }[] = [];
+    const firstLoc = examList[0] as any;
+    if (firstLoc?.region && firstLoc?.district && !specialIntro) {
+        const { data: near } = await supabase.from('exam_materials')
+            .select('school, exam_year, grade, semester, exam_type, subject, title')
+            .eq('region', firstLoc.region).eq('district', firstLoc.district).in('content_type', ['해설', '개인DB'])
+            .neq('school', schoolName);
+        const per: Record<string, Set<string>> = {};
+        for (const r of near || []) (per[r.school] ||= new Set()).add(examGroupKey(r as any));
+        nearby = Object.entries(per).map(([school, k]) => ({ school, count: k.size }))
+            .filter(n => !NOT_A_SCHOOL.has(n.school) && n.school !== 'DELETED').sort((a, b) => b.count - a.count).slice(0, 6);
+    }
+
     return (
-        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="library-page max-w-3xl mx-auto px-4 py-8 sm:py-10">
-                {/* 브레드크럼 */}
-                <Link href="/schools" className="text-sm text-[#426D36] hover:underline mb-4 inline-flex items-center gap-1">
-                    ← 학교별 기출 목록
-                </Link>
-
-                {/* 제목 */}
-                <div className="mb-6">
-                    <h1 className="text-2xl sm:text-3xl font-black break-keep">
-                        {schoolName} 수학 기출문제
-                    </h1><p className="mt-4 text-sm leading-relaxed text-slate-600">보유 기출의 회차와 단원을 확인하고 필요한 문항만 골라 출제할 수 있습니다. <Link className="underline" href="/guide">만드는 순서·무료 범위·결과물 보기</Link> · <Link className="underline" href="/question-bank?demo=1&origin=content">5문항 체험</Link></p>
-                    <p className="text-slate-500 mt-2 text-sm">
-                        총 <span className="font-bold text-[#426D36]">{examList.length}개</span>의 시험 자료 · 제공 형식과 이용 조건은 회차별로 확인하세요
+            <div>
+                <section className="rd-wrap rd-x-top">
+                    <Link href="/schools" className="rd-x-back"><ChevronLeft size={18} aria-hidden="true" />학교별 기출 목록</Link>
+                    <h1 className="rd-x-h1 rd-s-h1">{schoolName}{' '}<br />수학 기출문제</h1>
+                    <p className="rd-lead">
+                        {region ? `${region}. ` : ''}{yearText}{totalQuestionCount > 0 ? `시험지 ${examList.length}개, 기출 ${totalQuestionCount.toLocaleString()}문항이 있습니다.` : `시험지 ${examList.length}개가 있습니다.`}
                     </p>
-                </div>
-
-                {/* 학교 소개 (SEO 고유 텍스트 — 데이터 기반 서술 문단) */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-                    <h2 className="sr-only">{schoolName} 수학 기출 안내</h2>
-                    <div className="space-y-3">
-                        {narrative.map((para, i) => (
-                            <p key={i} className="text-slate-600 leading-relaxed break-keep text-sm">{para}</p>
-                        ))}
-                    </div>
-
-                    {subjUnits.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                            <h3 className="text-xs font-bold text-slate-700">📊 과목별 출제 단원</h3>
-                            {subjUnits.map((s) => (
-                                <div key={s.subject}>
-                                    <p className="text-xs font-bold text-[#426D36] mb-1.5">{s.subject} <span className="text-slate-400 font-normal">({s.total}문항)</span></p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {s.units.map((u) => (
-                                            <span key={u.unit} className="text-[11px] bg-[#EAF1E1] text-[#294437] border border-[#C5D8B5]/60 px-2 py-0.5 rounded-full">
-                                                {u.unit} <span className="text-[#426D36] font-bold">{u.count}</span>
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* 시험 목록 (홈 카드 스타일) — 같은 이름의 학교가 두 지역에 있으면 지역별로 나눈다 */}
-                {multiRegion && (
-                    <p className="text-sm text-[#7A6A3F] bg-[#FBF3DE] border border-[#EBDCB4] rounded-xl px-4 py-3 mb-3 break-keep">
-                        같은 이름의 학교가 {locations.length}곳입니다. 지역을 확인하고 받으세요.
-                    </p>
-                )}
-                <div className="space-y-2">
-                    {locations.map((loc) => (
-                    <div key={loc.key} className={multiRegion ? 'space-y-2 pt-2' : 'space-y-2'}>
-                    {multiRegion && (
-                        <h2 className="text-sm font-black text-[#294437] px-1 pt-2">
-                            {loc.label} <span className="font-bold text-slate-400">· {loc.items.length}개</span>
-                        </h2>
-                    )}
-                    {loc.items.map((group: any, idx: number) => {
-                        const isMock = group.examType === '모의고사' || group.examType === '수능';
-                        const semLabel = isMock ? `${group.semester}월` : `${group.semester}학기`;
-                        const hasPdf = group.files.some((f: any) => f.file_type === 'PDF');
-                        const hasFreePdf=group.files.some((f:any)=>!!f.free_pdf_url);
-                        const hasHwp = group.files.some((f: any) => f.file_type === 'HWP');
-                        const hasDb = group.files.some((f: any) => f.file_type === 'DB');
-                        // 상세페이지(/exam/[id]) 앵커 = 해설 PDF 행
-                        const detailFile = group.files.find((f: any) => f.file_type === 'PDF' && f.content_type === '해설') || group.files.find((f: any) => f.file_type === 'PDF');
-                        const href = detailFile ? `/exam/${detailFile.id}` : `/?school=${encodeURIComponent(schoolName)}`;
-
-                        return (
-                            <Link
-                                key={idx}
-                                href={href}
-                                className="group flex items-center justify-between gap-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-[#426D36] border border-slate-100 px-4 sm:px-5 py-4"
-                            >
-                                <div className="min-w-0">
-                                    <p className="font-bold text-base text-[#294437] group-hover:text-[#426D36] transition-colors break-keep leading-snug">
-                                        {group.year}년 {group.grade}학년 {semLabel} {group.examType}
-                                        {group.subject && <span className="ml-1 text-[#426D36]">{group.subject}</span>}
-                                    </p>
-                                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                        {hasFreePdf && <span className="text-[11px] sm:text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold px-2 py-0.5 rounded-full">문제 무료</span>}
-                                        {hasPdf && <span className="text-[11px] sm:text-[10px] bg-red-50 text-red-500 border border-red-100 font-bold px-2 py-0.5 rounded-full">PDF</span>}
-                                        {hasHwp && <span className="text-[11px] sm:text-[10px] bg-[#E7EFD9] text-[#638747] border border-teal-100 font-bold px-2 py-0.5 rounded-full">HWP</span>}
-                                        {hasDb && <span className="text-[11px] sm:text-[10px] bg-[#EAF1E1] text-[#426D36] border border-brand-100 font-bold px-2 py-0.5 rounded-full">개인DB</span>}
-                                    </div>
-                                </div>
-                                <span className="flex-shrink-0 text-[#426D36] group-hover:translate-x-0.5 transition-transform">
-                                    <ChevronRight size={20} />
-                                </span>
-                            </Link>
-                        );
-                    })}
-                    </div>
-                    ))}
-                </div>
-
-                {/* [강사 유입구] 선생님·강사 대상 섹션 — 학교 페이지 121개가 각각 강사 착지점이 되도록 */}
-                <section className="mt-8 bg-white rounded-2xl border-2 border-[#9BD4D2] shadow-sm p-5 sm:p-6">
-                    <div className="flex items-start gap-3">
-                        <span className="shrink-0 w-10 h-10 rounded-xl bg-[#E7EFD9] text-[#638747] flex items-center justify-center">
-                            <PencilRuler size={20} />
-                        </span>
-                        <div className="min-w-0">
-                            <h2 className="text-lg sm:text-xl font-black text-[#294437] break-keep">
-                                {schoolName} 대비 수학 시험지 만들기
-                            </h2>
-                            <p className="text-xs font-bold text-[#638747] mt-0.5">선생님·강사님을 위한 기능</p>
-                        </div>
-                    </div>
-
-                    <p className="text-sm text-slate-600 leading-relaxed break-keep mt-4">
-                        {totalQuestionCount > 0
-                            ? `${schoolName} 기출 ${totalQuestionCount}문항이 단원·난이도별로 정리되어 있습니다. `
-                            : `${schoolName} 기출이 단원·난이도별로 정리되어 있습니다. `}
-                        출제 단원을 골라 <strong className="text-[#294437]">같은 유형의 유사문제로 나만의 시험지</strong>를 만들고,
-                        완성본을 <strong className="text-[#294437]">한글용 HML 파일</strong>로 받아 수업에 바로 쓸 수 있어요.
-                        {topUnitNames && ` 이 학교는 ${topUnitNames} 단원 출제 비중이 높습니다.`}
-                    </p>
-
-                    <ol className="mt-4 grid gap-2 sm:grid-cols-3">
-                        {[
-                            { n: '1', t: '기출 DB 선택', d: `${schoolName} 회차를 담기` },
-                            { n: '2', t: '조건 검색', d: '단원·난이도로 문항 고르기' },
-                            { n: '3', t: 'HML 다운로드', d: '시험지 완성 후 편집·인쇄' },
-                        ].map((s) => (
-                            <li key={s.n} className="bg-[#F2F3F0] border border-slate-100 rounded-xl px-3 py-2.5">
-                                <p className="text-xs font-black text-[#426D36]">STEP {s.n}</p>
-                                <p className="text-sm font-bold text-[#294437] mt-0.5 break-keep">{s.t}</p>
-                                <p className="text-[11px] text-slate-500 mt-0.5 break-keep">{s.d}</p>
-                            </li>
-                        ))}
-                    </ol>
-
-                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                        <Link
-                            href={`/question-bank?school=${encodeURIComponent(schoolName)}`}
-                            className="flex-1 text-center bg-[#638747] hover:bg-[#2E948F] text-white font-extrabold px-5 py-3 rounded-xl transition-colors"
-                        >
-                            {schoolName} 기출로 시험지 만들기 →
-                        </Link>
-                        <a
-                            href="/guide"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold px-4 py-3 rounded-xl text-sm transition-colors whitespace-nowrap"
-                        >
-                            출제 사용법 보기 →
-                        </a>
+                    <div className="rd-s-actions">
+                        <a href="#list" className="rd-btn rd-btn-primary">시험지 보기</a>
+                        <Link href={qbHref} className="rd-btn rd-btn-gray">이 학교 기출로 시험지 만들기</Link>
                     </div>
                 </section>
 
-                {/* CTA (브랜드 그라데이션) */}
-                <div className="mt-8 library-cta bg-[#20354F] rounded-2xl p-6 text-center text-white shadow-md">
-                    <p className="font-bold text-lg mb-1">다른 학교 기출도 찾아보세요</p>
-                    <p className="text-white/85 text-sm mb-4 break-keep">전국 중·고등학교 수학 내신 기출을 한 곳에서</p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-2.5">
-                        <Link
-                            href="/schools"
-                            className="inline-block bg-white text-[#426D36] font-extrabold px-6 py-3 rounded-xl hover:bg-slate-50 transition-colors"
-                        >
-                            학교별 기출 목록
-                        </Link>
-                        <Link
-                            href="/"
-                            className="inline-block border-2 border-white/70 text-white font-extrabold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors"
-                        >
-                            전체 기출 보러가기
-                        </Link>
+                <section id="list" className="rd-wrap rd-s-list">
+                    <SchoolExamList locations={listLocations} />
+                </section>
+
+                {subjUnits.length > 0 && <section className="rd-s-zone">
+                    <SchoolUnits title={`${shortName || schoolName}에서 자주 나온 단원`} subjUnits={subjUnits} />
+                </section>}
+
+                <section className="rd-wrap rd-s-about">
+                    <h2 className="rd-s-h2sm">{schoolName} 수학 기출 안내</h2>
+                    <div className="rd-s-prose">{narrative.map((para, i) => <p key={i}>{para}</p>)}</div>
+                </section>
+
+                {/* [강사 유입구] 학교 페이지마다 강사 착지점 */}
+                <section id="make" className="rd-wrap rd-s-make">
+                    <div className="rd-s-makebox">
+                        <h2 className="rd-x-h2">{totalQuestionCount > 0 ? <>{shortName || schoolName} 기출 {totalQuestionCount.toLocaleString()}문항으로<br />시험지를 만드세요</> : <>{shortName || schoolName} 기출로<br />시험지를 만드세요</>}</h2>
+                        <p className="rd-lead">출제 단원을 골라 같은 유형의 문항으로 시험지를 만들고, 한글 파일(HML)로 받아 수업에 바로 씁니다.{topUnitNames ? ` 이 학교는 ${topUnitNames.split('·').join(', ')} 단원 출제 비중이 높습니다.` : ''}</p>
+                        <ol className="rd-s-steps">
+                            <li><b>1</b><span>{shortName || schoolName} 회차를 담고</span></li>
+                            <li><b>2</b><span>단원과 난이도로 고르고</span></li>
+                            <li><b>3</b><span>한글 파일로 받기</span></li>
+                        </ol>
+                        <div className="rd-s-actions">
+                            <Link href={qbHref} className="rd-btn rd-btn-primary">{shortName || schoolName} 기출로 시험지 만들기</Link>
+                            <Link href="/guide" className="rd-link">만드는 순서와 무료 범위 보기</Link>
+                            <Link href="/question-bank?demo=1&origin=content" className="rd-link">5문항 체험해 보기</Link>
+                        </div>
                     </div>
-                </div>
-            </main>
+                </section>
+
+                <section className="rd-x-more rd-s-more" aria-labelledby="school-more-title">
+                    <div className="rd-wrap">
+                        <h2 id="school-more-title" className="rd-x-h2">{nearby.length > 0 ? `${firstLoc.district} 다른 학교 기출` : '다른 학교 기출도 찾아보세요'}</h2>
+                        {nearby.length > 0 && <div className="rd-x-rows">
+                            {nearby.map(n => <Link key={n.school} href={`/school/${encodeURIComponent(n.school)}`} className="rd-x-row">
+                                <span><b>{n.school}</b><small>시험지 {n.count}개</small></span>
+                                <ChevronRight size={22} aria-hidden="true" />
+                            </Link>)}
+                        </div>}
+                        <div className="rd-x-links">
+                            <Link href="/schools" className="rd-link">전국 학교별 기출 보기</Link>
+                            <Link href="/" className="rd-link">전체 기출 보러 가기</Link>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }

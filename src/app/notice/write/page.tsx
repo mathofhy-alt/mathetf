@@ -59,51 +59,50 @@ export default function NoticeWritePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f2f3f0]">
-            <Header/><div className="suite-local-header">
-                <div className="max-w-[800px] mx-auto px-4 h-16 flex items-center gap-4">
-                    <Link href="/notice" className="text-slate-500 hover:text-slate-800"><ArrowLeft /></Link>
-                    <h1 className="text-xl font-bold text-slate-800">공지사항 등록</h1>
-                </div>
-            </div>
+        <div className="rd rd-x rd-bd">
+            <Header />
+            <section className="rd-wrap rd-x-top rd-bd-read">
+                <Link href="/notice" className="rd-x-back"><ArrowLeft size={18} /> 공지사항</Link>
+                <h1 className="rd-x-h1 rd-bd-form-h1">공지사항 등록</h1>
 
-            <main className="max-w-[800px] mx-auto px-4 py-8">
-                <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden p-8 space-y-6">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">제목</label>
+                <form onSubmit={handleSubmit} className="rd-bd-form">
+                    <div className="rd-bd-field">
+                        <label htmlFor="notice-title" className="rd-bd-label">제목</label>
                         <input
+                            id="notice-title"
                             type="text"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded focus:border-brand-500 focus:outline-none"
+                            className="rd-input"
                             placeholder="제목을 입력하세요"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">내용</label>
+                    <div className="rd-bd-field">
+                        <label htmlFor="notice-content" className="rd-bd-label">내용</label>
                         <textarea
+                            id="notice-content"
                             value={content}
                             onChange={e => setContent(e.target.value)}
-                            className="w-full h-80 px-4 py-2 border border-slate-300 rounded focus:border-brand-500 focus:outline-none resize-none"
+                            className="rd-input rd-bd-textarea"
                             placeholder="내용을 입력하세요"
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                        <Link href="/notice" className="px-6 py-2 border border-slate-300 rounded text-sm font-bold text-slate-600 hover:bg-slate-50">
+                    <div className="rd-bd-actions">
+                        <Link href="/notice" className="rd-btn rd-btn-gray">
                             취소
                         </Link>
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="px-6 py-2 bg-brand-600 text-white rounded text-sm font-bold hover:bg-brand-700 disabled:opacity-50"
+                            className="rd-btn rd-btn-primary"
                         >
                             {submitting ? '등록 중...' : '등록하기'}
                         </button>
                     </div>
                 </form>
-            </main>
+            </section>
         </div>
     );
 }

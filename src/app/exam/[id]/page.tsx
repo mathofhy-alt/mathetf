@@ -124,6 +124,31 @@ const getExam = cache(async (id: string) => {
             || Math.abs(Number(row.exam_year) - Number(a.exam_year)) - Math.abs(Number(row.exam_year) - Number(b.exam_year)))
         .slice(0, 4);
 
+    // [10/7] 학교에 이 시험지 하나뿐이면(185곳) '다른 시험지' 칸이 빈다 → 같은 지역 다른 학교의 같은 시험으로 잇는다.
+    //   같은 구 우선, 그다음 같은 시·도. 연도는 가까운 순.
+    let nearbyExams: { id: string; school: string; district: string | null; exam_year: number }[] = [];
+    if (relatedExams.length === 0 && (otherYears || []).length === 0 && row.region) {
+        const { data: near } = await matchSubject(supabase
+            .from('exam_materials')
+            .select('id, school, district, exam_year')
+            .eq('region', row.region)
+            .eq('grade', row.grade)
+            .eq('semester', row.semester)
+            .eq('exam_type', row.exam_type)
+            .eq('file_type', 'PDF')
+            .eq('content_type', '해설'))
+            .neq('school', row.school)
+            .neq('school', 'DELETED')
+            .order('exam_year', { ascending: false })
+            .limit(60);
+        const seen = new Set<string>();
+        nearbyExams = (near || [])
+            .sort((a: any, b: any) => Number(b.district === row.district) - Number(a.district === row.district)
+                || Math.abs(Number(row.exam_year) - Number(a.exam_year)) - Math.abs(Number(row.exam_year) - Number(b.exam_year)))
+            .filter((item: any) => (seen.has(item.school) ? false : (seen.add(item.school), true)))
+            .slice(0, 6);
+    }
+
     // 시험 구성(단원별·난이도별 문항수) + 출제 개념/유형(key_concepts) — source_db_id 로 questions 조회
     let composition: Composition | null = null;
     let concepts: string[] = [];  // 유형/개념 태그 (문제 본문은 노출 안 함 — 롱테일 키워드용)
@@ -153,7 +178,7 @@ const getExam = cache(async (id: string) => {
         }
     }
 
-    return { row, siblings: siblings || [], otherYears: otherYears || [], relatedExams, composition, concepts, sourceKey };
+    return { row, siblings: siblings || [], otherYears: otherYears || [], relatedExams, nearbyExams, composition, concepts, sourceKey };
 });
 
 // 최근 해설 PDF 100개만 빌드하고 나머지는 첫 방문 시 생성·캐시한다.
@@ -219,7 +244,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExamDetailPage({ params }: Props) {
     const ex = await getExam(params.id);
     if (!ex) notFound();
-    const { row, siblings, otherYears, relatedExams, composition, concepts, sourceKey } = ex;
+    const { row, siblings, otherYears, relatedExams, nearbyExams, composition, concepts, sourceKey } = ex;
     const label = buildLabel(row);
     const previews: string[] = Array.isArray(row.preview_urls) ? row.preview_urls : [];
 
@@ -235,7 +260,7 @@ export default async function ExamDetailPage({ params }: Props) {
             '@context': 'https://schema.org',
             '@type': 'LearningResource',
             name: `${label} 수학 기출문제 미리보기`,
-            description: `${label} 문제 미리보기는 전체 공개됩니다. 문제만 있는 PDF는 로그인 회원에게 무료이며, 해설 포함 자료는 별도 제공됩니다. ${narrative[0] || ''}`.trim(),
+            description: `${label} 문제 미리보기 1쪽은 누구나, 전체 쪽은 회원이 볼 수 있습니다. 문제만 있는 PDF는 로그인 회원에게 무료이며, 해설 포함 자료는 별도 제공됩니다. ${narrative[0] || ''}`.trim(),
             url,
             learningResourceType: '기출문제',
             educationalUse: '시험 대비',
@@ -245,7 +270,7 @@ export default async function ExamDetailPage({ params }: Props) {
             isAccessibleForFree: true,
             provider: { '@type': 'Organization', name: '수학ETF', url: 'https://mathetf.com' },
             ...(row.exam_year ? { dateCreated: String(row.exam_year) } : {}),
-            ...(previews.length ? { image: previews } : {}),
+            ...(previews.length ? { image: previews.slice(0, 1) } : {}),   // [10/7] 2쪽부터는 회원만 — 구조화 데이터에도 1쪽만
         },
         {
             '@context': 'https://schema.org',
@@ -284,7 +309,7 @@ export default async function ExamDetailPage({ params }: Props) {
             canStartWithQuestions={canStartWithQuestions} createHref={createHref}
             otherYears={otherYears} paidPdfId={paidPdfId} paidMaterials={paidMaterials} opinionExamId={opinionExamId}
             opinions={opinions} narrative={narrative} concepts={concepts} composition={composition}
-            relatedExams={relatedExams} relatedReport={relatedReport} />
+            relatedExams={relatedExams} nearbyExams={nearbyExams} relatedReport={relatedReport} />
     </>;
 
 }

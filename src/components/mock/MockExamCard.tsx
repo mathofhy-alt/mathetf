@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { mockQuestionHref } from '@/lib/mock-question-link';
-import { ArrowRight, FileText } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
-// 분류별 디자인 토큰 (그라데이션·글리프·색). 클래스는 리터럴이라 Tailwind JIT가 인식함.
+// 분류별 표시값. 10/7 새 디자인부터는 색 대신 글리프만 쓴다(색은 청록 하나 — 디자인 규칙).
+//   grad·text 등 옛 값은 아직 옛 화면이 참조할 수 있어 남겨 둔다.
 export const MOCK_CATEGORIES = {
     '수능': { label: '수능', grad: 'from-rose-500 to-pink-500', glyph: '∫', text: 'text-rose-600', soft: 'bg-rose-50', solid: 'group-hover:bg-rose-500', bar: 'from-rose-500 to-pink-500' },
     '평가원': { label: '평가원', grad: 'from-brand-500 to-violet-500', glyph: '∑', text: 'text-brand-600', soft: 'bg-brand-50', solid: 'group-hover:bg-brand-500', bar: 'from-brand-500 to-violet-500' },
@@ -39,9 +40,22 @@ export interface MockExam {
     materialDbs?: { id: string; subject: string }[];
 }
 
-export default function MockExamCard({exam}:{exam:MockExam}){
- const cat=MOCK_CATEGORIES[exam.category]??MOCK_CATEGORIES['전국연합'];
- const formats=[(exam.original_pdf_path||exam.variant_pdf_path)?'PDF':null,(exam.original_hwp_path||exam.variant_hwp_path)?'HWP':null].filter(Boolean).join(' · ');
- const createHref=mockQuestionHref(exam);
- return <div className="suite-mock-card" data-category={cat.label}><Link href={`/모의고사/${exam.slug}`} className="block"><div className="mock-card-top">{cat.label}<span>{exam.year}</span></div><h3>{exam.title}</h3><p>{exam.grade}{exam.month?` · ${exam.month}월`:''}{exam.subject?` · ${exam.subject}`:''}</p><div className="mock-card-bottom"><div>{exam.materialOnly&&<span>문항별 출제</span>}{(exam.original_pdf_path||exam.original_hwp_path)&&<span>원본</span>}{(exam.hasVariant===true||exam.variant_pdf_path||exam.variant_hwp_path)&&<span>변형</span>}{formats&&<span>{formats}</span>}</div><ArrowRight size={18}/></div></Link>{createHref&&<Link href={createHref} className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm font-bold text-brand-700 hover:bg-brand-100">문항 골라 출제 <ArrowRight size={15}/></Link>}</div>;
+// 회차 카드(10/7 새 디자인) — 허브·분류·상세 '다른 회차'에서 같이 쓴다
+export default function MockExamCard({ exam }: { exam: MockExam }) {
+    const createHref = mockQuestionHref(exam);
+    const tags = [
+        exam.materialOnly ? '문항별 출제' : null,
+        (exam.original_pdf_path || exam.original_hwp_path) ? '원본' : null,
+        (exam.hasVariant === true || exam.variant_pdf_path || exam.variant_hwp_path) ? '변형' : null,
+    ].filter(Boolean) as string[];
+    const meta = [exam.grade, exam.month ? `${exam.month}월` : '', exam.subject || ''].filter(Boolean).join(', ');
+    return <div className="rd-mk-card">
+        <Link href={`/모의고사/${exam.slug}`} className="rd-mk-card-main">
+            <span className="rd-mk-card-top"><span>{exam.category}</span><span>{exam.year}</span></span>
+            <b>{exam.title}</b>
+            {meta && <small>{meta}</small>}
+            {tags.length > 0 && <span className="rd-mk-tags">{tags.map(t => <em key={t}>{t}</em>)}</span>}
+        </Link>
+        {createHref && <Link href={createHref} className="rd-mk-card-make">이 회차로 시험지 만들기<ChevronRight size={16} aria-hidden="true" /></Link>}
+    </div>;
 }

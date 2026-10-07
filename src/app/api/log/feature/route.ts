@@ -16,7 +16,8 @@ const QB_FUNNEL = ['qb_enter', 'qb_db_select', 'qb_search', 'qb_cart_add', 'qb_s
 //   서버가 전부 버렸다(promo_click 6건인데 promo_view 0건 — 모달이 떠야 누르는데 모순).
 //   분모를 남기려고 만든 로그였으므로 이게 빠지면 수정 자체가 무의미했다.
 //   ⚠ 새 이벤트를 클라이언트에 심을 때는 반드시 여기에 같이 추가할 것.
-const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_click', 'promo_view', ...QB_FUNNEL]);
+// [10/7] qb_ladder — 수업 사다리 담기. 예전엔 이 목록에 없어 한 건도 안 남았다.
+const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_click', 'promo_view', 'qb_ladder', ...QB_FUNNEL]);
 
 // [익명 구간 계측] 2026-09-06 추가.
 // 그전까지 이 라우트는 비로그인이면 401 이었다. 그래서 **로그인 전 행동이 한 건도 없었다** —

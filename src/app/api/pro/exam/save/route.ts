@@ -3,6 +3,8 @@ import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
 import { privateCatalog, stripPrivate } from '@/lib/questions/privateDb';
+import { passStatus, recordUsage, QB_PASS } from '@/lib/qbPass';
+import { QB_LIMITS } from '@/lib/qbPassConfig';
 import { wholeCatalogIneligible } from '@/lib/questions/fastScope';
 import {resolveScope} from '@/lib/questions/scope';
 import {uuidPattern} from '@/lib/payments/order';
@@ -29,7 +31,11 @@ export async function POST(req: NextRequest) {
     const uploadedPaths: string[] = [];
 
     try {
-        // [V73] Limit: Max 20 exams per user
+        // [10/7] 시험지 만들기 이용권 — 이용권이 없으면 한 주 무료 횟수까지만 (lib/qbPass)
+        const pass = await passStatus(user).catch(() => null);
+        if (!pass) return NextResponse.json({ success: false, error: '이용 현황을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
+        // [V73] 보관함 한도 — [10/8] 이용권이면 50개, 아니면 20개(QB_LIMITS). DB 함수(save_exam_item p_limit)도 같은 숫자로 다시 막는다
+        const savedLimit = (pass.passUntil || pass.admin) ? QB_LIMITS.pass.saved : QB_LIMITS.free.saved;
         const { count, error: countError } = await supabase
             .from('user_items')
             .select('*', { count: 'exact', head: true })
@@ -37,17 +43,24 @@ export async function POST(req: NextRequest) {
             .eq('type', 'saved_exam');
 
         if (countError) throw new Error("Count check failed");
-        if (count !== null && count >= 20) {
+        if (count !== null && count >= savedLimit) {
             return NextResponse.json({
                 success: false,
-                error: '시험지는 최대 20개까지만 생성할 수 있습니다. 기존 시험지를 삭제한 후 다시 시도해주세요.'
+                error: `보관함에는 시험지를 최대 ${savedLimit}개까지 둘 수 있습니다. 기존 시험지를 삭제한 후 다시 시도해주세요.`
             }, { status: 403 });
         }
+
+        if (!pass.unlimited && pass.freeLeft <= 0) return NextResponse.json({
+            success: false, code: 'QB_PASS_REQUIRED', pass,
+            error: `이번 주 무료 시험지 ${QB_PASS.freePerWeek}회를 모두 쓰셨습니다. 이용권(${QB_PASS.days}일 ${QB_PASS.salePrice.toLocaleString()}원)으로 계속 만들 수 있어요.`,
+        }, { status: 402 });
 
         console.log('[SaveAPI] Request received');
         const body = await req.json();
         const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
-        if (!Array.isArray(ids) || ids.length<1 || ids.length>50 || ids.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id)) || new Set(ids).size!==ids.length) return NextResponse.json({success:false,error:'서로 다른 문항을 1~50개 선택해주세요.'},{status:400});
+        // [10/8] 이용권이 있으면(또는 운영자) 한 시험지 문항 한도를 늘린다(QB_LIMITS)
+        const maxQ = (pass.passUntil || pass.admin) ? QB_LIMITS.pass.questions : QB_LIMITS.free.questions;   // 유료화 전 '제한 없음'은 횟수만 — 이용권 혜택은 이용권·운영자만
+        if (!Array.isArray(ids) || ids.length<1 || ids.length>maxQ || ids.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id)) || new Set(ids).size!==ids.length) return NextResponse.json({success:false,error:`서로 다른 문항을 1~${maxQ}개 선택해주세요.`},{status:400});
         if (typeof title!=='string' || !title.trim() || title.length>100 || ![1,2,3].includes(questionsPerColumn)) return NextResponse.json({success:false,error:'제목은 100자 이내, 열당 문항 수는 1~3개로 설정해주세요.'},{status:400});
         if (folderId && folderId!=='root') {
             if (!uuidPattern.test(folderId)) throw new Error('저장 폴더를 확인해주세요.');
@@ -61,7 +74,7 @@ export async function POST(req: NextRequest) {
 
 
         // [V74] Limit: Max 50 questions per exam
-        const MAX_QUESTIONS_PER_EXAM = 50;
+        const MAX_QUESTIONS_PER_EXAM = maxQ;
         const questionCount = ids?.length ?? rawQuestions?.length ?? 0;
         if (questionCount > MAX_QUESTIONS_PER_EXAM) {
             return NextResponse.json({
@@ -357,9 +370,11 @@ export async function POST(req: NextRequest) {
             p_user_id:user.id,p_folder_id:folderId==='root'?null:(folderId||null),p_name:titleStr,p_reference_id:fileId,
             p_details:{...metaData,file_format:'hml',analytics_session_id:uuidPattern.test(session)?session:null},
             p_session_id:uuidPattern.test(session)?session:null,p_track:productionSite(req)&&user.email!=='mathofhy@naver.com',
+            p_limit:savedLimit,
         });
 
         if (itemError) throw new Error(`Item creation failed: ${itemError.message}`);
+        await recordUsage(user.id, (itemData as any)?.id ?? null);
 
         console.log('[SaveAPI] Success!');
         // savedTitle — 이름이 겹쳐 번호가 붙었으면 클라이언트가 그걸 알려줄 수 있게 돌려준다.

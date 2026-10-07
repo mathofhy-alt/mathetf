@@ -1,9 +1,35 @@
 import Link from 'next/link';
-import {ArrowRight,ArrowUpRight} from 'lucide-react';
-import {login} from './actions';
-import {safeReturnPath} from '@/lib/auth-return';
-export default function Login({searchParams}:{searchParams:{message?:string;next?:string}}){
- const next=safeReturnPath(searchParams?.next);
- const signIn=async(formData:FormData)=>{'use server';await login(formData);};
- return <div className="suite-auth-login"><aside className="auth-book"><Link className="auth-brand" href="/">∑ <span>수학ETF</span></Link><div><p>YOUR OWN MATH LIBRARY</p><h2>어제 고른 문제,<br/>오늘의 한 페이지.</h2><svg viewBox="0 0 300 220" aria-hidden="true">{[0,25,50,75,100,125,150].map(a=><ellipse key={a} cx="150" cy="110" rx="100" ry="42" transform={`rotate(${a} 150 110)`} fill="none" stroke="currentColor" strokeWidth=".8"/>)}</svg><span>나의 자료와 시험지가 기다리고 있습니다.</span></div><small>수학을 위한 작은 서재 · 수학ETF</small></aside><section className="auth-form-panel"><Link href="/" className="auth-mobile-brand">∑ 수학ETF</Link><div className="auth-form-inner"><p className="suite-eyebrow">WELCOME BACK</p><h1>나의 서재로.</h1><p>로그인하고 만들던 시험지를 이어가세요.</p><form action={signIn}><input type="hidden" name="next" value={next}/><label htmlFor="email">이메일</label><input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required/><label htmlFor="password">비밀번호</label><input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required/><div className="auth-recovery"><Link href="/find-id">아이디 찾기</Link><span> · </span><Link href="/forgot-password">비밀번호 찾기</Link></div><button className="suite-button" type="submit">로그인<ArrowRight size={18}/></button></form>{searchParams?.message&&<p className="auth-error" role="alert">{searchParams.message}</p>}<div className="auth-join"><span>아직 계정이 없으신가요?</span><Link href={'/signup?next='+encodeURIComponent(next)}>회원가입<ArrowUpRight size={15}/></Link></div><Link className="auth-home" href="/">홈으로 돌아가기</Link></div></section></div>;
+import Image from 'next/image';
+import { login } from './actions';
+import { safeReturnPath } from '@/lib/auth-return';
+
+// 로그인(10/7 새 디자인) — 가운데 카드 하나. 계정 화면(회원가입·아이디/비밀번호 찾기)이 같은 틀(rd-auth)을 쓴다.
+export default function Login({ searchParams }: { searchParams: { message?: string; next?: string } }) {
+    const next = safeReturnPath(searchParams?.next);
+    const signIn = async (formData: FormData) => { 'use server'; await login(formData); };
+    return <div className="rd rd-auth">
+        <div className="rd-auth-card">
+            <Link href="/" className="rd-auth-brand"><Image src="/icon.svg" alt="" width={32} height={32} /><span>수학ETF</span></Link>
+            <h1 className="rd-auth-title">로그인</h1>
+            <p className="rd-auth-sub">로그인하고 만들던 시험지를 이어가세요.</p>
+            {searchParams?.message && <p className="rd-auth-error" role="alert">{searchParams.message}</p>}
+            <form action={signIn} className="rd-auth-form">
+                <input type="hidden" name="next" value={next} />
+                <label htmlFor="email" className="rd-auth-label">이메일</label>
+                <input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required className="rd-input" />
+                <label htmlFor="password" className="rd-auth-label">비밀번호</label>
+                <input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required className="rd-input" />
+                <button className="rd-btn rd-btn-primary rd-btn-block rd-auth-submit" type="submit">로그인</button>
+            </form>
+            <div className="rd-auth-links">
+                <Link href="/find-id">아이디 찾기</Link>
+                <Link href="/forgot-password">비밀번호 찾기</Link>
+            </div>
+            <div className="rd-auth-join">
+                <span>아직 계정이 없으신가요?</span>
+                <Link href={'/signup?next=' + encodeURIComponent(next)} className="rd-btn rd-btn-gray rd-btn-block">무료 회원가입</Link>
+            </div>
+        </div>
+        <Link className="rd-auth-home" href="/">홈으로 돌아가기</Link>
+    </div>;
 }

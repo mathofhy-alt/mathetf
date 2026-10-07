@@ -158,48 +158,63 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
 
     if (!isLoggedIn) {
         return (
-            <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-                {/* 화면 제목은 h2 — 이 페이지의 h1 은 page.tsx 의 sr-only 하나뿐이다.
-                    여기까지 h1 이면 거의 같은 문장의 h1 이 한 페이지에 둘이 된다. */}
-                <h2 className="text-2xl font-black mb-3">프린트와 비슷한 기출 찾기</h2>
-                <p className="text-slate-500 mb-6">회원가입 후 이용할 수 있어요 (런칭 기념 무료).</p>
-                <Link href="/signup" className="inline-block bg-[#426D36] text-white font-extrabold px-6 py-3 rounded-xl">무료로 가입하기 →</Link>
+            <main className="rd-tl-main">
+                <div className="rd-wrap">
+                    <div className="rd-tl-gate">
+                        {/* 화면 제목은 h2 — 이 페이지의 h1 은 page.tsx 의 sr-only 하나뿐이다.
+                            여기까지 h1 이면 거의 같은 문장의 h1 이 한 페이지에 둘이 된다. */}
+                        <h2>프린트와 비슷한 기출 찾기</h2>
+                        <p>회원가입 후 무료로 이용할 수 있어요.</p>
+                        <Link href="/signup" className="rd-btn rd-btn-primary">무료로 가입하기</Link>
+                    </div>
+                </div>
             </main>
         );
     }
 
     return (
-        <main className="max-w-6xl mx-auto px-4 py-8">
-            <section className="suite-tool-intro"><p className="suite-eyebrow">FROM YOUR CLASSROOM</p><h2>한 장의 프린트에서,<br/>새로운 연습으로.</h2><p className="suite-description">PDF를 올리고 연습할 문제를 잘라내세요. 비슷한 유형의 기존 기출문항을 찾아 시험지로 이어갑니다.</p><div className="suite-tool-actions"><span>런칭 기간 회원 무료</span><button className="suite-button" disabled={!totalSelected} onClick={()=>sendToExamCart(crops.flatMap(c=>c.selected),'프린트 유사 기출','print')}>선택 문항으로 시험지 만들기 →</button></div><FeatureExplanation/></section>
+        <main className="rd-tl-main">
+            <section className="rd-wrap rd-tl-intro">
+                <p className="rd-kicker rd-tl-kicker">FROM YOUR CLASSROOM</p>
+                <h2 className="rd-tl-h1">한 장의 프린트에서,<br/>새로운 연습으로.</h2>
+                <p className="rd-lead rd-tl-lead">PDF를 올리고 연습할 문제를 잘라내세요. 비슷한 유형의 기존 기출문항을 찾아 시험지로 이어갑니다.</p>
+                <div className="rd-tl-actions">
+                    <span className="rd-pill is-accent">회원 무료</span>
+                    <button className="rd-btn rd-btn-tint" disabled={!totalSelected} onClick={()=>sendToExamCart(crops.flatMap(c=>c.selected),'프린트 유사 기출','print')}>선택 문항으로 시험지 만들기</button>
+                </div>
+                <div className="rd-tl-explain"><FeatureExplanation/></div>
+            </section>
+
+            <div className="rd-wrap">
             {/* 업로드 */}
-            <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-2xl py-8 cursor-pointer hover:border-[#2E9E5B] transition-colors bg-white">
-                <Upload size={18} className="text-slate-400" />
-                <span className="text-sm text-slate-500 font-medium">{loadingPdf ? 'PDF 여는 중…' : '학교 프린트 PDF 올리기'}</span>
+            <label className="rd-tl-drop">
+                <span className="rd-tl-drop-icon"><Upload size={22} /></span>
+                <span className="rd-tl-drop-text">{loadingPdf ? 'PDF 여는 중…' : '학교 프린트 PDF 올리기'}</span>
                 <input type="file" accept="application/pdf" onChange={onFile} className="hidden" />
             </label>
 
-            <div className="grid lg:grid-cols-[1fr_440px] gap-5 mt-5">
+            <div className="rd-tl-split">
                 {/* 왼쪽: PDF 페이지 + 크롭 */}
-                <div className="space-y-3">
+                <div className="rd-tl-left">
                     {numPages > 0 && (
                         <>
-                            <p className="text-xs text-slate-400">
-                                <span className="hidden sm:inline">📌 문제 위를 마우스로 드래그하면 잘려서 오른쪽에 추가돼요. (← → 키로 페이지 이동)</span>
-                                <span className="sm:hidden">📌 문제 위를 <strong className="text-[#2E9E5B]">길게 누른 뒤 드래그</strong>하면 잘려서 아래에 추가돼요.</span>
+                            <p className="rd-tl-hint">
+                                <span className="hidden sm:inline">문제 위를 마우스로 드래그하면 잘려서 오른쪽에 추가돼요. (← → 키로 페이지 이동)</span>
+                                <span className="sm:hidden">문제 위를 <strong>길게 누른 뒤 드래그</strong>하면 잘려서 아래에 추가돼요.</span>
                             </p>
                             <PageNav cur={cur} total={numPages} go={goPage} />
                         </>
                     )}
 
                     {numPages > 0 && (
-                        <div className="relative">
+                        <div className="rd-tl-stage">
                             {/* 페이지 좌우 오버레이 버튼 — 캔버스에서 손을 떼지 않고 넘길 수 있게 */}
                             <button onClick={() => goPage(cur - 1)} disabled={cur === 0} aria-label="이전 페이지"
-                                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 border border-slate-200 shadow-md flex items-center justify-center text-slate-600 hover:bg-white hover:text-[#2E9E5B] disabled:opacity-0 disabled:pointer-events-none transition">
+                                    className="rd-tl-flip is-prev">
                                 <ChevronLeft size={20} />
                             </button>
                             <button onClick={() => goPage(cur + 1)} disabled={cur >= numPages - 1} aria-label="다음 페이지"
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 border border-slate-200 shadow-md flex items-center justify-center text-slate-600 hover:bg-white hover:text-[#2E9E5B] disabled:opacity-0 disabled:pointer-events-none transition">
+                                    className="rd-tl-flip is-next">
                                 <ChevronRight size={20} />
                             </button>
                             <PageCanvas setRef={(el) => { canvasRef.current = el; }} onCrop={addCrop} />
@@ -210,68 +225,68 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                 </div>
 
                 {/* 오른쪽: 크롭 목록 + 매칭 */}
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h2 className="font-extrabold">잘라낸 문제 {crops.length}개</h2>
-                        {totalSelected > 0 && <span className="text-xs text-[#2E9E5B] font-bold">변형 {totalSelected}개 채택</span>}
+                <div className="rd-tl-right">
+                    <div className="rd-tl-reshead">
+                        <h2>잘라낸 문제 {crops.length}개</h2>
+                        {totalSelected > 0 && <span className="rd-pill is-accent">변형 {totalSelected}개 채택</span>}
                     </div>
-                    {crops.length === 0 && <p className="text-sm text-slate-400">아직 없어요. 왼쪽에서 문제를 드래그하세요.</p>}
+                    {crops.length === 0 && <p className="rd-tl-empty is-small">아직 없어요. 왼쪽에서 문제를 드래그하세요.</p>}
                     {crops.map((c, idx) => (
-                        <div key={c.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3">
-                            <div className="flex items-start gap-2">
-                                <span className="text-xs font-extrabold text-slate-500 mt-1">#{idx + 1}</span>
-                                <img src={c.dataUrl} alt="crop" className="flex-1 rounded border border-slate-100 max-h-32 object-contain" />
-                                <button onClick={() => removeCrop(c.id)} className="text-slate-300 hover:text-rose-500"><Trash2 size={15} /></button>
+                        <div key={c.id} className="rd-tl-crop">
+                            <div className="rd-tl-crop-head">
+                                <span className="rd-tl-qno">{idx + 1}</span>
+                                <img src={c.dataUrl} alt="crop" />
+                                <button onClick={() => removeCrop(c.id)} className="rd-tl-del" aria-label="잘라낸 문제 삭제"><Trash2 size={16} /></button>
                             </div>
                             {!c.candidates ? (
                                 <button onClick={() => findSimilar(c.id)} disabled={c.loading}
-                                    className="w-full mt-2 py-2 rounded-lg text-sm font-bold text-white bg-[#2E9E5B] hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-1.5">
-                                    {c.loading ? <><Loader2 size={14} className="animate-spin" /> 분석 중…</> : <><Wand2 size={14} /> 변형문제 찾기</>}
+                                    className="rd-btn rd-btn-tint rd-btn-block rd-tl-find">
+                                    {c.loading ? <><Loader2 size={16} className="animate-spin" /> 분석 중…</> : <><Wand2 size={16} /> 변형문제 찾기</>}
                                 </button>
                             ) : (
-                                <div className="mt-2">
-                                    {c.reading?.unit && <p className="text-[11px] text-slate-400 mb-1">인식: {c.reading.unit}{c.reading.difficulty ? ` · 난이도 ${c.reading.difficulty}` : ''} {c.reading.concepts?.slice(0, 2).join(', ')}</p>}
+                                <div className="rd-tl-cands-wrap">
+                                    {c.reading?.unit && <p className="rd-tl-read">인식: {c.reading.unit}{c.reading.difficulty ? ` · 난이도 ${c.reading.difficulty}` : ''} {c.reading.concepts?.slice(0, 2).join(', ')}</p>}
                                     {c.widened && (
-                                        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-1.5">
+                                        <p className="rd-alert rd-tl-note">
                                             ‘{c.reading?.unit}’ 단원 문제가 아직 DB에 없어, <strong>같은 과목의 다른 단원</strong>에서 찾았어요. 유형이 다를 수 있습니다.
                                         </p>
                                     )}
                                     {(c.candidates || []).length === 0 && (
-                                        <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-1.5">
+                                        <p className="rd-tl-note is-gray">
                                             비슷한 문제를 찾지 못했어요. 영역을 다시 잘라보거나, 다른 문제로 시도해 주세요.
                                         </p>
                                     )}
-                                    <p className="text-[11px] text-slate-500 mb-1.5">채택할 유사 기출문제를 고르세요 ({c.selected.length}개 선택)</p>
+                                    <p className="rd-tl-pickhint">채택할 유사 기출문제를 고르세요 ({c.selected.length}개 선택)</p>
                                     {/* 예전엔 후보 전체가 하나의 <button> 이라, 문제를 읽으려고 누르면
                                         선택이 토글돼 버렸다. 게다가 미리보기가 max-h-28 로 잘려 문제 아래가
                                         아예 안 보였다 → 선택 버튼과 본문을 분리하고 펼치기를 붙인다. */}
-                                    <div className="space-y-2 max-h-[70vh] overflow-auto pr-1">
+                                    <div className="rd-tl-cands">
                                         {(c.candidates || []).map((q: any) => {
                                             const on = c.selected.includes(q.id);
                                             const xml = c.contents[q.id];
                                             const key = `${c.id}:${q.id}`;
                                             const open = !!expanded[key];
                                             return (
-                                                <div key={q.id} className={`rounded-lg border ${on ? 'border-[#2E9E5B] bg-[#2E9E5B]/5' : 'border-slate-200 bg-white'}`}>
-                                                    <div className="flex items-center gap-2 p-2 border-b border-slate-100">
+                                                <div key={q.id} className={`rd-tl-cand${on ? ' is-on' : ''}`}>
+                                                    <div className="rd-tl-cand-head">
                                                         <button onClick={() => toggleSel(c.id, q.id)} aria-label={on ? '선택 해제' : '선택'}
-                                                            className={`shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-[#2E9E5B] border-[#2E9E5B] text-white' : 'bg-white border-slate-300 hover:border-[#2E9E5B]'}`}>
-                                                            {on && <Check size={13} />}
+                                                            className="rd-tl-check">
+                                                            <span>{on && <Check size={14} />}</span>
                                                         </button>
-                                                        <span className="text-[11px] text-slate-500 flex-1 truncate">
+                                                        <span className="rd-tl-cand-meta">
                                                             {q.unit} · 난이도 {q.difficulty}{q.similarity ? ` · ${Math.round(q.similarity * 100)}%` : ''}
                                                         </span>
                                                         <button onClick={() => setExpanded((p) => ({ ...p, [key]: !open }))}
-                                                            className="shrink-0 text-[11px] font-bold text-slate-500 hover:text-[#2E9E5B] flex items-center gap-1">
-                                                            {open ? <><Minimize2 size={12} /> 접기</> : <><Maximize2 size={12} /> 전체보기</>}
+                                                            className="rd-tl-expand">
+                                                            {open ? <><Minimize2 size={14} /> 접기</> : <><Maximize2 size={14} /> 전체보기</>}
                                                         </button>
                                                     </div>
-                                                    <div className={`relative px-2 py-1.5 ${open ? 'max-h-[60vh] overflow-auto' : 'max-h-32 overflow-hidden'}`}>
+                                                    <div className={`rd-tl-cand-body${open ? ' is-open' : ''}`}>
                                                         {xml
                                                             ? <QuestionRenderer xmlContent={xml} externalImages={c.images[q.id] || []} displayMode="question" showDownloadAction={false} className="border-none shadow-none p-0 !text-xs" />
-                                                            : <span className="text-xs text-slate-300">로딩…</span>}
+                                                            : <span className="rd-tl-muted">로딩…</span>}
                                                         {!open && xml && (
-                                                            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                                                            <div className="rd-tl-fade" />
                                                         )}
                                                     </div>
                                                 </div>
@@ -280,17 +295,18 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                                     </div>
                                 </div>
                             )}
-                            {c.error && <p className="text-xs text-rose-500 mt-1">{c.error}</p>}
+                            {c.error && <p className="rd-tl-err is-small">{c.error}</p>}
                         </div>
                     ))}
 
                     {crops.length > 0 && (
                         <button onClick={makeHwp} disabled={making || totalSelected === 0}
-                            className="w-full py-3 rounded-xl font-extrabold text-white bg-gradient-to-r from-[#2E9E5B] to-[#46C77D] hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2 sticky bottom-3">
+                            className="rd-btn rd-btn-primary rd-btn-block rd-tl-hwp">
                             {making ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 변형문제 한글파일 ({totalSelected})</>}
                         </button>
                     )}
                 </div>
+            </div>
             </div>
 
             {showPromo && <ExamPromoModal onClose={() => setShowPromo(false)} />}
@@ -300,20 +316,20 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
 
 function PageNav({ cur, total, go }: { cur: number; total: number; go: (n: number) => void }) {
     return (
-        <div className="flex items-center justify-center gap-2">
+        <div className="rd-tl-pager">
             <button onClick={() => go(cur - 1)} disabled={cur === 0}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:border-[#2E9E5B] hover:text-[#2E9E5B] disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1">
-                <ChevronLeft size={15} /> 이전
+                className="rd-btn rd-btn-gray rd-btn-sm">
+                <ChevronLeft size={16} /> 이전
             </button>
-            <div className="flex items-center gap-1 text-sm font-bold text-slate-600">
+            <div className="rd-tl-pageno">
                 <input type="number" min={1} max={total} value={cur + 1}
                     onChange={(e) => go(Number(e.target.value) - 1)}
-                    className="w-14 text-center border border-slate-200 rounded-lg py-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                <span className="text-slate-400">/ {total}</span>
+                    className="rd-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                <span>/ {total}</span>
             </div>
             <button onClick={() => go(cur + 1)} disabled={cur >= total - 1}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:border-[#2E9E5B] hover:text-[#2E9E5B] disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1">
-                다음 <ChevronRight size={15} />
+                className="rd-btn rd-btn-gray rd-btn-sm">
+                다음 <ChevronRight size={16} />
             </button>
         </div>
     );
@@ -398,8 +414,8 @@ function PageCanvas({ setRef, onCrop }: { setRef: (el: HTMLCanvasElement | null)
             onMouseMove={(e) => { if (!start.current) return; const p = pt(e); setBox({ x: Math.min(start.current.x, p.x), y: Math.min(start.current.y, p.y), w: Math.abs(p.x - start.current.x), h: Math.abs(p.y - start.current.y) }); }}
             onMouseUp={() => { if (box && box.w > 12 && box.h > 12) onCrop(box.x, box.y, box.w, box.h); start.current = null; setBox(null); }}
             onMouseLeave={() => { start.current = null; setBox(null); }}>
-            <canvas ref={setRef} className="w-full h-auto rounded-lg border border-slate-200 shadow-sm block" />
-            {box && <div className="absolute border-2 border-[#2E9E5B] bg-[#2E9E5B]/15 pointer-events-none" style={{ left: box.x, top: box.y, width: box.w, height: box.h }} />}
+            <canvas ref={setRef} className="rd-tl-canvas" />
+            {box && <div className="rd-tl-cropbox" style={{ left: box.x, top: box.y, width: box.w, height: box.h }} />}
         </div>
     );
 }

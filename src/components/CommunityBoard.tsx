@@ -2,10 +2,9 @@
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import type {User} from '@supabase/supabase-js';
-import {Search,ArrowUpRight,ArrowRight,FileText,Lock,PenLine} from 'lucide-react';
+import {Search,X,ChevronRight,FileText,Lock,PenLine} from 'lucide-react';
 import {createClient} from '@/utils/supabase/client';
 import Header from './Header';
-import PageHeading from './PageHeading';
 type Entry={id:string;title:string;created_at:string;views:number;author_nickname?:string};
 export default function CommunityBoard({kind}:{kind:'notice'|'suggestion'}){
  const notice=kind==='notice';const localPreview=process.env.NEXT_PUBLIC_LOCAL_PREVIEW==='1';const supabase=useMemo(()=>createClient(),[]);
@@ -23,14 +22,42 @@ export default function CommunityBoard({kind}:{kind:'notice'|'suggestion'}){
  },[notice,retry,supabase]);
  const visible=items.filter(item=>item.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
  const date=(value:string)=>new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Seoul'}).format(new Date(value));
- return <div className="community-page"><Header user={user}/><div className="suite-container">
-  <PageHeading eyebrow={notice?'THE JOURNAL / NOTICE':'YOUR VOICE / SUGGESTION'} title={notice?'수학ETF의 새로운 소식.':'함께 만드는 수학ETF.'} description={notice?'서비스의 변화와 이용 안내를 차곡차곡 기록합니다.':'불편했던 순간도, 떠오른 아이디어도 들려주세요.'}>
-   {(!notice||user?.email==='mathofhy@naver.com')&&<Link className="suite-button" href={user?`/${kind}/write`:`/login?next=${encodeURIComponent('/suggestion/write')}`}><PenLine size={16}/>{notice?'공지 작성':'의견 남기기'}<ArrowUpRight size={16}/></Link>}
-  </PageHeading>
-  {!notice&&localPreview&&<p role="note" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">이곳은 검토 화면이라 운영 건의사항 글은 표시되지 않습니다. 기존 글은 <a className="font-bold underline" href="https://mathetf.com/suggestion">실제 홈페이지 건의사항</a>에서 확인할 수 있습니다.</p>}
-  <div className="community-layout"><aside className="community-aside"><span className="community-folio">{notice?'01':'02'}</span><h2>{notice?'소식과 기록':'당신의 의견'}</h2><p>{notice?'새로운 기능과 자료, 서비스 이용에 필요한 안내를 확인하세요.':'제목은 목록에 공개됩니다. 본문은 글 비밀번호로 확인하는 비밀글로 등록됩니다.'}</p><Link href={notice?'/suggestion':'/notice'}>{notice?'의견 남기러 가기':'공지사항 살펴보기'}<ArrowRight size={15}/></Link><Link href="/guide">이용 가이드<ArrowRight size={15}/></Link></aside>
-  <section className="community-list" aria-label={notice?'공지사항 목록':'건의사항 목록'}><div className="community-tools"><p>{notice?'공지사항':'건의사항'} <strong>{state==='ready'?visible.length:'—'}</strong></p><label><Search size={16}/><input aria-label="게시글 제목 검색" value={query} onChange={e=>setQuery(e.target.value)} placeholder="제목으로 찾기"/></label></div>
-   {state==='loading'?<div className="suite-empty" role="status">소식을 불러오고 있습니다.</div>:state==='error'?<div className="suite-empty" role="alert"><FileText size={32}/><h3>목록을 불러오지 못했습니다.</h3><button className="suite-button secondary" onClick={()=>setRetry(n=>n+1)}>다시 불러오기</button></div>:!visible.length?<div className="suite-empty"><FileText size={36}/><h3>{query?'검색 결과가 없습니다.':notice?'새로운 소식을 준비하고 있습니다.':'첫 번째 의견을 기다리고 있습니다.'}</h3><p>{query?'다른 제목으로 검색해 보세요.':notice?'새 공지가 등록되면 이곳에서 확인할 수 있습니다.':'더 편리한 수학ETF를 위한 의견을 남겨주세요.'}</p>{query&&<button className="suite-button secondary" onClick={()=>setQuery('')}>전체 글 보기</button>}</div>:<div>{visible.map((item,i)=><Link href={`/${kind}/${item.id}`} className="community-row" key={item.id}><span className="community-row-number">{String(visible.length-i).padStart(2,'0')}</span><div><span className="community-type">{notice?'NOTICE':<><Lock size={11}/>비밀글</>}</span><h3>{item.title}</h3><p>{date(item.created_at)}<span>조회 {item.views||0}</span>{!notice&&<span>{item.author_nickname||'익명'}</span>}</p></div><ArrowUpRight size={19}/></Link>)}</div>}
-  </section></div>
- </div></div>;
+ return <div className="rd rd-x rd-bd"><Header user={user}/>
+  <section className="rd-wrap rd-x-top rd-bd-top">
+   <nav className="rd-bd-tabs" aria-label="게시판">
+    <Link href="/notice" aria-current={notice?'page':undefined}>공지사항</Link>
+    <Link href="/suggestion" aria-current={!notice?'page':undefined}>건의사항</Link>
+   </nav>
+   <div className="rd-bd-head">
+    <div className="rd-bd-head-txt">
+     <h1 className="rd-x-h1 rd-bd-h1">{notice?'수학ETF의 새로운 소식.':'함께 만드는 수학ETF.'}</h1>
+     <p className="rd-lead">{notice?'서비스의 변화와 이용 안내를 차곡차곡 기록합니다.':'불편했던 순간도, 떠오른 아이디어도 들려주세요.'}</p>
+    </div>
+    {(!notice||user?.email==='mathofhy@naver.com')&&<Link className="rd-btn rd-btn-primary rd-bd-write" href={user?`/${kind}/write`:`/login?next=${encodeURIComponent('/suggestion/write')}`}><PenLine size={18}/>{notice?'공지 작성':'의견 남기기'}</Link>}
+   </div>
+   {!notice&&<p className="rd-bd-note"><Lock size={16}/><span>제목은 목록에 공개됩니다. 본문은 글 비밀번호로 확인하는 비밀글로 등록됩니다.</span></p>}
+   {!notice&&localPreview&&<p role="note" className="rd-bd-note is-warn">이곳은 검토 화면이라 운영 건의사항 글은 표시되지 않습니다. 기존 글은 <a href="https://mathetf.com/suggestion">실제 홈페이지 건의사항</a>에서 확인할 수 있습니다.</p>}
+  </section>
+  <section className="rd-wrap rd-bd-main" aria-label={notice?'공지사항 목록':'건의사항 목록'}>
+   <div className="rd-bd-tools">
+    <p className="rd-bd-count">{notice?'공지사항':'건의사항'} <b>{state==='ready'?visible.length:'—'}</b></p>
+    <label className="rd-cat-search rd-bd-search"><Search size={18} aria-hidden/><input aria-label="게시글 제목 검색" value={query} onChange={e=>setQuery(e.target.value)} placeholder="제목으로 찾기"/>{query&&<button type="button" aria-label="검색어 지우기" onClick={()=>setQuery('')}><X size={16}/></button>}</label>
+   </div>
+   {state==='loading'?<div className="rd-bd-empty" role="status"><p>소식을 불러오고 있습니다.</p></div>
+   :state==='error'?<div className="rd-bd-empty" role="alert"><FileText size={32} aria-hidden/><h3>목록을 불러오지 못했습니다.</h3><button className="rd-btn rd-btn-gray" onClick={()=>setRetry(n=>n+1)}>다시 불러오기</button></div>
+   :!visible.length&&!(notice&&!query)?<div className="rd-bd-empty"><FileText size={32} aria-hidden/><h3>{query?'검색 결과가 없습니다.':notice?'새로운 소식을 준비하고 있습니다.':'첫 번째 의견을 기다리고 있습니다.'}</h3><p>{query?'다른 제목으로 검색해 보세요.':notice?'새 공지가 등록되면 이곳에서 확인할 수 있습니다.':'더 편리한 수학ETF를 위한 의견을 남겨주세요.'}</p>{query&&<button className="rd-btn rd-btn-gray" onClick={()=>setQuery('')}>전체 글 보기</button>}</div>
+   :<ul className="rd-bd-list">{notice&&!query&&<li><Link href="/notice/change-2026-10" className="rd-bd-row is-pinned"><div className="rd-bd-row-txt"><span className="rd-bd-tag is-accent">고정</span><h3>10월 12일(월)부터 시험지 만들기 이용 방식이 바뀝니다</h3><p className="rd-bd-meta"><span>2026. 10. 8.</span></p></div><ChevronRight size={20} aria-hidden/></Link></li>}{visible.map(item=><li key={item.id}><Link href={`/${kind}/${item.id}`} className="rd-bd-row">
+     <div className="rd-bd-row-txt">
+      <span className={notice?'rd-bd-tag is-accent':'rd-bd-tag'}>{notice?'공지':<><Lock size={12} aria-hidden/>비밀글</>}</span>
+      <h3>{item.title}</h3>
+      <p className="rd-bd-meta"><span>{date(item.created_at)}</span><span>조회 {item.views||0}</span>{!notice&&<span>{item.author_nickname||'익명'}</span>}</p>
+     </div>
+     <ChevronRight size={20} aria-hidden/>
+    </Link></li>)}</ul>}
+   <div className="rd-bd-links">
+    <Link href={notice?'/suggestion':'/notice'} className="rd-link">{notice?'의견 남기러 가기':'공지사항 살펴보기'}</Link>
+    <Link href="/guide" className="rd-link">이용 가이드</Link>
+   </div>
+  </section>
+ </div>;
 }

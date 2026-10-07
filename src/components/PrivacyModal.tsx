@@ -1,5 +1,7 @@
 "use client"
 
+import { X } from "lucide-react"
+
 interface PrivacyModalProps {
     isOpen: boolean
     onClose: () => void
@@ -11,13 +13,15 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
-                <div className="p-6 border-b">
-                    <h2 className="text-xl font-bold">개인정보 수집 및 이용 동의</h2>
+        <div className="rd rd-overlay" style={{ zIndex: 300 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="rd-modal rd-modal-lg rd-legal" role="dialog" aria-modal="true" aria-labelledby="PrivacyModal-title">
+                <div className="rd-sheet-handle" aria-hidden="true" />
+                <div className="rd-modal-head">
+                    <h2 id="PrivacyModal-title" className="rd-modal-title">개인정보 수집 및 이용 동의</h2>
+                    <button type="button" className="rd-modal-x" aria-label="닫기" onClick={onClose}><X size={20} /></button>
                 </div>
 
-                <div className="p-6 overflow-y-auto flex-1 text-sm leading-relaxed space-y-4">
+                <div className="rd-modal-body rd-legal-body">
                     <p className="font-bold mb-4">수학ETF는 서비스 제공을 위해 최소한의 개인정보를 수집하며, 사용자의 권리를 보호합니다.</p>
 
                     <div className="space-y-6 text-foreground/90">
@@ -61,17 +65,17 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
                     </div>
                 </div>
 
-                <div className="p-6 border-t flex justify-end gap-2">
+                <div className="rd-modal-foot">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-foreground/70 hover:text-foreground transition-colors"
+                        type="button" className="rd-btn rd-btn-gray"
                     >
                         {readonly ? '닫기' : '취소'}
                     </button>
                     {!readonly && onAgree && (
                         <button
                             onClick={onAgree}
-                            className="bg-green-700 text-white px-6 py-2 rounded-md hover:bg-green-800 transition-colors font-semibold"
+                            type="button" className="rd-btn rd-btn-primary"
                         >
                             동의하고 가입하기
                         </button>

@@ -38,7 +38,7 @@ export default async function PredictPage() {
 
     // [PERF] 로그인 여부는 PredictClient가 클라이언트에서 확인 — 쿠키를 읽지 않아야 revalidate(ISR)가 실제로 동작
     return (
-        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x rd-tl">
             <Header />
             <PredictClient richSchools={richSchools} />
         </div>

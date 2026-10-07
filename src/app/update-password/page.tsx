@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Check } from 'lucide-react';
 
 export default function UpdatePasswordPage() {
     const [password, setPassword] = useState('');
@@ -57,70 +60,75 @@ export default function UpdatePasswordPage() {
         }
     };
 
+    // 새 비밀번호 설정(10/7 새 디자인) — 로그인과 같은 계정 화면 틀(rd-auth). 세션 확인·변경 흐름은 그대로.
     return (
-        <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-slate-50 px-4">
-            <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-sm border border-slate-200">
-                <h1 className="text-2xl font-bold text-slate-800 mb-6">새 비밀번호 설정</h1>
+        <div className="rd rd-auth">
+            <div className="rd-auth-card">
+                <Link href="/" className="rd-auth-brand"><Image src="/icon.svg" alt="" width={32} height={32} /><span>수학ETF</span></Link>
+                <h1 className="rd-auth-title">새 비밀번호 설정</h1>
 
                 {status === 'success' ? (
-                    <div className="text-center">
-                        <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
-                            ✅
-                        </div>
-                        <p className="text-green-700 font-bold mb-2">변경 완료!</p>
-                        <p className="text-slate-500 text-sm">잠시 후 메인으로 이동합니다...</p>
+                    <div className="rd-auth-done">
+                        <div className="rd-auth-done-icon" aria-hidden="true"><Check size={30} strokeWidth={2.6} /></div>
+                        <h2 role="status">변경 완료</h2>
+                        <p>잠시 후 메인으로 이동합니다...</p>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-1" htmlFor="pw">새 비밀번호</label>
+                    <>
+                        <p className="rd-auth-sub">앞으로 로그인할 때 쓸 새 비밀번호를 입력해 주세요.</p>
+                        <form onSubmit={handleSubmit} className="rd-auth-form">
+                            <label className="rd-auth-label" htmlFor="pw">새 비밀번호</label>
                             <input
                                 id="pw"
                                 type="password"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
-                                className="w-full px-4 py-2 border border-slate-300 rounded focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                className="rd-input"
+                                autoComplete="new-password"
                                 placeholder="영문, 숫자 6자리 이상"
                                 required
                                 minLength={6}
                             />
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-1" htmlFor="cpw">비밀번호 확인</label>
+                            <label className="rd-auth-label" htmlFor="cpw">비밀번호 확인</label>
                             <input
                                 id="cpw"
                                 type="password"
                                 value={confirmPw}
                                 onChange={e => setConfirmPw(e.target.value)}
-                                className="w-full px-4 py-2 border border-slate-300 rounded focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                className="rd-input"
+                                autoComplete="new-password"
                                 placeholder="비밀번호 재입력"
                                 required
                                 minLength={6}
                             />
+
+                            {status === 'error' && (
+                                <p className="rd-auth-error" role="alert">
+                                    {msg}
+                                </p>
+                            )}
+                            {msg && status !== 'error' && (
+                                <p className="rd-auth-error" role="alert">
+                                    {msg}
+                                </p>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={status === 'loading'}
+                                className="rd-btn rd-btn-primary rd-btn-block rd-auth-submit"
+                            >
+                                {status === 'loading' ? '변경 중...' : '비밀번호 변경하기'}
+                            </button>
+                        </form>
+                        <div className="rd-auth-links">
+                            <Link href="/forgot-password">재설정 메일 다시 받기</Link>
                         </div>
-
-                        {status === 'error' && (
-                            <div className="text-red-600 text-sm font-bold bg-red-50 p-2 rounded">
-                                {msg}
-                            </div>
-                        )}
-                        {msg && status !== 'error' && (
-                            <div className="text-red-500 text-sm font-bold">
-                                {msg}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={status === 'loading'}
-                            className="w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors disabled:opacity-50"
-                        >
-                            {status === 'loading' ? '변경 중...' : '비밀번호 변경하기'}
-                        </button>
-                    </form>
+                    </>
                 )}
             </div>
+            <Link className="rd-auth-home" href="/">홈으로 돌아가기</Link>
         </div>
     );
 }

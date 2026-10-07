@@ -7,6 +7,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { safeReturnPath } from '@/lib/auth-return';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Check } from 'lucide-react';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import MarketingModal from '@/components/MarketingModal';
@@ -223,43 +225,50 @@ export default function SignupPage() {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[#f2f3f0] flex items-center justify-center p-4 overflow-x-hidden">
-            <div className="bg-white rounded-lg shadow-md max-w-md w-full px-5 py-8 sm:px-8 border border-slate-200 overflow-hidden">
-                <Link href="/" className="suite-auth-brand">∑ 수학ETF</Link><p className="suite-eyebrow text-center mb-3">YOUR NEXT CHAPTER</p><h1 className="text-2xl font-bold text-center mb-6 text-slate-800">
-                    회원가입
-                </h1>
+    const emailOk = emailStatus === 'available' && email === checkedEmail;
+    const pwMismatch = !!(password && confirmPassword && password !== confirmPassword);
 
-                {/* Progress Indicatgor */}
-                <div className="flex gap-2 mb-8 justify-center">
-                    <div className={`h-2 w-16 rounded-full ${step >= 1 ? 'bg-brand-600' : 'bg-slate-200'}`}></div>
-                    <div className={`h-2 w-16 rounded-full ${step >= 2 ? 'bg-brand-600' : 'bg-slate-200'}`}></div>
-                </div>
+    // 회원가입(10/7 새 디자인) — 로그인과 같은 계정 화면 틀(rd-auth). 단계·검증·인증 흐름은 그대로, 겉모습만 바꿨다.
+    return (
+        <div className="rd rd-auth">
+            <div className="rd-auth-card">
+                <Link href="/" className="rd-auth-brand"><Image src="/icon.svg" alt="" width={32} height={32} /><span>수학ETF</span></Link>
+                <h1 className="rd-auth-title">회원가입</h1>
+                {!successMsg && (
+                    <p className="rd-auth-sub">
+                        {step === 1 ? '약관에 동의하면 가입 정보를 입력합니다.' : '가입 정보를 입력하고 휴대폰 인증을 마쳐 주세요.'}
+                    </p>
+                )}
+
+                {/* 진행 단계 */}
+                {!successMsg && (
+                    <ol className="rd-auth-steps">
+                        <li className={step >= 1 ? 'is-on' : ''}>1 약관 동의</li>
+                        <li className={step >= 2 ? 'is-on' : ''}>2 정보 입력</li>
+                    </ol>
+                )}
 
                 {successMsg ? (
-                    <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                            ✅
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-800 mb-2">가입 완료!</h2>
-                        <p className="text-slate-600 mb-6">
+                    <div className="rd-auth-done">
+                        <div className="rd-auth-done-icon" aria-hidden="true"><Check size={30} strokeWidth={2.6} /></div>
+                        <h2>가입 완료</h2>
+                        <p>
                             휴대폰 인증을 통해 성공적으로 가입되었습니다.<br />
                             지금 바로 서비스를 이용하실 수 있습니다.
                         </p>
-                        <Link href={nextPath} className="block w-full bg-brand-600 text-white py-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">
-                            로그인하고 시작하기
-                        </Link>
+                        <div className="rd-auth-actions">
+                            <Link href={nextPath} className="rd-btn rd-btn-primary rd-btn-block">
+                                로그인하고 시작하기
+                            </Link>
+                        </div>
                     </div>
                 ) : (
                     <>
                         {step === 1 && (
-                            <div className="space-y-6">
-                                <h2 className="text-lg font-bold text-slate-700 border-b pb-2">
-                                    약관 동의
-                                </h2>
-                                <div className="space-y-4">
+                            <div>
+                                <div className="rd-auth-agree-list">
                                     <div
-                                        className="flex items-start gap-3 p-4 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                                        className={`rd-auth-agree${termsAgreed ? ' is-on' : ''}`}
                                         onClick={() => {
                                             if (termsAgreed) {
                                                 setTermsAgreed(false);
@@ -268,22 +277,17 @@ export default function SignupPage() {
                                             }
                                         }}
                                     >
-                                        <div className="flex items-center h-5">
-                                            <input
-                                                type="checkbox"
-                                                checked={termsAgreed}
-                                                readOnly
-                                                className="w-6 h-6 sm:w-5 sm:h-5 accent-brand-600 cursor-pointer pointer-events-none"
-                                                id="terms"
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <label
-                                                    htmlFor="terms"
-                                                    className="text-sm text-slate-600 cursor-pointer font-medium pointer-events-none"
-                                                >
-                                                    <span className="text-rose-500 font-bold mr-1">[필수]</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={termsAgreed}
+                                            readOnly
+                                            style={{ pointerEvents: 'none' }}
+                                            id="terms"
+                                        />
+                                        <div className="rd-auth-agree-body">
+                                            <div className="rd-auth-agree-head">
+                                                <label htmlFor="terms" style={{ pointerEvents: 'none' }}>
+                                                    <span className="rd-auth-tag">[필수]</span>
                                                     서비스 이용약관 동의
                                                 </label>
                                                 <button
@@ -292,18 +296,16 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsTermsModalOpen(true);
                                                     }}
-                                                    className="shrink-0 whitespace-nowrap text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
+                                                    className="rd-auth-view"
                                                 >
                                                     전문 보기
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-slate-400 mt-1">
-                                                수학ETF 서비스 이용을 위한 약관입니다.
-                                            </p>
+                                            <p>수학ETF 서비스 이용을 위한 약관입니다.</p>
                                         </div>
                                     </div>
                                     <div
-                                        className="flex items-start gap-3 p-4 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                                        className={`rd-auth-agree${privacyAgreed ? ' is-on' : ''}`}
                                         onClick={() => {
                                             if (privacyAgreed) {
                                                 setPrivacyAgreed(false);
@@ -312,22 +314,17 @@ export default function SignupPage() {
                                             }
                                         }}
                                     >
-                                        <div className="flex items-center h-5">
-                                            <input
-                                                type="checkbox"
-                                                checked={privacyAgreed}
-                                                readOnly
-                                                className="w-6 h-6 sm:w-5 sm:h-5 accent-brand-600 cursor-pointer pointer-events-none"
-                                                id="privacy"
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <label
-                                                    htmlFor="privacy"
-                                                    className="text-sm text-slate-600 cursor-pointer font-medium pointer-events-none"
-                                                >
-                                                    <span className="text-rose-500 font-bold mr-1">[필수]</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={privacyAgreed}
+                                            readOnly
+                                            style={{ pointerEvents: 'none' }}
+                                            id="privacy"
+                                        />
+                                        <div className="rd-auth-agree-body">
+                                            <div className="rd-auth-agree-head">
+                                                <label htmlFor="privacy" style={{ pointerEvents: 'none' }}>
+                                                    <span className="rd-auth-tag">[필수]</span>
                                                     개인정보 수집 및 이용 동의
                                                 </label>
                                                 <button
@@ -336,36 +333,28 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsPrivacyModalOpen(true);
                                                     }}
-                                                    className="shrink-0 whitespace-nowrap text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
+                                                    className="rd-auth-view"
                                                 >
                                                     전문 보기
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-slate-400 mt-1">
-                                                회원가입 및 서비스 운영을 위해 최소한의 정보를 수집합니다.
-                                            </p>
+                                            <p>회원가입 및 서비스 운영을 위해 최소한의 정보를 수집합니다.</p>
                                         </div>
                                     </div>
                                     <div
-                                        className="flex items-start gap-3 p-4 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                                        className={`rd-auth-agree${marketingAgreed ? ' is-on' : ''}`}
                                         onClick={() => setMarketingAgreed(!marketingAgreed)}
                                     >
-                                        <div className="flex items-center h-5">
-                                            <input
-                                                type="checkbox"
-                                                checked={marketingAgreed}
-                                                onChange={(e) => setMarketingAgreed(e.target.checked)}
-                                                className="w-6 h-6 sm:w-5 sm:h-5 accent-brand-600 cursor-pointer"
-                                                id="marketing"
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <label
-                                                    htmlFor="marketing"
-                                                    className="text-sm text-slate-600 cursor-pointer font-medium"
-                                                >
-                                                    <span className="text-slate-500 font-bold mr-1">[선택]</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={marketingAgreed}
+                                            onChange={(e) => setMarketingAgreed(e.target.checked)}
+                                            id="marketing"
+                                        />
+                                        <div className="rd-auth-agree-body">
+                                            <div className="rd-auth-agree-head">
+                                                <label htmlFor="marketing">
+                                                    <span className="rd-auth-tag is-opt">[선택]</span>
                                                     마케팅 정보 수신 동의
                                                 </label>
                                                 <button
@@ -374,26 +363,24 @@ export default function SignupPage() {
                                                         e.stopPropagation();
                                                         setIsMarketingModalOpen(true);
                                                     }}
-                                                    className="shrink-0 whitespace-nowrap text-xs text-slate-500 underline hover:text-brand-600 py-3 px-2 -my-3 -mx-2 sm:p-0 sm:m-0"
+                                                    className="rd-auth-view"
                                                 >
                                                     전문 보기
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-slate-400 mt-1">
-                                                새 기출 자료·혜택 소식을 <span className="font-bold">이메일과 문자</span>로 받습니다. (야간 21~08시 발송 없음)
+                                            <p>
+                                                새 기출 자료와 혜택 소식을 <b>이메일과 문자</b>로 받습니다. (야간 21~08시 발송 없음)
                                             </p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="pt-4">
-                                    <button
-                                        onClick={handleNextStep}
-                                        disabled={!termsAgreed || !privacyAgreed}
-                                        className={`w-full py-3 rounded-lg font-bold transition-colors ${termsAgreed && privacyAgreed ? 'bg-brand-600 text-white hover:bg-brand-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
-                                    >
-                                        다음
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={handleNextStep}
+                                    disabled={!termsAgreed || !privacyAgreed}
+                                    className="rd-btn rd-btn-primary rd-btn-block rd-auth-submit"
+                                >
+                                    다음
+                                </button>
                             </div>
                         )}
 
@@ -425,165 +412,163 @@ export default function SignupPage() {
                         />
 
                         {step === 2 && (
-                            <form onSubmit={handleSignup} className="space-y-5">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">이메일 (아이디)</label>
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => {
-                                                setEmail(e.target.value);
-                                                if (emailStatus === 'available') setEmailStatus('idle');
-                                            }}
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
-                                            placeholder="example@email.com"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleCheckEmail}
-                                            disabled={emailStatus === 'checking' || (emailStatus === 'available' && email === checkedEmail)}
-                                            className={`w-full mt-1.5 py-2 text-sm font-bold rounded-lg border transition-colors
-                                                ${emailStatus === 'available' && email === checkedEmail
-                                                    ? 'bg-green-50 text-green-600 border-green-200'
-                                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-                                        >
-                                            {emailStatus === 'checking' ? '확인 중...' :
-                                                emailStatus === 'available' && email === checkedEmail ? '✓ 사용 가능한 이메일' : '중복 확인'}
-                                        </button>
-                                        {emailStatus === 'taken' && (
-                                            <p className="text-xs text-red-500 mt-1 pl-1">이미 사용 중인 이메일입니다.</p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">닉네임</label>
-                                        <input
-                                            type="text"
-                                            value={nickname}
-                                            onChange={(e) => setNickname(e.target.value)}
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
-                                            placeholder="활동명 입력"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">비밀번호</label>
-                                        <input
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
-                                            placeholder="영문, 숫자 6자리 이상"
-                                            required
-                                            minLength={6}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">비밀번호 확인</label>
-                                        <input
-                                            type="password"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none ${password && confirmPassword && password !== confirmPassword ? 'border-red-500 bg-red-50' : 'border-slate-200 focus:border-brand-500'}`}
-                                            placeholder="비밀번호 재입력"
-                                            required
-                                        />
-                                        {password && confirmPassword && password !== confirmPassword && (
-                                            <p className="text-xs text-red-500 mt-1">비밀번호가 일치하지 않습니다.</p>
-                                        )}
-                                    </div>
-                                    <div className="pt-2 border-t border-slate-100">
-                                        <label className="block text-sm font-bold text-slate-700 mb-1">휴대폰 번호 인증</label>
-                                        <input
-                                            type="tel"
-                                            value={phone}
-                                            onChange={(e) => {
-                                                setPhone(e.target.value.replace(/[^0-9]/g, ''));
-                                                setIsPhoneVerified(false);
-                                                setIsOtpSent(false);
-                                            }}
-                                            disabled={isPhoneVerified}
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
-                                            placeholder="숫자만 입력 (예: 01012345678)"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleSendOtp}
-                                            disabled={isPhoneVerified || otpSending || !phone || phone.length < 10}
-                                            className={`w-full mt-1.5 py-2 text-sm font-bold rounded-lg border transition-colors
-                                                ${isPhoneVerified
-                                                    ? 'bg-green-50 text-green-600 border-green-200'
-                                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 disabled:opacity-50'}`}
-                                        >
-                                            {isPhoneVerified ? '✓ 인증 완료' : otpSending ? '발송 중...' : isOtpSent ? '재발송' : '인증번호 발송'}
-                                        </button>
-                                    </div>
-                                    
-                                    {isOtpSent && !isPhoneVerified && (
-                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                                            <div className="flex gap-2">
-                                                <div className="relative flex-1">
-                                                    <input
-                                                        type="text"
-                                                        value={otpCode}
-                                                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-500"
-                                                        placeholder="인증번호 6자리 입력"
-                                                        maxLength={6}
-                                                    />
-                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-rose-500 font-medium tracking-wider">
-                                                        {formatTime(otpTimer)}
-                                                    </span>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleVerifyOtp}
-                                                    disabled={otpVerifying || otpCode.length !== 6}
-                                                    className="px-6 py-2 text-sm font-bold bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50 transition-colors whitespace-nowrap"
-                                                >
-                                                    {otpVerifying ? '확인 중...' : '확인'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
+                            <form onSubmit={handleSignup} className="rd-auth-form">
+                                <label htmlFor="signup-email" className="rd-auth-label">이메일 (아이디)</label>
+                                <input
+                                    id="signup-email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        if (emailStatus === 'available') setEmailStatus('idle');
+                                    }}
+                                    className="rd-input"
+                                    autoComplete="email"
+                                    placeholder="example@email.com"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleCheckEmail}
+                                    disabled={emailStatus === 'checking' || emailOk}
+                                    className={`rd-btn rd-btn-gray rd-btn-block rd-auth-check${emailOk ? ' is-ok' : ''}`}
+                                >
+                                    {emailStatus === 'checking' ? '확인 중...' :
+                                        emailOk ? <><Check size={18} strokeWidth={2.6} aria-hidden="true" />사용 가능한 이메일</> : '중복 확인'}
+                                </button>
+                                {emailStatus === 'taken' && (
+                                    <p className="rd-auth-hint">이미 사용 중인 이메일입니다.</p>
+                                )}
+
+                                <label htmlFor="signup-nickname" className="rd-auth-label">닉네임</label>
+                                <input
+                                    id="signup-nickname"
+                                    type="text"
+                                    value={nickname}
+                                    onChange={(e) => setNickname(e.target.value)}
+                                    className="rd-input"
+                                    placeholder="활동명 입력"
+                                    required
+                                />
+
+                                <label htmlFor="signup-password" className="rd-auth-label">비밀번호</label>
+                                <input
+                                    id="signup-password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="rd-input"
+                                    autoComplete="new-password"
+                                    placeholder="영문, 숫자 6자리 이상"
+                                    required
+                                    minLength={6}
+                                />
+
+                                <label htmlFor="signup-password-confirm" className="rd-auth-label">비밀번호 확인</label>
+                                <input
+                                    id="signup-password-confirm"
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className={`rd-input${pwMismatch ? ' is-bad' : ''}`}
+                                    autoComplete="new-password"
+                                    placeholder="비밀번호 재입력"
+                                    required
+                                />
+                                {pwMismatch && (
+                                    <p className="rd-auth-hint">비밀번호가 일치하지 않습니다.</p>
+                                )}
+
+                                <hr className="rd-auth-sep" />
+                                <label htmlFor="signup-phone" className="rd-auth-label">휴대폰 번호 인증</label>
+                                <div className="rd-auth-row">
+                                    <input
+                                        id="signup-phone"
+                                        type="tel"
+                                        inputMode="numeric"
+                                        value={phone}
+                                        onChange={(e) => {
+                                            setPhone(e.target.value.replace(/[^0-9]/g, ''));
+                                            setIsPhoneVerified(false);
+                                            setIsOtpSent(false);
+                                        }}
+                                        disabled={isPhoneVerified}
+                                        className="rd-input"
+                                        placeholder="01012345678"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSendOtp}
+                                        disabled={isPhoneVerified || otpSending || !phone || phone.length < 10}
+                                        className={`rd-btn rd-btn-gray${isPhoneVerified ? ' is-ok' : ''}`}
+                                    >
+                                        {isPhoneVerified ? <><Check size={18} strokeWidth={2.6} aria-hidden="true" />인증 완료</> : otpSending ? '발송 중...' : isOtpSent ? '재발송' : '인증번호 발송'}
+                                    </button>
                                 </div>
 
-                                {errorMsg && (
-                                    <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center">
-                                        {errorMsg}
+                                {isOtpSent && !isPhoneVerified && (
+                                    <div className="rd-auth-row rd-auth-otp-box">
+                                        <div className="rd-auth-otp">
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                autoComplete="one-time-code"
+                                                value={otpCode}
+                                                onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                                                className="rd-input"
+                                                placeholder="인증번호 6자리 입력"
+                                                maxLength={6}
+                                            />
+                                            <span className="rd-auth-timer">
+                                                {formatTime(otpTimer)}
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleVerifyOtp}
+                                            disabled={otpVerifying || otpCode.length !== 6}
+                                            className="rd-btn rd-btn-gray"
+                                        >
+                                            {otpVerifying ? '확인 중...' : '확인'}
+                                        </button>
                                     </div>
                                 )}
 
-                                <div className="flex gap-3 pt-4">
+                                {errorMsg && (
+                                    <p className="rd-auth-error" role="alert">
+                                        {errorMsg}
+                                    </p>
+                                )}
+
+                                <div className="rd-auth-actions">
                                     <button
                                         type="button"
                                         onClick={() => setStep(1)}
-                                        className="flex-1 py-3 border border-slate-200 rounded-lg font-bold text-slate-600 hover:bg-slate-50"
+                                        className="rd-btn rd-btn-gray"
                                     >
                                         이전
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-1 py-3 bg-brand-600 text-white rounded-lg font-bold hover:bg-brand-700 disabled:opacity-50"
+                                        className="rd-btn rd-btn-primary"
                                     >
                                         {loading ? '가입 중...' : '회원가입 완료'}
                                     </button>
                                 </div>
                             </form>
                         )}
-                        <div className="text-center mt-6">
-                            <Link href={'/login?next=' + encodeURIComponent(nextPath)} className="text-sm text-slate-500 underline">
-                                이미 계정이 있으신가요? 로그인
+                        <div className="rd-auth-join">
+                            <span>이미 계정이 있으신가요?</span>
+                            <Link href={'/login?next=' + encodeURIComponent(nextPath)} className="rd-btn rd-btn-gray rd-btn-block">
+                                로그인
                             </Link>
                         </div>
                     </>
-                )
-                }
-            </div >
-        </div >
+                )}
+            </div>
+            <Link className="rd-auth-home" href="/">홈으로 돌아가기</Link>
+        </div>
     );
 }

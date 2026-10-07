@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import Header from '@/components/Header';
-import { ChevronRight, MapPin } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { buildRegionTree } from '@/lib/region-hub';
 
 // [PERF] ISR — 자료 등록 배치가 끝나면 revalidate 로 즉시 갱신된다. 주기 재생성은 보험용 1시간.
@@ -36,89 +36,47 @@ export default async function RegionHubPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F2F3F0] text-[#294437] font-sans">
+        <div className="rd rd-x">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Header />
-            <main className="max-w-5xl mx-auto px-4 py-8">
-                <nav className="text-xs text-slate-400 mb-3">
-                    <Link href="/" className="hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">홈</Link>
-                    <span className="mx-1.5">/</span>
-                    <span className="text-slate-500 font-semibold">지역별 기출</span>
-                </nav>
+            <div>
+                <section className="rd-wrap rd-x-top">
+                    <nav className="rd-mk-crumb" aria-label="위치"><Link href="/">홈</Link><ChevronRight size={14} aria-hidden="true" /><span>지역별 기출</span></nav>
+                    <h1 className="rd-x-h1 rd-s-h1">지역별 고등학교<br />수학 기출</h1>
+                    <p className="rd-lead">전국 <b>{totalSchools}개 고등학교</b>의 수학 내신 기출 <b>{totalExams}회차</b>를 시·도와 구·군으로 묶었습니다. 지역을 고르면 그 지역 학교의 중간고사·기말고사 기출을 한눈에 볼 수 있어요.</p>
+                </section>
 
-                <h1 className="text-2xl sm:text-3xl font-black break-keep">지역별 고등학교 수학 기출</h1>
-                <p className="text-slate-500 mt-2 break-keep">
-                    전국 <strong className="text-[#294437]">{totalSchools}개 고등학교</strong>의 수학 내신 기출{' '}
-                    <strong className="text-[#294437]">{totalExams}회차</strong>를 시·도와 구·군으로 묶었습니다.
-                    지역을 고르면 그 지역 학교의 중간고사·기말고사 기출을 한눈에 볼 수 있어요.
-                </p>
-
-                <div className="mt-8 space-y-5">
+                <section className="rd-wrap rd-s-list">
                     {tree.map((s) => (
-                        <section key={s.sido} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                            <div className="flex items-center justify-between gap-3 mb-3">
-                                <div className="flex items-center gap-2">
-                                    <MapPin size={17} className="text-[#426D36]" />
-                                    {s.hasPage ? (
-                                        <Link href={`/지역/${s.sido}`} className="text-lg font-extrabold hover:text-[#426D36] transition-colors">
-                                            {s.sido}
-                                        </Link>
-                                    ) : (
-                                        <span className="text-lg font-extrabold">{s.sido}</span>
-                                    )}
-                                    <span className="text-xs font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
-                                        {s.schoolCount}개교 · {s.examCount}회차
-                                    </span>
-                                </div>
-                                {s.hasPage && (
-                                    <Link href={`/지역/${s.sido}`} className="group inline-flex items-center gap-1 text-sm font-bold text-[#426D36] hover:text-[#31572E] shrink-0 py-3 pl-2 -my-3 -ml-2 sm:p-0 sm:m-0">
-                                        전체보기 <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                                    </Link>
-                                )}
+                        <div key={s.sido} className="rd-rg-sido">
+                            <div className="rd-rg-head">
+                                {s.hasPage ? <Link href={`/지역/${s.sido}`} className="rd-rg-name">{s.sido}</Link> : <span className="rd-rg-name">{s.sido}</span>}
+                                <span className="rd-pill">{s.schoolCount}개교, {s.examCount}회차</span>
+                                {s.hasPage && <Link href={`/지역/${s.sido}`} className="rd-link rd-rg-all">{s.sido} 전체 보기</Link>}
                             </div>
-
-                            <div className="flex flex-wrap gap-2">
+                            <div className="rd-rg-chips">
                                 {s.districts.map((d) =>
                                     d.hasPage ? (
-                                        <Link
-                                            key={d.gu}
-                                            href={`/지역/${s.sido}/${d.gu}`}
-                                            className="text-sm font-bold text-[#426D36] bg-[#EAF1E1] border border-[#C5D8B5]/60 px-3 py-2.5 sm:py-1.5 rounded-full hover:bg-[#E0ECF9] transition-colors"
-                                        >
-                                            {d.gu} <span className="font-normal text-[#5b7ea8]">{d.schools.length}</span>
-                                        </Link>
+                                        <Link key={d.gu} href={`/지역/${s.sido}/${d.gu}`} className="rd-rg-chip">{d.gu}<small>{d.schools.length}</small></Link>
                                     ) : (
                                         /* 학교가 2곳 이하인 지역은 자체 페이지를 만들지 않는다 —
                                            내용이 거의 없는 페이지를 늘리면 색인에 해가 된다. 학교로 바로 보낸다. */
-                                        <span key={d.gu} className="text-sm text-slate-500 bg-slate-50 border border-slate-200 px-3 py-2.5 sm:py-1.5 rounded-full">
-                                            {d.gu}{' '}
-                                            {d.schools.map((sc, i) => (
-                                                <span key={sc.name}>
-                                                    {i > 0 && ' · '}
-                                                    <Link href={`/school/${encodeURIComponent(sc.name)}`} className="font-bold text-slate-600 hover:text-[#426D36] inline-block py-2 -my-2 sm:p-0 sm:m-0">
-                                                        {sc.name.replace('등학교', '')}
-                                                    </Link>
-                                                </span>
-                                            ))}
+                                        <span key={d.gu} className="rd-rg-chip is-plain">{d.gu}{' '}
+                                            {d.schools.map((sc, i) => <span key={sc.name}>{i > 0 && ', '}<Link href={`/school/${encodeURIComponent(sc.name)}`}>{sc.name.replace('등학교', '')}</Link></span>)}
                                         </span>
                                     )
                                 )}
                             </div>
-                        </section>
+                        </div>
                     ))}
-                </div>
+                    {tree.length === 0 && <p className="rd-cat-empty">지역 정보를 불러오지 못했어요.</p>}
+                </section>
 
-                {tree.length === 0 && (
-                    <div className="py-20 text-center bg-white rounded-2xl border border-slate-200 mt-8">
-                        <p className="text-slate-400 font-semibold">지역 정보를 불러오지 못했어요.</p>
-                    </div>
-                )}
-
-                <div className="mt-8 flex flex-wrap gap-2">
-                    <Link href="/schools" className="text-sm font-bold text-[#426D36] bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-[#426D36] transition-colors">학교명으로 찾기 →</Link>
-                    <Link href="/question-bank" className="text-sm font-bold text-white bg-[#426D36] px-4 py-2 rounded-xl hover:bg-[#31572E] transition-colors">기출로 시험지 만들기 →</Link>
-                </div>
-            </main>
+                <div className="rd-x-more rd-s-more"><div className="rd-wrap rd-x-links">
+                    <Link href="/schools" className="rd-link">학교 이름으로 찾기</Link>
+                    <Link href="/question-bank" className="rd-link">기출로 시험지 만들기</Link>
+                </div></div>
+            </div>
         </div>
     );
 }

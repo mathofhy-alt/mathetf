@@ -53,38 +53,40 @@ export default function TeacherExamCTA({ school, variant, visible, onClose }: {
     };
 
     return (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[150] w-[calc(100%-2rem)] max-w-md">
-            <div className="bg-white rounded-2xl border border-[#9BD4D2] shadow-xl p-4">
-                <div className="flex items-start gap-2.5">
-                    <span className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-[#E7EFD9] flex items-center justify-center">
-                        <PencilRuler size={15} className="text-[#638747]" />
+        <div className="rd fixed bottom-4 left-1/2 -translate-x-1/2 z-[150] w-[calc(100%-2rem)] max-w-md" style={{ background: 'transparent' }}>
+            <div className="bg-white rounded-[20px] shadow-[0_20px_60px_rgba(23,32,44,0.18)] p-5">
+                <div className="flex items-start gap-3">
+                    <span className="shrink-0 w-10 h-10 rounded-full bg-[#E8F6F5] flex items-center justify-center">
+                        <PencilRuler size={18} className="text-[#1B7E7A]" />
                     </span>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#294437] break-keep">
+                        <p className="m-0 text-[16px] font-bold leading-[1.45] text-[#17202C]">
                             {variant === 'download' && school
                                 ? `${school} 기출로 시험지 만드는 법, 순서대로 안내합니다.`
                                 : '수학ETF로 시험지 만드는 법, 순서대로 안내합니다.'}
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5 break-keep">
+                        <p className="m-0 mt-1 text-[14px] leading-[1.5] text-[#5F6B78]">
                             기출과 같은 유형의 문항을 골라 담아 한글 호환 HML로 받는 과정을 영상으로 보여드려요.
                         </p>
                     </div>
-                    <button onClick={dismiss} aria-label="닫기" className="text-slate-300 hover:text-slate-500 shrink-0">
-                        <X size={16} />
+                    <button onClick={dismiss} aria-label="닫기" className="rd-modal-x">
+                        <X size={20} />
                     </button>
                 </div>
-                <div className="flex gap-2 mt-3">
+                <div className="flex gap-2 mt-4">
                     <button
                         onClick={openVideo}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#638747] hover:bg-[#2E948F] text-white text-sm font-extrabold rounded-xl transition-colors"
+                        className="rd-btn rd-btn-primary"
+                        style={{ flex: '1 1 0', fontSize: 16, padding: '12px 16px' }}
                     >
-                        <PlayCircle size={16} /> 사용법 영상 보기
+                        <PlayCircle size={18} /> 사용법 영상 보기
                     </button>
                     <button
                         onClick={goMake}
-                        className="px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
+                        className="rd-btn rd-btn-gray"
+                        style={{ fontSize: 16, padding: '12px 18px', whiteSpace: 'nowrap' }}
                     >
-                        바로 만들기 →
+                        바로 만들기
                     </button>
                 </div>
             </div>

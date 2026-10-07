@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, AlertTriangle, Check } from 'lucide-react';
+import { Loader2, AlertTriangle, Check, X } from 'lucide-react';
 
 interface DuplicateCheckModalProps {
     isOpen: boolean;
@@ -61,29 +61,27 @@ export default function DuplicateCheckModal({ isOpen, onClose, onCheck }: Duplic
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 w-[500px] h-[600px] flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-xl flex items-center gap-2 text-slate-800">
-                        <Check className="text-green-600" />
-                        중복 소스 체크
-                    </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+        <div className="rd rd-overlay">
+            <div className="rd-modal rd-modal-dup">
+                <div className="rd-sheet-handle" />
+                <div className="rd-modal-head">
+                    <div style={{ minWidth: 0 }}>
+                        <h3 className="rd-modal-title">중복 소스 체크</h3>
+                        <p className="rd-modal-sub">비교할 이전 시험지를 선택하세요. 여러 개 고를 수 있습니다.</p>
+                    </div>
+                    <button onClick={onClose} aria-label="닫기" className="rd-modal-x"><X size={20} /></button>
                 </div>
 
-                <p className="text-sm text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg flex gap-2 items-start">
-                    <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                    <span>
-                        비교할 이전 시험지를 선택하세요. (다중 선택 가능)<br />
-                        선택한 시험지들에 사용된 <b>문제</b>는 검색 결과에서 <b>자동으로 제외</b>됩니다.
-                    </span>
+                <p className="rd-modal-note" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <AlertTriangle size={18} style={{ flex: 'none', marginTop: 3 }} />
+                    <span>선택한 시험지들에 사용된 문제는 검색 결과에서 자동으로 제외됩니다.</span>
                 </p>
 
-                <div className="flex-1 overflow-y-auto border rounded-xl bg-slate-50 p-2 space-y-2 custom-scrollbar">
+                <div className="rd-modal-body rd-well" style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {loading ? (
-                        <div className="flex justify-center py-10"><Loader2 className="animate-spin text-slate-400" /></div>
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0', color: 'var(--rd-icon)' }}><Loader2 className="animate-spin" /></div>
                     ) : exams.length === 0 ? (
-                        <div className="text-center py-10 text-slate-400 text-sm">저장된 시험지가 없습니다.</div>
+                        <div className="rd-empty">저장된 시험지가 없습니다.</div>
                     ) : (
                         exams.map(exam => {
                             const isSelected = selectedExamIds.has(exam.id);
@@ -91,45 +89,41 @@ export default function DuplicateCheckModal({ isOpen, onClose, onCheck }: Duplic
                                 <button
                                     key={exam.id}
                                     onClick={() => toggleSelection(exam.id)}
-                                    className={`w-full text-left p-3 rounded-lg border transition-all ${isSelected
-                                        ? 'bg-purple-100 border-purple-300 ring-1 ring-purple-300'
-                                        : 'bg-white border-slate-200 hover:border-purple-200 hover:bg-slate-50'
-                                        }`}
+                                    className={`rd-pick${isSelected ? ' is-on' : ''}`}
                                 >
-                                    <div className="flex justify-between items-center">
-                                        <div className="font-bold text-slate-800 truncate">{exam.name}</div>
-                                        {isSelected && <Check size={16} className="text-purple-600" />}
-                                    </div>
-                                    <div className="text-xs text-slate-400 mt-1">
-                                        {new Date(exam.created_at).toLocaleDateString()}
-                                    </div>
+                                    <span className="rd-pick-box">{isSelected && <Check size={14} strokeWidth={3} />}</span>
+                                    <span style={{ minWidth: 0, flex: 1 }}>
+                                        <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: 'var(--rd-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{exam.name}</span>
+                                        <span style={{ display: 'block', marginTop: 2, fontSize: 13, color: 'var(--rd-sub)' }}>
+                                            {new Date(exam.created_at).toLocaleDateString()}
+                                        </span>
+                                    </span>
                                 </button>
                             );
                         })
                     )}
                 </div>
 
-                <div className="mt-4 flex gap-2 justify-between items-center pt-4 border-t border-slate-100">
-                    <div className="text-sm text-slate-500 font-medium">
+                <div className="rd-modal-foot" style={{ alignItems: 'center' }}>
+                    <span style={{ marginRight: 'auto', fontSize: 15, fontWeight: 600, color: 'var(--rd-sub)' }}>
                         {selectedExamIds.size}개 선택됨
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 text-slate-500 hover:text-slate-800 font-bold"
-                        >
-                            건너뛰기
-                        </button>
-                        <button
-                            onClick={handleConfirm}
-                            disabled={selectedExamIds.size === 0}
-                            className="px-6 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 disabled:opacity-50 transition shadow-lg hover:shadow-purple-200"
-                        >
-                            확인 및 제외
-                        </button>
-                    </div>
+                    </span>
+                    <button
+                        onClick={onClose}
+                        className="rd-btn rd-btn-gray"
+                    >
+                        건너뛰기
+                    </button>
+                    <button
+                        onClick={handleConfirm}
+                        disabled={selectedExamIds.size === 0}
+                        className="rd-btn rd-btn-primary"
+                    >
+                        확인 및 제외
+                    </button>
                 </div>
             </div>
         </div>
     );
 }
+

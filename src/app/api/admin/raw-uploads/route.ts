@@ -34,3 +34,25 @@ export async function DELETE(req: NextRequest) {
     if (deleteError) return NextResponse.json({ error: `제보 기록을 지우지 못했습니다: ${deleteError.message}` }, { status: 500 });
     return NextResponse.json({ ok: true, files: files.length });
 }
+
+/**
+ * 원본 제보 운영자 안내 (관리자, 10/7) — 회원 마이페이지 › 내 요청 › 원본 제보에 보인다.
+ * 표를 늘리지 않으려고 제보 행 description(JSON: files·note·neis)에 admin_reply·replied_at 을 덧붙인다.
+ */
+export async function PATCH(req: NextRequest) {
+    const { authorized, response } = await requireAdmin();
+    if (!authorized) return response;
+    const { id, admin_reply } = await req.json().catch(() => ({}));
+    if (typeof id !== 'string') return NextResponse.json({ error: 'id가 없습니다.' }, { status: 400 });
+    const admin = createAdminClient();
+    const { data: row } = await admin.from('exam_materials').select('description, content_type').eq('id', id).maybeSingle();
+    if (!row || row.content_type !== '원본제보') return NextResponse.json({ error: '원본 제보를 찾지 못했습니다.' }, { status: 404 });
+    let desc: Record<string, unknown> = {};
+    try { desc = JSON.parse(row.description || '{}') || {}; } catch { desc = {}; }
+    const text = String(admin_reply ?? '').trim().slice(0, 2000);
+    desc.admin_reply = text || null;
+    desc.replied_at = text ? new Date().toISOString() : null;
+    const { error } = await admin.from('exam_materials').update({ description: JSON.stringify(desc) }).eq('id', id);
+    if (error) return NextResponse.json({ error: '저장하지 못했습니다.' }, { status: 500 });
+    return NextResponse.json({ ok: true, admin_reply: desc.admin_reply, replied_at: desc.replied_at });
+}

@@ -39,26 +39,25 @@ export default function PasswordSettings() {
         setSaving(false);
     };
 
-    const input = 'mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:border-[#426D36]';
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
-            <h3 className="font-extrabold text-[#294437] flex items-center gap-2">
-                <KeyRound size={16} className="text-[#426D36]" /> 비밀번호 변경
+        <section className="rd-my-card">
+            <h3 className="rd-my-card-title">
+                <span className="rd-my-card-icon"><KeyRound size={18} /></span> 비밀번호 변경
             </h3>
-            <p className="text-sm text-slate-500 mt-1.5 break-keep">현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿉니다. 비밀번호가 기억나지 않으면 로그아웃 후 로그인 화면의 ‘비밀번호 찾기’를 이용하세요.</p>
-            <form onSubmit={submit} className="mt-4 grid gap-3 sm:max-w-sm">
-                <label className="text-xs font-bold text-slate-600">현재 비밀번호
-                    <input type="password" autoComplete="current-password" required value={current} onChange={e => setCurrent(e.target.value)} className={input} />
+            <p className="rd-my-card-text">현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿉니다. 비밀번호가 기억나지 않으면 로그아웃 후 로그인 화면의 ‘비밀번호 찾기’를 이용하세요.</p>
+            <form onSubmit={submit} className="rd-my-form">
+                <label className="rd-my-label">현재 비밀번호
+                    <input type="password" autoComplete="current-password" required value={current} onChange={e => setCurrent(e.target.value)} className="rd-input" />
                 </label>
-                <label className="text-xs font-bold text-slate-600">새 비밀번호 <span className="font-normal text-slate-400">(6자 이상)</span>
-                    <input type="password" autoComplete="new-password" required minLength={6} value={next} onChange={e => setNext(e.target.value)} className={input} />
+                <label className="rd-my-label"><span>새 비밀번호 <span className="rd-my-label-sub">(6자 이상)</span></span>
+                    <input type="password" autoComplete="new-password" required minLength={6} value={next} onChange={e => setNext(e.target.value)} className="rd-input" />
                 </label>
-                <label className="text-xs font-bold text-slate-600">새 비밀번호 확인
-                    <input type="password" autoComplete="new-password" required minLength={6} value={confirm} onChange={e => setConfirm(e.target.value)} className={input} />
+                <label className="rd-my-label">새 비밀번호 확인
+                    <input type="password" autoComplete="new-password" required minLength={6} value={confirm} onChange={e => setConfirm(e.target.value)} className="rd-input" />
                 </label>
-                {msg && <p role={msg.ok ? 'status' : 'alert'} className={`text-sm font-semibold ${msg.ok ? 'text-[#426D36]' : 'text-red-600'}`}>{msg.text}</p>}
-                <button type="submit" disabled={saving} className="mt-1 w-fit rounded-xl bg-[#294437] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">{saving ? '바꾸는 중…' : '비밀번호 바꾸기'}</button>
+                {msg && <p role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'rd-auth-ok rd-my-form-msg' : 'rd-auth-error rd-my-form-msg'}>{msg.text}</p>}
+                <button type="submit" disabled={saving} className="rd-btn rd-btn-primary rd-my-form-submit">{saving ? '바꾸는 중…' : '비밀번호 바꾸기'}</button>
             </form>
-        </div>
+        </section>
     );
 }
