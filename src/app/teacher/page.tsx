@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     alternates: { canonical: PAGE_URL },
     openGraph: {
         title: '수학 시험지 만들기 — 학교 기출 유사문제로 직접',
-        description: '전국 학교 내신 기출을 단원·난이도로 골라 나만의 시험지를 만들고 한글 호환 HML로 받으세요. 학생·교사 모두 이용 가능, 현재 무료.',
+        description: '전국 학교 내신 기출을 단원·난이도로 골라 나만의 시험지를 만들고 한글 호환 HML로 받으세요. 학생·교사 모두 이용 가능, 런칭 기념 무료.',
         url: PAGE_URL,
         siteName: '수학ETF',
         locale: 'ko_KR',
