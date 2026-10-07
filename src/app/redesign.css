@@ -1944,3 +1944,8 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-pass-phone { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
 .rd .rd-pass-phone > span { font-size: 14px; font-weight: 700; color: var(--rd-text); }
 .rd .rd-pass-phone small { margin-left: 6px; font-size: 12px; font-weight: 500; color: var(--rd-sub); }
+/* 10/8 이용권 개월 고르기 */
+.rd .rd-pass-per { margin-left: 6px; font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-pass-terms { margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rd .rd-pass-terms > button { min-height: 40px; font-size: 14px; }
+.rd .rd-pass-price small { margin-left: 6px; font-size: 14px; font-weight: 600; color: var(--rd-sub); }

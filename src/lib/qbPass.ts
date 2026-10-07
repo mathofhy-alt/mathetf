@@ -9,7 +9,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
  *   횟수는 qb_usage 에 저장할 때마다 한 줄 — 시험지를 지워도 되돌아오지 않는다(보관함 20개 한도 때문에 다들 지운다).
  * - 숫자(가격·무료 횟수)는 qbPassConfig.ts 한 곳에서 바꾼다(사용자 고민 중).
  */
-import { QB_PASS } from './qbPassConfig';
+import { QB_PASS, passTerm } from './qbPassConfig';
 export { QB_PASS };
 
 const ADMIN_EMAIL = 'mathofhy@naver.com';
@@ -54,11 +54,11 @@ export async function recentViewers(): Promise<number | null> {
 }
 
 /** 결제 기록을 이어 붙여 이용권 끝나는 시각 */
-export function passUntilFrom(purchases: { created_at: string }[]): Date | null {
+export function passUntilFrom(purchases: { created_at: string; item_id?: string | null }[]): Date | null {
     let until = 0;
     for (const p of [...purchases].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
         const at = new Date(p.created_at).getTime();
-        until = Math.max(until, at) + QB_PASS.days * DAY;
+        until = Math.max(until, at) + (passTerm(String(p.item_id || ''))?.days ?? QB_PASS.days) * DAY;   // 몇 개월짜리인지(10/8)
     }
     return until ? new Date(until) : null;
 }
@@ -67,7 +67,7 @@ export async function passStatus(user: { id: string; email?: string | null }): P
     const sb = createAdminClient();
     const start = weekStart();
     const [{ data: buys }, { count, error }] = await Promise.all([
-        sb.from('purchased_items').select('created_at').eq('user_id', user.id).eq('item_type', QB_PASS.itemType),
+        sb.from('purchased_items').select('created_at, item_id').eq('user_id', user.id).eq('item_type', QB_PASS.itemType),
         sb.from('qb_usage').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', start.toISOString()),
     ]);
     // 횟수 표를 못 읽으면 막지 않고 통과시킨다(강사가 저장을 못 하는 쪽이 더 나쁘다) — 대신 로그를 남긴다

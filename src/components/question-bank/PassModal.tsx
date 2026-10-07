@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { payOrder } from '@/lib/payments/client';
-import { QB_PASS } from '@/lib/qbPassConfig';
+import { QB_PASS, QB_PASS_TERMS, termPrice } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 import { createClient } from '@/utils/supabase/client';
 
@@ -29,6 +29,9 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
     // [10/7] 환불 불가 동의 — 사용자 결정(사용 0회여도 환불 안 함). 동의해야 결제 버튼이 눌린다.
     const [agree, setAgree] = useState(false);
     const [showRefund, setShowRefund] = useState(false);
+    const [months, setMonths] = useState<number>(1);   // [10/8] 몇 개월 살지
+    const term = QB_PASS_TERMS.find(t => t.months === months) || QB_PASS_TERMS[0];
+    const total = termPrice(term.months);
     // [10/8] 휴대폰 번호가 없는 계정(회원 1,319명 중 6명, 예전 가입) — 포트원 카드 결제가 전화번호를 필수로 요구한다
     const needPhone = !(user?.user_metadata?.phone || user?.phone);
     const [phone, setPhone] = useState('');
@@ -39,7 +42,7 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
         try {
             const digits = phone.replace(/[^0-9]/g, '');
             if (needPhone) await createClient().auth.updateUser({ data: { phone: digits } }).catch(() => null);   // 다음 결제부터는 묻지 않게
-            await payOrder(user, { kind: 'cart', items: [{ item_id: QB_PASS.itemId }], usedPoints: 0 }, needPhone ? digits : undefined); onPaid();
+            await payOrder(user, { kind: 'cart', items: [{ item_id: term.itemId }], usedPoints: 0 }, needPhone ? digits : undefined); onPaid();
         }
         catch (e: any) { setErr(e?.message || '결제를 마치지 못했습니다.'); }
         setBusy(false);
@@ -60,12 +63,15 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                 <div className="rd-pass-card">
                     {/* [10/8] 최근 30분 이용자 수 — 사실 그대로의 문구, 3명 미만이면 서버가 null(숨김) */}
                     {info?.viewers ? <p className="rd-pass-bubble" role="status"><span className="rd-pass-dot" aria-hidden="true" />최근 30분 동안 <b>{info.viewers}명</b>이 시험지 만들기를 이용했어요</p> : null}
-                    <p className="rd-pass-name">{QB_PASS.days}일 이용권</p>
-                    <p className="rd-pass-price"><b>{QB_PASS.salePrice.toLocaleString()}</b>원</p>
+                    <p className="rd-pass-name">시험지 만들기 이용권 <span className="rd-pass-per">한 달 {QB_PASS.salePrice.toLocaleString()}원</span></p>
+                    <div className="rd-seg rd-pass-terms" role="radiogroup" aria-label="이용 기간">
+                        {QB_PASS_TERMS.map(t => <button key={t.months} type="button" role="radio" aria-checked={months === t.months} aria-pressed={months === t.months} onClick={() => setMonths(t.months)}>{t.months}개월</button>)}
+                    </div>
+                    <p className="rd-pass-price"><b>{total.toLocaleString()}</b>원 <small>{term.days}일</small></p>
                     <ul>
                         <li><Check size={16} aria-hidden="true" /> 시험지 만들기 횟수 제한 없음</li>
-                        <li><Check size={16} aria-hidden="true" /> 결제한 날부터 {QB_PASS.days}일, 자동 결제 없음</li>
-                        <li><Check size={16} aria-hidden="true" /> 기간 중에 다시 사면 끝나는 날에 {QB_PASS.days}일이 이어 붙어요</li>
+                        <li><Check size={16} aria-hidden="true" /> 결제한 날부터 {term.days}일, 자동 결제 없음</li>
+                        <li><Check size={16} aria-hidden="true" /> 기간 중에 다시 사면 끝나는 날 뒤로 이어 붙어요</li>
                     </ul>
                 </div>
                 {needPhone && <label className="rd-pass-phone">
@@ -78,7 +84,7 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                 </label>
                 {err && <p className="rd-pass-err" role="alert">{err}</p>}
                 <div className="rd-modal-actions">
-                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy || !agree || !phoneOk}>{busy ? '결제 진행 중…' : `${QB_PASS.salePrice.toLocaleString()}원 결제하기`}</button>
+                    <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={buy} disabled={busy || !agree || !phoneOk}>{busy ? '결제 진행 중…' : `${total.toLocaleString()}원 결제하기`}</button>
                     <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={onClose}>{out ? '다음 주에 할게요' : '닫기'}</button>
                 </div>
                 <p className="rd-pass-fine">담아 둔 문항은 그대로 남아 있어요. 결제 후 다시 저장을 누르면 됩니다.</p>
