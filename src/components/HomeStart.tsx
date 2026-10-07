@@ -50,7 +50,7 @@ export default function HomeStart({ onSearch, onFindFreePdf, thisWeekUploads }: 
       <p className="atelier-lead">우리 학교 기출을 찾으시나요? 학교명을 입력해 전체 시험지를 확인하세요.</p>
       <form onSubmit={submit} className="atelier-search" role="search" aria-label="홈 학교 검색">
         <Search size={20} aria-hidden="true"/>
-        <input aria-label="찾고 싶은 학교" value={keyword} onChange={e=>setKeyword(e.target.value)} placeholder="학교명 입력 (예: 휘문고)" autoComplete="off" maxLength={80}/>
+        <input aria-label="찾고 싶은 학교" value={keyword} onChange={e=>setKeyword(e.target.value)} placeholder="학교명 입력" autoComplete="off" maxLength={80}/>
         <button type="submit" aria-label="학교 기출 찾기"><ArrowRight size={21}/></button>
       </form>
       <div className="atelier-start-paths launch-start-paths" aria-label="원하는 작업으로 바로 시작">

@@ -185,7 +185,7 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
 
         <div className="rd-cat-search">
             <Search size={18} aria-hidden="true" />
-            <input aria-label="자료 찾기" placeholder={isSchool ? '학교 이름으로 찾기 (예: 휘문)' : category === 'mine' ? '단원 이름으로 찾기 (예: 인수분해)' : '연도나 과목으로 찾기 (예: 2024 미적분)'} value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
+            <input aria-label="자료 찾기" placeholder={isSchool ? '학교 이름으로 찾기' : category === 'mine' ? '단원 이름으로 찾기 (예: 인수분해)' : '연도나 과목으로 찾기 (예: 2024 미적분)'} value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
             {search && <button type="button" aria-label="검색어 지우기" onClick={() => setSearch('')}><X size={16} /></button>}
         </div>
 

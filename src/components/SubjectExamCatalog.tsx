@@ -31,7 +31,7 @@ export default function SubjectExamCatalog({ exams, subject }: { exams: SubjectH
         <p className="rd-ct-catlead">같은 과목도 학교마다 시험 범위가 다릅니다. 회차를 고른 뒤 원본 미리보기에서 범위를 확인하세요.</p>
         <p className="rd-x-note rd-ct-catnote">등록된 과목 분류 기준입니다. 과거 연도 자료는 현재 분류로 연결되어 있을 수 있으므로 당시 과목·범위는 원본을 확인하세요.</p>
         <div className="rd-ct-filters">
-            <label className="rd-ct-field is-search"><span>학교 검색</span><span className="rd-cat-search"><Search size={18} aria-hidden="true" /><input value={school} onChange={e=>setSchool(e.target.value)} placeholder="예: 휘문고, 숙명여고" /></span></label>
+            <label className="rd-ct-field is-search"><span>학교 검색</span><span className="rd-cat-search"><Search size={18} aria-hidden="true" /><input value={school} onChange={e=>setSchool(e.target.value)} placeholder="학교 이름" /></span></label>
             <label className="rd-ct-field"><span>연도</span><select aria-label="연도" value={year} onChange={e=>setYear(e.target.value)} className="rd-select"><option value="">전체 연도</option>{years.map(y=><option key={y} value={y}>{y}년</option>)}</select></label>
             <label className="rd-ct-field"><span>학년</span><select aria-label="학년" value={grade} onChange={e=>setGrade(e.target.value)} className="rd-select"><option value="">전체 학년</option>{grades.map(g=><option key={g} value={g}>{g}학년</option>)}</select></label>
             <label className="rd-ct-field"><span>시험</span><select aria-label="시험" value={scope} onChange={e=>setScope(e.target.value)} className="rd-select"><option value="">중간·기말 전체</option>{scopes.map(s=><option key={s} value={s}>{s.replace('|','학기 ')}</option>)}</select></label>

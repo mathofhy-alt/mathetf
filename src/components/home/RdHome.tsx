@@ -24,7 +24,7 @@ export function RdHomeHero({ onSearch, onFindFreePdf }: { onSearch: (keyword: st
             <p className="rd-lead">전국 고등학교가 실제로 출제한 내신 문항에서 필요한 것만 골라, 한글 파일로 받아 바로 수업에 쓰세요.</p>
             <form onSubmit={submit} className="rd-search" role="search" aria-label="학교 기출 검색">
                 <Search size={22} color="#B0B8C1" aria-hidden="true" />
-                <input aria-label="학교 이름" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="학교 이름 (예: 휘문고)" autoComplete="off" maxLength={80} />
+                <input aria-label="학교 이름" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="학교 이름" autoComplete="off" maxLength={80} />
                 <button type="submit" className="rd-btn rd-btn-primary">기출 찾기</button>
             </form>
             <div className="rd-hero-links">
@@ -104,7 +104,7 @@ export function RdHomeFeatures() {
                         <p className="rd-lead">수업에 쓰는 프린트나 자료를 올려 주시면 문항 DB로 만들어 회원님의 시험지 만들기에만 넣어 드려요. 다른 회원에게는 보이지 않고, 처리 결과는 마이페이지에서 안내해 드려요.</p>
                         <OpenEventButton event="open-db-request" className="rd-btn rd-btn-primary rd-feature-cta">개인DB 요청하기</OpenEventButton>
                     </div>
-                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/dbreq-2.webp" alt="자료 파일을 올리고 필요한 범위를 적는 개인DB 요청 창" width={1120} height={1036} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
+                    <div className="rd-pic"><div className="rd-paper rd-paper-modal"><Image src="/home/dbreq-3.webp" alt="자료 파일을 올리고 필요한 범위를 적는 개인DB 요청 창" width={1120} height={1036} sizes="(max-width: 900px) 80vw, 520px" /></div></div>
                 </div>
             </section>
         </>
