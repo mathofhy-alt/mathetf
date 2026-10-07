@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         const pass = await passStatus(user).catch(() => null);
         if (!pass) return NextResponse.json({ success: false, error: '이용 현황을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
         // [V73] 보관함 한도 — [10/8] 이용권이면 50개, 아니면 20개(QB_LIMITS). DB 함수(save_exam_item p_limit)도 같은 숫자로 다시 막는다
-        const savedLimit = (pass.passUntil || pass.unlimited) ? QB_LIMITS.pass.saved : QB_LIMITS.free.saved;
+        const savedLimit = (pass.passUntil || pass.admin) ? QB_LIMITS.pass.saved : QB_LIMITS.free.saved;
         const { count, error: countError } = await supabase
             .from('user_items')
             .select('*', { count: 'exact', head: true })
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
         // [10/8] 이용권이 있으면(또는 운영자) 한 시험지 문항 한도를 늘린다(QB_LIMITS)
-        const maxQ = (pass.passUntil || pass.unlimited) ? QB_LIMITS.pass.questions : QB_LIMITS.free.questions;
+        const maxQ = (pass.passUntil || pass.admin) ? QB_LIMITS.pass.questions : QB_LIMITS.free.questions;   // 유료화 전 '제한 없음'은 횟수만 — 이용권 혜택은 이용권·운영자만
         if (!Array.isArray(ids) || ids.length<1 || ids.length>maxQ || ids.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id)) || new Set(ids).size!==ids.length) return NextResponse.json({success:false,error:`서로 다른 문항을 1~${maxQ}개 선택해주세요.`},{status:400});
         if (typeof title!=='string' || !title.trim() || title.length>100 || ![1,2,3].includes(questionsPerColumn)) return NextResponse.json({success:false,error:'제목은 100자 이내, 열당 문항 수는 1~3개로 설정해주세요.'},{status:400});
         if (folderId && folderId!=='root') {

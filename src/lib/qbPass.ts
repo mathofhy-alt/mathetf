@@ -9,7 +9,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
  *   횟수는 qb_usage 에 저장할 때마다 한 줄 — 시험지를 지워도 되돌아오지 않는다(보관함 20개 한도 때문에 다들 지운다).
  * - 숫자(가격·무료 횟수)는 qbPassConfig.ts 한 곳에서 바꾼다(사용자 고민 중).
  */
-import { QB_PASS, passTerm } from './qbPassConfig';
+import { QB_PASS, passTerm, paywallOn } from './qbPassConfig';
 export { QB_PASS };
 
 const ADMIN_EMAIL = 'mathofhy@naver.com';
@@ -24,7 +24,9 @@ export function weekStart(now = new Date()): Date {
 }
 
 export type PassStatus = {
-    unlimited: boolean;          // 이용권이 있거나 운영자
+    unlimited: boolean;          // 이용권이 있거나 운영자, 또는 유료화 시작 전(누구나)
+    paywall: boolean;            // 유료화가 켜졌나(QB_PAYWALL_START 이후)
+    admin: boolean;
     passUntil: string | null;    // 이용권 끝나는 시각(ISO)
     freePerWeek: number;
     usedThisWeek: number;
@@ -77,7 +79,9 @@ export async function passStatus(user: { id: string; email?: string | null }): P
     const active = !!until && until.getTime() > Date.now();
     const used = count ?? 0;
     return {
-        unlimited: active || user.email === ADMIN_EMAIL,
+        unlimited: active || user.email === ADMIN_EMAIL || !paywallOn(),
+        paywall: paywallOn(),
+        admin: user.email === ADMIN_EMAIL,
         passUntil: active ? until!.toISOString() : null,
         freePerWeek: QB_PASS.freePerWeek,
         usedThisWeek: used,

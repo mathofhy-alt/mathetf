@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { cartQuote, uuidPattern } from '@/lib/payments/order';
 import { PRIVATE_ITEM_TYPE } from '@/lib/questions/privateDb';
-import { QB_PASS_TERMS, termPrice, termTitle } from '@/lib/qbPassConfig';
+import { QB_PASS_TERMS, termPrice, termTitle, paywallOn } from '@/lib/qbPassConfig';
 
 export async function POST(req: NextRequest) {
     const { data: { user } } = await createClient().auth.getUser();
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
         const privateRows = (privs || []).map(p => ({ id: p.id, title: p.title, price: p.price, file_type: 'PRIVATE' }));
         // [10/7] 시험지 만들기 이용권 — 가격·이름은 서버 상수에서만
         // [10/7·10/8] 시험지 만들기 이용권 — 개월별 상품(1·3·6·12개월), 가격·이름은 서버 설정에서만
+        if (QB_PASS_TERMS.some(t => itemIds.includes(t.itemId)) && !paywallOn()) throw new Error('시험지 만들기 이용권은 10월 13일(월)부터 판매합니다. 그 전까지는 시험지 만들기가 무료입니다.');
         const passRows = QB_PASS_TERMS.filter(t => itemIds.includes(t.itemId)).map(t => ({ id: t.itemId, title: termTitle(t.months), price: termPrice(t.months), file_type: 'PASS' }));
         const quote = cartQuote(body.items, [...(materials || []), ...privateRows, ...passRows], body.usedPoints);
         const { data: profile, error: profileError } = await sb.from('profiles').select('earned_points').eq('id', user.id).single();

@@ -1,6 +1,7 @@
 "use client";
 
 import PdfLimitModal from '@/components/PdfLimitModal';
+import { paywallOn } from '@/lib/qbPassConfig';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -245,7 +246,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                         <Link href="/mypage" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>마이페이지</Link>
                                         <Link href="/cart" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>장바구니</Link>
                                         {/* [10/7] 이용권 사는 곳이 늘 보이게(사용자: '이용권 사는 곳이 안 보인다') */}
-                                        <Link href="/mypage?pass=1" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>시험지 만들기 이용권</Link>
+                                        {paywallOn() && <Link href="/mypage?pass=1" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>시험지 만들기 이용권</Link>}
                                         <div className="rd-m-divider" />
                                         <button type="button" role="menuitem" className="rd-dropdown-link rd-account-out" onClick={() => supabase.auth.signOut().then(() => window.location.reload())}>로그아웃</button>
                                     </div>
@@ -356,7 +357,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                         <div className="text-sm font-bold text-slate-700">마이페이지 · {earnedPoints.toLocaleString()}P</div>
                                     </div>
                                 </Link>
-                                <Link href="/mypage?pass=1" className="rd-m-link">시험지 만들기 이용권</Link>
+                                {paywallOn() && <Link href="/mypage?pass=1" className="rd-m-link">시험지 만들기 이용권</Link>}
                                 <button onClick={()=>supabase.auth.signOut().then(()=>window.location.reload())} className="rd-m-link rd-m-btn"><LogOut size={17}/>로그아웃</button>
                             </>
                         ) : (

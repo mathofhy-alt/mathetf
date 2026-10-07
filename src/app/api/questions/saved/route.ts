@@ -23,6 +23,6 @@ export async function GET(req:NextRequest){
  }));
  // [10/8] 이용권이면 보관함 50개
  const pass=await passStatus(user).catch(()=>null);
- return NextResponse.json({items,count:count||0,limit:(pass?.passUntil||pass?.unlimited)?QB_LIMITS.pass.saved:SAVED_EXAM_LIMIT});
+ return NextResponse.json({items,count:count||0,limit:(pass?.passUntil||pass?.admin)?QB_LIMITS.pass.saved:SAVED_EXAM_LIMIT});
  }catch{return NextResponse.json({error:'편집 정보를 불러오지 못했습니다.'},{status:503});}
 }

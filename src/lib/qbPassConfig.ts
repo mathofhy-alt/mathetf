@@ -28,3 +28,10 @@ export const QB_LIMITS = {
     free: { questions: 50, saved: 20 },
     pass: { questions: 100, saved: 50 },
 } as const;
+
+/**
+ * [10/8] 유료화 시작 시각(사용자 결정: 다음 주 월요일 0시). 그 전에는 시험지 만들기 제한 없이 무료·이용권 판매 안 함.
+ * 이 시각이 지나면 배포 없이 저절로 주 2회 제한·이용권 판매가 켜진다. 미루려면 이 값만 바꿔 배포.
+ */
+export const QB_PAYWALL_START = '2026-10-13T00:00:00+09:00';
+export const paywallOn = (now = Date.now()) => now >= new Date(QB_PAYWALL_START).getTime();

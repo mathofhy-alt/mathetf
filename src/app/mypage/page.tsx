@@ -15,6 +15,7 @@ import { deletePurchase } from './actions';
 import MyDbRequests from '@/components/MyDbRequests';
 import MyReports from '@/components/MyReports';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
+import { paywallOn } from '@/lib/qbPassConfig';
 
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
@@ -30,7 +31,7 @@ export default function MyPage() {
     const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
     const [showPass, setShowPass] = useState(false);
     const loadPass = () => fetch('/api/qb-pass', { cache: 'no-store' }).then(r => r.json()).then(j => setPassInfo(j.loggedIn && !j.error ? j : null)).catch(() => {});
-    useEffect(() => { void loadPass(); try { if (new URLSearchParams(window.location.search).get('pass')) setShowPass(true); } catch { } }, []);
+    useEffect(() => { void loadPass(); try { if (new URLSearchParams(window.location.search).get('pass') && paywallOn()) setShowPass(true); } catch { } }, []);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
     const [reloadKey, setReloadKey] = useState(0);
 

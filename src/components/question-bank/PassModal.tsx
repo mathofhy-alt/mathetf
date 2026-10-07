@@ -7,7 +7,7 @@ import { QB_PASS, QB_PASS_TERMS, QB_LIMITS, termPrice } from '@/lib/qbPassConfig
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 import { createClient } from '@/utils/supabase/client';
 
-export type PassInfo = { unlimited: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string; viewers?: number | null };
+export type PassInfo = { unlimited: boolean; paywall?: boolean; admin?: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string; viewers?: number | null };
 
 const md = (iso: string) => { const d = new Date(iso); return `${d.getMonth() + 1}월 ${d.getDate()}일`; };
 
