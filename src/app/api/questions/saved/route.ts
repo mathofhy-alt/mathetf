@@ -1,6 +1,8 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@/utils/supabase/server';
 import {SAVED_EXAM_LIMIT} from '@/lib/config';
+import {passStatus} from '@/lib/qbPass';
+import {QB_LIMITS} from '@/lib/qbPassConfig';
 export const dynamic='force-dynamic';
 export async function GET(req:NextRequest){
  const sb=createClient();const {data:{user}}=await sb.auth.getUser();
@@ -19,6 +21,8 @@ export async function GET(req:NextRequest){
   return {id:item.id,name:item.name,createdAt:item.created_at,count:details.question_count||0,bytes:details.file_bytes||null,
    ...(id?{ids:(details.question_ids||[]).slice(0,50),dbIds:details.source_db_ids||[],filters:details.filters||null,questionsPerColumn:details.questions_per_column||2}: {})};
  }));
- return NextResponse.json({items,count:count||0,limit:SAVED_EXAM_LIMIT});
+ // [10/8] 이용권이면 보관함 50개
+ const pass=await passStatus(user).catch(()=>null);
+ return NextResponse.json({items,count:count||0,limit:(pass?.passUntil||pass?.unlimited)?QB_LIMITS.pass.saved:SAVED_EXAM_LIMIT});
  }catch{return NextResponse.json({error:'편집 정보를 불러오지 못했습니다.'},{status:503});}
 }

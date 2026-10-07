@@ -1,3 +1,4 @@
+import { QB_LIMITS } from '@/lib/qbPassConfig';
 import { Check } from 'lucide-react';
 import { FREE_ACCESS_LABEL, SAVED_EXAM_LIMIT, PERSONAL_DB_FREE_MODE } from '@/lib/config';
 
@@ -11,7 +12,7 @@ export default function RdAccessPolicy({ headingId, title = '이용 범위와 �
         '회원은 제공 회차의 해설 없는 전체 문제 PDF를 무료로 받습니다.',
         '문제+해설 PDF와 HWP는 자료별로 따로 구매합니다.',
         '직접 만든 시험지는 한글 호환 HML로 받고, PDF는 한글에서 저장합니다.',
-        `만든 시험지는 최대 ${SAVED_EXAM_LIMIT}개까지 보관됩니다.`,
+        `만든 시험지는 최대 ${SAVED_EXAM_LIMIT}개(이용권 ${QB_LIMITS.pass.saved}개)까지 보관되고, 한 시험지에 ${QB_LIMITS.free.questions}문항(이용권 ${QB_LIMITS.pass.questions}문항)까지 담을 수 있습니다.`,
     ];
     return (
         <div className="rd-tc-access">

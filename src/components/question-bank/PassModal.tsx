@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { payOrder } from '@/lib/payments/client';
-import { QB_PASS, QB_PASS_TERMS, termPrice } from '@/lib/qbPassConfig';
+import { QB_PASS, QB_PASS_TERMS, QB_LIMITS, termPrice } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 import { createClient } from '@/utils/supabase/client';
 
@@ -70,6 +70,8 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                     <p className="rd-pass-price"><b>{total.toLocaleString()}</b>원 <small>{term.days}일</small></p>
                     <ul>
                         <li><Check size={16} aria-hidden="true" /> 시험지 만들기 횟수 제한 없음</li>
+                        <li><Check size={16} aria-hidden="true" /> 한 시험지 최대 {QB_LIMITS.pass.questions}문항 <small className="rd-pass-was">무료 {QB_LIMITS.free.questions}문항</small></li>
+                        <li><Check size={16} aria-hidden="true" /> 보관함 {QB_LIMITS.pass.saved}개 <small className="rd-pass-was">무료 {QB_LIMITS.free.saved}개</small></li>
                         <li><Check size={16} aria-hidden="true" /> 결제한 날부터 {term.days}일, 자동 결제 없음</li>
                         <li><Check size={16} aria-hidden="true" /> 기간 중에 다시 사면 끝나는 날 뒤로 이어 붙어요</li>
                     </ul>
