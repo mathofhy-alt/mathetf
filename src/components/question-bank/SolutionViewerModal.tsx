@@ -28,8 +28,9 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
     if (!question) return null;
 
     return (
-        <div role="dialog" aria-modal="true" aria-label="문항 해설" className="rd rd-overlay" onWheel={(e) => e.stopPropagation()}>
-            <div className="rd-modal rd-modal-flush" style={{ maxWidth: 520 }}>
+        <div role="dialog" aria-modal="true" aria-label="문항 해설" className="rd rd-overlay" onWheel={(e) => e.stopPropagation()} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            {/* [10/7] 문항 상세보기 창과 같은 너비(720)·같은 모양 */}
+            <div className="rd-modal rd-modal-flush" style={{ maxWidth: 720 }}>
                 <div className="rd-sheet-handle" />
                 {/* Header */}
                 <div className="rd-modal-band rd-modal-head">

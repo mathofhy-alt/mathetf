@@ -105,7 +105,7 @@ export default function DbRequestModal({ open, onClose }: { open: boolean; onClo
                             <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--rd-text)' }}>남길 말 <span style={{ fontWeight: 400, color: 'var(--rd-sub)' }}>(선택)</span></h3>
                                 <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--rd-ink)' }}>자료 이름을 정확히 기입해주세요. DB로 완성되면 마이페이지에서 결제 가능합니다.</p>
-                                <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder="예: 2학기 중간 대비 프린트, 1~3단원"
+                                <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2}
                                     style={{ width: '100%', boxSizing: 'border-box', background: 'var(--rd-panel)', border: 0, borderRadius: 14, padding: '13px 14px', fontSize: 16, lineHeight: 1.6, color: 'var(--rd-text)', fontFamily: 'inherit', outline: 'none', resize: 'vertical' }} />
                             </section>
 
