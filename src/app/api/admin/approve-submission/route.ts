@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/utils/admin-auth';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { REPORT_REWARD_POINTS } from '@/lib/report-reward';
+import { sendNotice } from '@/lib/sms';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,8 +78,16 @@ export async function POST(req: NextRequest) {
         }
 
         // [10/8] 무료 타이핑 — 판매용 한글 파일이 이미 등록돼 있으면 바로 0원 구매로(없으면 회원이 마이페이지를 열 때 다시 확인)
-        await grantTypedFile(id).catch(() => null);
-        return NextResponse.json({ ok: true, rewarded: REWARD_POINTS });
+        const typed = await grantTypedFile(id).catch(() => null);
+        // [10/8] 채택 문자 — 회원 가입 때 인증한 번호로. 실패해도 채택은 그대로(관리자 화면에 결과만 알린다)
+        const { data: au } = await admin.auth.admin.getUserById(recipient);
+        const phone = (au?.user?.user_metadata as any)?.phone || au?.user?.phone;
+        const points = REWARD_POINTS.toLocaleString();
+        const text = typed?.status === 'ready'
+            ? `[수학ETF] 무료 타이핑 제보가 채택되었습니다. ${points}P가 적립되었고, 한글 파일은 마이페이지 > 구매 내역에서 30일간 받으실 수 있어요. 감사합니다.`
+            : `[수학ETF] 무료 타이핑 제보가 채택되었습니다. ${points}P가 적립되었고, 한글 파일은 작업이 끝나면 마이페이지 > 내 요청에서 확인하실 수 있어요. 감사합니다.`;
+        const sms = await sendNotice(phone, text, { quietHours: true });   // 밤에 누르면 오전 9시 예약
+        return NextResponse.json({ ok: true, rewarded: REWARD_POINTS, typed: typed?.status ?? 'working', sms });
     } catch (e: any) {
         console.error('[approve-submission]', e);
         return NextResponse.json({ error: e.message }, { status: 500 });
