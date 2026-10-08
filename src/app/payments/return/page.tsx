@@ -14,6 +14,16 @@ export default function PaymentReturn() {
             const params = new URLSearchParams(window.location.search);
             const paymentId = params.get('paymentId');
             if (!paymentId) { setMessage('주문 번호가 없습니다. 결제를 시작한 화면에서 결과 확인을 눌러주세요.'); return; }
+            // [10/8] 모바일에서 결제를 취소·실패하면 포트원이 code 를 붙여 돌려보낸다 — 결제 안 된 것이니 남은 주문을 지우고 바로 안내(예전엔 '진행 중'으로 막혔다)
+            if (params.get('code')) {
+                const { data: { user } } = await createClient().auth.getUser();
+                if (user) for (const kind of ['topup', 'cart']) {
+                    const key = `mathetf_pending_payment_${user.id}_${kind}`;
+                    if (localStorage.getItem(key) === paymentId) localStorage.removeItem(key);
+                }
+                setMessage(`결제가 진행되지 않았어요. ${params.get('message') || ''} 다시 결제하시면 됩니다.`.replace(/\s+/g, ' ').trim());
+                return;
+            }
             const res = await fetch('/api/payments/complete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId}) });
             if (res.status===401) { window.location.href=`/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`; return; }
             const data = await res.json();

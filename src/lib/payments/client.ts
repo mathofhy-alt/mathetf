@@ -7,6 +7,7 @@ export async function payOrder(user: User, input: { kind: 'cart'; [key: string]:
         const data = await res.json();
         if (!res.ok || !data.success) {
             if(data.code==='PAYMENT_NOT_PAID') {localStorage.removeItem(key(user.id,input.kind));throw Object.assign(new Error('결제가 완료되지 않은 주문입니다. 상품과 금액을 확인한 뒤 다시 결제를 시작할 수 있습니다.'),{notPaid:true});}
+            if(data.code==='PAYMENT_PENDING') throw Object.assign(new Error(`${data.message} 주문: ${paymentId}`),{pending:true});
             throw new Error(`${data.message} 주문: ${paymentId}`);
         }
         localStorage.removeItem(key(user.id, input.kind));
@@ -37,7 +38,9 @@ export async function payOrder(user: User, input: { kind: 'cart'; [key: string]:
             // [10/8] 결제가 안 된 게 확인되면 포트원이 준 실제 이유(취소·카드 거절 등)를 보여 준다
             try { return await complete(order.paymentId); }
             catch (e: any) {
-                if (e?.notPaid) throw new Error(response.code === 'FAILURE_TYPE_PG' || response.message ? `결제가 진행되지 않았어요. ${response.message || ''}`.trim() : '결제를 취소했어요.');
+                // [10/8] 결제창이 실패·취소로 닫혔는데 결제사 기록이 아직 READY(카드 결제 전)면 결제 안 된 것 — 남은 주문을 지워 다음 클릭이 막히지 않게
+                if (e?.pending) localStorage.removeItem(key(user.id, input.kind));
+                if (e?.notPaid || e?.pending) throw new Error(response.code === 'FAILURE_TYPE_PG' || response.message ? `결제가 진행되지 않았어요. ${response.message || ''}`.trim() : '결제를 취소했어요.');
                 throw e;
             }
         }

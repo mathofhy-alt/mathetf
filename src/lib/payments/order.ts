@@ -18,7 +18,11 @@ export function cartQuote(requested: unknown, materials: any[], usedPoints: unkn
     if (typeof used !== 'number' || !Number.isSafeInteger(used) || used < 0 || used > total || !Number.isSafeInteger(total)) throw new Error('사용할 포인트를 확인해주세요.');
     return { kind: 'cart', amount: total - used, total, used_points: used, points: 0, items, name: items.length === 1 ? items[0].title : `${items[0].title} 외 ${items.length - 1}건` };
 }
-export function verifyPaidPayment(order: { payment_id: string; user_id: string; amount: number }, payment: any): void {
+// [10/8] READY = 결제창만 열고 카드 결제까지 안 간 주문. 예전엔 이것도 '진행 중'으로 보고 새 결제를 막아서,
+//   창을 닫은 회원은 영영 다시 결제하지 못했다(라온 회원 — 서문여고). 10분 넘은 READY 는 '결제 안 됨'으로 본다.
+export const READY_STALE_MS = 10 * 60 * 1000;
+export function verifyPaidPayment(order: { payment_id: string; user_id: string; amount: number; created_at?: string }, payment: any): void {
+    if (payment.status === 'READY' && order.created_at && Date.now() - new Date(order.created_at).getTime() > READY_STALE_MS) throw new Error('PAYMENT_NOT_PAID');
     if (['READY', 'PENDING', 'VIRTUAL_ACCOUNT_ISSUED'].includes(payment.status)) throw new Error('PAYMENT_PENDING');
     if (payment.status !== 'PAID') throw new Error('PAYMENT_NOT_PAID');
     if (payment.id !== order.payment_id || payment.currency !== 'KRW' || payment.amount?.total !== order.amount || payment.customer?.id !== order.user_id) throw new Error('PAYMENT_MISMATCH');
