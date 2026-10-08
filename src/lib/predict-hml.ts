@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { stripPrivate } from '@/lib/questions/privateDb';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
@@ -9,9 +10,13 @@ import zlib from 'zlib';
  */
 export async function buildPredictHml(ids: string[], title: string): Promise<string> {
     const admin = createAdminClient();
-    const { data: qData, error } = await admin.from('questions').select('*').in('id', ids);
+    // [10/8] 전용 개인DB(시중교재, private)·대기(pending) 문항은 id 만 알면 통째로 받아 갈 수 있었다 — predict/content 와 같은 규칙으로 거른다
+    const { data: rawQ, error } = await admin.from('questions').select('*').in('id', ids).in('work_status', ['sorted', 'private']);
     if (error) throw new Error('문항 조회 실패: ' + error.message);
-    const { data: imgData } = await admin.from('question_images').select('*').in('question_id', ids);
+    const qData = await stripPrivate(rawQ || []);
+    const okIds = new Set(qData.map((q: any) => q.id));
+    ids = ids.filter(id => okIds.has(id));   // 순서는 요청 순서 그대로
+    const { data: imgData } = ids.length ? await admin.from('question_images').select('*').in('question_id', ids) : { data: [] as any[] };
 
     const byQ = new Map<string, any[]>();
     for (const img of (imgData || [])) {

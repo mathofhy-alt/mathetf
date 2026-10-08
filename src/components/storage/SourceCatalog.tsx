@@ -150,9 +150,12 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
         return [`${d.exam_year} ${d.grade ? `${d.grade}학년 ` : ''}${d.semester ? `${d.semester}학기 ` : ''}${shortType(String(d.exam_type || ''))}`.replace(/\s+/g, ' ').trim(), d.subject || ''];
     };
 
+    // [10/8] 내신 첫 화면(지역 고르기 전)은 목록을 펼치지 않아 visible 이 비어 있다 → 아래 '전체 선택'이 아무것도 못 골랐다.
+    //   부모에는 그때 조건(학년·연도·과목 등)에 맞는 내신 전체를 넘긴다. 목록 그리기는 그대로 visible.
+    const selectable = isSchool && browsing && !region && !rangeMode ? restPool : visible;
     const report = useRef(onGetViewItems);
     report.current = onGetViewItems;
-    useEffect(() => { report.current(visible); }, [visible]);
+    useEffect(() => { report.current(selectable); }, [selectable]);
 
     const extraFiltered = !!(grade || year || term || month || subject);
     const resetAll = () => { setSearch(''); setRegion(''); setDistrict(''); setGrade(''); setYear(''); setTerm(''); setMonth(''); setSubject(''); setOpen(new Set()); };
