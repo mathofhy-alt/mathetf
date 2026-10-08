@@ -261,6 +261,16 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
         }
     };
 
+    // [10/8] 난이도는 범위로 고른다 — 4·10 을 누르면 머리말은 '4 ~ 10' 인데 검색은 4와 10만 찾고 버튼도 둘만 켜졌다.
+    //   하나 고른 뒤 다른 칸을 누르면 그 사이를 채운다. 범위가 잡힌 뒤 누르면 그 칸부터 새로, 하나만 켜진 칸을 다시 누르면 해제.
+    const pickDifficulty = (n: number) => {
+        const nums = selectedDifficulty.map(Number);
+        if (nums.length === 1 && nums[0] === n) return setSelectedDifficulty([]);
+        if (nums.length !== 1) return setSelectedDifficulty([String(n)]);
+        const [lo, hi] = [Math.min(nums[0], n), Math.max(nums[0], n)];
+        setSelectedDifficulty(Array.from({ length: hi - lo + 1 }, (_, i) => String(lo + i)));
+    };
+
     return (
         <div className="w-full min-w-0 bg-white flex flex-col md:h-full">
             {/* 헤더는 작게 — 이 자리를 크게 쓰면 아래 키워드 검색이 첫 화면 밖으로 밀린다 (9/4) */}
@@ -486,6 +496,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         <span className="text-[#1B7E7A] font-normal">
                             {selectedDifficulty.length > 0 ? (
                                 selectedDifficulty.length === 10 ? '전체' :
+                                    selectedDifficulty.length === 1 ? selectedDifficulty[0] :
                                     `${Math.min(...selectedDifficulty.map(Number))} ~ ${Math.max(...selectedDifficulty.map(Number))}`
                             ) : '선택 안함'}
                         </span>
@@ -497,7 +508,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                             return (
                                 <button
                                     key={num}
-                                    onClick={() => toggleSelection(selectedDifficulty, strNum, setSelectedDifficulty)}
+                                    onClick={() => pickDifficulty(num)}
                                     className={`h-8 text-xs rounded border transition-all font-bold ${isSelected
                                         ? 'bg-[#1B7E7A] text-white border-[#1B7E7A] shadow-sm'
                                         : 'bg-white text-slate-600 border-slate-200 hover:border-[#9ED8D4]'
