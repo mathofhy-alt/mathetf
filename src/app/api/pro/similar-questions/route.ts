@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 예전 경로에서만 원본 임베딩을 읽는다(벡터 2개 ≈ 40KB 라 미리계산 경로에선 안 읽는다)
-        const source = precomputed ? null : (await supabase.from('questions').select('embedding, embedding_statement, unit').eq('id', id).single()).data;
+        const source = precomputed ? null : (await admin.from('questions').select('embedding, embedding_statement, unit').eq('id', id).single()).data;   // [10/8] 회원 권한 문항 읽기 봉쇄 — 서버 권한(임베딩은 응답에 안 나감)
         if (!precomputed && !source) {
             return NextResponse.json({ success: false, error: '원본 문항을 찾을 수 없습니다. 다른 문항을 선택해주세요.' }, { status: 404 });
         }
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
         // 3. Perform Vector Search via RPC (구매한 DB 범위 안에서만 검색) — 미리계산이 없을 때만
         let similarQuestions: any[] | null = precomputed;
         if (!precomputed) {
-            const { data, error: searchError } = await supabase
+            const { data, error: searchError } = await admin   // [10/8] 두 RPC 모두 sorted 만 돌려준다
                 .rpc(basis === 'statement' ? 'match_questions_statement' : 'match_questions', {
                     query_embedding: queryEmbedding,
                     match_threshold: 1 - threshold,
@@ -211,7 +211,7 @@ export async function GET(req: NextRequest) {
             );
 
             // images만 조회 (questions 전체 재조회 불필요)
-            const { data: images } = await supabase
+            const { data: images } = await admin   // [10/8] 결과는 sorted 문항뿐 — 서버 권한으로 그림 조회
                 .from('question_images')
                 .select('*')
                 .in('question_id', resultIds);
