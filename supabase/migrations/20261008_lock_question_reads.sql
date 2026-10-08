@@ -32,3 +32,12 @@ begin
     execute format('grant execute on function %s to service_role', r.sig);
   end loop;
 end $$;
+
+-- [10/8 후속] 위 정책은 auth.jwt() 를 행마다 계산해 비로그인 question_images 조회가 전체 훑기 → 57014 시간 초과.
+--   (select ...) 로 감싸 한 번만 계산(initplan)하고, 로그인 역할에만 걸어 anon 은 정책 없음 = 즉시 빈 결과.
+drop policy if exists "questions_select_admin" on public.questions;
+drop policy if exists "question_images_select_admin" on public.question_images;
+create policy "questions_select_admin" on public.questions for select to authenticated
+  using ((select auth.jwt() ->> 'email') = 'mathofhy@naver.com');
+create policy "question_images_select_admin" on public.question_images for select to authenticated
+  using ((select auth.jwt() ->> 'email') = 'mathofhy@naver.com');
