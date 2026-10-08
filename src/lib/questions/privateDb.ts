@@ -45,6 +45,12 @@ export async function usablePrivateDbs(): Promise<PrivateDb[]> {
  *   예전 상품(묶음 하나를 그대로 가리킴)은 아래 묶음이 없으니 예전처럼 한 칸.
  */
 export const PATH_SEP = ' > ';
+/** [10/8] 관리자 '미분류'·일괄 삭제에서 회원 전용 교재를 빼는 PostgREST or 조건 두 개(같이 걸면 AND).
+ *  예전엔 neq('work_status','sorted') 라 private 쎈이 미분류에 섞였고 '미분류 전체 삭제'가 교재 4,335문항을 지울 수 있었다. */
+export const ADMIN_UNSORTED_OR = 'work_status.is.null,work_status.not.in.(sorted,private)';
+export const NOT_TEXTBOOK_OR = 'source_db_id.is.null,source_db_id.not.like.*>*';
+/** 교재 문항인가(상태 private 이거나 경로 ' > ' 가 붙은 묶음 — 등록 중 pending 포함) */
+export const isTextbookRow = (r: { work_status?: string | null; source_db_id?: string | null }) => r.work_status === 'private' || (r.source_db_id || '').includes(PATH_SEP);
 /** 이 상품이 이 묶음을 포함하나 — 같거나, 교재 이름 아래 경로 */
 export const coversSource = (dbSource: string, source: string) => source === dbSource || source.startsWith(dbSource + PATH_SEP);
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, m => '\\' + m);
