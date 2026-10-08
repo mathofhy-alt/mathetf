@@ -11,7 +11,7 @@ const REWARD_POINTS = REPORT_REWARD_POINTS;
 const REWARD_TYPE = 'submission_reward';
 export class ApproveError extends Error { constructor(msg: string, public status: number) { super(msg); } }
 
-export async function approveSubmission(id: string) {
+export async function approveSubmission(id: string, opts: { sms?: boolean } = {}) {
     const admin = createAdminClient();
         const { data: row, error: rowErr } = await admin
         .from('exam_materials')
@@ -76,6 +76,17 @@ export async function approveSubmission(id: string) {
     const text = typed?.status === 'ready'
         ? `[수학ETF] 무료 타이핑 제보가 채택되었습니다. ${points}P가 적립되었고, 한글 파일은 마이페이지 > 구매 내역에서 30일간 받으실 수 있어요. 감사합니다.`
         : `[수학ETF] 무료 타이핑 제보가 채택되었습니다. ${points}P가 적립되었고, 한글 파일은 작업이 끝나면 마이페이지 > 내 요청에서 확인하실 수 있어요. 감사합니다.`;
-    const sms = await sendNotice(phone, text, { quietHours: true });   // 밤에 누르면 오전 9시 예약
-    return { ok: true as const, rewarded: REWARD_POINTS, typed: typed?.status ?? 'working', sms };
+    // [10/8] 등록 스크립트가 한 사람의 제보 여러 건을 한꺼번에 채택할 때는 문자를 끄고 한 통으로 합쳐 보낸다(sendAdoptionSummary)
+    const sms = opts.sms === false ? 'skipped' : await sendNotice(phone, text, { quietHours: true });   // 밤에 누르면 오전 9시 예약
+    return { ok: true as const, rewarded: REWARD_POINTS, typed: typed?.status ?? 'working', sms, recipient, phone: phone || null };
+}
+
+/** 한 사람에게 채택 n건을 문자 한 통으로 (10/8 사장님: "많이 하면 메세지는 한번만") */
+export async function sendAdoptionSummary(phone: string | null, count: number, allReady: boolean) {
+    const points = (REWARD_POINTS * count).toLocaleString();
+    const head = count > 1 ? `무료 타이핑 제보 ${count}건이 채택되었습니다. 총 ${points}P가` : `무료 타이핑 제보가 채택되었습니다. ${points}P가`;
+    const text = allReady
+        ? `[수학ETF] ${head} 적립되었고, 한글 파일은 마이페이지 > 구매 내역에서 30일간 받으실 수 있어요. 감사합니다.`
+        : `[수학ETF] ${head} 적립되었고, 한글 파일은 작업이 끝나면 마이페이지 > 내 요청에서 확인하실 수 있어요. 감사합니다.`;
+    return { text, sms: await sendNotice(phone, text, { quietHours: true }) };
 }
