@@ -171,7 +171,10 @@ export default function RawUploadsAdmin() {
             const j = await res.json();
             if (!res.ok) throw new Error(j.error || `HTTP ${res.status}`);
             setRewardedIds(prev => new Set(prev).add(file.id));
-            alert(`✅ 채택 완료 — ${REPORT_REWARD_LABEL} 지급됐습니다.`);
+            const smsLabel: Record<string, string> = { sent: '채택 문자를 보냈습니다.', scheduled: '밤이라 채택 문자는 오전 9시에 가도록 예약했습니다.', no_phone: '회원 휴대폰 번호가 없어 문자는 못 보냈습니다.', dev: '개발 서버라 문자는 보내지 않았습니다.', failed: '문자 발송에 실패했습니다(채택은 완료).' };
+            alert(`✅ 채택 완료 — ${REPORT_REWARD_LABEL} 지급됐습니다.
+${j.typed === 'ready' ? '한글 파일도 구매 내역에 넣었습니다.' : '한글 파일은 등록이 끝나면 자동으로 들어갑니다.'}
+${smsLabel[j.sms] || ''}`);
         } catch (err: any) {
             alert('지급 실패: ' + err.message);
         } finally {
