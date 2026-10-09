@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { ADMIN_UNSORTED_OR, NOT_TEXTBOOK_OR } from '@/lib/questions/privateDb';
 import { requireAdmin } from '@/utils/admin-auth';
 import AdminQuestionsClient from './AdminQuestionsClient';
 
@@ -47,7 +48,7 @@ export default async function AdminQuestionsPage() {
                     data
                 )
             `, { count: 'exact' })
-            .neq('work_status', 'sorted')
+            .or(ADMIN_UNSORTED_OR).or(NOT_TEXTBOOK_OR)   // [10/8] 회원 전용 교재는 미분류에서 뺀다
             .order('year', { ascending: false })
             .order('semester', { ascending: true })
             .order('school', { ascending: true })

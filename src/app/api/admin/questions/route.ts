@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ADMIN_UNSORTED_OR, NOT_TEXTBOOK_OR, isTextbookRow } from '@/lib/questions/privateDb';
 import { createClient } from '@/utils/supabase/server';
 import { createClient as createServiceRoleClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/utils/admin-auth';
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
     if (status === 'sorted') {
         queryBuilder = queryBuilder.eq('work_status', 'sorted');
     } else if (status === 'unsorted') {
-        queryBuilder = queryBuilder.neq('work_status', 'sorted');
+        queryBuilder = queryBuilder.or(ADMIN_UNSORTED_OR).or(NOT_TEXTBOOK_OR);   // [10/8] 회원 전용 교재는 미분류가 아니다
     }
 
     if (q && q.trim() !== '') {
@@ -146,17 +147,20 @@ export async function DELETE(req: NextRequest) {
             const { data: updatedQs } = await adminClient.from('questions').select('school, year, grade, semester, subject').in('id', ids);
             if (updatedQs) affectedGroups = updatedQs;
         } else if (deleteUnsortedOnly) {
-            const { data: updatedQs } = await adminClient.from('questions').select('school, year, grade, semester, subject').or('work_status.neq.sorted,work_status.is.null');
+            const { data: updatedQs } = await adminClient.from('questions').select('school, year, grade, semester, subject').or(ADMIN_UNSORTED_OR).or(NOT_TEXTBOOK_OR);
             if (updatedQs) affectedGroups = updatedQs;
         }
 
         if (deleteAll) {
             // DANGER: Deletes absolutely everything
-            query = query.gte('question_number', 0);
+            query = query.gte('question_number', 0).or('work_status.is.null,work_status.neq.private').or(NOT_TEXTBOOK_OR);   // [10/8] 교재는 빼고
         } else if (deleteUnsortedOnly) {
             // SAFE MODE: Deletes only questions that are NOT sorted
-            query = query.or('work_status.neq.sorted,work_status.is.null');
+            query = query.or(ADMIN_UNSORTED_OR).or(NOT_TEXTBOOK_OR);   // [10/8] 회원 전용 교재 제외
         } else if (ids && Array.isArray(ids) && ids.length > 0) {
+            // [10/8] 회원 전용 교재는 화면에서 지우지 않는다(연결·결제된 상품) — 등록 스크립트로만
+            const { data: tb } = await adminClient.from('questions').select('id, work_status, source_db_id').in('id', ids);
+            if ((tb || []).some(isTextbookRow)) return NextResponse.json({ success: false, error: '회원 전용 교재 문항은 여기서 지울 수 없습니다.' }, { status: 400 });
             query = query.in('id', ids);
         } else {
             return NextResponse.json({ success: false, error: 'No target specified' }, { status: 400 });
@@ -266,6 +270,11 @@ export async function PATCH(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'No valid update fields' }, { status: 400 });
         }
 
+        // [10/8] 회원 전용 교재의 상태를 바꾸면 공개(sorted)로 풀리거나 연결이 끊긴다 — 상태 변경은 막는다
+        if (cleanUpdates.work_status !== undefined) {
+            const { data: tb } = await adminClient.from('questions').select('id, work_status, source_db_id').in('id', ids);
+            if ((tb || []).some(isTextbookRow)) return NextResponse.json({ success: false, error: '회원 전용 교재 문항은 분류 상태를 바꿀 수 없습니다.' }, { status: 400 });
+        }
         const { data: updateResult, error } = await adminClient
             .from('questions')
             .update(cleanUpdates)

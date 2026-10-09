@@ -171,6 +171,7 @@ export async function POST(req: NextRequest) {
             console.error('[original-report] insert', error);
             return NextResponse.json({ error: '제보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
         }
+        // 운영자 문자는 5분마다 모아서 보낸다 — api/cron/report-notify (10/9)
         return NextResponse.json({ ok: true, id: row.id });
     }
 
