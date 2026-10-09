@@ -4,12 +4,8 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import neis from '@/lib/neis-high-schools.json';
 import { REPORT_MIN_YEAR } from '@/lib/report-reward';
 import { grantTypedFile } from '@/lib/typedGrant';
-import { sendNotice } from '@/lib/sms';
 
 export const dynamic = 'force-dynamic';
-
-// [10/9] 제보가 들어오면 운영자에게 바로 문자(사용자 요청). 번호는 운영자 계정에 가입 때 인증한 번호.
-const ADMIN_USER_ID = '0f1db267-e257-460b-9549-2fdd6e6ae988';
 
 /**
  * 회원 원본 시험지 제보 (2026-10-05).
@@ -175,12 +171,7 @@ export async function POST(req: NextRequest) {
             console.error('[original-report] insert', error);
             return NextResponse.json({ error: '제보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
         }
-        // 운영자 알림 — 실패해도 제보 접수는 그대로(밤에도 바로 보낸다: 운영자는 새벽에 일한다)
-        try {
-            const { data: au } = await admin.auth.admin.getUserById(ADMIN_USER_ID);
-            const phone = (au?.user?.user_metadata as any)?.phone || au?.user?.phone;
-            await sendNotice(phone, `[수학ETF 제보] ${school.replace(/고등학교$/, '고')} ${year} ${grade}-${semester} ${examType} ${subject} (${paths.length}장) · ${displayName}`);
-        } catch (e) { console.error('[original-report] 운영자 문자', e); }
+        // 운영자 문자는 5분마다 모아서 보낸다 — api/cron/report-notify (10/9)
         return NextResponse.json({ ok: true, id: row.id });
     }
 
