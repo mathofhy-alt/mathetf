@@ -9,13 +9,7 @@
     "src/app/api/pro/exam/save/route.ts": {
       "maxDuration": 60
     },
-    "src/app/api/pro/generate-exam/route.ts": {
-      "maxDuration": 60
-    },
     "src/app/api/pro/auto-generate/route.ts": {
-      "maxDuration": 60
-    },
-    "src/app/api/pro/download/hml/route.ts": {
       "maxDuration": 60
     },
     "src/app/api/cart/checkout/route.ts": {
