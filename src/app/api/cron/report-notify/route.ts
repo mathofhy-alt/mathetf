@@ -31,12 +31,16 @@ export async function GET(req: NextRequest) {
     const fresh = (rows || []).filter(r => !parse(r.description).admin_notified);
     if (!fresh.length) return NextResponse.json({ ok: true, sent: 0 });
 
-    const line = (r: any) => {
-        const n = (parse(r.description).files || []).length || 1;
-        return `${String(r.school || '').replace(/고등학교$/, '고')} ${r.exam_year} ${r.grade}-${r.semester} ${r.exam_type} ${r.subject} (${n}장) · ${r.uploader_name || ''}`.trim();
-    };
-    const shown = fresh.slice(0, 15);
-    const text = [`[수학ETF] 새 원본 제보 ${fresh.length}건`, ...shown.map(line), ...(fresh.length > shown.length ? [`외 ${fresh.length - shown.length}건`] : [])].join('\n');
+    // [10/9] 단문(SMS, 90바이트 = 한글 45자) 안에 — 넘으면 장문(LMS)이라 단가가 몇 배다(사용자 지적).
+    //   첫 건만 '학교 학년-학기시험 과목'으로 줄여 적고 나머지는 '외 N건'. 연도·제보자는 관리자 화면에서 본다.
+    const SHORT: Record<string, string> = { 확률과통계: '확통', 공통수학1: '공수1', 공통수학2: '공수2', 미적분I: '미적1', 미적분II: '미적2', 미적분: '미적', 기하: '기하', 대수: '대수', 수학I: '수1', 수학II: '수2' };
+    const r0 = fresh[0];
+    const first = `${String(r0.school || '').replace(/고등학교$/, '고')} ${r0.grade}-${r0.semester}${String(r0.exam_type || '').replace(/고사$/, '')} ${SHORT[r0.subject] || r0.subject || ''}`.trim();
+    const bytes = (t: string) => [...t].reduce((n, ch) => n + (ch.charCodeAt(0) > 127 ? 2 : 1), 0);
+    const tail = fresh.length > 1 ? ` 외 ${fresh.length - 1}건` : '';
+    let body = first;
+    while (body && bytes(`[수학ETF] 제보 ${body}${tail}`) > 90) body = [...body].slice(0, -1).join('');
+    const text = `[수학ETF] 제보 ${body}${tail}`;
 
     const { data: au } = await admin.auth.admin.getUserById(ADMIN_USER_ID);
     const phone = (au?.user?.user_metadata as any)?.phone || au?.user?.phone;
