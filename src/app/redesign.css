@@ -626,7 +626,7 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 .rd .rd-modal-flush { padding: 0; }
 .rd .rd-modal-flush .rd-sheet-handle { margin: 12px auto 0; }
 .rd .rd-modal-xl { max-width: 1280px; height: calc(100dvh - 48px); max-height: none; }
-.rd .rd-modal-catalog { max-width: 1040px; height: min(780px, calc(100dvh - 48px)); }
+.rd .rd-modal-catalog { max-width: 1080px; height: min(920px, calc(100dvh - 40px)); }   /* [10/11] 목록이 4줄밖에 안 보였다 — 화면 높이를 거의 다 쓴다 */
 .rd .rd-modal-band { padding: 22px 28px 18px; flex: none; }
 .rd .rd-modal-band-foot { padding: 16px 28px 24px; flex: none; border-top: 1px solid var(--rd-line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .rd .rd-modal-icon { flex: none; width: 40px; height: 40px; border-radius: 14px; background: var(--rd-tint); color: var(--rd-ink); display: inline-flex; align-items: center; justify-content: center; }
@@ -1974,3 +1974,65 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 /* 10/8 글 화면: 돌아가기 링크와 '공지' 표시가 한 줄에 붙어 어긋나 보이던 것 — 링크는 위 한 줄, 표시는 제목 바로 위 */
 .rd .rd-bd-read > .rd-x-back { display: flex; width: fit-content; margin-bottom: 20px; }
 .rd .rd-bd-read > .rd-bd-tag { display: inline-flex; margin-bottom: 10px; }
+
+/* ── [10/11] 기출 자료 선택 창 개편 — 위쪽을 줄여 목록을 넓게, 모의고사·사관경대는 표 + 번호로 바로 담기 ── */
+.rd .rd-cat { gap: 8px; }
+.rd .rd-cat-tabs button { min-height: 44px; }
+.rd .rd-cat-search { min-height: 44px; }
+.rd .rd-cat-search input { font-size: 15px; }
+.rd .rd-cat-filters select { min-height: 36px; }
+.rd .rd-cat-chosen { flex-wrap: wrap; padding: 8px 12px; gap: 8px 12px; }
+.rd .rd-cat-chosen > p { flex: 1; min-width: 0; margin: 0; font-size: 13px; font-weight: 600; color: var(--rd-nav); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd .rd-cat-chosen.is-open > div { flex: 1 1 100%; flex-wrap: wrap; max-height: 132px; overflow-y: auto; }
+.rd .rd-mg { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.rd .rd-mg-find { flex: none; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 6px 0 14px; border-radius: 14px; background: var(--rd-panel); color: var(--rd-sub); }
+.rd .rd-mg-find:focus-within { background: #fff; box-shadow: inset 0 0 0 2px var(--rd-ink); }
+.rd .rd-mg-find input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font: inherit; font-size: 15px; font-weight: 600; color: var(--rd-text); }
+.rd .rd-mg-find input::placeholder { color: #8B95A1; font-weight: 500; }
+.rd .rd-mg-find button { flex: none; min-height: 38px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--rd-ink); color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.rd .rd-mg-find button:disabled { opacity: .45; cursor: default; }
+.rd .rd-mg-findmsg { flex: none; margin: -2px 0 0; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; }
+.rd .rd-mg-findmsg.is-ok { background: var(--rd-tint); color: var(--rd-ink); }
+.rd .rd-mg-findmsg.is-no { background: #FFF4E5; color: #8A5A00; }
+.rd .rd-mg-grades { flex: none; display: flex; gap: 6px; }
+.rd .rd-mg-grades button { min-height: 44px; padding: 0 18px; border-radius: 12px; border: 0; background: var(--rd-panel); font: inherit; font-size: 15px; font-weight: 800; color: var(--rd-sub); cursor: pointer; }
+.rd .rd-mg-grades button[aria-pressed="true"] { background: var(--rd-text); color: #fff; }
+.rd .rd-mg-body { flex: 1; min-height: 0; display: flex; gap: 16px; }
+.rd .rd-mg-table { flex: 0 1 560px; min-width: 0; overflow: auto; overscroll-behavior: contain; padding-right: 4px; }
+.rd .rd-mg-row { display: grid; gap: 6px; margin-bottom: 6px; align-items: center; }
+.rd .rd-mg-row.is-head { position: sticky; top: 0; z-index: 1; background: #fff; padding: 2px 0 6px; margin-bottom: 4px; }
+.rd .rd-mg-row.is-head span { font-size: 12px; font-weight: 700; color: var(--rd-sub); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd .rd-mg-row > b { font-size: 14px; font-weight: 800; }
+.rd .rd-mg-cell { min-height: 44px; border: 0; border-radius: 10px; background: var(--rd-zone); font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-text); cursor: pointer; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd .rd-mg-cell:hover { box-shadow: inset 0 0 0 2px var(--rd-ink); }
+.rd .rd-mg-cell.is-scope { box-shadow: inset 0 0 0 1px var(--rd-ink); }
+.rd .rd-mg-cell.has-pick { background: var(--rd-tint); color: var(--rd-ink); }
+.rd .rd-mg-cell.is-open { background: #fff; box-shadow: inset 0 0 0 2px var(--rd-text); }
+.rd .rd-mg-none { min-height: 44px; border-radius: 10px; background: repeating-linear-gradient(135deg, transparent 0 6px, #EEF1F4 6px 7px); }
+.rd .rd-mg-note { margin: 8px 0 0; font-size: 12px; color: var(--rd-sub); }
+.rd .rd-mg-panel { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; background: var(--rd-zone); overflow-y: auto; }
+.rd .rd-mg-empty { margin: auto; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.rd .rd-mg-empty b { font-size: 16px; }
+.rd .rd-mg-empty span { font-size: 13px; color: var(--rd-sub); }
+.rd .rd-mg-ptitle { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.rd .rd-mg-ptitle b { display: block; font-size: 17px; font-weight: 800; }
+.rd .rd-mg-ptitle small { display: block; margin-top: 2px; font-size: 13px; color: var(--rd-sub); }
+.rd .rd-mg-all { flex: none; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--rd-tint); font: inherit; font-size: 13px; font-weight: 800; color: var(--rd-ink); cursor: pointer; white-space: nowrap; }
+.rd .rd-mg-variants { display: flex; flex-wrap: wrap; gap: 6px; }
+.rd .rd-mg-variants button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: #fff; font: inherit; font-size: 13px; font-weight: 700; color: var(--rd-sub); cursor: pointer; }
+.rd .rd-mg-variants button[aria-pressed="true"] { background: var(--rd-text); color: #fff; }
+.rd .rd-mg-nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.rd .rd-mg-nums button { position: relative; min-height: 44px; border: 0; border-radius: 10px; background: #fff; font: inherit; font-size: 15px; font-weight: 800; color: var(--rd-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+.rd .rd-mg-nums button:hover { box-shadow: inset 0 0 0 2px var(--rd-ink); }
+.rd .rd-mg-nums button.is-on { background: var(--rd-ink); color: #fff; }
+.rd .rd-mg-part { margin: 0 0 6px; font-size: 13px; font-weight: 800; color: var(--rd-nav); }
+.rd .rd-mg-msg { margin: 0; font-size: 14px; color: var(--rd-sub); }
+.rd .rd-mg-scope { display: flex; align-items: center; gap: 8px; margin-top: auto; font-size: 13px; font-weight: 600; color: var(--rd-nav); cursor: pointer; }
+.rd .rd-mg-scope input { width: 18px; height: 18px; accent-color: var(--rd-ink); }
+.rd .rd-mg-scope small { color: var(--rd-sub); font-weight: 500; }
+@media (max-width: 760px) {
+  .rd .rd-mg-body { flex-direction: column; overflow-y: auto; }
+  .rd .rd-mg-table { flex: none; max-height: 46dvh; }
+  .rd .rd-mg-panel { flex: none; overflow: visible; }
+  .rd .rd-mg-body.has-open .rd-mg-panel { order: -1; }   /* 회차를 열면 번호 칸을 표 위로 — 찾기 칸 바로 아래에서 보이게 */
+}

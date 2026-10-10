@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Search, X } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
 import { sourceCategory, sourceCategories, type SourceCategory } from '@/lib/questions/source-category';
+import MockGrid from './MockGrid';
 
 /**
  * 출제 자료 고르기(10/7 다시 짬). 예전엔 고1학년 › … 폴더를 파고 들어가야 해서 '너무 불편'(사용자).
@@ -21,13 +22,18 @@ const termOf = (d: any) => `${d.semester || ''}-${String(d.exam_type || '').incl
 const shortType = (t: string) => (t.includes('중간') ? '중간' : t.includes('기말') ? '기말' : t);
 const nationalName = (school: string) => (school === '수능' ? '수능' : school === '평가원' ? '평가원 모의평가' : '전국연합 학력평가');
 
+const TAB_LABEL: Partial<Record<SourceCategory, string>> = { special: '사관·경찰대', national: '모의고사·수능' };
+
 type Group = { key: string; title: string; sub: string; sort: string; items: UserItem[] };
 
-export default function SourceCatalog({ items, selectedIds, onItemSelect, onGroupSelect, onGetViewItems }: {
+export default function SourceCatalog({ items, selectedIds, onItemSelect, onGroupSelect, onGetViewItems, cart, cartIds, onToggleQuestion, onAddQuestions }: {
     items: UserItem[]; selectedIds: string[];
     onItemSelect: (item: UserItem) => void;
     onGroupSelect: (items: UserItem[], select: boolean) => void;
     onGetViewItems: (items: UserItem[]) => void;
+    // [10/11] 모의고사·사관경대 표에서 번호로 바로 담기 — 장바구니는 부모(page.tsx)가 가진다
+    cart?: any[]; cartIds?: Set<string>;
+    onToggleQuestion?: (q: any) => void; onAddQuestions?: (qs: any[]) => number | void;
 }) {
     const [category, setCategory] = useState<SourceCategory>('school');
     const [search, setSearch] = useState('');
@@ -178,21 +184,37 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
         return m;
     }, [visible]);
 
+    // [10/11] 탭 숫자는 '자료 묶음 수' 대신 쓰는 사람이 궁금한 것 — 학교 수·연도 범위
+    const yearSpan = (list: UserItem[]) => { const ys = list.map(i => Number(i.details?.exam_year)).filter(Boolean); return ys.length ? `${Math.min(...ys)}–${Math.max(...ys)}` : ''; };
+    const tabSub = (id: SourceCategory) => {
+        const list = byCat[id];
+        if (id === 'school') return `학교 ${new Set(list.map(i => i.details?.school)).size}곳 · ${yearSpan(list)}`;
+        if (id === 'special') return `${new Set(list.map(i => i.details?.exam_year)).size}개년 · ${yearSpan(list)}`;
+        if (id === 'national') return yearSpan(list);
+        return `${list.length}묶음`;
+    };
+    const gridMode = category === 'national' || category === 'special';
+    // 고른 자료: 회차 칩을 늘어놓지 않고 분류별 한 줄로 — 칩 580개가 가로로 밀려 무엇을 골랐는지 안 보였다(사용자 캡처 10/11)
+    const chosenByCat = sourceCategories.map(c => ({ c, n: chosen.filter(i => sourceCategory(i.details || {}) === c.id) })).filter(x => x.n.length);
+    const [showChosen, setShowChosen] = useState(false);
+    // '번호로 바로 찾기'에 다른 탭 시험(모의고사 탭에서 '사관 …')을 적으면 그 탭으로 넘어가 이어서 찾는다
+    const [pendingQuery, setPendingQuery] = useState('');
+
     return <section className="rd-cat" aria-label="출제 자료 고르기">
         <div className="rd-seg rd-cat-tabs" role="group" aria-label="자료 종류">
             {tabs.map(c => <button key={c.id} type="button" aria-pressed={category === c.id}
-                onClick={() => { setCategory(c.id); resetAll(); }}>
-                {c.label}<small>{byCat[c.id].length}개</small>
+                onClick={() => { setCategory(c.id); resetAll(); setPendingQuery(''); }}>
+                {TAB_LABEL[c.id] || c.label}<small>{tabSub(c.id)}</small>
             </button>)}
         </div>
 
-        <div className="rd-cat-search">
+        {!gridMode && <div className="rd-cat-search">
             <Search size={18} aria-hidden="true" />
             <input aria-label="자료 찾기" placeholder={isSchool ? '학교 이름으로 찾기' : category === 'mine' ? '단원 이름으로 찾기 (예: 인수분해)' : '연도나 과목으로 찾기 (예: 2024 미적분)'} value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
             {search && <button type="button" aria-label="검색어 지우기" onClick={() => setSearch('')}><X size={16} /></button>}
-        </div>
+        </div>}
 
-        <div className="rd-cat-filters" role="group" aria-label="거르기">
+        {!gridMode && <div className="rd-cat-filters" role="group" aria-label="거르기">
             {uniq(pool, d => d.grade).length > 1 && <select aria-label="학년" value={grade} onChange={e => setGrade(e.target.value)}>
                 <option value="">모든 학년</option>{uniq(pool, d => d.grade).sort((a, b) => a - b).map(g => <option key={g} value={String(g)}>{isSchool ? `${g}학년` : `고${g}`}</option>)}
             </select>}
@@ -209,25 +231,33 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
                 <option value="">모든 과목</option>{uniq(pool, d => d.subject).sort((a, b) => String(a).localeCompare(String(b), 'ko')).map(s => <option key={s} value={s}>{s}</option>)}
             </select>}
             {extraFiltered && <button type="button" className="rd-cat-reset" onClick={() => { setGrade(''); setYear(''); setTerm(''); setMonth(''); setSubject(''); }}>조건 지우기</button>}
-        </div>
-
-        {chosen.length > 0 && <div className="rd-cat-chosen" aria-label="고른 자료">
-            <span>고른 자료 {chosen.length}개</span>
-            <div>{chosen.slice(0, 12).map(i => <button key={i.id} type="button" onClick={() => onItemSelect(i)} title="빼기">
-                {chosenLabel(i)}<X size={13} aria-hidden="true" />
-            </button>)}{chosen.length > 12 && <em>외 {chosen.length - 12}개</em>}</div>
-            <button type="button" className="rd-cat-clear" onClick={() => onGroupSelect(chosen, false)}>모두 빼기</button>
         </div>}
 
+        {chosen.length > 0 && <div className={`rd-cat-chosen ${showChosen ? 'is-open' : ''}`} aria-label="검색 범위로 고른 자료">
+            <span>검색 범위 {chosen.length}개</span>
+            <p>{chosenByCat.map(x => `${TAB_LABEL[x.c.id] || x.c.label} ${x.n.length}`).join(' · ')}</p>
+            <button type="button" className="rd-cat-clear" onClick={() => setShowChosen(v => !v)} aria-expanded={showChosen}>{showChosen ? '접기' : '펼쳐 보기'}</button>
+            <button type="button" className="rd-cat-clear" onClick={() => onGroupSelect(chosen, false)}>모두 빼기</button>
+            {showChosen && <div>{chosen.slice(0, 60).map(i => <button key={i.id} type="button" onClick={() => onItemSelect(i)} title="빼기">
+                {chosenLabel(i)}<X size={13} aria-hidden="true" />
+            </button>)}{chosen.length > 60 && <em>외 {chosen.length - 60}개</em>}</div>}
+        </div>}
+
+        {gridMode && <MockGrid key={`${category}|${pendingQuery}`} kind={category as 'national' | 'special'} pool={pool}
+            selectedIds={selected} onGroupSelect={onGroupSelect}
+            cart={cart} cartIds={cartIds} onToggleQuestion={onToggleQuestion} onAddQuestions={onAddQuestions}
+            initialQuery={pendingQuery || undefined}
+            onOtherKind={(k, text) => { setCategory(k); setPendingQuery(text); }} />}
+
         {/* 내신: 지역 → 구·군 */}
-        {browsing && (region || rangeMode) && <nav className="rd-cat-crumb" aria-label="지역">
+        {!gridMode && browsing && (region || rangeMode) && <nav className="rd-cat-crumb" aria-label="지역">
             <button type="button" onClick={() => { setRegion(''); setDistrict(''); setGrade(''); setTerm(''); }} aria-current={!region && !rangeMode ? 'true' : undefined}>처음으로</button>
             {rangeMode && <><ChevronRight size={14} aria-hidden="true" /><span aria-current="true">전국 {grade}학년 {termLabel(term)}</span></>}
             {region && <><ChevronRight size={14} aria-hidden="true" /><button type="button" onClick={() => setDistrict('')} aria-current={region && !district ? 'true' : undefined}>{region}</button></>}
             {district && <><ChevronRight size={14} aria-hidden="true" /><span aria-current="true">{district === '*' ? `${region} 전체` : district}</span></>}
         </nav>}
 
-        {browsing && !region && !rangeMode ? <div className="rd-cat-list">
+        {gridMode ? null : browsing && !region && !rangeMode ? <div className="rd-cat-list">
             <p className="rd-cat-sec"><b>시험 범위로 한 번에 담기</b><small>범위를 고르면 전국 학교의 그 시험 회차가 모입니다{year ? ` (${year}년)` : ''}</small></p>
             <div className="rd-cat-places is-range">
                 {ranges.map(r => <button key={`${r.grade}|${r.term}`} type="button" onClick={() => { setGrade(String(r.grade)); setTerm(r.term); }}>

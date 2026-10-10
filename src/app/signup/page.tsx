@@ -15,6 +15,7 @@ import MarketingModal from '@/components/MarketingModal';
 import { getStoredRole } from '@/components/RoleOnboardingModal';
 import { getStoredSignupAttribution } from '@/lib/analytics/signup-attribution';
 import { queueKakaoRegistration } from '@/components/KakaoPixel';
+import { checkEmail } from '@/lib/email-check';
 
 export default function SignupPage() {
     const [step, setStep] = useState(1);
@@ -141,8 +142,11 @@ export default function SignupPage() {
             alert('이메일을 입력해주세요.');
             return;
         }
-        if (!email.includes('@')) {
-            alert('올바른 이메일 형식이 아닙니다.');
+        // [10/10] 형식·흔한 오타(navercom·gmail.comcom 등) 검사 — 고칠 주소가 있으면 바꿀지 묻는다
+        const ec = checkEmail(email);
+        if (!ec.ok) {
+            if (ec.suggestion && confirm(`${ec.message}\n\n${ec.suggestion} 로 바꿀까요?`)) setEmail(ec.suggestion);
+            else if (!ec.suggestion) alert(ec.message);
             return;
         }
 
@@ -178,6 +182,7 @@ export default function SignupPage() {
             setErrorMsg('비밀번호는 6자리 이상이어야 합니다.');
             return;
         }
+        { const ec = checkEmail(email); if (!ec.ok) { setErrorMsg(ec.message); return; } }
         if (password !== confirmPassword) {
             setErrorMsg('비밀번호가 일치하지 않습니다.');
             return;

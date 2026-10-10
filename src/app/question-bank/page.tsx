@@ -1269,6 +1269,17 @@ export default function QuestionBankPage() {
                                     setSelectedDbIds(prev => select ? [...new Set([...prev, ...ids])] : prev.filter(id => !ids.includes(id)));
                                 }}
                                 onGetViewItems={setCurrentExamItems}
+                                cart={cart} cartIds={cartIdSet}
+                                onToggleQuestion={toggleCart}
+                                onAddQuestions={(qs) => {
+                                    const room = MAX_CART_SIZE - cart.length;
+                                    const add = qs.filter(q => !cartIdSet.has(q.id)).slice(0, Math.max(0, room));
+                                    if (!add.length) { showToast(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`, 'info'); return 0; }
+                                    logQb('qb_cart_add');
+                                    setCart(prev => [...(Array.isArray(prev) ? prev : []), ...add]);
+                                    if (add.length < qs.length) showToast(`장바구니가 가득 차 ${add.length}문항만 담았습니다.`, 'info');
+                                    return add.length;
+                                }}
                             /> : <FolderExplorer
                                 initialData={user && storageModalMode === 'exam' ? storagePrefetch.exam : undefined}
                                 key={storageModalMode}
@@ -1307,7 +1318,7 @@ export default function QuestionBankPage() {
                                                 className={`rd-btn rd-btn-sm ${allSelected ? 'rd-btn-tint rd-btn-on' : 'rd-btn-gray'}`}
                                             >
                                                 <CheckSquare size={16} />
-                                                {hasOtherSelected ? '현재 분류만 선택' : allSelected ? '전체 해제' : '전체 선택'}
+                                                {hasOtherSelected ? '이 탭만 전체 선택' : allSelected ? '이 탭 선택 해제' : '이 탭 전체 선택'}
                                                 {selectedDbIds.length > 0 && (
                                                     <span style={{ fontSize: 12, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'var(--rd-ink)', color: '#fff' }}>
                                                         {selectedDbIds.length}
@@ -1365,7 +1376,8 @@ export default function QuestionBankPage() {
                                         setEntryFailure(false);
                                         if (filterState?.mockSlug) { setFilterState((f:any) => ({...f, mockSlug:undefined})); setFilterVersion(v => v + 1); }
                                         // 저장한 시험지가 없으면 비교할 게 없다 — 빈 '중복 소스 체크' 창을 띄우지 않는다(10/7)
-                                        if (user && savedCount > 0) setShowDuplicateModal(true);
+                                        // [10/11] 모의고사 표에서 번호로 바로 담기만 했으면(검색 범위 없음) 중복 확인 창은 필요 없다
+                                        if (user && savedCount > 0 && selectedDbIds.length > 0) setShowDuplicateModal(true);
                                         else setExcludedQuestionIds([]);
                                     } else {
                                         setShowStorageModal(false);

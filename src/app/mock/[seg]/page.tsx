@@ -2,7 +2,7 @@ import { mockQuestionHref } from '@/lib/mock-question-link';
 import {questionBankHref} from '@/lib/discovery';
 import Link from 'next/link';
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import Header from '@/components/Header';
 import MockExamCard, { MOCK_CATEGORIES, MockCategory, CATEGORY_DESC } from '@/components/mock/MockExamCard';
@@ -186,9 +186,19 @@ async function CategoryView({ category }: { category: MockCategory }) {
 }
 
 /* ── 회차 상세 ── */
+// [10/10] 회차 월을 바로잡아 slug 를 바꾼 것 — 옛 주소는 새 주소로 넘긴다(검색에 걸린 링크 보존).
+//   새 slug 가 DB 에 있을 때만 넘기므로, DB slug 를 바꾸기 전에 배포돼도 옛 페이지는 그대로 열린다.
+const MOCK_SLUG_ALIASES: Record<string, string> = {
+    '2024-11월-전국연합-고2-수학': '2024-10월-전국연합-고2-수학',   // 2024 고1·2 마지막 학평은 10/15 시행(11월 아님)
+};
+
 async function DetailView({ slug }: { slug: string }) {
     const exam = await fetchMockExamBySlug(slug);
-    if (!exam) notFound();
+    if (!exam) {
+        const to = MOCK_SLUG_ALIASES[slug];
+        if (to && await fetchMockExamBySlug(to)) permanentRedirect(`/모의고사/${encodeURIComponent(to)}`);
+        notFound();
+    }
     const cat = MOCK_CATEGORIES[exam.category] ?? MOCK_CATEGORIES['전국연합'];
     const previews = exam.preview_urls || [];
     const createHref = mockQuestionHref(exam);
