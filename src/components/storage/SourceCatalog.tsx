@@ -33,7 +33,7 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
     onGetViewItems: (items: UserItem[]) => void;
     // [10/11] 모의고사·사관경대 표에서 번호로 바로 담기 — 장바구니는 부모(page.tsx)가 가진다
     cart?: any[]; cartIds?: Set<string>;
-    onToggleQuestion?: (q: any) => void; onAddQuestions?: (qs: any[]) => void;
+    onToggleQuestion?: (q: any) => void; onAddQuestions?: (qs: any[]) => number | void;
 }) {
     const [category, setCategory] = useState<SourceCategory>('school');
     const [search, setSearch] = useState('');
@@ -197,11 +197,13 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
     // 고른 자료: 회차 칩을 늘어놓지 않고 분류별 한 줄로 — 칩 580개가 가로로 밀려 무엇을 골랐는지 안 보였다(사용자 캡처 10/11)
     const chosenByCat = sourceCategories.map(c => ({ c, n: chosen.filter(i => sourceCategory(i.details || {}) === c.id) })).filter(x => x.n.length);
     const [showChosen, setShowChosen] = useState(false);
+    // '번호로 바로 찾기'에 다른 탭 시험(모의고사 탭에서 '사관 …')을 적으면 그 탭으로 넘어가 이어서 찾는다
+    const [pendingQuery, setPendingQuery] = useState('');
 
     return <section className="rd-cat" aria-label="출제 자료 고르기">
         <div className="rd-seg rd-cat-tabs" role="group" aria-label="자료 종류">
             {tabs.map(c => <button key={c.id} type="button" aria-pressed={category === c.id}
-                onClick={() => { setCategory(c.id); resetAll(); }}>
+                onClick={() => { setCategory(c.id); resetAll(); setPendingQuery(''); }}>
                 {TAB_LABEL[c.id] || c.label}<small>{tabSub(c.id)}</small>
             </button>)}
         </div>
@@ -241,9 +243,11 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
             </button>)}{chosen.length > 60 && <em>외 {chosen.length - 60}개</em>}</div>}
         </div>}
 
-        {gridMode && <MockGrid key={category} kind={category as 'national' | 'special'} pool={pool}
+        {gridMode && <MockGrid key={`${category}|${pendingQuery}`} kind={category as 'national' | 'special'} pool={pool}
             selectedIds={selected} onGroupSelect={onGroupSelect}
-            cart={cart} cartIds={cartIds} onToggleQuestion={onToggleQuestion} onAddQuestions={onAddQuestions} />}
+            cart={cart} cartIds={cartIds} onToggleQuestion={onToggleQuestion} onAddQuestions={onAddQuestions}
+            initialQuery={pendingQuery || undefined}
+            onOtherKind={(k, text) => { setCategory(k); setPendingQuery(text); }} />}
 
         {/* 내신: 지역 → 구·군 */}
         {!gridMode && browsing && (region || rangeMode) && <nav className="rd-cat-crumb" aria-label="지역">

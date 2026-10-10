@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { Check } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Search } from 'lucide-react';
+import { parseMockQuery, type MockQuery } from '@/lib/questions/mockQuery';
 import type { UserItem } from '@/types/storage';
 
 /**
@@ -19,8 +20,10 @@ type Col = { key: string; label: string; order: number };
 const dbIdOf = (i: UserItem) => i.reference_id || i.id;
 const variantOf = (i: UserItem) => {
     const d = i.details || {};
-    const t = String(i.name || '').match(/(?:모의고사|입학시험)\s*(.*?)\s*\[/)?.[1] || '';
-    let v = t || (d.subject && !['전과정', '전과목'].includes(d.subject) ? d.subject : '');
+    // 형·과목은 자료의 원래 제목('… 모의고사 A형 [개인DB]')에 있다 — 창이 화면용으로 새로 만든 name 에는 없다
+    const whole = (s: string) => ['전과정', '전과목', '수학'].includes(s.trim());
+    const t = String(d.title || i.name || '').match(/(?:모의고사|입학시험)\s*(.*?)\s*\[/)?.[1] || '';
+    let v = (t && !whole(t) ? t : '') || (d.subject && !whole(d.subject) ? d.subject : '');
     // 2021학년도 이후 고3 선택과목은 옛 이름(미적분II·기하와벡터)으로 저장돼 있다 — 보이는 이름만 바로잡는다
     v = v.replace(/미적분II$/, '미적분').replace(/기하와벡터$/, '기하');
     return v || '전 범위';
@@ -42,7 +45,7 @@ function specialCol(i: UserItem): Col {
     return { key: `sg-${v}`, label: `사관 ${v}`, order };
 }
 
-export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart, cartIds, onToggleQuestion, onAddQuestions }: {
+export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart, cartIds, onToggleQuestion, onAddQuestions, initialQuery, onOtherKind }: {
     kind: 'national' | 'special';
     pool: UserItem[];
     selectedIds: Set<string>;
@@ -50,7 +53,9 @@ export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart,
     cart?: any[];
     cartIds?: Set<string>;
     onToggleQuestion?: (q: Q) => void;
-    onAddQuestions?: (qs: Q[]) => void;
+    onAddQuestions?: (qs: Q[]) => number | void;   // 실제로 담긴 개수(장바구니가 가득 차면 일부만)
+    initialQuery?: string;                                              // 다른 탭에서 넘어온 '번호로 바로 찾기' 입력
+    onOtherKind?: (kind: 'national' | 'special', text: string) => void;
 }) {
     const grades = useMemo(() => Array.from(new Set(pool.map(i => Number(i.details?.grade)).filter(Boolean))).sort(), [pool]);
     const [grade, setGrade] = useState<number>(() => (grades.includes(2) ? 2 : grades[0] || 3));
@@ -76,17 +81,98 @@ export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart,
     const curId = cur ? dbIdOf(cur.item) : '';
     const qs = curId ? rounds[curId] : undefined;
 
-    useEffect(() => {
-        if (!curId || rounds[curId]) return;
-        setRounds(r => ({ ...r, [curId]: 'loading' }));
-        fetch('/api/questions/search', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ selectedDbs: [curId], purchasedDbsCount: 0, advancedFilters: { includeOffCurriculum: true }, page: 1 }),
-        }).then(r => r.json()).then(j => {
-            if (!j?.success) throw new Error(j?.error || 'fail');
-            setRounds(r => ({ ...r, [curId]: (j.data || []).map((q: Q) => ({ ...q, question_images: null })) }));
-        }).catch(() => setRounds(r => ({ ...r, [curId]: 'error' })));
-    }, [curId, rounds]);
+    // 회차 문항 불러오기 — 칸 열기와 '번호로 바로 찾기'가 같이 쓴다(같은 회차는 한 번만 받는다)
+    const loading = useRef<Record<string, Promise<Q[]>>>({});
+    const loadRound = (id: string): Promise<Q[]> => {
+        if (!loading.current[id]) {
+            setRounds(r => ({ ...r, [id]: 'loading' }));
+            loading.current[id] = fetch('/api/questions/search', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ selectedDbs: [id], purchasedDbsCount: 0, advancedFilters: { includeOffCurriculum: true }, page: 1 }),
+            }).then(r => r.json()).then(j => {
+                if (!j?.success) throw new Error(j?.error || 'fail');
+                const list: Q[] = (j.data || []).map((q: Q) => ({ ...q, question_images: null }));
+                setRounds(r => ({ ...r, [id]: list }));
+                return list;
+            }).catch(e => { delete loading.current[id]; setRounds(r => ({ ...r, [id]: 'error' })); throw e; });
+        }
+        return loading.current[id];
+    };
+    useEffect(() => { if (curId && !rounds[curId]) loadRound(curId).catch(() => { }); }, [curId, rounds]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── 번호로 바로 찾기 ── 짐작으로 담지 않는다: 회차가 없거나 과목이 필요한데 없으면 이유만 알리고 그 칸을 열어 둔다
+    const [query, setQuery] = useState(initialQuery || '');
+    const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+    const [busy, setBusy] = useState(false);
+    const cellKeyOf = (i: UserItem) => `${i.details?.exam_year}|${(kind === 'national' ? nationalCol(i.details || {}) : specialCol(i)).key}`;
+    const matchRound = (q: MockQuery): { items: UserItem[]; why?: string } => {
+        if (q.kind === 'national') {
+            if (q.grade === 1 && q.month === 3) return { items: [], why: '고1 3월 학력평가는 중학교 범위라 넣지 않았어요.' };
+            const items = pool.filter(i => {
+                const d = i.details || {};
+                if (Number(d.exam_year) !== q.year || Number(d.grade) !== q.grade) return false;
+                if (q.school === '수능') return d.school === '수능';
+                if (Number(d.semester) !== q.month) return false;
+                return !q.school || d.school === q.school;
+            });
+            return items.length ? { items } : { items, why: `${q.year}년 고${q.grade} ${q.school === '수능' ? '수능' : `${q.month}월`} 회차는 아직 없어요.` };
+        }
+        const police = q.school === '경찰대학교';
+        const items = pool.filter(i => Number(i.details?.exam_year) === q.year && (police ? /경찰/ : /사관/).test(i.details?.school || ''));
+        return items.length ? { items } : { items, why: `${q.year}학년도 ${police ? '경찰대' : '사관학교'} 회차는 아직 없어요.` };
+    };
+    const runQuery = async (text: string) => {
+        const p = parseMockQuery(text);
+        if (!p.ok) { setMsg({ ok: false, text: p.reason }); return; }
+        const q = p.q;
+        if (q.kind !== kind) { onOtherKind?.(q.kind, text); return; }
+        const { items, why } = matchRound(q);
+        if (!items.length) { setMsg({ ok: false, text: why || '그 회차를 찾지 못했어요.' }); return; }
+        if (q.kind === 'national' && q.grade) setGrade(q.grade);
+        let pick = items;
+        if (q.subject) {
+            pick = items.filter(i => variantOf(i).includes(q.subject!));
+            if (!pick.length) {
+                setOpenCell(cellKeyOf(items[0])); setVariant('');
+                setMsg({ ok: false, text: `이 회차에는 '${q.subject}'은 없어요. 있는 것: ${items.map(variantOf).sort().join(' · ')}` });
+                return;
+            }
+        }
+        // 과목이 여럿인 회차: 공통 범위(1~22번)는 어느 과목 회차에나 같은 문항이 들어 있다 — 그 밖은 과목이 꼭 있어야 한다
+        const electives = pick.length > 1 && pick.every(i => /확률|미적|기하/.test(variantOf(i)));
+        if (pick.length > 1 && !(electives && q.nums.every(n => n <= 22))) {
+            setOpenCell(cellKeyOf(pick[0])); setVariant('');
+            const vs = pick.map(variantOf).sort();
+            setMsg({ ok: false, text: `${vs.every(x => /형$/.test(x)) ? '유형' : '과목'}을 같이 적어 주세요: ${vs.join(' · ')} (예: ${text.trim()} ${vs[0]})` });
+            return;
+        }
+        const target = pick[0];
+        setOpenCell(cellKeyOf(target)); setVariant(dbIdOf(target)); setBusy(true);
+        try {
+            const list = await loadRound(dbIdOf(target));
+            const found = q.nums.map(n => list.find(x => x.question_number === n)).filter(Boolean) as Q[];
+            const missing = q.nums.filter(n => !list.some(x => x.question_number === n));
+            const already = found.filter(x => cartIds?.has(x.id));
+            const fresh = found.filter(x => !cartIds?.has(x.id));
+            // 장바구니가 가득 차면 일부만 담긴다 — 실제로 담긴 개수로 안내한다
+            const added = fresh.length ? (onAddQuestions?.(fresh) ?? fresh.length) : 0;
+            if (added < fresh.length) fresh.splice(added);
+            const v = variantOf(target);
+            const name = q.kind === 'national'
+                ? `${q.year}년 고${q.grade} ${q.school === '수능' || target.details?.school === '수능' ? '수능' : `${q.month}월${target.details?.school === '평가원' ? ' 모평' : ''}`}${pick.length > 1 ? ' 공통' : v !== '전 범위' ? ` ${v}` : ''}`
+                : `${q.year}학년도 ${/경찰/.test(target.details?.school || '') ? '경찰대' : `사관 ${v}`}`;
+            const parts: string[] = [];
+            if (fresh.length) parts.push(`${fresh.map(x => x.question_number).join(', ')}번을 담았어요`);
+            if (already.length) parts.push(`${already.map(x => x.question_number).join(', ')}번은 이미 담겨 있어요`);
+            if (missing.length) parts.push(`${missing.join(', ')}번은 이 회차에 없어요`);
+            setMsg({ ok: found.length > 0, text: `${name} — ${parts.join(' · ')}` });
+            if (fresh.length) setQuery('');
+        } catch {
+            setMsg({ ok: false, text: '문항을 불러오지 못했어요. 잠시 후 다시 해 주세요.' });
+        } finally { setBusy(false); }
+    };
+    const ranInitial = useRef(false);
+    useEffect(() => { if (initialQuery && !ranInitial.current) { ranInitial.current = true; runQuery(initialQuery); } }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
     // 칸마다 '담음 N' — 모의고사는 장바구니 문항의 학교·연도·학년·월로 바로 센다(회차를 안 열어 봐도).
     //   사관은 공통 22문항이 세 과목 회차에 같이 들어 있어 문항만으로 과목 칸을 못 가른다 → 열어 본 회차 기준.
@@ -121,6 +207,13 @@ export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart,
     const inScope = cur ? selectedIds.has(dbIdOf(cur.item)) : false;
 
     return <div className="rd-mg">
+        <form className="rd-mg-find" role="search" onSubmit={e => { e.preventDefault(); if (!busy) runQuery(query); }}>
+            <Search size={18} aria-hidden="true" />
+            <input aria-label="번호로 바로 찾기" value={query} onChange={e => { setQuery(e.target.value); setMsg(null); }} autoComplete="off"
+                placeholder={kind === 'national' ? '번호로 바로 찾기 — 예: 2024 고2 9월 21번 · 2025 수능 28~30번' : '번호로 바로 찾기 — 예: 사관 2024 미적분 29번 · 경찰대 2023 25번'} />
+            <button type="submit" disabled={busy || !query.trim()}>{busy ? '찾는 중…' : '담기'}</button>
+        </form>
+        {msg && <p role="status" className={`rd-mg-findmsg ${msg.ok ? 'is-ok' : 'is-no'}`}>{msg.text}</p>}
         {kind === 'national' && grades.length > 1 && <div className="rd-mg-grades" role="group" aria-label="학년">
             {grades.map(g => <button key={g} type="button" aria-pressed={grade === g} onClick={() => { setGrade(g); setOpenCell(''); }}>고{g}</button>)}
         </div>}

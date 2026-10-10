@@ -1274,10 +1274,11 @@ export default function QuestionBankPage() {
                                 onAddQuestions={(qs) => {
                                     const room = MAX_CART_SIZE - cart.length;
                                     const add = qs.filter(q => !cartIdSet.has(q.id)).slice(0, Math.max(0, room));
-                                    if (!add.length) { showToast(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`, 'info'); return; }
+                                    if (!add.length) { showToast(`한 시험지에 최대 ${MAX_CART_SIZE}문제까지만 담을 수 있습니다.`, 'info'); return 0; }
                                     logQb('qb_cart_add');
                                     setCart(prev => [...(Array.isArray(prev) ? prev : []), ...add]);
                                     if (add.length < qs.length) showToast(`장바구니가 가득 차 ${add.length}문항만 담았습니다.`, 'info');
+                                    return add.length;
                                 }}
                             /> : <FolderExplorer
                                 initialData={user && storageModalMode === 'exam' ? storagePrefetch.exam : undefined}
