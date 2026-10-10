@@ -16,6 +16,8 @@ export type MockQuery = {
 export type ParseResult = { ok: true; q: MockQuery } | { ok: false; reason: string };
 
 const SUBJECTS: [RegExp, string][] = [
+    // 옛 고3 가형 선택과목(2006~2010) — '미적'보다 먼저 본다
+    [/미분과\s*적분/, '미분과적분'], [/이산\s*수학|이산/, '이산수학'],
     [/확률과\s*통계|확통/, '확률과통계'], [/미적분|미적/, '미적분'], [/기하/, '기하'],
     [/가형/, '가형'], [/나형/, '나형'], [/a형/i, 'A형'], [/b형/i, 'B형'],
 ];

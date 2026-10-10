@@ -2034,4 +2034,5 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-mg-body { flex-direction: column; overflow-y: auto; }
   .rd .rd-mg-table { flex: none; max-height: 46dvh; }
   .rd .rd-mg-panel { flex: none; overflow: visible; }
+  .rd .rd-mg-body.has-open .rd-mg-panel { order: -1; }   /* 회차를 열면 번호 칸을 표 위로 — 찾기 칸 바로 아래에서 보이게 */
 }

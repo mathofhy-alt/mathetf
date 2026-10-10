@@ -22,7 +22,8 @@ const variantOf = (i: UserItem) => {
     const d = i.details || {};
     // 형·과목은 자료의 원래 제목('… 모의고사 A형 [개인DB]')에 있다 — 창이 화면용으로 새로 만든 name 에는 없다
     const whole = (s: string) => ['전과정', '전과목', '수학'].includes(s.trim());
-    const t = String(d.title || i.name || '').match(/(?:모의고사|입학시험)\s*(.*?)\s*\[/)?.[1] || '';
+    //   제목 꼴: '전국연합 … 모의고사 A형 [개인DB]' · '평가원 … 모의평가 가형 미분과적분 [개인DB]' · '… 수능 미적분II [개인DB]'
+    const t = String(d.title || i.name || '').match(/(?:모의고사|모의평가|입학시험|수능)\s+(.*?)\s*\[/)?.[1] || '';
     let v = (t && !whole(t) ? t : '') || (d.subject && !whole(d.subject) ? d.subject : '');
     // 2021학년도 이후 고3 선택과목은 옛 이름(미적분II·기하와벡터)으로 저장돼 있다 — 보이는 이름만 바로잡는다
     v = v.replace(/미적분II$/, '미적분').replace(/기하와벡터$/, '기하');
@@ -148,6 +149,8 @@ export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart,
         }
         const target = pick[0];
         setOpenCell(cellKeyOf(target)); setVariant(dbIdOf(target)); setBusy(true);
+        // 휴대폰에선 회차가 열리면 번호 칸이 표 위로 올라온다(CSS .has-open) — 맨 위로 되돌려 번호가 바로 보이게
+        setTimeout(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, 0);
         try {
             const list = await loadRound(dbIdOf(target));
             const found = q.nums.map(n => list.find(x => x.question_number === n)).filter(Boolean) as Q[];
@@ -171,6 +174,7 @@ export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart,
             setMsg({ ok: false, text: '문항을 불러오지 못했어요. 잠시 후 다시 해 주세요.' });
         } finally { setBusy(false); }
     };
+    const bodyRef = useRef<HTMLDivElement>(null);
     const ranInitial = useRef(false);
     useEffect(() => { if (initialQuery && !ranInitial.current) { ranInitial.current = true; runQuery(initialQuery); } }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -217,7 +221,7 @@ export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart,
         {kind === 'national' && grades.length > 1 && <div className="rd-mg-grades" role="group" aria-label="학년">
             {grades.map(g => <button key={g} type="button" aria-pressed={grade === g} onClick={() => { setGrade(g); setOpenCell(''); }}>고{g}</button>)}
         </div>}
-        <div className="rd-mg-body">
+        <div className={`rd-mg-body ${openCell ? 'has-open' : ''}`} ref={bodyRef}>
             <div className="rd-mg-table" role="grid" aria-label="회차 표">
                 <div className="rd-mg-row is-head" style={{ gridTemplateColumns: `56px repeat(${cols.length}, minmax(0, 1fr))` }}>
                     <span />{cols.map(c => <span key={c.key}>{c.label}</span>)}
