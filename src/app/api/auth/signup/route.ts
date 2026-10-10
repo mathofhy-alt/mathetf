@@ -3,6 +3,7 @@ import { MARKETING_CONSENT_VERSION } from '@/lib/consent';
 import { createClient } from '@supabase/supabase-js';
 import { safeSignupAttribution } from '@/lib/analytics/signup-attribution';
 import { isPhoneRegistered, PHONE_TAKEN_MESSAGE } from '@/lib/phone-registered';
+import { checkEmail } from '@/lib/email-check';
 
 // 서버에서만 사용하는 Service Role Key (관리자 권한). 절대 클라이언트로 나가면 안 됨.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -31,6 +32,10 @@ export async function POST(req: Request) {
         if (typeof password !== 'string' || password.length < 6) {
             return NextResponse.json({ success: false, message: '비밀번호는 6자리 이상이어야 합니다.' }, { status: 400 });
         }
+        // [10/10] 형식·흔한 오타 검사 — 이메일 인증을 건너뛰어서 'navercom'·'gmail.comcom' 같은 주소가 그대로 가입됐다
+        const ec = checkEmail(String(email));
+        if (!ec.ok) return NextResponse.json({ success: false, message: ec.message }, { status: 400 });
+        email = ec.email;
         phone = String(phone).replace(/[^0-9]/g, '');
 
         // 2. [핵심] 서버에서 휴대폰 인증 여부 확인 — 인증 안 된 번호면 가입 불가
