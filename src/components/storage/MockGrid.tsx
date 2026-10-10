@@ -158,17 +158,26 @@ export default function MockGrid({ kind, pool, selectedIds, onGroupSelect, cart,
             const already = found.filter(x => cartIds?.has(x.id));
             const fresh = found.filter(x => !cartIds?.has(x.id));
             // 장바구니가 가득 차면 일부만 담긴다 — 실제로 담긴 개수로 안내한다
-            const added = fresh.length ? (onAddQuestions?.(fresh) ?? fresh.length) : 0;
-            if (added < fresh.length) fresh.splice(added);
+            const want = fresh.length;
+            const added = want ? (onAddQuestions?.(fresh) ?? want) : 0;
+            const notIn = want - added;   // 장바구니가 가득 차 못 담은 개수
+            if (notIn > 0) fresh.splice(added);
             const v = variantOf(target);
             const name = q.kind === 'national'
                 ? `${q.year}년 고${q.grade} ${q.school === '수능' || target.details?.school === '수능' ? '수능' : `${q.month}월${target.details?.school === '평가원' ? ' 모평' : ''}`}${pick.length > 1 ? ' 공통' : v !== '전 범위' ? ` ${v}` : ''}`
                 : `${q.year}학년도 ${/경찰/.test(target.details?.school || '') ? '경찰대' : `사관 ${v}`}`;
+            // 이어지는 번호는 묶어서: 1, 2, 3, 5 → 1~3, 5
+            const span = (ns: number[]) => {
+                const s = Array.from(new Set(ns)).sort((a, b) => a - b); const out: string[] = [];
+                for (let i = 0; i < s.length; i++) { let j = i; while (j + 1 < s.length && s[j + 1] === s[j] + 1) j++; out.push(j - i >= 2 ? `${s[i]}~${s[j]}` : s.slice(i, j + 1).join(', ')); i = j; }
+                return out.join(', ');
+            };
             const parts: string[] = [];
-            if (fresh.length) parts.push(`${fresh.map(x => x.question_number).join(', ')}번을 담았어요`);
-            if (already.length) parts.push(`${already.map(x => x.question_number).join(', ')}번은 이미 담겨 있어요`);
-            if (missing.length) parts.push(`${missing.join(', ')}번은 이 회차에 없어요`);
-            setMsg({ ok: found.length > 0, text: `${name} — ${parts.join(' · ')}` });
+            if (fresh.length) parts.push(`${span(fresh.map(x => x.question_number))}번을 담았어요`);
+            if (already.length) parts.push(`${span(already.map(x => x.question_number))}번은 이미 담겨 있어요`);
+            if (missing.length) parts.push(`${span(missing)}번은 이 회차에 없어요`);
+            if (notIn > 0) parts.push(`장바구니가 가득 차 ${notIn}문항은 못 담았어요`);
+            setMsg({ ok: added > 0 || (already.length > 0 && notIn === 0), text: `${name} — ${parts.join(' · ')}` });
             if (fresh.length) setQuery('');
         } catch {
             setMsg({ ok: false, text: '문항을 불러오지 못했어요. 잠시 후 다시 해 주세요.' });
