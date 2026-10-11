@@ -30,20 +30,24 @@ export async function getSiteStats(): Promise<SiteStats> {
     const supabase = createAdminClient();
     const empty: SiteStats = { questionCount: 0, holdingCount: 0, schoolCount: 0, recentCount: 0, topSchools: [] };
 
+    // [10/12] 세기 실패를 0 으로 넘기면 안 된다 — 공개 문항 수 조회가 한 번 실패(시간 초과 추정)해 0 이 되고,
+    //   홈 '보유 문항 수' 가 교재 문항 6,571 만 1시간 동안 떴다(실제 64,596 + 6,571). 두 번 더 해 보고,
+    //   그래도 안 되면 정확한 수 대신 통계 추정치(planned)를 쓴다.
+    const countOf = async (build: (q: any) => any): Promise<number> => {
+        for (let i = 0; i < 3; i++) {
+            const { count, error } = await build(supabase.from('questions').select('id', { count: 'exact', head: true }));
+            if (!error && count != null) return count;
+            await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        }
+        const { count, error } = await build(supabase.from('questions').select('id', { count: 'planned', head: true }));
+        if (error || count == null) throw new Error('문항 수를 세지 못했습니다');
+        return count;
+    };
+
     try {
-        const { count } = await supabase
-            .from('questions')
-            .select('id', { count: 'exact', head: true })
-            .eq('work_status', 'sorted');
-        const { count: privateCount } = await supabase
-            .from('questions')
-            .select('id', { count: 'exact', head: true })
-            .eq('work_status', 'private');
-        const { count: recent } = await supabase
-            .from('questions')
-            .select('id', { count: 'exact', head: true })
-            .in('work_status', ['sorted', 'private'])
-            .gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString());
+        const count = await countOf(q => q.eq('work_status', 'sorted'));
+        const privateCount = await countOf(q => q.eq('work_status', 'private'));
+        const recent = await countOf(q => q.in('work_status', ['sorted', 'private']).gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString()));
 
         // range 로 끝까지. 1,565행이면 2번이면 끝난다.
         const bySchool: Record<string, number> = {};
