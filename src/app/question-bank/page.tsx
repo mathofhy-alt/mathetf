@@ -8,6 +8,8 @@ import { DRAFT_KEY, parseDraft, draftContext, shouldRestoreDraft, shouldSearchRe
 import { logQuestionBankEvent, questionBankSession } from '@/lib/analytics/question-bank';
 import SaveLocationModal from '@/components/storage/SaveLocationModal';
 import AutoGenModal from '@/components/question-bank/AutoGenModal';
+import ChatGenModal from '@/components/question-bank/ChatGenModal';
+import QbBuddy from '@/components/question-bank/QbBuddy';
 import FolderExplorer from '@/components/storage/FolderExplorer';
 import SourceCatalog from '@/components/storage/SourceCatalog';
 import FilterSidebar from '@/components/question-bank/FilterSidebar';
@@ -151,6 +153,9 @@ export default function QuestionBankPage() {
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const dragOrderRef = useRef<any[]>([]); // 드래그 중 순서를 ref에만 저장 (re-render 최소화)
     const [showAutoModal, setShowAutoModal] = useState(false);
+    const [showChatModal, setShowChatModal] = useState(false);   // [10/11] AI 시험지 도우미(말로 요청)
+    const [chatMounted, setChatMounted] = useState(false);
+    const [buddyMood, setBuddyMood] = useState<'idle' | 'busy' | 'done'>('idle');
     const [regenerateItem,setRegenerateItem]=useState<any>(null);
     const [user, setUser] = useState<any>(null);
     const [isDbInitialized, setIsDbInitialized] = useState(false);
@@ -2123,6 +2128,35 @@ export default function QuestionBankPage() {
 
                 {ladderTarget && <LadderModal target={ladderTarget} cartIds={cartIdSet} onClose={() => setLadderTarget(null)} onAdd={addLadder} />}
                 {showPass && user && <PassModal user={user} info={passInfo} onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); showToast('이용권이 시작되었습니다. 다시 저장을 눌러 주세요.', 'success'); }} />}
+                {/* [10/11] AI 시험지 도우미 — 오른쪽 아래 캐릭터. 한 번 열면 닫아도 대화를 남긴다(숨기기만) */}
+                <QbBuddy open={showChatModal} mood={buddyMood} onToggle={() => { setChatMounted(true); setShowChatModal(v => !v); }} />
+                {chatMounted && (
+                    <ChatGenModal
+                        open={showChatModal}
+                        onMood={setBuddyMood}
+                        onClose={() => setShowChatModal(false)}
+                        // 말로 요청할 땐 범위도 말로 정한다 — 왼쪽에서 골라 둔(또는 복원된) 자료로 좁히면
+                        // '미적분I 정적분' 처럼 그 자료에 없는 단원을 못 찾아 되묻기만 했다(10/11 사장님 화면: 복원된 중동고 1개)
+                        selectedDbIds={purchasedDbs.map((d: any) => d.id)}
+                        cartIds={cart.map(q => q.id)}
+                        excludedQuestionIds={excludedQuestionIds}
+                        includeOffCurriculum={filterState?.includeOffCurriculum === true}
+                        maxCart={MAX_CART_SIZE}
+                        scopeLabel="전체 출제자료"
+                        onApply={(newQuestions, replaceIds) => {
+                            // 자동 출제와 같은 합치기 — 이 창이 직전에 담은 문항만 바꿔 끼우고, 직접 고른 문항은 그대로 둔다
+                            const drop = new Set(replaceIds);
+                            const newIds = new Set(newQuestions.map((q: any) => q.id));
+                            const existing = cart.filter(c => !drop.has(c.id) && !newIds.has(c.id));
+                            const kept = newQuestions.slice(0, Math.max(0, MAX_CART_SIZE - existing.length));
+                            setCart([...existing, ...kept]);
+                            setRecentOpen(false);
+                            logQb('qb_autogen', `chat:${kept.length}`);
+                            setViewMode('review');   // 안내는 대화창 안에 나온다 — 토스트를 또 띄우지 않는다
+                            return kept.length;
+                        }}
+                    />
+                )}
                 {showAutoModal && (
                     <AutoGenModal
                         initialFilters={regenerateItem?.filters||filterState}
