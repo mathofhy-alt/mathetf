@@ -60,8 +60,9 @@ export function RdHomeShowcase() {
 export function RdHomeStats({ questionCount, recentCount }: { questionCount: number; recentCount: number }) {
     return (
         <section className="rd-wrap rd-stats" aria-label="수학ETF 자료 규모">
-            <div className="rd-stat"><b>{questionCount.toLocaleString()}</b><span>보유 문항 수</span></div>
-            <div className="rd-stat"><b>{recentCount.toLocaleString()}</b><span>최근 7일간 업로드된 문항 수</span></div>
+            {/* [10/12] 세기 실패(0)면 숫자 칸을 빼고 보여 준다 — 틀린 숫자가 1시간 캐시에 남았던 일 */}
+            {questionCount > 0 && <div className="rd-stat"><b>{questionCount.toLocaleString()}</b><span>보유 문항 수</span></div>}
+            {questionCount > 0 && <div className="rd-stat"><b>{recentCount.toLocaleString()}</b><span>최근 7일간 업로드된 문항 수</span></div>}
             <div className="rd-stat"><b>2006–2026</b><span>전국연합, 평가원, 수능</span></div>
         </section>
     );
