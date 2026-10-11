@@ -28,6 +28,12 @@ export function BuddyAvatar({ size = 36, mood = 'idle' }: { size?: number; mood?
 export default function QbBuddy({ open, onToggle, mood = 'idle' }: { open: boolean; onToggle: () => void; mood?: BuddyMood }) {
     const [hint, setHint] = useState(false);
 
+    // 미리 데우기 — 화면이 뜨고 잠시 뒤 챗봇 서버의 범위 준비를 해 둔다(첫 요청 17초 → 대화를 열 때쯤엔 준비 끝, AI 비용 0)
+    useEffect(() => {
+        const t = setTimeout(() => { fetch('/api/pro/chat-generate', { method: 'GET' }).catch(() => { }); }, 2000);
+        return () => clearTimeout(t);
+    }, []);
+
     // 처음 몇 번만 무엇을 하는 아이인지 말풍선으로(이 브라우저에서 3번)
     useEffect(() => {
         let n = 0;

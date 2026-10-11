@@ -38,6 +38,38 @@ function tooMany(userId: string) {
     return list.length > 20;
 }
 
+/** 이용 가능한 모든 출제자료 id — 자료 목록이 아직 안 불러와진 채 보낸 요청(빈 목록)도 전체로 찾는다(10/12) */
+async function wholeIds(): Promise<string[]> {
+    const { catalog } = await resolveRequestScope([]).catch(() => ({ catalog: [] as any[] }));
+    return catalog.filter((db: any) => !db.availability && !db.private).map((db: any) => db.id);
+}
+
+/** 범위 준비(단원 목록·태그 수·전체에서 뺄 문항)를 한꺼번에. 서버가 새로 뜬 뒤 첫 요청이 17초 걸렸다(10/12 운영) */
+async function prepare(selectedDbs: string[], includeOff: boolean) {
+    const ids = selectedDbs.length ? selectedDbs : await wholeIds();
+    const { catalog, scope } = await resolveRequestScope(ids);
+    const whole = isWholeCatalog(catalog, ids);
+    const [facets, counts, ineligible] = await Promise.all([
+        scope.length ? cachedFacets(catalog, scope, whole, includeOff) : Promise.resolve([]),
+        conceptCounts(),
+        whole ? wholeCatalogIneligible(catalog) : Promise.resolve(null),
+    ]);
+    const concepts: ConceptCatalog = {};
+    for (const f of facets as any[]) {
+        if (!f?.subject || !f?.unit || (f.is_off_curriculum && !includeOff)) continue;
+        const t = `${f.subject}|${f.unit}`;
+        concepts[t] = { ...(concepts[t] || {}), ...(counts[t] || {}) };
+    }
+    return { scope, whole, ineligible, concepts };
+}
+
+/** 미리 데우기 — 시험지 만들기 화면이 열리면 부른다. AI 는 부르지 않는다(비용 0) */
+export async function GET() {
+    const t = Date.now();
+    try { await prepare([], false); return NextResponse.json({ ok: true, ms: Date.now() - t }); }
+    catch { return NextResponse.json({ ok: false }, { status: 200 }); }
+}
+
 export async function POST(req: NextRequest) {
     const { data: { user } } = await createClient().auth.getUser();
     if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
@@ -62,29 +94,22 @@ export async function POST(req: NextRequest) {
     };
 
     try {
-        const { catalog, scope } = await resolveRequestScope(body?.selectedDbs);
-        if (!scope.length) return NextResponse.json({ error: '먼저 출제할 자료를 선택해주세요.' }, { status: 400 });
-        const whole = isWholeCatalog(catalog, body?.selectedDbs);
+        const selected: string[] = Array.isArray(body?.selectedDbs) ? body.selectedDbs.filter((x: unknown) => typeof x === 'string') : [];
+        const { scope, whole, ineligible, concepts } = await prepare(selected, includeOff);
+        const tPrep = Date.now() - t0;
+        if (!scope.length || !Object.keys(concepts).length) return NextResponse.json({ error: '출제할 자료를 불러오지 못했어요. 잠시 뒤에 다시 해 주세요.' }, { status: 503 });
 
-        // 고른 자료에 실제로 있는 '과목|단원' 만 AI 에게 보여 준다
-        const [facets, counts] = await Promise.all([cachedFacets(catalog, scope, whole, includeOff), conceptCounts()]);
-        const concepts: ConceptCatalog = {};
-        for (const f of facets as any[]) {
-            if (!f?.subject || !f?.unit || (f.is_off_curriculum && !includeOff)) continue;
-            const t = `${f.subject}|${f.unit}`;
-            concepts[t] = { ...(concepts[t] || {}), ...(counts[t] || {}) };
-        }
-        if (!Object.keys(concepts).length) return NextResponse.json({ error: '고른 자료에 출제할 단원이 없습니다.' }, { status: 400 });
-
-        const [ineligible] = await Promise.all([whole ? wholeCatalogIneligible(catalog) : Promise.resolve(null)]);
         const useWhole = whole && ineligible !== null;   // '전체' 빠른길 함수가 없으면 범위 규칙 길로
+        let dbMs = 0;
         const out = await buildFromChat(messages, concepts, maxCount, lastPlan, async (plan, targets, query) => {
+            const td = Date.now();
             const { data, error } = await createAdminClient().rpc('question_bank_topic', {
                 p_scope: scope, p_whole: useWhole, p_excluded: useWhole ? [...excluded, ...(ineligible || [])] : excluded,
                 p_targets: targets, p_min: plan.minDifficulty, p_max: plan.maxDifficulty, p_include_off: includeOff,
                 p_concepts: plan.concepts, p_patterns: plan.keywords.map(likePattern),
                 p_query: query ? JSON.stringify(query) : null, p_limit: 600, ...(hasFilter(plan) ? { p_filter: plan.filters } : {}),
             });
+            dbMs += Date.now() - td;
             if (error) throw new Error(error.message);
             return (data || []) as any[];
         }, async (ids) => {
@@ -95,7 +120,9 @@ export async function POST(req: NextRequest) {
             }
             return m;
         });
-        log({ plan: out.plan, reply: out.reply, by: out.by, question_ids: out.chosen.map(c => c.id) });
+        // 단계별 시간(ms) — 느린 곳을 숫자로 찾으려고. ai = AI 조건 해석 + 임베딩(나머지)
+        const total = Date.now() - t0;
+        log({ plan: { ...out.plan, _ms: { prep: tPrep, db: dbMs, ai: total - tPrep - dbMs, total } }, reply: out.reply, by: out.by, question_ids: out.chosen.map(c => c.id) });
         return NextResponse.json({ reply: out.reply, plan: out.plan, by: out.by, questions: out.chosen.map(c => ({ id: c.id, difficulty: c.difficulty })) });
     } catch (e) {
         console.error('[chat-generate]', (e as Error).message);
