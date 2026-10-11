@@ -2036,3 +2036,99 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-mg-panel { flex: none; overflow: visible; }
   .rd .rd-mg-body.has-open .rd-mg-panel { order: -1; }   /* 회차를 열면 번호 칸을 표 위로 — 찾기 칸 바로 아래에서 보이게 */
 }
+
+/* 시험지출제 AI 시험지 도우미 — 오른쪽 아래 캐릭터 + 그 위에 붙는 대화창 (10/11) */
+.qbb { position: fixed; right: 20px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+.qbb > * { pointer-events: auto; }
+.qbb-btn { border: 0; background: none; padding: 0; cursor: pointer; line-height: 0; width: 112px; height: 112px; filter: drop-shadow(0 10px 16px rgba(31, 64, 104, .22)); transition: transform .18s ease; }
+.qbb-btn:hover { transform: translateY(-4px) scale(1.05); }
+.qbb-btn:active { transform: scale(.95); }
+.qbb-btn:focus-visible { outline: 3px solid #497AB7; outline-offset: 2px; border-radius: 28px; }
+.qbb-stage { display: block; position: relative; width: 100%; height: 100%; transform-origin: 50% 92%; }
+.qbb-stage img { width: 100%; height: 100%; object-fit: contain; user-select: none; pointer-events: none; transform-origin: 50% 92%; }
+/* 자판기 이야기: 장면 5장(바라봄·버튼 누름·시험지 뱉음·들고 신남·들고 서 있기)을 겹쳐 두고 2.4초씩 차례로. 한 바퀴 12초.
+   음수 지연으로 장면 i 는 [i×2.4초, (i+1)×2.4초) 에만 보인다 — JS 타이머 없이 */
+.qbb-scene { position: absolute; inset: 0; opacity: 0; animation: qbb-scene 12s linear infinite; }
+.qbb-scene-0 { animation-delay: 0s; }
+.qbb-scene-1 { animation-delay: -9.6s; }
+.qbb-scene-2 { animation-delay: -7.2s; }
+.qbb-scene-3 { animation-delay: -4.8s; }
+.qbb-scene-4 { animation-delay: -2.4s; }
+@keyframes qbb-scene { 0% { opacity: 0; } 1.5% { opacity: 1; } 18.5% { opacity: 1; } 20%, 100% { opacity: 0; } }
+/* 장면마다 몸짓 */
+.qbb-scene-0 img { animation: qbb-bob 2.4s ease-in-out infinite; }
+.qbb-scene-1 img { animation: qbb-push .6s ease-in-out infinite; }
+.qbb-scene-2 img { animation: qbb-rattle .18s linear infinite; }
+.qbb-scene-3 img { animation: qbb-jump .7s cubic-bezier(.3, 1.6, .5, 1) infinite; }
+.qbb-scene-4 img { animation: qbb-sway 1.2s ease-in-out infinite; }
+@keyframes qbb-push { 0%, 100% { transform: translateX(0); } 40% { transform: translateX(-3px) scale(.99); } }
+@keyframes qbb-rattle { 0%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-1.5px) rotate(-1deg); } 75% { transform: translateX(1.5px) rotate(1deg); } }
+/* 대화창이 열렸을 때 — 상태 표정 */
+.qbb-stage.is-mood-idle img { animation: qbb-bob 3s ease-in-out infinite; }
+.qbb-stage.is-mood-busy img { animation: qbb-rattle .18s linear infinite; }
+.qbb-stage.is-mood-done img { animation: qbb-jump .7s cubic-bezier(.3, 1.6, .5, 1) infinite; }
+.qbb-stage[class*="is-mood-"] { animation: qbb-in .3s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes qbb-in { from { opacity: 0; transform: scale(.82) translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes qbb-bob { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-4px) scale(1.01, .99); } }
+@keyframes qbb-sway { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-5deg); } }
+@keyframes qbb-hop { 0%, 100% { transform: translateY(0) scale(1, 1); } 40% { transform: translateY(-9px) scale(.97, 1.04); } 80% { transform: translateY(0) scale(1.05, .95); } }
+@keyframes qbb-droop { 0% { transform: none; } 15% { transform: translateX(-3px) rotate(-2deg); } 25% { transform: translateX(3px) rotate(2deg); } 40%, 100% { transform: translateY(4px) scale(1.02, .96); } }
+@keyframes qbb-scribble { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-1.5deg) translateX(-1px); } }
+@keyframes qbb-nod { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(2deg) translateY(1px); } }
+@keyframes qbb-jump { 0%, 100% { transform: translateY(0) scale(1.04, .96); } 45% { transform: translateY(-14px) scale(.96, 1.06) rotate(-3deg); } 70% { transform: translateY(-6px) rotate(2deg); } }
+@keyframes qbb-tilt { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-4deg) translateY(-2px); } }
+/* 대화창 안 작은 얼굴 — 머리 쪽만 동그랗게 */
+.qbb-ava { flex: none; display: inline-block; border-radius: 50%; overflow: hidden; background: linear-gradient(135deg, #E7F0FA, #E3F6F4); box-shadow: inset 0 0 0 1px rgba(73, 122, 183, .15); }
+.qbb-ava img { width: 100%; height: 100%; object-fit: contain; transform: scale(1.18) translateY(4%); }
+.qbb-ava.is-busy img { animation: qbb-tilt 1.6s ease-in-out infinite; }
+.qbb-bubble { position: relative; max-width: 240px; border: 0; cursor: pointer; text-align: left; background: #fff; color: #17202C; font: inherit; font-size: 14px; font-weight: 800; line-height: 1.4; padding: 12px 14px; border-radius: 16px 16px 4px 16px; box-shadow: 0 12px 30px rgba(23, 32, 44, .16), 0 0 0 1px #ECEFF2; animation: qbb-pop .35s cubic-bezier(.2, 1.4, .4, 1) both; }
+.qbb-bubble small { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 600; color: #6B7684; }
+@keyframes qbb-pop { from { opacity: 0; transform: translateY(8px) scale(.9); } to { opacity: 1; transform: none; } }
+/* 동작 줄이기: globals.css(.01ms)·suite.css(.site-suite * { animation: none !important }) 가 이 설정에서 애니메이션을 다 꺼서
+   캐릭터가 아예 안 보였다(사장님 Chrome 이 이 설정, 10/11 진단). 캐릭터는 사용자 요청대로 움직여야 하므로 더 구체적인 선택자로 되살린다 */
+@media (prefers-reduced-motion: reduce) {
+  .qbb .qbb-scene-0 { animation: qbb-scene 12s linear 0s infinite !important; }
+  .qbb .qbb-scene-1 { animation: qbb-scene 12s linear -9.6s infinite !important; }
+  .qbb .qbb-scene-2 { animation: qbb-scene 12s linear -7.2s infinite !important; }
+  .qbb .qbb-scene-3 { animation: qbb-scene 12s linear -4.8s infinite !important; }
+  .qbb .qbb-scene-4 { animation: qbb-scene 12s linear -2.4s infinite !important; }
+  .qbb .qbb-scene-0 img { animation: qbb-bob 2.4s ease-in-out infinite !important; }
+  .qbb .qbb-scene-1 img { animation: qbb-push .6s ease-in-out infinite !important; }
+  .qbb .qbb-scene-2 img { animation: qbb-rattle .18s linear infinite !important; }
+  .qbb .qbb-scene-3 img { animation: qbb-jump .7s cubic-bezier(.3, 1.6, .5, 1) infinite !important; }
+  .qbb .qbb-scene-4 img { animation: qbb-sway 1.2s ease-in-out infinite !important; }
+  .qbb .qbb-stage.is-mood-idle img { animation: qbb-bob 3s ease-in-out infinite !important; }
+  .qbb .qbb-stage.is-mood-busy img { animation: qbb-rattle .18s linear infinite !important; }
+  .qbb-panel .qbb-ava.is-busy img { animation: qbb-tilt 1.6s ease-in-out infinite !important; }
+  .qbb .qbb-stage.is-mood-done img { animation: qbb-jump .7s cubic-bezier(.3, 1.6, .5, 1) infinite !important; }
+  .qbb .qbb-bubble { animation: qbb-pop .35s cubic-bezier(.2, 1.4, .4, 1) both !important; }
+}
+
+.rd.qbb-panel { position: fixed; right: 20px; bottom: 136px; z-index: 61; width: 400px; height: min(620px, calc(100dvh - 140px)); display: flex; flex-direction: column; background: #fff; border-radius: 24px; padding: 16px 16px 14px; box-shadow: 0 24px 64px rgba(23, 32, 44, .22), 0 0 0 1px #ECEFF2; animation: qbb-pop .25s ease both; transform-origin: bottom right; }
+.rd.qbb-panel[hidden] { display: none; }
+.rd .qbb-head { display: flex; align-items: center; gap: 10px; padding: 0 2px 12px; border-bottom: 1px solid var(--rd-line); }
+.rd .qbb-head h3 { margin: 0; font-size: 17px; font-weight: 800; color: var(--rd-text); }
+.rd .qbb-head p { margin: 2px 0 0; font-size: 12.5px; color: #6B7684; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd .qbb-x { border: 0; background: none; padding: 6px; border-radius: 10px; color: #6B7684; cursor: pointer; line-height: 0; }
+.rd .qbb-x:hover { background: var(--rd-panel); }
+.rd .qbb-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 14px 2px 6px; }
+.rd .qbb-row { display: flex; align-items: flex-end; gap: 6px; max-width: 94%; }
+.rd .qbb-row .rd-chatgen-msg { max-width: none; }
+.rd .qbb-done { margin-top: 8px; border: 0; border-radius: 12px; padding: 10px; background: #EAF2FB; color: #2F5E96; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.rd .qbb-done:hover { background: #DCE9F8; }
+.rd .rd-chatgen-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-left: 36px; }
+.rd .rd-chatgen-empty .rd-chip-opt { height: auto; min-height: 36px; padding: 8px 14px; text-align: left; line-height: 1.4; }
+.rd .rd-chatgen-msg { max-width: 88%; padding: 10px 14px; border-radius: 16px; font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.rd .rd-chatgen-msg.is-user { align-self: flex-end; background: #497AB7; color: #fff; border-bottom-right-radius: 6px; }
+.rd .rd-chatgen-msg.is-assistant { align-self: flex-start; background: var(--rd-panel); color: var(--rd-text); border-bottom-left-radius: 6px; display: flex; gap: 8px; align-items: flex-start; }
+.rd .rd-chatgen-login { align-self: flex-start; margin-left: 36px; font-weight: 800; color: var(--rd-ink); text-decoration: underline; }
+.rd .rd-chatgen-form { margin-top: 10px; display: flex; gap: 8px; align-items: stretch; }
+.rd .rd-chatgen-form textarea { flex: 1; resize: none; min-height: 52px; padding: 13px 14px; font-size: 16px; font-weight: 500; line-height: 1.45; }
+.rd .rd-chatgen-form .rd-btn { padding: 0 16px; min-height: 52px; border-radius: 14px; background: #497AB7; }
+.rd .rd-chatgen-form .rd-btn:hover { background: #3E6A9F; }
+@media (max-width: 640px) {
+  .qbb { right: 10px; bottom: 10px; }
+  .qbb-btn { width: 88px; height: 88px; }
+  .rd.qbb-panel { left: 0; right: 0; bottom: 0; width: auto; height: 88dvh; border-radius: 24px 24px 0 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .qbb.is-open { display: none; }
+}
