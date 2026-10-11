@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, Upload, AlertTriangle, FileDown, Database } from 'lucide-react';
+import { Package, Upload, AlertTriangle, FileDown, Database, MessageSquare } from 'lucide-react';
 import AdminQuestionsClient from './questions/AdminQuestionsClient';
 import AdminIngestPage from './ingest/page';
 import AdminReportsClient from './reports/AdminReportsClient';
 import RawUploadsAdmin from './raw-uploads/page';
 import DbRequestsAdmin from './db-requests/page';
+import ChatLogsAdmin from './chat-logs/page';
 
 interface AdminDashboardClientProps {
     initialQuestionsData: {
@@ -18,13 +19,14 @@ interface AdminDashboardClientProps {
 }
 
 export default function AdminDashboardClient({ initialQuestionsData }: AdminDashboardClientProps) {
-    const [activeTab, setActiveTab] = useState<'questions' | 'ingest' | 'reports' | 'raw-uploads' | 'db-requests'>('questions');
+    const [activeTab, setActiveTab] = useState<'questions' | 'ingest' | 'reports' | 'raw-uploads' | 'db-requests' | 'chat-logs'>('questions');
 
     const tabs = [
         { id: 'questions', label: '문제 관리', icon: Package },
         { id: 'ingest', label: '문제 업로드', icon: Upload },
         { id: 'raw-uploads', label: '제보 확인', icon: FileDown },
         { id: 'db-requests', label: '개인DB 요청', icon: Database },
+        { id: 'chat-logs', label: '챗봇 대화', icon: MessageSquare },
         { id: 'reports', label: '신고 관리', icon: AlertTriangle },
     ] as const;
 
@@ -90,6 +92,11 @@ export default function AdminDashboardClient({ initialQuestionsData }: AdminDash
                 {activeTab === 'db-requests' && (
                     <div className="animate-in fade-in duration-300">
                         <DbRequestsAdmin />
+                    </div>
+                )}
+                {activeTab === 'chat-logs' && (
+                    <div className="animate-in fade-in duration-300">
+                        <ChatLogsAdmin />
                     </div>
                 )}
                 {activeTab === 'raw-uploads' && (
