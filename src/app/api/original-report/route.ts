@@ -29,6 +29,8 @@ export const dynamic = 'force-dynamic';
 
 const BUCKET = 'exam-materials';
 const MAX_FILES = 30;
+const MAX_FILES_BULK = 100;   // [10/13] '여러 회차 한꺼번에' — 강사의 학교 기출 묶음
+const BULK_LABEL = '여러 회차';
 const MAX_BYTES = 20 * 1024 * 1024;
 const OK_TYPES: Record<string, string> = {
     'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif', 'application/pdf': 'pdf',
@@ -85,16 +87,17 @@ export async function GET(req: NextRequest) {
         const reports = (data || []).map(r => {
             let d: any = {};
             try { d = JSON.parse(r.description || '{}') || {}; } catch { }
+            if (d.split) return null;   // [10/13] 회차로 나눈 묶음은 숨기고 나뉜 회차들을 보여 준다
             return {
                 id: r.id, created_at: r.created_at,
-                title: `${r.school} ${r.exam_year}년 ${r.grade}학년 ${r.semester}학기 ${r.exam_type} ${r.subject}`,
+                title: d.bulk ? `${r.school} 여러 회차 묶음 (회차 확인 중)` : `${r.school} ${r.exam_year}년 ${r.grade}학년 ${r.semester}학기 ${r.exam_type} ${r.subject}`,
                 count: d.rejected ? (Number(d.removed_files) || 0) : Array.isArray(d.files) ? d.files.length : 1,   // 반려 때 파일은 지우지만 올린 장수는 그대로 보여 준다 note: d.note || null,
                 admin_reply: d.admin_reply || null, replied_at: d.replied_at || null,
                 rejected: d.rejected === true,
                 reward: reward.get(r.id) ?? null,
                 typed: typed.get(r.id) ?? null,
             };
-        });
+        }).filter(Boolean);
         return NextResponse.json({ reports }, { headers: { 'Cache-Control': 'private, no-store' } });
     }
     const code = req.nextUrl.searchParams.get('code');
@@ -117,7 +120,8 @@ export async function POST(req: NextRequest) {
 
     if (body.action === 'sign') {
         const files = Array.isArray(body.files) ? body.files : [];
-        if (files.length < 1 || files.length > MAX_FILES) return NextResponse.json({ error: `사진은 1~${MAX_FILES}장까지 올릴 수 있어요.` }, { status: 400 });
+        const max = body.bulk ? MAX_FILES_BULK : MAX_FILES;
+        if (files.length < 1 || files.length > max) return NextResponse.json({ error: `파일은 1~${max}개까지 올릴 수 있어요.` }, { status: 400 });
         for (const f of files) {
             if (!OK_TYPES[f?.type]) return NextResponse.json({ error: `${f?.name || '파일'}: 사진(JPG·PNG·HEIC) 또는 PDF만 올릴 수 있어요.` }, { status: 400 });
             if (!(f.size > 0) || f.size > MAX_BYTES) return NextResponse.json({ error: `${f?.name || '파일'}: 한 장에 20MB까지 올릴 수 있어요.` }, { status: 400 });
@@ -138,20 +142,43 @@ export async function POST(req: NextRequest) {
         const picked = BY_CODE.get(String(m.code || ''));
         if (!picked) return NextResponse.json({ error: '학교는 목록에서 골라주세요.' }, { status: 400 });
         const school = picked.name, region = picked.region;
+        const paths: string[] = Array.isArray(body.paths) ? body.paths.filter((p: unknown) => typeof p === 'string') : [];
+        const listedOk = async () => {
+            const { data: listed } = await admin.storage.from(BUCKET).list(user.id, { limit: 1000, search: 'report_' });
+            const have = new Set((listed || []).map(o => `${user.id}/${o.name}`));
+            return paths.every(p => have.has(p));
+        };
+        const displayName = user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown';
+        // [10/13] 여러 회차 묶음 — 회차는 운영자가 관리자 화면에서 나눈다(raw-uploads PATCH split). 묶음째로는 보상이 안 나간다(approveSubmission)
+        if (m.bulk) {
+            const note = String(m.note || '').trim().slice(0, 300);
+            if (paths.length < 1 || paths.length > MAX_FILES_BULK || paths.some(p => !p.startsWith(`${user.id}/report_`)))
+                return NextResponse.json({ error: '올린 파일 정보를 확인할 수 없습니다. 다시 시도해주세요.' }, { status: 400 });
+            if (!(await listedOk())) return NextResponse.json({ error: '파일 업로드가 끝나지 않았어요. 다시 시도해주세요.' }, { status: 400 });
+            const { data: row, error } = await admin.from('exam_materials').insert({
+                uploader_id: user.id, uploader_name: displayName,
+                school, region, district: picked.district,
+                exam_year: new Date().getFullYear(), grade: 1, semester: 1, exam_type: BULK_LABEL, subject: BULK_LABEL,
+                title: `${school} ${BULK_LABEL} [원본제보 묶음 ${paths.length}개]`,
+                file_type: paths[0].endsWith('.pdf') ? 'PDF' : 'IMAGE',
+                content_type: '원본제보', file_path: paths[0],
+                description: JSON.stringify({ files: paths, note, bulk: true, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind } }),
+                price: 0, sales_count: 0,
+            }).select('id').single();
+            if (error) { console.error('[original-report] bulk insert', error); return NextResponse.json({ error: '제보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 }); }
+            return NextResponse.json({ ok: true, id: row.id });
+        }
         const year = Number(m.year), grade = Number(m.grade), semester = Number(m.semester);
         const examType = ['중간고사', '기말고사'].includes(m.examType) ? m.examType : '';
         const subject = String(m.subject || '').trim().slice(0, 20);
         const note = String(m.note || '').trim().slice(0, 300);
-        const paths: string[] = Array.isArray(body.paths) ? body.paths.filter((p: unknown) => typeof p === 'string') : [];
         if (!(year >= REPORT_MIN_YEAR && year <= new Date().getFullYear() + 1) || ![1, 2, 3].includes(grade) || ![1, 2].includes(semester) || !examType || !subject)
             return NextResponse.json({ error: '시험 정보(연도·학년·학기·시험·과목)를 확인해주세요.' }, { status: 400 });
         if (paths.length < 1 || paths.length > MAX_FILES || paths.some(p => !p.startsWith(`${user.id}/report_`)))
             return NextResponse.json({ error: '올린 사진 정보를 확인할 수 없습니다. 다시 시도해주세요.' }, { status: 400 });
 
         // 올렸다고 한 파일이 실제로 저장소에 있는지
-        const { data: listed } = await admin.storage.from(BUCKET).list(user.id, { limit: 1000, search: 'report_' });
-        const have = new Set((listed || []).map(o => `${user.id}/${o.name}`));
-        if (paths.some(p => !have.has(p))) return NextResponse.json({ error: '사진 업로드가 끝나지 않았어요. 다시 시도해주세요.' }, { status: 400 });
+        if (!(await listedOk())) return NextResponse.json({ error: '사진 업로드가 끝나지 않았어요. 다시 시도해주세요.' }, { status: 400 });
 
         // 중복: 이미 보유한 시험(정식 자료) / 이미 접수된 같은 시험 제보 — 화면에서도 미리 막지만 서버에서 다시 확인
         const { owned, pending } = await examsOf(picked);
@@ -162,7 +189,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: '같은 시험의 제보가 이미 접수되어 검토 중이에요. 조금만 기다려주세요!' }, { status: 409 });
 
         const first = paths[0];
-        const displayName = user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown';
         const { data: row, error } = await admin.from('exam_materials').insert({
             uploader_id: user.id,
             uploader_name: displayName,

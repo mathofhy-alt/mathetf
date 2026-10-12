@@ -67,7 +67,30 @@ export default function RawUploadsAdmin() {
     const [tab, setTab] = useState<'open' | 'done' | 'rejected'>('open');
     // [10/8] 반려 — 사유를 남기고 파일은 지우고 같은 시험을 다시 신청할 수 있게 연다
     const isRejected = (row: any) => { try { return JSON.parse(row.description || '{}').rejected === true; } catch { return false; } };
-    const tabOf = (u: any) => rewardedIds.has(u.id) ? 'done' : isRejected(u) ? 'rejected' : 'open';
+    // [10/13] 여러 회차 묶음 — 회차로 나누면 '채택됨' 탭으로(할 일은 나뉜 회차들)
+    const descOf = (row: any): any => { try { return JSON.parse(row.description || '{}') || {}; } catch { return {}; } };
+    const isBulk = (row: any) => descOf(row).bulk === true;
+    const tabOf = (u: any) => rewardedIds.has(u.id) || descOf(u).split ? 'done' : isRejected(u) ? 'rejected' : 'open';
+    const [splitDraft, setSplitDraft] = useState<Record<string, string>>({});
+    const [splitting, setSplitting] = useState<string | null>(null);
+    // 한 줄 = 한 회차: '2024 1 2 기말 공통수학2' 또는 파일 번호까지 '2024 1 2 기말 공통수학2 1-12'
+    const parseSplit = (text: string) => text.split('\n').map(l => l.trim()).filter(Boolean).map((l, i) => {
+        const m = l.match(/^(20\d\d)\s*년?\s+([123])\s*(?:학년)?\s+([12])\s*(?:학기)?\s+(중간|기말)(?:고사)?\s+(\S+)(?:\s+(\d+)\s*[-~]\s*(\d+))?$/);
+        if (!m) throw new Error(`${i + 1}번째 줄을 읽지 못했습니다: "${l}"\n형식: 2024 1 2 기말 공통수학2 [1-12]`);
+        return { year: Number(m[1]), grade: Number(m[2]), semester: Number(m[3]), examType: m[4] + '고사', subject: m[5], from: m[6] ? Number(m[6]) : undefined, to: m[7] ? Number(m[7]) : undefined };
+    });
+    const splitBulk = async (row: any) => {
+        let items; try { items = parseSplit(splitDraft[row.id] || ''); } catch (e: any) { alert(e.message); return; }
+        if (!items.length) { alert('나눌 회차를 한 줄에 하나씩 적어 주세요.'); return; }
+        if (!confirm(`이 묶음을 ${items.length}개 회차로 나눌까요?\n\n${items.map(x => `· ${x.year}년 ${x.grade}학년 ${x.semester}학기 ${x.examType} ${x.subject}${x.from ? ` (파일 ${x.from}~${x.to})` : ''}`).join('\n')}\n\n나뉜 회차마다 따로 채택(${REPORT_REWARD_LABEL})합니다.`)) return;
+        setSplitting(row.id);
+        const r = await fetch('/api/admin/raw-uploads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, split: items }) });
+        const j = await r.json().catch(() => ({}));
+        setSplitting(null);
+        if (!r.ok) { alert('나누지 못했습니다: ' + (j.error || r.status)); return; }
+        setUploads(prev => [...(j.made || []), ...prev.map(x => x.id === row.id ? { ...x, description: j.description } : x)]);
+        alert(`${(j.made || []).length}개 회차로 나눴습니다. '검토 중' 탭에서 회차마다 채택하세요.`);
+    };
     const shown = uploads.filter(u => tabOf(u) === tab);
     const rejectReport = async (row: any) => {
         const reason = (drafts[row.id] ?? reportReply(row).text).trim();
@@ -240,8 +263,18 @@ ${smsLabel[j.sms] || ''}`);
                                                     <div className="text-xs text-slate-500 mt-0.5">
                                                         {file.exam_year}년도 {file.grade}학년 {file.semester === 1 ? '1학기' : '2학기'} {file.exam_type} ({file.subject})
                                                     </div>
-                                                    <div className="text-xs text-brand-600 mt-0.5 font-medium">{file.title} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">{reportFiles(file).length}장</span></div>
+                                                    <div className="text-xs text-brand-600 mt-0.5 font-medium">{file.title} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">{reportFiles(file).length}장</span>
+                                                        {isBulk(file) && <span className="ml-1 rounded bg-violet-100 px-1.5 py-0.5 text-violet-700 font-bold">여러 회차 묶음{descOf(file).split ? ` → ${descOf(file).split.length}회차로 나눔` : ''}</span>}
+                                                        {descOf(file).from_bulk && <span className="ml-1 rounded bg-violet-50 px-1.5 py-0.5 text-violet-600">묶음에서 나뉨</span>}</div>
                                                     {reportNote(file) && <div className="text-xs text-slate-600 mt-1 bg-slate-50 rounded px-2 py-1">💬 {reportNote(file)}</div>}
+                                                    {isBulk(file) && !descOf(file).split && !isRejected(file) && (
+                                                        <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
+                                                            <label className="block text-xs font-bold text-violet-800 mb-1">회차로 나누기 <span className="font-normal text-violet-600">— 한 줄에 한 회차: 연도 학년 학기 중간|기말 과목 [파일번호-파일번호]</span></label>
+                                                            <textarea value={splitDraft[file.id] ?? ''} onChange={e => setSplitDraft(p => ({ ...p, [file.id]: e.target.value }))} rows={4}
+                                                                placeholder={'2024 1 2 기말 공통수학2 1-8\n2023 1 2 기말 수학(하) 9-15'} className="w-full text-sm font-mono border border-violet-200 rounded-lg px-3 py-2 bg-white" />
+                                                            <div className="mt-1 flex justify-end"><button onClick={() => splitBulk(file)} disabled={splitting === file.id} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-600 text-white disabled:opacity-40">{splitting === file.id ? '나누는 중…' : '회차로 나누기'}</button></div>
+                                                        </div>
+                                                    )}
                                                     <div className="mt-3">
                                                         <label className="block text-xs font-bold text-slate-600 mb-1">회원에게 보낼 안내 <span className="font-normal text-slate-400">— 마이페이지 &gt; 내 요청에 보입니다</span></label>
                                                         <textarea value={drafts[file.id] ?? reportReply(file).text} onChange={e => setDrafts(p => ({ ...p, [file.id]: e.target.value }))} rows={2} maxLength={2000} placeholder="예: 사진이 흐려 일부 문항을 읽기 어렵습니다. 다시 찍어 올려 주세요." className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
@@ -261,6 +294,8 @@ ${smsLabel[j.sms] || ''}`);
                                                 <div className="flex items-center gap-2 shrink-0">
                                                     {isRejected(file) ? (
                                                         <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 text-slate-500 border border-slate-200">반려됨</span>
+                                                    ) : isBulk(file) ? (
+                                                        <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-violet-100 text-violet-700 border border-violet-200">{descOf(file).split ? '나눔 완료' : '회차로 나눈 뒤 채택'}</span>
                                                     ) : rewardedIds.has(file.id) ? (
                                                         <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-amber-100 text-amber-700 border border-amber-200">
                                                             <Coins size={13} /> 채택됨 · {REPORT_REWARD_LABEL}
@@ -275,7 +310,7 @@ ${smsLabel[j.sms] || ''}`);
                                                             <Coins size={13} /> {rewardingId === file.id ? '지급 중…' : `채택 +${REPORT_REWARD_LABEL}`}
                                                         </button>
                                                     )}
-                                                    {!isRejected(file) && !rewardedIds.has(file.id) && <button onClick={() => rejectReport(file)} title="반려 — 사유를 남기고 파일을 지우고 재신청을 연다"
+                                                    {!isRejected(file) && !rewardedIds.has(file.id) && !descOf(file).split && <button onClick={() => rejectReport(file)} title="반려 — 사유를 남기고 파일을 지우고 재신청을 연다"
                                                         className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-lg bg-white text-slate-600 border border-slate-200 hover:bg-slate-100">반려</button>}
                                                     <button
                                                         onClick={() => handleDownloadAll(file)}

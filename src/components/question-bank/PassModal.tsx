@@ -6,6 +6,7 @@ import { payOrder } from '@/lib/payments/client';
 import { QB_PASS, QB_PASS_TERMS, QB_LIMITS, termPrice } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 import { createClient } from '@/utils/supabase/client';
+import { REPORT_REWARD_LABEL, REPORT_REWARD_POINTS } from '@/lib/report-reward';
 
 export type PassInfo = { unlimited: boolean; paywall?: boolean; admin?: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string; viewers?: number | null };
 
@@ -91,6 +92,14 @@ export default function PassModal({ user, info, onClose, onPaid, from = 'button'
                         <li><Check size={16} aria-hidden="true" /> 결제한 날부터 {term.days}일, 자동 결제 없음</li>
                         <li><Check size={16} aria-hidden="true" /> 기간 중에 다시 사면 끝나는 날 뒤로 이어 붙어요</li>
                     </ul>
+                </div>
+                {/* [10/13] 결제 대신 원본으로 — 강사는 담당 학교 기출 원본을 여러 해치 갖고 있다. 원본 6회차 × 5,000P = 이용권 한 달 */}
+                <div className="rd-pass-report">
+                    <p><b>결제 대신 원본 시험지로</b> 가지고 있는 학교 시험지 원본을 보내 주시면 회차마다 {REPORT_REWARD_LABEL}를 드려요. <b>{Math.ceil(QB_PASS.salePrice / REPORT_REWARD_POINTS)}회차면 이용권 한 달</b>이고, 그림·해설까지 타이핑한 한글 파일도 드려요.</p>
+                    <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={() => {
+                        logPass('qb_paywall_report', `${from}|${out ? 'out' : 'left'}`);
+                        onClose(); window.dispatchEvent(new CustomEvent('open-original-report', { detail: { bulk: true } }));
+                    }}>원본 시험지 보내기</button>
                 </div>
                 {points > 0 && <label className="rd-pass-points">
                     <input type="checkbox" checked={usePoints} onChange={e => setUsePoints(e.target.checked)} />

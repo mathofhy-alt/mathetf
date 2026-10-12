@@ -15,13 +15,16 @@ export async function approveSubmission(id: string, opts: { sms?: boolean } = {}
     const admin = createAdminClient();
         const { data: row, error: rowErr } = await admin
         .from('exam_materials')
-        .select('id, school, title, content_type, uploader_id')
+        .select('id, school, title, content_type, uploader_id, description')
         .eq('id', id)
         .maybeSingle();
     if (rowErr) throw rowErr;
     if (!row || row.content_type !== '원본제보') {
         throw new ApproveError('원본 제보 자료가 아닙니다.', 404);
     }
+    // [10/13] 여러 회차 묶음은 회차로 나눈 뒤(raw-uploads split) 나뉜 회차마다 채택한다 — 묶음째 채택하면 5,000P 한 번만 나간다
+    let desc: any = {}; try { desc = JSON.parse(row.description || '{}') || {}; } catch { }
+    if (desc.bulk) throw new ApproveError(desc.split ? '이미 회차로 나눈 묶음입니다. 나뉜 회차를 채택해 주세요.' : '여러 회차 묶음입니다. 먼저 회차로 나눠 주세요.', 400);
     const recipient = row.uploader_id;
     if (!recipient) throw new ApproveError('제보자 정보가 없습니다.', 400);
 
