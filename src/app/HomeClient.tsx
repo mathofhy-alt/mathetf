@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import PromoCarousel from '@/components/PromoCarousel';
 import {unavailableDbs} from '@/lib/questions/scope';
 import { RdAnnounce, RdHomeHero, RdHomeShowcase, RdHomeStats, RdHomeFeatures, RdHomeMore, RdHomeFinale } from '@/components/home/RdHome';
+import ReportPopup from '@/components/home/ReportPopup';
 import type { WeeklyUpload } from '@/lib/home-weekly-uploads';
 import { FREE_ACCESS_LABEL } from '@/lib/config';
 import FeatureCards from '@/components/FeatureCards';
@@ -685,6 +686,8 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
             />
 
             <RdAnnounce />
+            {/* [10/12] 첫 화면 팝업 — 원본 시험지 제보(무료 타이핑) 안내 */}
+            <ReportPopup />
             <RdHomeHero onSearch={(keyword)=>{
                 setSelectedRegion('');setSelectedDistrict('');setSelectedSchool('');
                 setSelectedGrade('');setSelectedExamScope('');setSelectedYear('');setSelectedSubject('');setFreePdfOnly(false);
