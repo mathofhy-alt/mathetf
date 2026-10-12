@@ -35,7 +35,7 @@ export type ChatPlan = {
 
 // 내신 회차 + 모의고사 회차(questions.semester 그대로 — 수능은 school='수능', semester='11월 모의고사', year=시행 연도)
 const SEMESTERS = ['1학기중간', '1학기기말', '2학기중간', '2학기기말', '3월 모의고사', '4월 모의고사', '5월 모의고사', '6월 모의고사', '7월 모의고사', '9월 모의고사', '10월 모의고사', '11월 모의고사'];
-export type PlanFilters = { years: string[]; kinds: string[]; qtype: string; grades: string[]; semesters: string[]; schools: string[] };
+export type PlanFilters = { years: string[]; kinds: string[]; qtype: string; grades: string[]; semesters: string[]; schools: string[]; points: number[] };
 
 const SCHEMA = {
     type: 'object', additionalProperties: false,
@@ -54,7 +54,7 @@ const SCHEMA = {
         order: { type: 'string', enum: ['easy_to_hard', 'hard_to_easy', 'mixed'] },
         fillRest: { type: 'boolean' },
         filters: {
-            type: 'object', additionalProperties: false, required: ['years', 'kinds', 'qtype', 'grades', 'semesters', 'schools'],
+            type: 'object', additionalProperties: false, required: ['years', 'kinds', 'qtype', 'grades', 'semesters', 'schools', 'points'],
             properties: {
                 years: { type: 'array', items: { type: 'string' } },
                 kinds: { type: 'array', items: { type: 'string', enum: ['mock', 'school', 'special'] } },
@@ -62,6 +62,7 @@ const SCHEMA = {
                 grades: { type: 'array', items: { type: 'string', enum: ['고1', '고2', '고3'] } },
                 semesters: { type: 'array', items: { type: 'string', enum: SEMESTERS } },
                 schools: { type: 'array', items: { type: 'string' } },
+                points: { type: 'array', items: { type: 'integer', enum: [2, 3, 4] } },
             },
         },
         unsupported: { type: 'string' },
@@ -117,7 +118,7 @@ ${catalogText(catalog)}
   schools: 특정 학교 이름(예: 휘문고 → ["휘문"]). 평가원 기출 = ["평가원", "수능"](6월·9월 모의평가와 수능), 수능만 = ["수능"], 교육청·학력평가 = ["전국연합"].
 - 고3 모의고사·수능·평가원 문제에서 '공통' = 수학I·수학II(목록 이름으로 대수·미적분I 과 수학I·수학II), '선택과목' = 미적분·확률과통계·기하.
   이때 '공통'을 공통수학1·공통수학2(고1 과목)로 읽지 않는다. '선택과목 제외'면 공통 과목 단원만 targets 에 넣는다.
-- '3점짜리', '4점', '2점 배점'처럼 배점을 말하면 배점 정보는 문제은행에 없다 — unsupported 에 '3점 배점'처럼 쓰고, keywords·난이도로 바꾸지 않는다.
+- points: '3점짜리', '4점만', '2·3점'처럼 배점을 말하면 [3] 처럼(모의고사·수능 문항에만 배점이 있다). keywords·난이도로 바꾸지 않는다.
   '중간고사 대비'처럼 범위만 말한 것은 semesters 에 넣지 않는다.
 - unsupported: 위 조건으로 못 거는 요청 조건을 강사가 쓴 말 그대로 짧게(예: '우리 학교 기출 스타일'). 문장으로 설명하지 않는다. 없으면 ''.
 - 과목·단원을 전혀 알 수 없을 때만 action='ask' 로 reply 에 짧게 되묻는다(존댓말). 그 밖에는 action='build', reply 는 ''.
@@ -205,6 +206,7 @@ export function sanitizePlan(p: ChatPlan, catalog: ConceptCatalog, maxCount: num
         grades: arr(f.grades, x => ['고1', '고2', '고3'].includes(x), 3),
         semesters: arr(f.semesters, x => SEMESTERS.includes(x), 8),
         schools: arr(f.schools, x => x.length >= 2 && x.length <= 20 && !/[%_\\]/.test(x), 4),
+        points: arr(f.points, x => ['2', '3', '4'].includes(x), 3).map(Number),
     };
     const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, Math.round(Number(n) || a)));
     let lo = clamp(p.minDifficulty, 1, 10), hi = clamp(p.maxDifficulty, 1, 10);

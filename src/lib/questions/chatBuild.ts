@@ -99,15 +99,13 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         plan.concepts = plan.concepts.filter(c => plan.targets.some(t => concepts[t]?.[c]));
         plan.unsupported = plan.unsupported.split(/[,·]/).map(x => x.trim()).filter(x => x && !/공통|선택/.test(x)).join(', ');
     }
-    // 배점(2점·3점·4점)은 문제은행에 없다 — 본문 키워드로 찾으면 0문항(10/12 '3점배점'). 대신 실제 수능·평가원 번호별 난이도로 가늠한 구간을 쓰고 그렇게 말한다
-    const pts = said.match(/([234])\s*점(?!\s*대)/);
+    // 배점(2·3·4점) — 모의고사 원본 PDF 에서 읽어 questions.points 에 채웠다(10/12). AI 가 빠뜨려도 말에 있으면 건다. 본문 키워드로 찾으면 0문항('3점배점')
+    const pts = [...said.matchAll(/([234])\s*점(?!\s*대)/g)].map(m => Number(m[1]));
     plan.keywords = plan.keywords.filter(k => !/\d\s*점|배점/.test(k));
-    let ptsNote = '';
-    if (pts) {
-        const band = ({ '2': [1, 2], '3': [1, 4], '4': [4, 10] } as Record<string, number[]>)[pts[1]];
-        if (!/난이도|쉬운|어려운|킬러|중간\s*난/.test(said.replace(pts[0], ''))) { plan.minDifficulty = band[0]; plan.maxDifficulty = band[1]; }
+    if (pts.length && !plan.filters.points.length) plan.filters.points = [...new Set(pts)];
+    if (plan.filters.points.length) {
+        if (!plan.filters.kinds.length) plan.filters.kinds = ['mock'];
         plan.unsupported = plan.unsupported.split(/[,·]/).map(x => x.trim()).filter(x => x && !/점|배점/.test(x)).join(', ');
-        ptsNote = ` (배점 정보는 없어서 ${pts[1]}점 문항 수준인 난이도 ${plan.minDifficulty}~${plan.maxDifficulty}${ro(plan.maxDifficulty)} 골랐어요.)`;
     }
     if (plan.action === 'ask') return { reply: plan.reply, plan, by: 'ask', chosen: [], widened: false };
 
@@ -206,6 +204,7 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         fl.years.length ? fl.years.join('·') + '년' : '', fl.kinds.map(k => ({ mock: '모의고사·수능', school: '학교 기출', special: '사관·경찰대' } as any)[k]).join('·'),
         fl.grades.join('·'), fl.semesters.join('·'), fl.schools.map(x => /^(평가원|수능|전국연합)$/.test(x) ? x : x + '(학교)').join('·'),
         fl.qtype === 'short_answer' ? '서답형' : fl.qtype === 'multiple_choice' ? '객관식' : '',
+        fl.points?.length ? fl.points.join('·') + '점' : '',
     ].filter(Boolean);
     const orderText = plan.order === 'easy_to_hard' ? '쉬운 것부터' : plan.order === 'hard_to_easy' ? '어려운 것부터' : '섞어서';
     const unitsUsed = [...new Set(chosen.map(c => c.unit).filter(Boolean))];
@@ -217,7 +216,6 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         : `${tags.length ? `[${tags.join(' · ')}] ` : ''}${plan.targets.length ? scopeText(plan) : '전체 단원'}에서 조건(난이도 ${plan.minDifficulty}~${plan.maxDifficulty})에 맞는 문항을 찾지 못했어요. 난이도나 범위를 넓혀 볼까요?`;
     if (filled) reply += ` 주제에 딱 맞는 문항이 모자라 ${filled}개는 같은 단원의 다른 문항으로 채웠어요.`;
     if (plan.unsupported) reply += ` ('${plan.unsupported}' 조건은 아직 걸 수 없어 빼고 골랐어요.)`;
-    if (ptsNote && chosen.length) reply += ptsNote;
     const missing = plan.count - chosen.length;
     if (chosen.length && missing > 0 && !plan.fillRest) {
         reply += cands.length > chosen.length
