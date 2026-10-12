@@ -323,7 +323,7 @@ export default function MyPage() {
                 </div>
             </section>
 
-            {showPass && user && <PassModal user={user} info={passInfo} onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); }} />}
+            {showPass && user && <PassModal user={user} info={passInfo} from="mypage" onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); }} />}
             <main className="rd-wrap rd-my-main">
                 <div className="rd-seg rd-my-tabs" role="group" aria-label="마이페이지 메뉴">
                     <button type="button" aria-pressed={activeTab === 'purchases'} onClick={() => setActiveTab('purchases')}>

@@ -104,6 +104,7 @@ export default function QuestionBankPage() {
     // [10/7] 시험지 만들기 이용권 — 남은 무료 횟수·이용권 기간, 다 쓰면 결제 창
     const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
     const [showPass, setShowPass] = useState(false);
+    const [passFrom, setPassFrom] = useState('button');   // [10/12] 결제 화면을 어디서 열었나(계측)
     // [10/8] 이용권이 있으면 한 시험지 문항 한도가 늘어난다(QB_LIMITS) — 서버도 같은 기준으로 다시 확인
     const MAX_CART_SIZE: number = (passInfo?.passUntil || passInfo?.admin) ? QB_LIMITS.pass.questions : QB_LIMITS.free.questions;
     const SAVED_LIMIT: number = (passInfo?.passUntil || passInfo?.admin) ? QB_LIMITS.pass.saved : SAVED_EXAM_LIMIT;   // 보관함 한도(10/8)
@@ -1151,7 +1152,7 @@ export default function QuestionBankPage() {
                 // 무료 횟수를 다 씀 — 오류가 아니라 결제 안내. 담은 문항은 그대로 둔다.
                 logQb('qb_save_fail', 'QB_PASS_REQUIRED');
                 if (result.pass) setPassInfo(result.pass);
-                setShowSaveModal(false); setShowPass(true);
+                setShowSaveModal(false); setPassFrom('save_blocked'); setShowPass(true);
                 return;
             }
             if (!response.ok || !result.success) {
@@ -1232,7 +1233,7 @@ export default function QuestionBankPage() {
             />
 
             <div className="workbench-title"><div><h2>시험지 만들기</h2></div><div className="workbench-tabs" aria-label="편집 화면"><button aria-pressed={viewMode==='search'} onClick={()=>setViewMode('search')}>문항 찾기</button><button disabled={!cart.length} aria-pressed={viewMode==='review'} onClick={()=>{setViewMode('review');setShowMobileSidebar(false);}}>선택한 문항 {cart.length}</button></div></div>
-            <div className="qb-context px-3 py-2 bg-white border-b text-xs shrink-0 flex flex-wrap gap-2 items-center"><a href="/guide" className="hover:text-[#166B68]">사용법·이용 범위 ↗</a><button className="hover:text-[#166B68]" onClick={()=>{setViewMode('search');setShowMobileSidebar(true);setRunTeacherTour(true);}}>화면 안내</button>{catalogNotice&&<details className="relative"><summary className="cursor-pointer">자료 안내</summary><p className="absolute top-6 left-0 z-40 w-60 rounded-xl border bg-white p-4 shadow-lg">{catalogNotice}</p></details>}<span>HML 저장 · 보관함 {savedCount}/{SAVED_LIMIT}</span>{user&&passInfo?.paywall&&<button className="rd-qb-ctxpass" onClick={()=>setShowPass(true)}>{passInfo.passUntil?passLine(passInfo):passInfo.unlimited?'이용권':'이용권 구매'}</button>}{entryLabel&&<span role="status" className="text-[#0F5552]">{entryLabel}</span>}{filterState?.mockSlug&&<button className="underline" onClick={()=>{setFilterState((f:any)=>f?{...f,mockSlug:undefined}:null);setFilterVersion(v=>v+1);setEntryLabel('자료 범위에서 검색');}}>모의고사 회차 제한 해제</button>}{entryFailure&&<button className="underline" onClick={()=>{setEntryFailure(false);setEntryLabel('전체 자료에서 검색');setFilterState(null);setFilterVersion(v=>v+1);}}>전체 검색으로 전환</button>}</div>
+            <div className="qb-context px-3 py-2 bg-white border-b text-xs shrink-0 flex flex-wrap gap-2 items-center"><a href="/guide" className="hover:text-[#166B68]">사용법·이용 범위 ↗</a><button className="hover:text-[#166B68]" onClick={()=>{setViewMode('search');setShowMobileSidebar(true);setRunTeacherTour(true);}}>화면 안내</button>{catalogNotice&&<details className="relative"><summary className="cursor-pointer">자료 안내</summary><p className="absolute top-6 left-0 z-40 w-60 rounded-xl border bg-white p-4 shadow-lg">{catalogNotice}</p></details>}<span>HML 저장 · 보관함 {savedCount}/{SAVED_LIMIT}</span>{user&&passInfo?.paywall&&<button className="rd-qb-ctxpass" onClick={()=>{setPassFrom('top');setShowPass(true);}}>{passInfo.passUntil?passLine(passInfo):passInfo.unlimited?'이용권':'이용권 구매'}</button>}{entryLabel&&<span role="status" className="text-[#0F5552]">{entryLabel}</span>}{filterState?.mockSlug&&<button className="underline" onClick={()=>{setFilterState((f:any)=>f?{...f,mockSlug:undefined}:null);setFilterVersion(v=>v+1);setEntryLabel('자료 범위에서 검색');}}>모의고사 회차 제한 해제</button>}{entryFailure&&<button className="underline" onClick={()=>{setEntryFailure(false);setEntryLabel('전체 자료에서 검색');setFilterState(null);setFilterVersion(v=>v+1);}}>전체 검색으로 전환</button>}</div>
             <nav aria-label="출제 단계" className="md:hidden grid grid-cols-3 shrink-0 border-b bg-white text-xs"><button className="p-3" onClick={()=>setShowMobileSidebar(true)}>1. 범위 선택</button><button className="p-3" onClick={()=>{setViewMode('search');setShowMobileSidebar(false);}}>2. 문항 확인</button><button className="p-3" disabled={!cart.length} onClick={()=>{setViewMode('review');setShowMobileSidebar(false);}}>3. 완성 ({cart.length})</button></nav>
             <div className="flex flex-1 overflow-hidden relative">
 
@@ -1601,7 +1602,7 @@ export default function QuestionBankPage() {
                         <header className="rd-qb-rhead sticky top-0 z-10">
                             {/* [10/7] 한 줄로 — 예전엔 제목·설명·정렬 상자가 3층이라 카드 볼 자리가 너무 적었다(사용자 지적) */}
                             <h2 title="문항을 더하거나 순서를 바꾼 뒤 편집용 HML로 저장하세요. PDF는 한글에서 저장할 수 있습니다.">시험지 문항 검토 <small>{cart.length}문항</small></h2>
-                            {passLine(passInfo) && <button type="button" className={`rd-qb-passline ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => setShowPass(true)}>{passLine(passInfo)}</button>}
+                            {passLine(passInfo) && <button type="button" className={`rd-qb-passline ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => { setPassFrom('save_modal'); setShowPass(true); }}>{passLine(passInfo)}</button>}
                             <div className="rd-qb-ractions">
                                     <button
                                         onClick={() => { setViewMode('search'); setStorageModalMode('db'); setShowStorageModal(true); }}
@@ -2075,7 +2076,7 @@ export default function QuestionBankPage() {
                             <div className="rd-qb-bar-in">
                                 <span className="rd-qb-bar-info">
                                     <span className="rd-qb-bar-count">{cart.length}문항 담음</span>
-                                    {passLine(passInfo) && <button type="button" className={`rd-qb-bar-pass ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => setShowPass(true)}>{passLine(passInfo)}</button>}
+                                    {passLine(passInfo) && <button type="button" className={`rd-qb-bar-pass ${passInfo && !passInfo.unlimited && passInfo.freeLeft <= 0 ? 'is-out' : ''}`} onClick={() => { setPassFrom('cart_bar'); setShowPass(true); }}>{passLine(passInfo)}</button>}
                                 </span>
                                 <span className="rd-qb-bar-nums" aria-hidden="true">{cart.slice(-6).map((q: any, i: number) => <span key={q.id || i}>{q.question_number ? `${q.question_number}번` : i + 1}</span>)}</span>
                                 <button type="button" onClick={handleGenerate} disabled={isGenerating} className="rd-qb-bar-go">시험지 만들기</button>
@@ -2127,7 +2128,7 @@ export default function QuestionBankPage() {
                 )}
 
                 {ladderTarget && <LadderModal target={ladderTarget} cartIds={cartIdSet} onClose={() => setLadderTarget(null)} onAdd={addLadder} />}
-                {showPass && user && <PassModal user={user} info={passInfo} onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); showToast('이용권이 시작되었습니다. 다시 저장을 눌러 주세요.', 'success'); }} />}
+                {showPass && user && <PassModal user={user} info={passInfo} from={passFrom} onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); showToast('이용권이 시작되었습니다. 다시 저장을 눌러 주세요.', 'success'); }} />}
                 {/* [10/11] AI 시험지 도우미 — 오른쪽 아래 캐릭터. 한 번 열면 닫아도 대화를 남긴다(숨기기만) */}
                 <QbBuddy open={showChatModal} mood={buddyMood} onToggle={() => { setChatMounted(true); setShowChatModal(v => !v); }} />
                 {chatMounted && (

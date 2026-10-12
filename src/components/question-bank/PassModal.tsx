@@ -23,7 +23,12 @@ export function passLine(p: PassInfo | null): string {
  * 시험지 만들기 이용권 결제 창 (10/7). 무료 횟수를 다 쓰고 저장하려 할 때, 또는 직접 열 때.
  * 결제는 장바구니와 같은 payOrder(서버 주문 → 포트원 → 서버 확인). 모바일은 결제 후 /payments/return 으로 돌아온다.
  */
-export default function PassModal({ user, info, onClose, onPaid }: { user: any; info: PassInfo | null; onClose: () => void; onPaid: () => void }) {
+// [10/12] 결제 화면 계측 — 저장이 막혀 뜬 건지(save_blocked) 버튼으로 연 건지, 결제 버튼을 눌렀는지. feature_usage 에 남는다
+const logPass = (feature: string, title: string) => {
+    fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature, title }) }).catch(() => { });
+};
+
+export default function PassModal({ user, info, onClose, onPaid, from = 'button' }: { user: any; info: PassInfo | null; onClose: () => void; onPaid: () => void; from?: string }) {
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState('');
     // [10/7] 환불 불가 동의 — 사용자 결정(사용 0회여도 환불 안 함). 동의해야 결제 버튼이 눌린다.
@@ -34,6 +39,7 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
     const total = termPrice(term.months);
     // [10/8] 포인트로도 이용권을 산다(사용자: 무료 타이핑 채택 5,000P × 6건 = 1개월). 전액 포인트면 카드 결제창 없이 끝난다.
     const [points, setPoints] = useState(0);
+    useEffect(() => { logPass('qb_paywall_view', `${from}|무료${info ? (info.unlimited ? '무제한' : `${info.freeLeft}남음`) : '?'}`); }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const [usePoints, setUsePoints] = useState(true);
     useEffect(() => {
         if (!user?.id) return;
@@ -47,6 +53,7 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
     const phoneOk = !needPhone || /^01[016789]\d{7,8}$/.test(phone.replace(/[^0-9]/g, ''));
     const buy = async () => {
         if (busy || !agree || !phoneOk) return;
+        logPass('qb_paywall_pay', `${from}|${months}개월|${pay}원`);
         setBusy(true); setErr('');
         try {
             const digits = phone.replace(/[^0-9]/g, '');
