@@ -59,6 +59,14 @@ async function examsOf(picked: NeisSchool) {
 }
 
 export async function GET(req: NextRequest) {
+    // [10/12] 홈 제보 팝업 — 이미 제보한 회원에게는 안 띄운다. 가벼운 확인만(비로그인은 false)
+    if (req.nextUrl.searchParams.get('has')) {
+        const { data: { user } } = await createClient().auth.getUser();
+        if (!user) return NextResponse.json({ has: false, user: false });
+        const { count } = await createAdminClient().from('exam_materials').select('id', { count: 'exact', head: true })
+            .eq('content_type', '원본제보').eq('uploader_id', user.id);
+        return NextResponse.json({ has: (count || 0) > 0, user: true });
+    }
     // [10/7] 마이페이지 › 내 요청 — 내가 올린 원본 제보와 운영자 안내·채택 여부(본인 것만)
     if (req.nextUrl.searchParams.get('mine')) {
         const { data: { user } } = await createClient().auth.getUser();

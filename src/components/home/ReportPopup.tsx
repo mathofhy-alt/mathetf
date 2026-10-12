@@ -9,20 +9,36 @@ import { REPORT_REWARD_LABEL } from '@/lib/report-reward';
 /**
  * 홈 첫 화면 팝업 — 원본 시험지 제보(무료 타이핑) 안내 (10/12 사용자 요청).
  * 누르면: 로그인했으면 무료 타이핑 창(헤더가 'open-original-report' 신호로 연다), 아니면 회원가입.
- * '오늘 하루 보지 않기' 는 이 브라우저에만(localStorage). 저장소가 막혀 있어도 팝업은 정상으로 뜨고 닫힌다.
+ * [10/12 사용자 승인] 처음 온 사람에게 한 번, 그 뒤로는 일주일에 한 번만(마지막으로 띄운 시각, 이 브라우저 localStorage).
+ *   이미 원본을 제보한 회원에게는 안 띄운다(/api/original-report?has=1). 노출·클릭은 feature_usage 에
+ *   report_popup_view / report_popup_click (title = 'user' | 'anon') 으로 남긴다.
+ *   저장소가 막혀 있으면 매번 뜰 수 있지만 닫기는 정상으로 된다.
  */
-const KEY = 'home_report_popup_hide_until';
+const KEY = 'home_report_popup_last_shown';
+const WEEK = 7 * 864e5;
+
+const log = (feature: string, who: string) => {
+    fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature, title: who }) }).catch(() => { });
+};
 
 export default function ReportPopup() {
     const router = useRouter();
     const [open, setOpen] = useState(false);
+    const [who, setWho] = useState<'user' | 'anon'>('anon');
 
     useEffect(() => {
-        let until = 0;
-        try { until = Number(localStorage.getItem(KEY) || 0); } catch { }
-        if (Date.now() < until) return;
-        const t = setTimeout(() => setOpen(true), 600);   // 첫 화면이 그려진 뒤에
-        return () => clearTimeout(t);
+        let last = 0;
+        try { last = Number(localStorage.getItem(KEY) || 0); } catch { }
+        if (Date.now() - last < WEEK) return;
+        let alive = true;
+        const t = setTimeout(async () => {   // 첫 화면이 그려진 뒤에
+            const j = await fetch('/api/original-report?has=1').then(r => r.json()).catch(() => ({ has: false, user: false }));
+            if (!alive || j.has) return;   // 이미 제보한 회원
+            const w = j.user ? 'user' : 'anon';
+            try { localStorage.setItem(KEY, String(Date.now())); } catch { }
+            setWho(w); setOpen(true); log('report_popup_view', w);
+        }, 600);
+        return () => { alive = false; clearTimeout(t); };
     }, []);
     useEffect(() => {
         if (!open) return;
@@ -33,13 +49,9 @@ export default function ReportPopup() {
 
     if (!open) return null;
 
-    const hideToday = () => {
-        const end = new Date(); end.setHours(24, 0, 0, 0);   // 이 브라우저의 오늘 자정까지
-        try { localStorage.setItem(KEY, String(end.getTime())); } catch { }
-        setOpen(false);
-    };
     const go = async () => {
         setOpen(false);
+        log('report_popup_click', who);
         const { data: { user } } = await createClient().auth.getUser().catch(() => ({ data: { user: null } }));
         if (user) window.dispatchEvent(new CustomEvent('open-original-report'));
         else router.push('/signup?next=%2F');
@@ -61,7 +73,6 @@ export default function ReportPopup() {
                     </span>
                 </button>
                 <div className="rd-rpop-foot">
-                    <button type="button" onClick={hideToday}>오늘 하루 보지 않기</button>
                     <button type="button" onClick={() => setOpen(false)}>닫기</button>
                 </div>
             </div>

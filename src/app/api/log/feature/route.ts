@@ -17,7 +17,7 @@ const QB_FUNNEL = ['qb_enter', 'qb_db_select', 'qb_search', 'qb_cart_add', 'qb_s
 //   분모를 남기려고 만든 로그였으므로 이게 빠지면 수정 자체가 무의미했다.
 //   ⚠ 새 이벤트를 클라이언트에 심을 때는 반드시 여기에 같이 추가할 것.
 // [10/7] qb_ladder — 수업 사다리 담기. 예전엔 이 목록에 없어 한 건도 안 남았다.
-const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_click', 'promo_view', 'qb_ladder', ...QB_FUNNEL]);
+const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_click', 'promo_view', 'qb_ladder', 'report_popup_view', 'report_popup_click', ...QB_FUNNEL]);
 
 // [익명 구간 계측] 2026-09-06 추가.
 // 그전까지 이 라우트는 비로그인이면 401 이었다. 그래서 **로그인 전 행동이 한 건도 없었다** —
@@ -30,7 +30,7 @@ const ALLOWED = new Set(['free_pdf', 'teacher_cta', 'youtube_guide', 'promo_clic
 //   anon_cta_click : 그 배너의 가입 버튼을 누름
 //   signup_start   : 가입 페이지에 도달
 // → 방문 → 배너 노출 → 클릭 → 가입 시작 → 가입 완료 가 처음으로 이어져 보인다.
-const ANON_ALLOWED = new Set(['anon_cta_view', 'anon_cta_click', 'signup_start']);
+const ANON_ALLOWED = new Set(['anon_cta_view', 'anon_cta_click', 'signup_start', 'report_popup_view', 'report_popup_click']);   // [10/12] 홈 제보 팝업
 
 /** 같은 사이트에서 온 요청인지 — 인증이 없는 구간이라 최소한의 문지기를 둔다. */
 function sameOrigin(req: NextRequest): boolean {
