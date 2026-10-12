@@ -99,12 +99,12 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         plan.concepts = plan.concepts.filter(c => plan.targets.some(t => concepts[t]?.[c]));
         plan.unsupported = plan.unsupported.split(/[,·]/).map(x => x.trim()).filter(x => x && !/공통|선택/.test(x)).join(', ');
     }
-    // 배점(2·3·4점) — 모의고사 원본 PDF 에서 읽어 questions.points 에 채웠다(10/12). AI 가 빠뜨려도 말에 있으면 건다. 본문 키워드로 찾으면 0문항('3점배점')
+    // 배점(2·3·4점) — 모의고사 원본 PDF 에서 읽어 question_points 표에 채웠다(10/13, 11,272문항). AI 가 빠뜨려도 말에 있으면 건다. 본문 키워드로 찾으면 0문항('3점배점')
     const pts = [...said.matchAll(/([234])\s*점(?!\s*대)/g)].map(m => Number(m[1]));
     plan.keywords = plan.keywords.filter(k => !/\d\s*점|배점/.test(k));
     if (pts.length && !plan.filters.points.length) plan.filters.points = [...new Set(pts)];
     if (plan.filters.points.length) {
-        if (!plan.filters.kinds.length) plan.filters.kinds = ['mock'];
+        plan.filters.kinds = ['mock'];   // 배점은 모의고사·수능에만 있다(사관·경찰대·내신 없음)
         plan.unsupported = plan.unsupported.split(/[,·]/).map(x => x.trim()).filter(x => x && !/점|배점/.test(x)).join(', ');
     }
     if (plan.action === 'ask') return { reply: plan.reply, plan, by: 'ask', chosen: [], widened: false };
