@@ -2132,3 +2132,24 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd.qbb-panel { left: 0; right: 0; bottom: 0; width: auto; height: 88dvh; border-radius: 24px 24px 0 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
   .qbb.is-open { display: none; }
 }
+
+/* 홈 첫 화면 팝업 — 원본 시험지 제보(무료 타이핑) 안내 (10/12) */
+.rd.rd-overlay.rd-rpop-overlay { align-items: center; padding: 16px; }   /* 휴대폰에서도 가운데(시트로 붙이지 않음) */
+.rd .rd-rpop { position: relative; width: min(380px, calc(100vw - 32px)); background: #fff; border-radius: 26px; overflow: hidden; box-shadow: 0 30px 80px rgba(23, 32, 44, .3); animation: qbb-pop .3s cubic-bezier(.2, 1.3, .4, 1) both; }
+.rd .rd-rpop-x { position: absolute; top: 10px; right: 10px; z-index: 2; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .85); color: #4E5968; cursor: pointer; display: grid; place-items: center; }
+.rd .rd-rpop-x:hover { background: #fff; }
+.rd .rd-rpop-main { display: block; width: 100%; border: 0; padding: 0; background: none; cursor: pointer; text-align: center; font: inherit; color: inherit; }
+.rd .rd-rpop-main img { display: block; width: 100%; height: auto; aspect-ratio: 720 / 538; object-fit: cover; }
+.rd .rd-rpop-body { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 22px 20px; }
+.rd .rd-rpop-badge { font-size: 12.5px; font-weight: 800; color: #1B7E7A; background: #E3F5F3; padding: 4px 10px; border-radius: 999px; }
+.rd .rd-rpop-title { margin-top: 4px; font-size: 21px; font-weight: 800; color: #17202C; letter-spacing: -.02em; }
+.rd .rd-rpop-sub { font-size: 16px; font-weight: 600; color: #4E5968; line-height: 1.5; }
+.rd .rd-rpop-sub b { color: #497AB7; }
+.rd .rd-rpop-reward { margin-top: 2px; font-size: 18px; font-weight: 700; color: #17202C; }
+.rd .rd-rpop-reward b { color: #F08C00; font-size: 22px; font-weight: 900; }
+.rd .rd-rpop-cta { margin-top: 12px; width: 100%; padding: 15px 0; border-radius: 14px; background: #1B7E7A; color: #fff; font-size: 17px; font-weight: 800; }
+.rd .rd-rpop-main:hover .rd-rpop-cta { background: #166b68; }
+.rd .rd-rpop-foot { display: flex; justify-content: space-between; border-top: 1px solid var(--rd-line); }
+.rd .rd-rpop-foot button { flex: 1; border: 0; background: none; padding: 13px 0; font: inherit; font-size: 14px; font-weight: 600; color: #6B7684; cursor: pointer; }
+.rd .rd-rpop-foot button + button { border-left: 1px solid var(--rd-line); }
+.rd .rd-rpop-foot button:hover { background: var(--rd-panel); }
