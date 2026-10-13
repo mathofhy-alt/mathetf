@@ -12,7 +12,7 @@ import { Check } from 'lucide-react';
 import TermsModal from '@/components/TermsModal';
 import PrivacyModal from '@/components/PrivacyModal';
 import MarketingModal from '@/components/MarketingModal';
-import { getStoredRole } from '@/components/RoleOnboardingModal';
+import { getStoredRole, ROLE_STORAGE_KEY, type UserRole } from '@/components/RoleOnboardingModal';
 import { getStoredSignupAttribution } from '@/lib/analytics/signup-attribution';
 import { queueKakaoRegistration } from '@/components/KakaoPixel';
 import { checkEmail } from '@/lib/email-check';
@@ -33,6 +33,9 @@ export default function SignupPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [nickname, setNickname] = useState('');
+    // [10/13] 역할을 가입 화면에서 꼭 고른다(사용자 결정) — 가입 후 안내 창은 절반이 답하지 않았다(1,450명 중 762명 미응답)
+    const [persona, setPersona] = useState<UserRole | null>(null);
+    useEffect(() => { try { setPersona(getStoredRole()); } catch { } }, []);
 
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
@@ -191,6 +194,10 @@ export default function SignupPage() {
             setErrorMsg('휴대폰 본인 인증을 완료해주세요.');
             return;
         }
+        if (!persona) {
+            setErrorMsg('학생·학부모·강사 중 하나를 골라주세요.');
+            return;
+        }
 
         setLoading(true);
 
@@ -205,7 +212,7 @@ export default function SignupPage() {
                     phone,
                     full_name: nickname,
                     marketing_agreed: marketingAgreed,
-                    persona: getStoredRole(), // 온보딩 모달에서 고른 역할(학생/강사) — 없으면 null
+                    persona, // [10/13] 가입 화면에서 고른 역할(학생·학부모·강사)
                     attribution: getStoredSignupAttribution(),
                 }),
             });
@@ -418,6 +425,14 @@ export default function SignupPage() {
 
                         {step === 2 && (
                             <form onSubmit={handleSignup} className="rd-auth-form">
+                                <span id="signup-role-label" className="rd-auth-label">어떤 분이신가요?</span>
+                                <div className="rd-seg rd-auth-role" role="radiogroup" aria-labelledby="signup-role-label">
+                                    {([['student', '학생'], ['parent', '학부모'], ['teacher', '강사·선생님']] as const).map(([v, label]) => (
+                                        <button key={v} type="button" role="radio" aria-checked={persona === v} aria-pressed={persona === v}
+                                            onClick={() => { setPersona(v); try { localStorage.setItem(ROLE_STORAGE_KEY, v); } catch { } }}>{label}</button>
+                                    ))}
+                                </div>
+
                                 <label htmlFor="signup-email" className="rd-auth-label">이메일 (아이디)</label>
                                 <input
                                     id="signup-email"

@@ -82,7 +82,7 @@ export async function POST(req: Request) {
         await supabaseAdmin.from('phone_verifications').delete().eq('id', pv.id);
 
         // 5. 온보딩에서 고른 역할(학생/강사)을 프로필에 저장 — 실패해도 가입은 성공 (PersonaSync가 백필)
-        if ((persona === 'student' || persona === 'teacher') && created.user?.id) {
+        if ((persona === 'student' || persona === 'teacher' || persona === 'parent') && created.user?.id) {
             await supabaseAdmin.from('profiles').update({ persona }).eq('id', created.user.id);
         }
 
