@@ -40,9 +40,13 @@ export async function GET(req: NextRequest) {
         //   ③ 변형 회차 짝([id, 1, 'variant'], scripts/inject_variant_pairs.py)은 단원·임계값과 상관없이 맨 위
         //   basis=solution 을 고르면 예전처럼 풀이 유사도 순서만 쓴다(화면의 '풀이 유사' 토글).
         const admin = createAdminClient();
+        //   [10/14 재정렬] basis='rerank' = 후보 20개를 LLM(Haiku)이 발문·해설을 읽고 다시 줄 세운 결과(scripts/similar_rerank_*.py).
+        //   개발 40사례 실측 상위5 적합 108→130/200. 있으면 그 순서를 맨 앞에 쓰고, 없으면 아래 합산 점수 그대로.
+        //   유사 버튼 클릭은 similar_click_log 에 남겨 재정렬 우선순위로 쓴다(표가 아직 없으면 실패해도 무시).
         const [authRes, preRes] = await Promise.all([
             supabase.auth.getUser(),
-            admin.from('question_similar').select('basis, neighbors').eq('question_id', id).in('basis', ['statement', 'solution']),
+            admin.from('question_similar').select('basis, neighbors').eq('question_id', id).in('basis', ['statement', 'solution', 'rerank']),
+            admin.from('similar_click_log').insert({ question_id: id }).then(() => null, () => null),
         ]);
         const user = authRes.data?.user;
         if (authRes.error || !user) {
@@ -59,7 +63,9 @@ export async function GET(req: NextRequest) {
         if (!preRes.error && (main.length > 0 || (combined && sol.length > 0))) {
             const variantIds = new Set<string>([...stmt, ...sol].filter(p => p[2] === 'variant').map(p => p[0]));
             const simS = new Map(stmt.map(([q, s]) => [q, Number(s)])), simO = new Map(sol.map(([q, s]) => [q, Number(s)]));
-            const candIds = Array.from(new Set((combined ? [...stmt, ...sol] : main).map(p => p[0])));
+            const rr = combined ? (lists.rerank || []) : [];
+            const rrScore = new Map(rr.map(([q, s]) => [q, Number(s)]));
+            const candIds = Array.from(new Set((combined ? [...rr, ...stmt, ...sol] : main).map(p => p[0])));
             const SEL = 'id, school, grade, year, semester, subject, unit, question_number, key_concepts, difficulty, source_db_id, question_type, is_off_curriculum, plain_text, equation_scripts';
             const [{ data: srcRow }, { data: rows, error: rowsError }] = await Promise.all([
                 admin.from('questions').select('unit, difficulty, key_concepts, plain_text, equation_scripts').eq('id', id).maybeSingle(),
@@ -88,7 +94,9 @@ export async function GET(req: NextRequest) {
                     if (!isVariant && shown <= 1 - threshold) continue;
                     if (!isVariant && srcSig.length > 1 && sig(r) === srcSig) continue;   // ② 같은 문제
                     let tagHit = 0; for (const t of tagsOf(r)) if (srcTags.has(t)) tagHit++;
-                    const score = isVariant ? 9 : combined
+                    const rrs = rrScore.get(qid);
+                    const score = isVariant ? 9 : rrs !== undefined ? 5 + rrs / 100   // 재정렬된 후보는 합산 점수(최대 약 2.1)보다 항상 위
+                        : combined
                         ? ss + so - 0.02 * Math.abs((Number(r.difficulty) || 5) - srcDiff) + 0.03 * tagHit
                         : shown;
                     scored.push({ r, score, shown, isVariant });
