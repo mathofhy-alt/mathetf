@@ -98,12 +98,28 @@ def main():
         pick = []
         try:
             clicks = collections.Counter(r['question_id'] for r in get('similar_click_log', {'select': 'question_id', 'order': 'clicked_at.desc', 'limit': '20000'}))
-            pick += [q for q, _ in clicks.most_common() if q not in done]
-            print('클릭 기록 문항', len(clicks), '· 그중 아직 안 한 것', len(pick))
-        except RuntimeError: print('클릭 기록 표 없음(SQL 20261014 미적용) — 최근 등록 순으로만')
+        except RuntimeError: clicks = collections.Counter(); print('클릭 기록 표 없음(SQL 20261014 미적용)')
+        # [10/14 사용자 지시] 우선순위: 전국연합 → 수능 → 평가원 → 경찰대학교 → 사관학교 (묶음 안: 클릭 많은 순 → 최근 연도 → 번호),
+        #   그다음 나머지 클릭 문항 → 최근 등록. 목록에 이미 있는 문항(done)은 건너뛴다.
+        PRIORITY = ['전국연합', '수능', '평가원', '경찰대학교', '사관학교']
+        for sch in PRIORITY:
+            if len(pick) >= a.n: break
+            rows = []; off = 0
+            while len(rows) < a.n * 3:          # 한 번에 1000행 제한 — 최근 연도순으로 필요한 만큼만 받는다
+                b_ = get('questions', {'select': 'id,year,question_number', 'school': f'eq.{sch}', 'work_status': 'eq.sorted',
+                                       'order': 'year.desc,source_db_id.asc,question_number.asc', 'limit': '1000', 'offset': str(off)})
+                if not b_: break
+                rows += [r for r in b_ if r['id'] not in done]; off += 1000
+            rows.sort(key=lambda r: (-clicks.get(r['id'], 0), -int(r['year'] or 0)))   # 안정 정렬 — 같은 클릭 수면 DB 순서(연도·회차·번호) 유지
+            pick += [r['id'] for r in rows]
+            print(f'우선 묶음 {sch}: 남은 {len(rows)}문항')
+        pick += [q for q, _ in clicks.most_common() if q not in done and q not in pick]
         if len(pick) < a.n:
-            for r in get('questions', {'select': 'id', 'work_status': 'eq.sorted', 'order': 'created_at.desc', 'limit': '2000'}):
-                if r['id'] not in done and r['id'] not in pick: pick.append(r['id'])
+            # 최근 등록 순 — 단 유사 목록(question_similar)이 이미 계산된 문항만(갓 등록돼 목록이 없으면 후보를 만들 수 없다)
+            recent = [r['id'] for r in get('questions', {'select': 'id', 'work_status': 'eq.sorted', 'order': 'created_at.desc', 'limit': '3000'}) if r['id'] not in done and r['id'] not in pick]
+            for i in range(0, len(recent), 100):
+                have = {r['question_id'] for r in get('question_similar', {'select': 'question_id', 'basis': 'eq.statement', 'question_id': 'in.(' + ','.join(recent[i:i + 100]) + ')'})}
+                pick += [q for q in recent[i:i + 100] if q in have]
                 if len(pick) >= a.n * 2: break
     pick = [q for q in pick if a.redo or q not in done][:a.n]
     bdir = os.path.join(ROOT, '.cache', 'rerank', time.strftime('batch_%Y%m%d_%H%M%S')); os.makedirs(bdir, exist_ok=True)
