@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Camera, FileText, Trash2, CheckCircle2, AlertCircle, ShieldCheck, Gift } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { CURRICULA } from '@/lib/curriculum';
-import { REPORT_REWARD_LABEL, REPORT_MIN_YEAR } from '@/lib/report-reward';
+import { REPORT_REWARD_LABEL, REPORT_REWARD_POINTS, REPORT_MIN_YEAR } from '@/lib/report-reward';
+import { QB_PASS } from '@/lib/qbPassConfig';
 
 /**
  * 회원 원본 시험지 제보 창 (2026-10-05).
@@ -12,14 +13,19 @@ import { REPORT_REWARD_LABEL, REPORT_MIN_YEAR } from '@/lib/report-reward';
  * - 학교는 NEIS 전국 고등학교 명단(2,408곳)에서 검색해 고른다(10/5 사용자 결정 — 직접 입력은 오타 위험).
  *   이름 같은 학교가 101곳이라 시·구를 같이 보여 주고 학교 코드로 넘긴다.
  * - 사진 여러 장 + 휴대폰 카메라 바로 촬영. 서명된 주소로 저장소에 바로 올리고, 저장은 /api/original-report 가 한다.
+ * - [10/13] '여러 회차 한꺼번에' — 강사가 가진 학교 기출 묶음(여러 해·여러 시험)을 학교만 골라 한 번에 올린다.
+ *   회차 구분은 운영자가 관리자 화면에서 '회차로 나누기'로 하고, 나뉜 회차마다 보상이 나간다(제보 1건 = 행 1개 규칙 그대로).
  */
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf';
 const MAX_FILES = 30;
+const MAX_FILES_BULK = 100;
+// 이용권 한 달을 원본 몇 회차로 — 29,000원 ÷ 5,000P = 6회차
+export const REPORTS_PER_PASS = Math.ceil(QB_PASS.salePrice / REPORT_REWARD_POINTS);
 
 type Picked = { file: File; url: string | null; key: string };
 
-export default function OriginalReportModal({ open, onClose, initialCode }: { open: boolean; onClose: () => void; initialCode?: string }) {
+export default function OriginalReportModal({ open, onClose, initialCode, initialBulk }: { open: boolean; onClose: () => void; initialCode?: string; initialBulk?: boolean }) {
     const supabase = useMemo(() => createClient(), []);
     const thisYear = new Date().getFullYear();
     type School = { name: string; region: string; district: string; code: string };
@@ -39,6 +45,8 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
     const [busy, setBusy] = useState<string>('');
     const [error, setError] = useState('');
     const [done, setDone] = useState(false);
+    const [bulk, setBulk] = useState(!!initialBulk);
+    const maxFiles = bulk ? MAX_FILES_BULK : MAX_FILES;
     const schoolKey = (sc: School) => `${sc.region}|${sc.district}|${sc.name}`;
     const REGION_ORDER = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
     const regions = useMemo(() => Array.from(new Set(schools.map(x => x.region))).sort((a, b) => (REGION_ORDER.indexOf(a) + 1 || 99) - (REGION_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b, 'ko')), [schools]);
@@ -81,7 +89,7 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
         setError('');
         const next = [...files];
         for (const f of Array.from(list)) {
-            if (next.length >= MAX_FILES) { setError(`사진은 ${MAX_FILES}장까지 올릴 수 있어요.`); break; }
+            if (next.length >= maxFiles) { setError(`파일은 ${maxFiles}개까지 올릴 수 있어요.${bulk ? ' 더 있으면 한 번 더 보내 주세요.' : ''}`); break; }
             const isImg = f.type.startsWith('image/') && !/heic|heif/.test(f.type);
             next.push({ file: f, url: isImg ? URL.createObjectURL(f) : null, key: `${f.name}_${f.size}_${f.lastModified}_${Math.random()}` });
         }
@@ -92,12 +100,13 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
     const submit = async (e: React.FormEvent) => {
         e.preventDefault(); setError('');
         if (!school) return setError('시도, 구·군, 학교를 차례로 골라주세요.');
-        if (!subject) return setError('과목을 골라주세요.');
+        if (!bulk && !subject) return setError('과목을 골라주세요.');
+        if (files.length > maxFiles) return setError(`파일은 ${maxFiles}개까지 올릴 수 있어요.`);
         if (!files.length) return setError('시험지 사진이나 PDF를 올려주세요.');
         try {
             setBusy('업로드 준비 중…');
             const s = await fetch('/api/original-report', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'sign', files: files.map(f => ({ name: f.file.name, type: f.file.type || 'image/jpeg', size: f.file.size })) }) });
+                body: JSON.stringify({ action: 'sign', bulk, files: files.map(f => ({ name: f.file.name, type: f.file.type || 'image/jpeg', size: f.file.size })) }) });
             const sj = await s.json(); if (!s.ok) throw new Error(sj.error || '업로드 준비에 실패했습니다.');
             for (let i = 0; i < files.length; i++) {
                 setBusy(`사진 올리는 중… ${i + 1} / ${files.length}`);
@@ -107,7 +116,7 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
             }
             setBusy('제보 접수 중…');
             const r = await fetch('/api/original-report', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: { code: school.code, year, grade, semester, examType, subject, note } }) });
+                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note } }) });
             const rj = await r.json(); if (!r.ok) throw new Error(rj.error || '제보를 저장하지 못했습니다.');
             setDone(true);
         } catch (err: any) {
@@ -133,7 +142,9 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                     <div className="text-center" style={{ padding: '32px 0 4px' }}>
                         <CheckCircle2 size={48} className="mx-auto text-[#1B7E7A]" />
                         <p className="mt-4 text-[18px] font-bold text-[#17202C]">신청이 접수됐어요. 고맙습니다!</p>
-                        <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>
+                        {bulk
+                            ? <p className="rd-modal-text" style={{ marginTop: 8 }}>회차별로 나눠 확인한 뒤 <b className="text-[#17202C]">회차마다 {REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>
+                            : <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>}
                         <div className="rd-modal-actions" style={{ marginTop: 28 }}>
                             <button type="button" onClick={close} className="rd-btn rd-btn-primary rd-btn-block">확인</button>
                         </div>
@@ -145,8 +156,14 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                                 <Gift size={20} className="text-[#1B7E7A] shrink-0 mt-0.5" />
                                 <p className="m-0 text-[15px] leading-[1.6] text-[#17202C]">
                                     학교에서 받은 수학 시험지를 <b>스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-[#1B7E7A]">수식·그림까지 타이핑한 한글 파일과 {REPORT_REWARD_LABEL}</b>를 드려요.
-                                    <span className="block text-[14px] text-[#5F6B78] mt-1">완성 파일은 마이페이지 › 내 요청에서 받아요. 올린 파일은 운영자만 봅니다.</span>
+                                    <span className="block text-[14px] text-[#5F6B78] mt-1">시험지 {REPORTS_PER_PASS}회차면 {REPORT_REWARD_LABEL} × {REPORTS_PER_PASS}로 <b className="text-[#17202C]">시험지 만들기 이용권 한 달</b>이에요. 완성 파일은 마이페이지 › 내 요청에서 받아요. 올린 파일은 운영자만 봅니다.</span>
                                 </p>
+                            </div>
+
+                            {/* [10/13] 강사는 학교 기출을 여러 해치 갖고 있다 — 회차마다 폼을 채우게 하면 묶음을 안 보낸다 */}
+                            <div className="rd-seg" role="radiogroup" aria-label="올리는 방식" style={{ display: 'flex' }}>
+                                <button type="button" role="radio" aria-checked={!bulk} aria-pressed={!bulk} onClick={() => setBulk(false)} style={{ flex: 1 }}>시험지 1회차</button>
+                                <button type="button" role="radio" aria-checked={bulk} aria-pressed={bulk} onClick={() => setBulk(true)} style={{ flex: 1 }}>여러 회차 한꺼번에</button>
                             </div>
 
                             <section className="space-y-3">
@@ -166,6 +183,9 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                                         {districtSchools.map(sc => <option key={schoolKey(sc)} value={schoolKey(sc)}>{sc.name}</option>)}
                                     </select>
                                 </div>
+                                {bulk ? (
+                                    <p className="m-0 text-[14px] leading-[1.6] text-[#5F6B78]">학교만 고르고, 그 학교 시험지를 <b className="text-[#17202C]">연도·학기 상관없이 한꺼번에</b> 올려 주세요(최대 {MAX_FILES_BULK}개). 회차 구분은 저희가 합니다. 학교가 여러 곳이면 학교마다 한 번씩 보내 주세요.</p>
+                                ) : <>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     <select aria-label="연도" value={year} onChange={e => setYear(Number(e.target.value))} className={field}>
                                         {Array.from({ length: thisYear - REPORT_MIN_YEAR + 1 }, (_, i) => thisYear - i).map(y => <option key={y} value={y}>{y}년</option>)}
@@ -189,12 +209,13 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                                     const all = CURRICULA.flatMap(c => c.subjects); const owned = all.filter(x => stateOf(x) === 'owned');
                                     return owned.length > 0 ? <p className="m-0 text-[14px] leading-[1.6] text-[#5F6B78]">이 시험은 <b className="text-[#17202C]">{owned.join(', ')}</b>이(가) 이미 수학ETF에 있어요. 없는 과목만 고를 수 있어요.</p> : null;
                                 })()}
+                                </>}
                             </section>
 
                             <section className="space-y-3">
                                 <div className="flex items-baseline justify-between gap-2">
                                     <h3 className={h3}>2. 시험지 파일 <span className="font-normal text-[#5F6B78]">(스캔 PDF가 있으면 가장 좋아요)</span></h3>
-                                    <span className="shrink-0 text-[14px] text-[#5F6B78] tabular-nums">{files.length} / {MAX_FILES}장</span>
+                                    <span className="shrink-0 text-[14px] text-[#5F6B78] tabular-nums">{files.length} / {maxFiles}{bulk ? '개' : '장'}</span>
                                 </div>
                                 <div className="flex items-start gap-2 rounded-[14px] bg-[#F7F8FA] px-[14px] py-3 text-[14px] leading-[1.6] text-[#4E5968]">
                                     <ShieldCheck size={16} className="shrink-0 mt-[3px] text-[#1B7E7A]" />
@@ -231,8 +252,8 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                             </section>
 
                             <section className="space-y-2">
-                                <h3 className={h3}>3. 남길 말 <span className="font-normal text-[#5F6B78]">(선택)</span></h3>
-                                <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder="예: 서술형 답안지는 따로 찍었어요" className={field} />
+                                <h3 className={h3}>3. 남길 말 <span className="font-normal text-[#5F6B78]">{bulk ? '(어떤 시험들인지 적어 주시면 빨라요)' : '(선택)'}</span></h3>
+                                <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder={bulk ? '예: 2022~2025년 1학년 1·2학기 중간·기말이에요' : '예: 서술형 답안지는 따로 찍었어요'} className={field} />
                             </section>
 
                             {error && <div role="alert" className="flex items-start gap-2 rounded-[14px] bg-[#FDECEC] px-[14px] py-3 text-[15px] text-[#C0392B]"><AlertCircle size={16} className="shrink-0 mt-[3px]" />{error}</div>}
@@ -241,7 +262,7 @@ export default function OriginalReportModal({ open, onClose, initialCode }: { op
                         <div className="rd-modal-foot">
                             <button type="button" onClick={close} disabled={!!busy} className="rd-btn rd-btn-gray">취소</button>
                             <button type="submit" disabled={!!busy} className="rd-btn rd-btn-primary" style={{ flex: '1 1 0' }}>
-                                {busy || `제보하기${files.length ? ` (${files.length}장)` : ''}`}
+                                {busy || `제보하기${files.length ? ` (${files.length}${bulk ? '개' : '장'})` : ''}`}
                             </button>
                         </div>
                     </form>

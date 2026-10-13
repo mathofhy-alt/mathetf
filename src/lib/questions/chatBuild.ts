@@ -54,11 +54,15 @@ function lexicalTags(said: string, concepts: ConceptCatalog): string[] {
     return [...new Set(strong.flat())].slice(0, 4);
 }
 
+/** 숫자 뒤 '로/으로' — 3·6·10(삼·육·십)은 '으로' */
+const ro = (n: number) => /(^|[^0-9])(3|6)$|0$/.test(String(n)) ? '으로' : '로';
 const short = (t: string) => t.replace('|', ' ');
 function scopeText(plan: ChatPlan) {
     const units = [...new Set(plan.targets.map(t => t.split('|')[1]))];
     const subjects = [...new Set(plan.targets.map(t => t.split('|')[0]))];
-    return units.length === 1 ? `${subjects.join('·')} ${units[0]}` : plan.targets.map(short).join(', ');
+    if (units.length === 1) return `${subjects.join('·')} ${units[0]}`;
+    // 단원이 많으면 과목으로 줄인다 — 34개 단원을 다 늘어놓은 답이 나갔다(10/12 실사용)
+    return plan.targets.length <= 4 ? plan.targets.map(short).join(', ') : `${subjects.join('·')} ${units.length}개 단원`;
 }
 
 /** targets 안(또는 [] = 전체)에서 후보. withQuery=false 면 벡터 거리 없이(전체를 벡터로 훑지 않게) */
@@ -80,9 +84,28 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         // 과목만 말하고 단원을 안 정했으면(확통 전범위) 그 과목 모든 단원 — AI 가 [] 로 두면 전체 과목에서 골라 엉뚱했다(10/11 2차)
         plan.targets = keep.length ? keep : !plan.keywords.length && !plan.concepts.length ? Object.keys(concepts).filter(t => named.includes(t.split('|')[0])) : plan.targets;
     }
-    if (!named.length && !/20(15|22)\s*(개정|과정)/.test(said)) {
+    // 모의고사·수능 문항은 DB 에 2022 과정 이름(대수·미적분I·미적분II·기하와벡터)으로 들어 있다 — '수능 미적분'·'고2 수학1' 처럼 콕 집어도 짝을 붙인다(10/12: 0문항)
+    const mockScope = plan.filters.kinds.includes('mock') || plan.filters.schools.some(x => /평가원|수능|전국연합/.test(x));
+    if ((mockScope || !named.length) && !/20(15|22)\s*(개정|과정)/.test(said)) {
         const add = plan.targets.map(t => { const [s, u] = t.split('|'); return `${CURRICULUM_PAIR[s]}|${u}`; }).filter(t => concepts[t] && !plan.targets.includes(t));
         plan.targets.push(...add);
+    }
+    // 고3 모의고사·수능 말투의 '공통' = 수학I·수학II(대수·미적분I) — 공통수학1·2(고1)로 읽어 0문항이 났다(10/12 실사용 '고3 평가원 공통')
+    const mockTalk = /수능|평가원|모의|학평|고3/.test(said) || plan.filters.kinds.includes('mock') || plan.filters.grades.includes('고3');
+    if (mockTalk && /공통(?!수학)/.test(said) && !/공통수학[12]/.test(said)) {
+        const common = Object.keys(concepts).filter(t => /^(수학I|수학II|대수|미적분I)\|/.test(t));
+        const kept = plan.targets.filter(t => common.includes(t));
+        plan.targets = kept.length ? kept : common;
+        plan.concepts = plan.concepts.filter(c => plan.targets.some(t => concepts[t]?.[c]));
+        plan.unsupported = plan.unsupported.split(/[,·]/).map(x => x.trim()).filter(x => x && !/공통|선택/.test(x)).join(', ');
+    }
+    // 배점(2·3·4점) — 모의고사 원본 PDF 에서 읽어 question_points 표에 채웠다(10/13, 11,272문항). AI 가 빠뜨려도 말에 있으면 건다. 본문 키워드로 찾으면 0문항('3점배점')
+    const pts = [...said.matchAll(/([234])\s*점(?!\s*대)/g)].map(m => Number(m[1]));
+    plan.keywords = plan.keywords.filter(k => !/\d\s*점|배점/.test(k));
+    if (pts.length && !plan.filters.points.length) plan.filters.points = [...new Set(pts)];
+    if (plan.filters.points.length) {
+        plan.filters.kinds = ['mock'];   // 배점은 모의고사·수능에만 있다(사관·경찰대·내신 없음)
+        plan.unsupported = plan.unsupported.split(/[,·]/).map(x => x.trim()).filter(x => x && !/점|배점/.test(x)).join(', ');
     }
     if (plan.action === 'ask') return { reply: plan.reply, plan, by: 'ask', chosen: [], widened: false };
 
@@ -179,8 +202,9 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         + (by.endsWith('+similarity') ? `(모자라 발문이 비슷한 문항도 보탬)` : '') + ' 문항';
     const fl = plan.filters, tags = [
         fl.years.length ? fl.years.join('·') + '년' : '', fl.kinds.map(k => ({ mock: '모의고사·수능', school: '학교 기출', special: '사관·경찰대' } as any)[k]).join('·'),
-        fl.grades.join('·'), fl.semesters.join('·'), fl.schools.map(x => x + '(학교)').join('·'),
+        fl.grades.join('·'), fl.semesters.join('·'), fl.schools.map(x => /^(평가원|수능|전국연합)$/.test(x) ? x : x + '(학교)').join('·'),
         fl.qtype === 'short_answer' ? '서답형' : fl.qtype === 'multiple_choice' ? '객관식' : '',
+        fl.points?.length ? fl.points.join('·') + '점' : '',
     ].filter(Boolean);
     const orderText = plan.order === 'easy_to_hard' ? '쉬운 것부터' : plan.order === 'hard_to_easy' ? '어려운 것부터' : '섞어서';
     const unitsUsed = [...new Set(chosen.map(c => c.unit).filter(Boolean))];
@@ -188,8 +212,8 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         ? (unitsUsed.length <= 3 ? unitsUsed.join('·') : `${unitsUsed.slice(0, 3).join('·')} 등 ${unitsUsed.length}개 단원`)
         : scopeText(plan);
     let reply = chosen.length
-        ? `${tags.length ? `[${tags.join(' · ')}] ` : ''}${where || '전체 단원'}에서 ${why.trim()} ${chosen.length}개를 ${range ? range + '로 고르게, ' : ''}${orderText} 담았어요.`
-        : `${plan.targets.length ? scopeText(plan) : '전체 단원'}에서 조건(난이도 ${plan.minDifficulty}~${plan.maxDifficulty})에 맞는 문항을 찾지 못했어요. 난이도나 범위를 넓혀 볼까요?`;
+        ? `${tags.length ? `[${tags.join(' · ')}] ` : ''}${where || '전체 단원'}에서 ${why.trim()} ${chosen.length}개를 ${range ? range + ro(Number(range.match(/\d+$/)![0])) + ' 고르게, ' : ''}${orderText} 담았어요.`
+        : `${tags.length ? `[${tags.join(' · ')}] ` : ''}${plan.targets.length ? scopeText(plan) : '전체 단원'}에서 조건(난이도 ${plan.minDifficulty}~${plan.maxDifficulty})에 맞는 문항을 찾지 못했어요. 난이도나 범위를 넓혀 볼까요?`;
     if (filled) reply += ` 주제에 딱 맞는 문항이 모자라 ${filled}개는 같은 단원의 다른 문항으로 채웠어요.`;
     if (plan.unsupported) reply += ` ('${plan.unsupported}' 조건은 아직 걸 수 없어 빼고 골랐어요.)`;
     const missing = plan.count - chosen.length;

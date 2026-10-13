@@ -6,6 +6,7 @@ import { payOrder } from '@/lib/payments/client';
 import { QB_PASS, QB_PASS_TERMS, QB_LIMITS, termPrice } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 import { createClient } from '@/utils/supabase/client';
+import { REPORT_REWARD_LABEL, REPORT_REWARD_POINTS } from '@/lib/report-reward';
 
 export type PassInfo = { unlimited: boolean; paywall?: boolean; admin?: boolean; passUntil: string | null; freePerWeek: number; usedThisWeek: number; freeLeft: number; resetsAt: string; viewers?: number | null };
 
@@ -23,7 +24,12 @@ export function passLine(p: PassInfo | null): string {
  * 시험지 만들기 이용권 결제 창 (10/7). 무료 횟수를 다 쓰고 저장하려 할 때, 또는 직접 열 때.
  * 결제는 장바구니와 같은 payOrder(서버 주문 → 포트원 → 서버 확인). 모바일은 결제 후 /payments/return 으로 돌아온다.
  */
-export default function PassModal({ user, info, onClose, onPaid }: { user: any; info: PassInfo | null; onClose: () => void; onPaid: () => void }) {
+// [10/12] 결제 화면 계측 — 저장이 막혀 뜬 건지(save_blocked) 버튼으로 연 건지, 결제 버튼을 눌렀는지. feature_usage 에 남는다
+const logPass = (feature: string, title: string) => {
+    fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature, title }) }).catch(() => { });
+};
+
+export default function PassModal({ user, info, onClose, onPaid, from = 'button' }: { user: any; info: PassInfo | null; onClose: () => void; onPaid: () => void; from?: string }) {
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState('');
     // [10/7] 환불 불가 동의 — 사용자 결정(사용 0회여도 환불 안 함). 동의해야 결제 버튼이 눌린다.
@@ -34,6 +40,7 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
     const total = termPrice(term.months);
     // [10/8] 포인트로도 이용권을 산다(사용자: 무료 타이핑 채택 5,000P × 6건 = 1개월). 전액 포인트면 카드 결제창 없이 끝난다.
     const [points, setPoints] = useState(0);
+    useEffect(() => { logPass('qb_paywall_view', `${from}|무료${info ? (info.unlimited ? '무제한' : `${info.freeLeft}남음`) : '?'}`); }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const [usePoints, setUsePoints] = useState(true);
     useEffect(() => {
         if (!user?.id) return;
@@ -47,6 +54,7 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
     const phoneOk = !needPhone || /^01[016789]\d{7,8}$/.test(phone.replace(/[^0-9]/g, ''));
     const buy = async () => {
         if (busy || !agree || !phoneOk) return;
+        logPass('qb_paywall_pay', `${from}|${months}개월|${pay}원`);
         setBusy(true); setErr('');
         try {
             const digits = phone.replace(/[^0-9]/g, '');
@@ -84,6 +92,14 @@ export default function PassModal({ user, info, onClose, onPaid }: { user: any; 
                         <li><Check size={16} aria-hidden="true" /> 결제한 날부터 {term.days}일, 자동 결제 없음</li>
                         <li><Check size={16} aria-hidden="true" /> 기간 중에 다시 사면 끝나는 날 뒤로 이어 붙어요</li>
                     </ul>
+                </div>
+                {/* [10/13] 결제 대신 원본으로 — 강사는 담당 학교 기출 원본을 여러 해치 갖고 있다. 원본 6회차 × 5,000P = 이용권 한 달 */}
+                <div className="rd-pass-report">
+                    <p><b>결제 대신 원본 시험지로</b> 가지고 있는 학교 시험지 원본을 보내 주시면 회차마다 {REPORT_REWARD_LABEL}를 드려요. <b>{Math.ceil(QB_PASS.salePrice / REPORT_REWARD_POINTS)}회차면 이용권 한 달</b>이고, 그림·해설까지 타이핑한 한글 파일도 드려요.</p>
+                    <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={() => {
+                        logPass('qb_paywall_report', `${from}|${out ? 'out' : 'left'}`);
+                        onClose(); window.dispatchEvent(new CustomEvent('open-original-report', { detail: { bulk: true } }));
+                    }}>원본 시험지 보내기</button>
                 </div>
                 {points > 0 && <label className="rd-pass-points">
                     <input type="checkbox" checked={usePoints} onChange={e => setUsePoints(e.target.checked)} />

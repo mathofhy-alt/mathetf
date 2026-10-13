@@ -91,7 +91,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     //   다른 화면(학교 페이지 등)에서도 window.dispatchEvent(new Event('open-original-report')) 로 열 수 있다.
     const [reportOpen, setReportOpen] = useState(false);
     const [reportSchool, setReportSchool] = useState<string | undefined>(undefined);   // 학교 페이지에서 열면 그 학교 코드
-    const openReport = (code?: string) => { if (!user) { router.push(`/login?next=${authNext}`); return; } setReportSchool(code); setReportOpen(true); setMobileMenuOpen(false); };
+    const [reportBulk, setReportBulk] = useState(false);   // [10/13] 결제 화면 '원본으로 이용권' — 여러 회차 한꺼번에 모드로 연다
+    const openReport = (code?: string, bulk?: boolean) => { if (!user) { router.push(`/login?next=${authNext}`); return; } setReportSchool(code); setReportBulk(!!bulk); setReportOpen(true); setMobileMenuOpen(false); };
     // [10/6] 개인DB 요청 — 회원이 개인DB로 만들고 싶은 자료(시중 교재 등)를 운영자에게 보낸다
     const [dbRequestOpen, setDbRequestOpen] = useState(false);
     const [accountOpen, setAccountOpen] = useState(false);
@@ -106,7 +107,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     }, [accountOpen]);
     useEffect(() => { setAccountOpen(false); }, [pathname]);
     const openDbRequest = () => { if (!user) { router.push(`/login?next=${authNext}`); return; } setDbRequestOpen(true); setMobileMenuOpen(false); };
-    useEffect(() => { const h = (e: Event) => openReport((e as CustomEvent).detail?.code); window.addEventListener('open-original-report', h); return () => window.removeEventListener('open-original-report', h); });
+    useEffect(() => { const h = (e: Event) => openReport((e as CustomEvent).detail?.code, (e as CustomEvent).detail?.bulk); window.addEventListener('open-original-report', h); return () => window.removeEventListener('open-original-report', h); });
     // [10/7] 홈 설명 칸의 '개인DB 요청하기' 버튼도 같은 창을 연다
     useEffect(() => { const h = () => openDbRequest(); window.addEventListener('open-db-request', h); return () => window.removeEventListener('open-db-request', h); });
 
@@ -372,7 +373,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                 </div>
             </header>
             {dbRequestOpen && <DbRequestModal open={dbRequestOpen} onClose={() => setDbRequestOpen(false)} />}
-            {reportOpen && <OriginalReportModal open={reportOpen} initialCode={reportSchool} onClose={() => setReportOpen(false)} />}
+            {reportOpen && <OriginalReportModal open={reportOpen} initialCode={reportSchool} initialBulk={reportBulk} onClose={() => setReportOpen(false)} />}
         </>
     );
 }
