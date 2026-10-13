@@ -266,6 +266,14 @@ def run_incremental(a):
                 fail += 1; print(f'  ⚠ {basis} {unit}: {str(e)[:200]}')
     print(f'임베딩 받음 {fetched} · 쓴 행 {written} · 총 {time.time() - t0:.0f}초')
     print(f'완료: 성공 {ok} / 실패 {fail}')
+    if not a.dry_run and written: inject_variants()
+
+
+def inject_variants():
+    """[10/13] 변형 회차 짝을 목록 맨 앞에 다시 박는다 — 목록을 다시 쓰면 사라지므로 계산 뒤 항상 한 번"""
+    import subprocess
+    r = subprocess.run([sys.executable, '-I', os.path.join(os.path.dirname(__file__), 'inject_variant_pairs.py')], capture_output=True, text=True, encoding='utf-8', errors='replace')
+    print('변형 짝:', (r.stdout or r.stderr).strip().splitlines()[-1] if (r.stdout or r.stderr).strip() else r.returncode)
 
 
 def main():
@@ -315,6 +323,7 @@ def main():
             print(f'  ⚠ [{n}/{len(targets)}] {unit}: {str(e)[:200]}')
     print(f'총 {time.time() - t0:.0f}초')
     print(f'완료: 성공 {ok} / 실패 {fail}')
+    if not a.dry_run and ok: inject_variants()
 
 
 if __name__ == '__main__':

@@ -97,12 +97,12 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                         </div>
                         <p className="rd-modal-sub">
                             {basis === 'statement'
-                                ? '문제(발문)가 비슷한 문항을 찾습니다 — 묻는 내용이 닮은 문제.'
+                                ? '문제·풀이·개념을 함께 보고 숙제나 변형 연습으로 쓸 만한 문항을 고릅니다. 변형 회차가 있으면 맨 위에 둡니다.'
                                 : '풀이가 비슷한 문항을 찾습니다 — 해결 방법이 닮은 문제.'}
                         </p>
                         <div className="rd-seg rd-seg-inline" style={{ marginTop: 12 }}>
                             {([
-                                ['statement', '문제 유사'],
+                                ['statement', '추천'],   // [10/13] 발문+풀이+태그+난이도 합산(채점 56%→65%)
                                 ['solution', '풀이 유사'],
                             ] as const).map(([key, label]) => (
                                 <button
@@ -181,11 +181,13 @@ export default function SimilarQuestionsModal({ onClose, baseQuestion, cart, onT
                                                     <span className="rd-tag">
                                                         #{idx + 1}
                                                     </span>
-                                                    {similarity && (
+                                                    {q.relation === 'variant' ? (
+                                                        <span className="rd-tag rd-tag-ink" title="같은 회차의 변형 문항">변형</span>
+                                                    ) : similarity ? (
                                                         <span className="rd-tag rd-tag-ink">
                                                             {similarity}%
                                                         </span>
-                                                    )}
+                                                    ) : null}
                                                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--rd-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                                                         {q.school}
                                                     </span>
