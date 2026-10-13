@@ -22,6 +22,7 @@ import { CartProvider } from "@/components/providers/CartProvider";
 import Footer from "@/components/Footer";
 import FloatingCart from "@/components/FloatingCart";
 import PersonaSync from "@/components/PersonaSync";
+import ClarityTags from '@/components/ClarityTags';
 import { Analytics } from '@vercel/analytics/react';
 import Script from "next/script";
 
@@ -84,7 +85,7 @@ export default function RootLayout({
                     <SiteSurface>{children}</SiteSurface>
                     <Footer />
                     <FloatingCart />
-                    <PersonaSync /><ModalFocus /><CampaignCapture/><KakaoPixel/>
+                    <PersonaSync /><ClarityTags /><ModalFocus /><CampaignCapture/><KakaoPixel/>
                 </CartProvider>
                 
                 {/* PortOne SDK - Lazy load */}
@@ -104,6 +105,19 @@ export default function RootLayout({
                             var tag=document.createElement('script');tag.async=true;
                             tag.src='https://www.googletagmanager.com/gtag/js?id='+${JSON.stringify(/^G-[A-Z0-9]+$/.test(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '') ? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID : 'G-WT6Y809441')};
                             document.head.appendChild(tag);
+                        }
+                    `}} />
+                )}
+                {/* [10/13] Microsoft Clarity — 방문자가 어디서·왜 나가는지(세션 녹화·히트맵). 운영 도메인에서만, 관리자 화면 제외.
+                    입력칸은 Clarity 기본 설정이 가린다. 개인정보처리방침(PrivacyModal)에 안내함 */}
+                {process.env.VERCEL_ENV === 'production' && (
+                    <script dangerouslySetInnerHTML={{__html: `
+                        if (['mathetf.com','www.mathetf.com'].includes(location.hostname) && !location.pathname.startsWith('/admin')) {
+                            (function(c,l,a,r,i,t,y){
+                                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                            })(window, document, "clarity", "script", "ywz53pzybh");
                         }
                     `}} />
                 )}

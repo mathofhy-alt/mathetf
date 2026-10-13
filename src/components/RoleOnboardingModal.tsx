@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { GraduationCap, PencilRuler, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
-export type UserRole = 'student' | 'teacher';
+export type UserRole = 'student' | 'teacher' | 'parent';   // [10/13] 가입 화면에서 학부모를 따로 받는다
 
 export const ROLE_STORAGE_KEY = 'mathetf_role';
 const STORAGE_KEY = ROLE_STORAGE_KEY;
@@ -23,7 +23,7 @@ export async function syncRoleToProfile(role: UserRole): Promise<void> {
 export function getStoredRole(): UserRole | null {
     if (typeof window === 'undefined') return null;
     const v = localStorage.getItem(STORAGE_KEY);
-    return v === 'student' || v === 'teacher' ? v : null;
+    return v === 'student' || v === 'teacher' || v === 'parent' ? v : null;
 }
 
 /**

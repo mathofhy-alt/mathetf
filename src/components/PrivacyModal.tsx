@@ -32,6 +32,7 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
                                 <li><span className="font-bold">유료 서비스 이용 시:</span> 결제 기록, 결제 승인 번호 (포트원 연동 시 발생).</li>
                                 <li><span className="font-bold">서비스 이용 과정:</span> 접속 로그, 쿠키, IP 정보.</li>
                                 <li><span className="font-bold">광고 성과 측정:</span> 카카오 픽셀을 통해 방문 페이지, 이전 페이지, 접속 정보 및 회원가입 완료 이벤트가 카카오에 전송될 수 있습니다. 가입자의 이메일과 휴대폰 번호는 픽셀 이벤트에 포함하지 않습니다.</li>
+                                <li><span className="font-bold">서비스 이용 행태 분석:</span> 화면을 더 쉽게 고치기 위해 Microsoft Clarity로 페이지 이동, 클릭·스크롤 같은 이용 행태와 기기·브라우저 정보를 수집합니다. 입력칸에 적는 내용(이메일·비밀번호·휴대폰 번호 등)은 수집하지 않도록 가립니다. 수집된 정보는 Microsoft에 저장됩니다.</li>
                             </ul>
                         </section>
 
@@ -42,6 +43,7 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
                                 <li><span className="font-bold">서비스 제공:</span> 기출자료 다운로드, 자료 결제 서비스 제공, 콘텐츠 구매 내역 관리.</li>
                                 <li><span className="font-bold">고객 지원:</span> 서비스 관련 공지사항 전달, 민원 처리 및 고객 상담.</li>
                                 <li><span className="font-bold">광고 분석:</span> 광고 유입 경로와 회원가입 전환 수를 확인합니다.</li>
+                                <li><span className="font-bold">서비스 개선:</span> 방문자가 어느 화면에서 어려움을 겪는지 확인해 화면을 고칩니다.</li>
                             </ul>
                         </section>
 
