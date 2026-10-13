@@ -32,36 +32,84 @@ export async function GET(req: NextRequest) {
         // [성능 2026-10-01] 미리 계산한 유사문항(question_similar)을 먼저 본다.
         // 실측: 누를 때마다 하던 벡터 검색이 0.5~3.7초 → 표 조회 2번(~0.1초).
         // 표에 없는 문항(방금 등록된 문항, 표가 아직 없는 환경)은 아래 예전 벡터 검색으로 간다.
+        //
+        // [10/13 유사문항 품질] 50문항×상위5 를 강사 기준으로 채점(쓸 만한가 O/△): 발문 유사도 순서 56% → 아래 합산 점수 65%.
+        //   ① 두 기준(발문·풀이) 목록을 합치고  점수 = 발문유사 + 풀이유사 − 0.02×난이도차 + 0.03×개념태그 겹침
+        //      (발문·풀이 유사도만으론 '같은 단원 다른 풀이'를 못 가르고, 태그·난이도가 그걸 조금 가른다 — 459쌍 실측)
+        //   ② 똑같은 문제(가형·나형 중복 출제, 학교가 평가원 문제를 그대로 낸 것)는 뺀다 — 본문+수식이 같으면 같은 문제
+        //   ③ 변형 회차 짝([id, 1, 'variant'], scripts/inject_variant_pairs.py)은 단원·임계값과 상관없이 맨 위
+        //   basis=solution 을 고르면 예전처럼 풀이 유사도 순서만 쓴다(화면의 '풀이 유사' 토글).
         const admin = createAdminClient();
+        //   [10/14 재정렬] basis='rerank' = 후보 20개를 LLM(Haiku)이 발문·해설을 읽고 다시 줄 세운 결과(scripts/similar_rerank_*.py).
+        //   개발 40사례 실측 상위5 적합 108→130/200. 있으면 그 순서를 맨 앞에 쓰고, 없으면 아래 합산 점수 그대로.
+        //   유사 버튼 클릭은 similar_click_log 에 남겨 재정렬 우선순위로 쓴다(표가 아직 없으면 실패해도 무시).
         const [authRes, preRes] = await Promise.all([
             supabase.auth.getUser(),
-            admin.from('question_similar').select('neighbors').eq('question_id', id).eq('basis', basisParam).maybeSingle(),
+            admin.from('question_similar').select('basis, neighbors').eq('question_id', id).in('basis', ['statement', 'solution', 'rerank']),
+            admin.from('similar_click_log').insert({ question_id: id }).then(() => null, () => null),
         ]);
-
         const user = authRes.data?.user;
         if (authRes.error || !user) {
             return NextResponse.json({success:false,error:'로그인 후 유사 문항을 찾아볼 수 있습니다.'},{status:401});
         }
         const isAdmin = user.email === 'mathofhy@naver.com';
-
         let precomputed: any[] | null = null;
-        const pairs: [string, number][] = Array.isArray(preRes.data?.neighbors) ? preRes.data!.neighbors : [];
-        if (!preRes.error && preRes.data) {
-            const simById = new Map(pairs.map(([qid, sim]) => [qid, sim]));
+        type Nb = [string, number] | [string, number, string];
+        const lists: Record<string, Nb[]> = {};
+        for (const r of (preRes.data || []) as any[]) lists[r.basis] = Array.isArray(r.neighbors) ? r.neighbors : [];
+        const stmt = lists.statement || [], sol = lists.solution || [];
+        const combined = basisParam === 'statement' && stmt.length > 0;
+        const main: Nb[] = combined ? stmt : (lists[basisParam] || []);
+        if (!preRes.error && (main.length > 0 || (combined && sol.length > 0))) {
+            const variantIds = new Set<string>([...stmt, ...sol].filter(p => p[2] === 'variant').map(p => p[0]));
+            const simS = new Map(stmt.map(([q, s]) => [q, Number(s)])), simO = new Map(sol.map(([q, s]) => [q, Number(s)]));
+            const rr = combined ? (lists.rerank || []) : [];
+            const rrScore = new Map(rr.map(([q, s]) => [q, Number(s)]));
+            const candIds = Array.from(new Set((combined ? [...rr, ...stmt, ...sol] : main).map(p => p[0])));
+            const SEL = 'id, school, grade, year, semester, subject, unit, question_number, key_concepts, difficulty, source_db_id, question_type, is_off_curriculum, plain_text, equation_scripts';
             const [{ data: srcRow }, { data: rows, error: rowsError }] = await Promise.all([
-                admin.from('questions').select('unit').eq('id', id).maybeSingle(),
-                pairs.length ? admin.from('questions')
-                    .select('id, school, grade, year, semester, subject, unit, question_number, key_concepts, difficulty, source_db_id, question_type, is_off_curriculum')
-                    .in('id', pairs.map(([qid]) => qid)).eq('work_status', 'sorted')
+                admin.from('questions').select('unit, difficulty, key_concepts, plain_text, equation_scripts').eq('id', id).maybeSingle(),
+                candIds.length ? admin.from('questions').select(SEL).in('id', candIds).eq('work_status', 'sorted')
                     : Promise.resolve({ data: [] as any[], error: null }),
             ]);
             if (srcRow && !rowsError) {
+                const sig = (r: any) => `${String(r.plain_text || '').replace(/\s|[①②③④⑤]/g, '')}|${(Array.isArray(r.equation_scripts) ? r.equation_scripts.join(' ') : String(r.equation_scripts || '')).replace(/\s/g, '')}`;
+                const tagsOf = (r: any): Set<string> => {
+                    const t = r.key_concepts; let arr: string[] = [];
+                    if (Array.isArray(t)) arr = t.map(String);
+                    else if (typeof t === 'string') arr = t.match(/#[^'",\]]+/g) || [];
+                    return new Set(arr.map(x => x.trim()));
+                };
+                const srcSig = sig(srcRow), srcTags = tagsOf(srcRow), srcDiff = Number(srcRow.difficulty) || 5;
+                const floorS = stmt.length ? Math.min(...stmt.map(p => Number(p[1]))) - 0.01 : 0.85;
+                const floorO = sol.length ? Math.min(...sol.map(p => Number(p[1]))) - 0.01 : 0.85;
                 const byId = new Map((rows || []).map((r: any) => [r.id, r]));
-                precomputed = pairs.map(([qid]) => byId.get(qid)).filter(Boolean)
-                    .map((r: any) => ({ ...r, similarity: simById.get(r.id) }))
-                    .filter((r: any) => r.similarity > 1 - threshold && (!srcRow.unit || r.unit === srcRow.unit));
+                const scored: any[] = [];
+                for (const qid of candIds) {
+                    const r = byId.get(qid); if (!r) continue;
+                    const isVariant = variantIds.has(qid);
+                    if (!isVariant && srcRow.unit && r.unit !== srcRow.unit) continue;
+                    const ss = simS.get(qid) ?? floorS, so = simO.get(qid) ?? floorO;
+                    const shown = combined ? Math.max(ss, so) : (simS.get(qid) ?? so);
+                    if (!isVariant && shown <= 1 - threshold) continue;
+                    if (!isVariant && srcSig.length > 1 && sig(r) === srcSig) continue;   // ② 같은 문제
+                    let tagHit = 0; for (const t of tagsOf(r)) if (srcTags.has(t)) tagHit++;
+                    const rrs = rrScore.get(qid);
+                    const score = isVariant ? 9 : rrs !== undefined ? 5 + rrs / 100   // 재정렬된 후보는 합산 점수(최대 약 2.1)보다 항상 위
+                        : combined
+                        ? ss + so - 0.02 * Math.abs((Number(r.difficulty) || 5) - srcDiff) + 0.03 * tagHit
+                        : shown;
+                    scored.push({ r, score, shown, isVariant });
+                }
+                scored.sort((a, b) => b.score - a.score);
+                const seen = new Set<string>(); precomputed = [];
+                for (const x of scored) {
+                    const k = sig(x.r); if (k.length > 1 && seen.has(k)) continue; seen.add(k);   // ② 후보끼리 같은 문제
+                    const { plain_text, equation_scripts, ...pub } = x.r;   // 발문 텍스트는 응답에 싣지 않는다(스크래핑 우려)
+                    precomputed.push({ ...pub, similarity: x.shown, ...(x.isVariant ? { relation: 'variant' } : {}) });
+                }
                 // 계산 뒤 단원이 바뀌는 등으로 저장된 목록이 전부 걸러졌으면 실시간 검색으로 넘긴다
-                if (precomputed.length === 0 && pairs.length > 0) precomputed = null;
+                if (precomputed.length === 0 && candIds.length > 0) precomputed = null;
             }
         }
 
