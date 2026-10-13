@@ -107,6 +107,19 @@ export default function RootLayout({
                         }
                     `}} />
                 )}
+                {/* [10/13] Microsoft Clarity — 방문자가 어디서·왜 나가는지(세션 녹화·히트맵). 운영 도메인에서만, 관리자 화면 제외.
+                    입력칸은 Clarity 기본 설정이 가린다. 개인정보처리방침(PrivacyModal)에 안내함 */}
+                {process.env.VERCEL_ENV === 'production' && (
+                    <script dangerouslySetInnerHTML={{__html: `
+                        if (['mathetf.com','www.mathetf.com'].includes(location.hostname) && !location.pathname.startsWith('/admin')) {
+                            (function(c,l,a,r,i,t,y){
+                                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                            })(window, document, "clarity", "script", "ywz53pzybh");
+                        }
+                    `}} />
+                )}
             </body>
         </html>
     );
