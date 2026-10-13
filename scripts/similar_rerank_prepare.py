@@ -68,16 +68,24 @@ def candidates(base):
         r = rows.get(q)
         if not r or r['work_status'] != 'sorted' or r['unit'] != b['unit'] or (len(bs) > 1 and sig(r) == bs): continue
         sc.append((S_.get(q, fs) + O_.get(q, fo) - 0.02 * abs(int(r['difficulty'] or 5) - bd) + 0.03 * len(tags(r) & bt), q))
-    sc.sort(reverse=True); ok = {q for _, q in sc}
-    # 후보 = 합산 상위 14 + 풀이 유사 상위 6 (합산 점수는 문장 겉모습에 끌려 '풀이만 같은' 문제를 20위 밖으로 밀어낸다 —
-    #   예: 2017 수능 21번 ↔ 분당중앙고 25 16번은 풀이 유사 3위·합산 22위). 같은 문제(서명)는 하나만.
-    sol_top = [q for q in sorted(O_, key=lambda q: -O_[q]) if q in ok][:6]
+    ok = {q for _, q in sc}
+    # 후보 = 문제(발문) 유사 상위 20 ∪ 풀이 유사 상위 20 (겹치면 하나, 같은 문제 서명은 하나) → 최대 40개.
+    #   [10/14 사용자 결정] 합산 상위 20 만 보면 '풀이만 같은' 문제가 빠진다(예: 2017 수능 21번 ↔ 분당중앙고 25 16번 =
+    #   풀이 유사 3위·합산 22위). 임의 비율 대신 두 목록 각각 상위 20.
+    def top20(M):
+        seen = set(); out = []
+        for q in sorted(M, key=lambda q: -M[q]):
+            if q not in ok: continue
+            k = sig(rows[q])
+            if len(k) > 1 and k in seen: continue
+            seen.add(k); out.append(q)
+            if len(out) == 20: break
+        return out
     seen = set(); out = []
-    for q in [q for _, q in sc][:14] + sol_top + [q for _, q in sc][14:]:
+    for q in top20(S_) + top20(O_):
         k = sig(rows[q])
         if q in out or (len(k) > 1 and k in seen): continue
         seen.add(k); out.append(q)
-        if len(out) == 20: break
     return b, out
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('n', nargs='?', type=int, default=40); ap.add_argument('--ids'); ap.add_argument('--source'); ap.add_argument('--redo', action='store_true')
@@ -112,9 +120,9 @@ def main():
         open(os.path.join(bdir, f'{name}.txt'), 'w', encoding='utf-8').write('\n'.join(body))
         key[name] = {'base': base, 'cands': [q for q in c if q in xml]}
         if (i + 1) % 10 == 0: print(f'  {i + 1}/{len(pick)}')
-    names = list(key); jobs = [names[i:i + 4] for i in range(0, len(names), 4)]
+    names = list(key); jobs = [names[i:i + 3] for i in range(0, len(names), 3)]   # 후보가 최대 40개라 에이전트 1명당 3문항
     for j, g in enumerate(jobs): open(os.path.join(bdir, f'job{j + 1}.txt'), 'w', encoding='utf-8').write('\n'.join(g))
     json.dump(key, open(os.path.join(bdir, 'key.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
-    print(f'배치 {bdir}\n문항 {len(key)} · 작업 파일 {len(jobs)}개 (Haiku 에이전트 {len(jobs)}명, 각 4문항) · 예상 플랜 사용 약 {len(key) * 27}k 토큰')
+    print(f'배치 {bdir}\n문항 {len(key)} · 작업 파일 {len(jobs)}개 (Haiku 에이전트 {len(jobs)}명, 각 3문항) · 예상 플랜 사용 약 {sum(len(v["cands"]) for v in key.values()) * 1.35:.0f}k 토큰')
     print('다음: 작업 파일마다 Haiku 에이전트 1명 — 지시문 scripts/similar_rerank_prompt.md ({JOB}·{OUT} 바꿔 넣기) → 끝나면 python scripts/similar_rerank_save.py', bdir)
 if __name__ == '__main__': main()
