@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { CURRICULA } from '@/lib/curriculum';
 import { REPORT_REWARD_LABEL, REPORT_REWARD_POINTS, REPORT_MIN_YEAR } from '@/lib/report-reward';
 import { QB_PASS } from '@/lib/qbPassConfig';
+import { NOTIFY_WHEN, type NotifyWhen } from '@/lib/reportDoneNotice';
 
 /**
  * 회원 원본 시험지 제보 창 (2026-10-05).
@@ -38,6 +39,9 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
     const [examType, setExamType] = useState(new Date().getMonth() % 6 < 4 ? '중간고사' : '기말고사');
     const [subject, setSubject] = useState('');
     const [note, setNote] = useState('');
+    // [10/15] 한글 파일 완성 문자 — 받을지, 받는다면 언제(사용자 요청)
+    const [notifySms, setNotifySms] = useState(true);
+    const [notifyWhen, setNotifyWhen] = useState<NotifyWhen>('asap');
     const [files, setFiles] = useState<Picked[]>([]);
     const [schools, setSchools] = useState<School[]>([]);
     // 고른 학교에 이미 있는 회차 / 접수된 제보 — '연도-학년-학기-시험-과목'
@@ -116,7 +120,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
             }
             setBusy('제보 접수 중…');
             const r = await fetch('/api/original-report', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note } }) });
+                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: { ...(bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note }), notify: { sms: notifySms, when: notifyWhen } } }) });
             const rj = await r.json(); if (!r.ok) throw new Error(rj.error || '제보를 저장하지 못했습니다.');
             setDone(true);
         } catch (err: any) {
@@ -145,6 +149,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                         {bulk
                             ? <p className="rd-modal-text" style={{ marginTop: 8 }}>회차별로 나눠 확인한 뒤 <b className="text-[#17202C]">회차마다 {REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>
                             : <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>}
+                        {notifySms && <p className="rd-modal-text" style={{ marginTop: 4 }}><b className="text-[#17202C]">{NOTIFY_WHEN.find(w => w.value === notifyWhen)?.done}</b> 문자로 알려 드릴게요.</p>}
                         <div className="rd-modal-actions" style={{ marginTop: 28 }}>
                             <button type="button" onClick={close} className="rd-btn rd-btn-primary rd-btn-block">확인</button>
                         </div>
@@ -254,6 +259,20 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                             <section className="space-y-2">
                                 <h3 className={h3}>3. 남길 말 <span className="font-normal text-[#5F6B78]">{bulk ? '(어떤 시험들인지 적어 주시면 빨라요)' : '(선택)'}</span></h3>
                                 <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder={bulk ? '예: 2022~2025년 1학년 1·2학기 중간·기말이에요' : '예: 서술형 답안지는 따로 찍었어요'} className={field} />
+                            </section>
+
+                            <section className="space-y-2">
+                                <h3 className={h3}>4. 완성 알림</h3>
+                                <label className="flex items-center gap-2 min-h-[44px] text-[15px] text-[#17202C] cursor-pointer">
+                                    <input type="checkbox" checked={notifySms} onChange={e => setNotifySms(e.target.checked)} className="w-5 h-5 accent-[#1B7E7A]" />
+                                    한글 파일이 완성되면 문자로 알려 주세요
+                                </label>
+                                {notifySms && <>
+                                    <select aria-label="문자 받을 시간" value={notifyWhen} onChange={e => setNotifyWhen(e.target.value as NotifyWhen)} className={field}>
+                                        {NOTIFY_WHEN.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                    </select>
+                                    <p className="m-0 text-[14px] leading-[1.6] text-[#5F6B78]">가입할 때 인증한 휴대폰 번호로 한 번만 보내요.{bulk ? ' 회차가 여러 개면 완성된 것끼리 모아서 보내요.' : ''}</p>
+                                </>}
                             </section>
 
                             {error && <div role="alert" className="flex items-start gap-2 rounded-[14px] bg-[#FDECEC] px-[14px] py-3 text-[15px] text-[#C0392B]"><AlertCircle size={16} className="shrink-0 mt-[3px]" />{error}</div>}

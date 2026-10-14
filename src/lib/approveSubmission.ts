@@ -81,6 +81,13 @@ export async function approveSubmission(id: string, opts: { sms?: boolean } = {}
         : `[수학ETF] 제보 감사합니다! ${points}P 적립. 한글파일은 완성되면 마이페이지에 드려요`;
     // [10/8] 등록 스크립트가 한 사람의 제보 여러 건을 한꺼번에 채택할 때는 문자를 끄고 한 통으로 합쳐 보낸다(sendAdoptionSummary)
     const sms = opts.sms === false ? 'skipped' : await sendNotice(phone, text, { quietHours: true });   // 밤에 누르면 오전 9시 예약
+    // [10/15] 채택 때 이미 한글 파일이 있으면 채택 문자(또는 합친 문자)가 받는 곳까지 알린다 → 완성 문자(cron/report-notify)는 따로 안 보낸다
+    if (typed?.status === 'ready' && desc.notify?.sms === true && !desc.notify.sent_at) {
+        const { data: cur } = await admin.from('exam_materials').select('description').eq('id', id).maybeSingle();
+        let d: any = {}; try { d = JSON.parse(cur?.description || '{}') || {}; } catch { }
+        d.notify = { ...(d.notify || {}), sent_at: new Date().toISOString(), result: 'with_approval' };
+        await admin.from('exam_materials').update({ description: JSON.stringify(d) }).eq('id', id);
+    }
     return { ok: true as const, rewarded: REWARD_POINTS, typed: typed?.status ?? 'working', sms, recipient, phone: phone || null };
 }
 
