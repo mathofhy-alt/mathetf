@@ -69,8 +69,24 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                             </ul>
                         </section>
 
+                        {/* [10/15] 제보 보상 포인트가 나가기 시작해 현금 교환 문의에 근거가 필요(사용자) */}
                         <section>
-                            <h3 className="font-bold text-base mb-2">제4조 (기타 고지 사항)</h3>
+                            <h3 className="font-bold text-base mb-2">제4조 (포인트)</h3>
+                            <ul className="list-disc pl-5 space-y-1">
+                                <li>
+                                    <span className="font-bold">사용 범위:</span> 포인트는 수학ETF 안에서 자료 구매와 이용권 결제에만 사용할 수 있습니다.
+                                </li>
+                                <li>
+                                    <span className="font-bold">적립 포인트:</span> 자료 제보 보상·이벤트 등으로 받은 포인트는 <span className="font-bold text-rose-500">현금으로 바꾸거나 환불받을 수 없으며</span>, 다른 회원에게 넘기거나 팔 수 없습니다.
+                                </li>
+                                <li>
+                                    <span className="font-bold">회수:</span> 부정한 방법으로 받은 포인트는 회수할 수 있으며, 회원 탈퇴 시 남은 적립 포인트는 소멸됩니다.
+                                </li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 className="font-bold text-base mb-2">제5조 (기타 고지 사항)</h3>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>
                                     <span className="font-bold">보호자 동의:</span> 미성년 회원의 유료 결제 시 법정대리인의 동의가 필요하며, 동의가 없는 경우 해당 결제는 취소될 수 있습니다.
@@ -84,6 +100,7 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
 
                     <div className="mt-8 text-right text-sm text-foreground/60 border-t pt-4">
                         <p>최초 시행일자: 2025-12-31</p>
+                        <p>개정일자: 2026-10-15 (제4조 포인트 신설)</p>
                     </div>
                 </div>
 
