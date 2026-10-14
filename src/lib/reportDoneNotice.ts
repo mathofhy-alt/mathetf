@@ -3,16 +3,17 @@
  * 제보할 때 고른 값은 제보 행 description.notify 에 { sms, when } 으로 남고,
  * 판매용 한글 파일이 등록돼 0원 구매가 들어가면 크론(api/cron/report-notify)이 고른 시간대에 한 번 보낸 뒤 notify.sent_at 을 적는다.
  */
-export type NotifyWhen = 'asap' | 'morning' | 'afternoon' | 'evening';
+export type NotifyWhen = 'asap' | 'morning' | 'afternoon' | 'evening' | 'night';
 export type ReportNotify = { sms: boolean; when: NotifyWhen; sent_at?: string; result?: string };
 
 // 시작·끝 시각(KST). 'asap' 은 밤(21~9시)만 피한다 — 채택 문자와 같은 규칙
-// done: 접수 완료 화면 문장
+// done: 접수 완료 화면 문장. [10/15] 'asap' 은 새벽에도 바로(사용자: "새벽에도 받고 싶은 사람이 있다")
 export const NOTIFY_WHEN: { value: NotifyWhen; label: string; done: string; from: number; to: number }[] = [
-    { value: 'asap', label: '완성되는 대로 (밤 9시~아침 9시는 피해서)', done: '완성되는 대로', from: 9, to: 21 },
+    { value: 'asap', label: '완성되는 대로 바로 (새벽에도)', done: '완성되는 대로 바로', from: 0, to: 24 },
     { value: 'morning', label: '오전 (9시~12시)', done: '완성되면 오전에', from: 9, to: 12 },
     { value: 'afternoon', label: '오후 (12시~6시)', done: '완성되면 오후에', from: 12, to: 18 },
     { value: 'evening', label: '저녁 (6시~9시)', done: '완성되면 저녁에', from: 18, to: 21 },
+    { value: 'night', label: '밤 (9시~12시)', done: '완성되면 밤에', from: 21, to: 24 },
 ];
 
 export function parseNotify(v: unknown): ReportNotify | null {
