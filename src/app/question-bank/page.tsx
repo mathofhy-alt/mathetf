@@ -1763,7 +1763,7 @@ export default function QuestionBankPage() {
                                         }}
                                         onDragOver={(e) => viewMode === 'review' && handleDragOver(e, idx)}
                                         onDragEnd={() => viewMode === 'review' && handleDragEnd()}
-                                        className={`qb-card relative h-[450px] rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
+                                        className={`qb-card relative min-h-[450px] max-h-[780px] rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
                                             ${viewMode === 'review'
                                                 ? draggingIndex === idx
                                                     ? 'opacity-40 scale-95 border-[#1B7E7A] border-dashed'
@@ -1873,7 +1873,7 @@ export default function QuestionBankPage() {
                                         </div>
 
  {/* Content */}
-                                        <div className="p-3 bg-white flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+                                        <div className="p-3 bg-white flex-auto min-h-0 overflow-y-auto scrollbar-thin">
                                             {q.question_images === null ? (
                                                 // 이미지 로딩 중 스켈레톤
                                                 <div className="space-y-2 animate-pulse">
