@@ -8,6 +8,7 @@ import { REPORT_REWARD_LABEL, REPORT_REWARD_POINTS, REPORT_MIN_YEAR } from '@/li
 import { QB_PASS } from '@/lib/qbPassConfig';
 import { NOTIFY_WHEN, type NotifyWhen } from '@/lib/reportDoneNotice';
 import BatchReport from '@/components/BatchReport';
+import { curriculumOf, fitSubject } from '@/lib/reportGuess';
 
 /**
  * 회원 원본 시험지 제보 창 (2026-10-05).
@@ -83,6 +84,8 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
     const stateOf = (subj: string) => !taken || !subj ? '' : taken.owned.has(keyFor(subj)) ? 'owned' : taken.pending.has(keyFor(subj)) ? 'pending' : '';
     const blocked = stateOf(subject);
     // 시험 조건을 바꿔서 고른 과목이 막힌 회차가 되면 과목 선택을 비운다
+    // [10/15] 연도·학년을 바꾸면 고른 과목을 그 교육과정 이름으로 옮긴다(공통수학1 ↔ 수학(상))
+    useEffect(() => { if (subject && subject !== '모름') { const f = fitSubject(subject, year, grade); if (f !== subject) setSubject(f); } }, [year, grade]); // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => { if (subject && stateOf(subject)) setSubject(''); // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [year, grade, semester, examType, taken]);
     useEffect(() => {
@@ -238,7 +241,8 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                                 </div>
                                 <select aria-label="과목" value={subject} onChange={e => setSubject(e.target.value)} className={field} required>
                                     <option value="">과목 선택</option>
-                                    {CURRICULA.map(c => <optgroup key={c.id} label={c.label}>{c.subjects.map(s => { const st = stateOf(s); return <option key={s} value={s} disabled={!!st}>{s}{st === 'owned' ? ' (이미 있음)' : st === 'pending' ? ' (제보 접수됨)' : ''}</option>; })}</optgroup>)}
+                                    {/* [10/15] 그 시험의 교육과정 과목만 — 두 묶음을 다 보여 주니 2023 시험에 2022 개정 과목을 골랐다 */}
+                                    {CURRICULA.filter(c => c.id === curriculumOf(year, grade)).map(c => <optgroup key={c.id} label={c.label}>{c.subjects.map(s => { const st = stateOf(s); return <option key={s} value={s} disabled={!!st}>{s}{st === 'owned' ? ' (이미 있음)' : st === 'pending' ? ' (제보 접수됨)' : ''}</option>; })}</optgroup>)}
                                     <option value="모름">잘 모르겠어요</option>
                                 </select>
                                 {school && taken && (() => {

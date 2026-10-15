@@ -40,6 +40,8 @@ const SUBJECTS: [RegExp, string][] = [
 ];
 const PAIR_15_22: Record<string, string> = { '수학(상)': '공통수학1', '수학(하)': '공통수학2', '수학I': '대수', '수학II': '미적분I', '미적분': '미적분II' };
 const PAIR_22_15 = Object.fromEntries(Object.entries(PAIR_15_22).map(([a, b]) => [b, a]));
+/** 그 시험의 교육과정 — 2025 고1 부터 2022 개정(같은 해에도 학년마다 다르다) */
+export const curriculumOf = (year: number, grade: number): '2022' | '2015' => (year - grade + 1 >= 2025 ? '2022' : '2015');
 /** 2025 고1 부터 2022 개정 — 과목 이름을 그 교육과정 짝으로 맞춘다 */
 export function fitSubject(subject: string, year?: number, grade?: number): string {
     if (!year || !grade) return subject;
