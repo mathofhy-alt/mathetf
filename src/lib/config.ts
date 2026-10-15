@@ -6,6 +6,9 @@ export function isPersonalDbFree(at = new Date()): boolean {
 }
 export const PERSONAL_DB_FREE_MODE = isPersonalDbFree();
 export const FREE_PDF_DAILY_LIMIT = 3;   // 10/7 사용자: 10 → 3
+// [10/16 대표 결정] 30일 상한 20건 — 60일 실측: 818명 중 34명(4%)만 걸리고 그들이 다운로드의 21%, 결제자는 108명 중 6명만 걸림
+export const FREE_PDF_MONTHLY_LIMIT = 20;
+export const FREE_PDF_MONTH_DAYS = 30;
 export const SAVED_EXAM_LIMIT = 20;
 export const EXAM_QUESTION_LIMIT = 50;
 // [10/7] 날짜(무료 종료일)는 화면에 쓰지 않는다 — 그 전에 유료화할 수도 있음(사용자 지시)

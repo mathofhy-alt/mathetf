@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Trash2, CheckCircle2, AlertCircle, Merge, Upload } from 'lucide-react';
 import { CURRICULA } from '@/lib/curriculum';
 import { REPORT_MIN_YEAR, REPORT_REWARD_LABEL } from '@/lib/report-reward';
-import { guessReport, fitSubject, type GuessSchool } from '@/lib/reportGuess';
+import { guessReport, fitSubject, curriculumOf, type GuessSchool } from '@/lib/reportGuess';
 
 /**
  * 여러 시험지 한꺼번에 제보 (10/15) — 사용자: 강사가 수원 학교 14곳 70회차를 한 건씩 폼으로 올리느라 몇 시간 걸렸다.
@@ -202,7 +202,7 @@ export default function BatchReport({ schools, supabase, top, notify, notifySect
             </select>
             <select aria-label="과목" value={r.subject || ''} onChange={e => on({ subject: e.target.value })} className={c('subject', !r.subject)}>
                 <option value="">과목</option>
-                {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}<option value="모름">모르겠어요</option>
+                {(r.year && r.grade ? [...(CURRICULA.find(c => c.id === curriculumOf(Number(r.year), Number(r.grade)))?.subjects || [])] : ALL_SUBJECTS).map(s => <option key={s} value={s}>{s}</option>)}<option value="모름">모르겠어요</option>
             </select>
         </div>;
     };

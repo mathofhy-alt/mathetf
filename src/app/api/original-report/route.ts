@@ -5,6 +5,7 @@ import neis from '@/lib/neis-high-schools.json';
 import { REPORT_MIN_YEAR } from '@/lib/report-reward';
 import { grantTypedFile } from '@/lib/typedGrant';
 import { parseNotify } from '@/lib/reportDoneNotice';
+import { fitSubject } from '@/lib/reportGuess';
 
 export const dynamic = 'force-dynamic';
 
@@ -173,7 +174,9 @@ export async function POST(req: NextRequest) {
         }
         const year = Number(m.year), grade = Number(m.grade), semester = Number(m.semester);
         const examType = ['중간고사', '기말고사'].includes(m.examType) ? m.examType : '';
-        const subject = String(m.subject || '').trim().slice(0, 20);
+        // [10/15] 교육과정 짝 맞추기 — 2023 고1 인데 '공통수학1'을 골라도 '수학(상)'으로(느티님 42건이 2022 개정 이름으로 들어옴)
+        const rawSubject = String(m.subject || '').trim().slice(0, 20);
+        const subject = rawSubject && rawSubject !== '모름' ? fitSubject(rawSubject, Number(m.year), Number(m.grade)) : rawSubject;
         const note = String(m.note || '').trim().slice(0, 300);
         if (!(year >= REPORT_MIN_YEAR && year <= new Date().getFullYear() + 1) || ![1, 2, 3].includes(grade) || ![1, 2].includes(semester) || !examType || !subject)
             return NextResponse.json({ error: '시험 정보(연도·학년·학기·시험·과목)를 확인해주세요.' }, { status: 400 });

@@ -56,7 +56,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school }: 
             });
             const issuedJson = await issued.json();
             // [10/7] 하루 한도 — 경고창 대신 안내 창(횟수는 이때만 알린다)
-            if (issued.status === 429 && issuedJson?.limited) { openPdfLimit(issuedJson.limit); return; }
+            if (issued.status === 429 && issuedJson?.limited) { openPdfLimit(issuedJson.limit, issuedJson.period, issuedJson.resetAt); return; }
             if (!issued.ok) throw new Error(issuedJson?.error || '무료 PDF를 준비 중입니다.');
             const res = await fetch(issuedJson.url as string);
             if (!res.ok) throw new Error(`status ${res.status}`);

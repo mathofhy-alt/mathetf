@@ -1,4 +1,4 @@
-import {FREE_PDF_DAILY_LIMIT} from '@/lib/config';
+import {FREE_PDF_DAILY_LIMIT, FREE_PDF_MONTHLY_LIMIT, FREE_PDF_MONTH_DAYS} from '@/lib/config';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
@@ -44,7 +44,25 @@ export async function POST(req: NextRequest) {
         if (used >= DAILY_LIMIT) {
             return NextResponse.json({
                 error: `무료 문제 PDF는 하루 ${DAILY_LIMIT}개까지 받으실 수 있어요. 내일 다시 이용해주세요.`,
-                limited: true, used, limit: DAILY_LIMIT,
+                limited: true, used, limit: DAILY_LIMIT, period: 'day',
+            }, { status: 429 });
+        }
+        // [10/16] 30일 상한 — 한 달에 수십~백몇십 건씩 받아 가는 계정만 막는다(대표 결정 20건). 달력 달이 아니라 최근 30일.
+        const since = new Date(Date.now() - FREE_PDF_MONTH_DAYS * 86400_000).toISOString();
+        const { data: recent } = await admin
+            .from('feature_usage')
+            .select('created_at')
+            .eq('user_id', user.id)
+            .eq('feature', 'free_pdf')
+            .gte('created_at', since)
+            .order('created_at', { ascending: true })
+            .limit(FREE_PDF_MONTHLY_LIMIT);
+        if ((recent?.length ?? 0) >= FREE_PDF_MONTHLY_LIMIT) {
+            // 가장 오래된 기록이 30일 창을 벗어나는 때 = 다시 받을 수 있는 때
+            const resetAt = new Date(new Date(recent![0].created_at).getTime() + FREE_PDF_MONTH_DAYS * 86400_000).toISOString();
+            return NextResponse.json({
+                error: `무료 문제 PDF는 30일에 ${FREE_PDF_MONTHLY_LIMIT}개까지 받으실 수 있어요.`,
+                limited: true, used: recent!.length, limit: FREE_PDF_MONTHLY_LIMIT, period: 'month', resetAt,
             }, { status: 429 });
         }
 
