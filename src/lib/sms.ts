@@ -17,16 +17,17 @@ export function quietHoursSendAt(now = new Date()): Date | null {
     return at;
 }
 
-export async function sendNotice(phone: string | null | undefined, text: string, opts: { quietHours?: boolean } = {}): Promise<SmsResult> {
+export async function sendNotice(phone: string | null | undefined, text: string, opts: { quietHours?: boolean; at?: Date | null } = {}): Promise<SmsResult> {
     const to = String(phone || '').replace(/[^0-9]/g, '');
     if (!/^01\d{8,9}$/.test(to)) return 'no_phone';
     const key = process.env.SOLAPI_API_KEY, secret = process.env.SOLAPI_API_SECRET;
+    // at: 예약 시각을 직접 정할 때(완성 문자 — 회원이 고른 시간대). 없으면 quietHours 규칙
+    const at = opts.at !== undefined ? opts.at : opts.quietHours ? quietHoursSendAt() : null;
     if (!key || !secret || process.env.NODE_ENV === 'development') {
-        console.log(`[개발 모드 문자] ${to}: ${text}`, opts.quietHours ? quietHoursSendAt() : '');
+        console.log(`[개발 모드 문자] ${to}: ${text}`, at || '');
         return 'dev';
     }
     try {
-        const at = opts.quietHours ? quietHoursSendAt() : null;
         await new SolapiMessageService(key, secret).send({ to, from: process.env.SOLAPI_SENDER_NUMBER || '07079544146', text }, at ? { scheduledDate: at.toISOString() } : undefined);
         return at ? 'scheduled' : 'sent';
     } catch (e) {

@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import neis from '@/lib/neis-high-schools.json';
 import { REPORT_MIN_YEAR } from '@/lib/report-reward';
 import { grantTypedFile } from '@/lib/typedGrant';
+import { parseNotify } from '@/lib/reportDoneNotice';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,6 +140,8 @@ export async function POST(req: NextRequest) {
 
     if (body.action === 'submit') {
         const m = body.meta || {};
+        // [10/15] 완성 문자 선택 — 안 받으면 아예 적지 않는다(크론은 notify 가 있는 행만 본다)
+        const notify = parseNotify(m.notify);
         const picked = BY_CODE.get(String(m.code || ''));
         if (!picked) return NextResponse.json({ error: '학교는 목록에서 골라주세요.' }, { status: 400 });
         const school = picked.name, region = picked.region;
@@ -162,7 +165,7 @@ export async function POST(req: NextRequest) {
                 title: `${school} ${BULK_LABEL} [원본제보 묶음 ${paths.length}개]`,
                 file_type: paths[0].endsWith('.pdf') ? 'PDF' : 'IMAGE',
                 content_type: '원본제보', file_path: paths[0],
-                description: JSON.stringify({ files: paths, note, bulk: true, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind } }),
+                description: JSON.stringify({ files: paths, note, bulk: true, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind }, ...(notify ? { notify } : {}) }),
                 price: 0, sales_count: 0,
             }).select('id').single();
             if (error) { console.error('[original-report] bulk insert', error); return NextResponse.json({ error: '제보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 }); }
@@ -198,7 +201,7 @@ export async function POST(req: NextRequest) {
             file_type: first.endsWith('.pdf') ? 'PDF' : 'IMAGE',
             content_type: '원본제보',
             file_path: first,
-            description: JSON.stringify({ files: paths, note, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind } }),
+            description: JSON.stringify({ files: paths, note, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind }, ...(notify ? { notify } : {}) }),
             price: 0, sales_count: 0,
         }).select('id').single();
         if (error) {

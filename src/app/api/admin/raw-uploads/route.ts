@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest) {
                 exam_year: year, grade, semester, exam_type: examType, subject,
                 title: `${row.school} ${year}년 ${grade}학년 ${semester}학기 ${examType} ${subject} [원본제보 ${files.length}장]`,
                 file_type: files[0].endsWith('.pdf') ? 'PDF' : 'IMAGE', content_type: '원본제보', file_path: files[0],
-                description: JSON.stringify({ files, note: desc.note || '', neis: desc.neis, from_bulk: id }),
+                description: JSON.stringify({ files, note: desc.note || '', neis: desc.neis, from_bulk: id, ...(desc.notify ? { notify: desc.notify } : {}) }),   // [10/15] 완성 문자 선택은 회차마다 따라간다
                 price: 0, sales_count: 0, created_at: row.created_at,
             });
         }

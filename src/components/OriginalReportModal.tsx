@@ -6,6 +6,8 @@ import { createClient } from '@/utils/supabase/client';
 import { CURRICULA } from '@/lib/curriculum';
 import { REPORT_REWARD_LABEL, REPORT_REWARD_POINTS, REPORT_MIN_YEAR } from '@/lib/report-reward';
 import { QB_PASS } from '@/lib/qbPassConfig';
+import { NOTIFY_WHEN, type NotifyWhen } from '@/lib/reportDoneNotice';
+import BatchReport from '@/components/BatchReport';
 
 /**
  * 회원 원본 시험지 제보 창 (2026-10-05).
@@ -38,6 +40,9 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
     const [examType, setExamType] = useState(new Date().getMonth() % 6 < 4 ? '중간고사' : '기말고사');
     const [subject, setSubject] = useState('');
     const [note, setNote] = useState('');
+    // [10/15] 한글 파일 완성 문자 — 받을지, 받는다면 언제(사용자 요청)
+    const [notifySms, setNotifySms] = useState(true);
+    const [notifyWhen, setNotifyWhen] = useState<NotifyWhen>('asap');
     const [files, setFiles] = useState<Picked[]>([]);
     const [schools, setSchools] = useState<School[]>([]);
     // 고른 학교에 이미 있는 회차 / 접수된 제보 — '연도-학년-학기-시험-과목'
@@ -45,7 +50,11 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
     const [busy, setBusy] = useState<string>('');
     const [error, setError] = useState('');
     const [done, setDone] = useState(false);
-    const [bulk, setBulk] = useState(!!initialBulk);
+    // [10/15] '여러 회차 한꺼번에'(학교 하나 묶음 → 운영자가 나눔)를 '여러 시험지 한꺼번에'(BatchReport — 지역만 고르고 파일을 던지면 학교·시험을 읽어 채움)로 바꿨다.
+    //   옛 묶음 경로(bulk)는 서버·관리자 화면에 그대로 있다(이미 들어온 묶음 처리용). 화면에서는 더 안 쓴다.
+    const bulk = false;
+    const [list, setList] = useState(!!initialBulk);
+    const [listDone, setListDone] = useState(0);
     const maxFiles = bulk ? MAX_FILES_BULK : MAX_FILES;
     const schoolKey = (sc: School) => `${sc.region}|${sc.district}|${sc.name}`;
     const REGION_ORDER = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
@@ -116,7 +125,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
             }
             setBusy('제보 접수 중…');
             const r = await fetch('/api/original-report', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note } }) });
+                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: { ...(bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note }), notify: { sms: notifySms, when: notifyWhen } } }) });
             const rj = await r.json(); if (!r.ok) throw new Error(rj.error || '제보를 저장하지 못했습니다.');
             setDone(true);
         } catch (err: any) {
@@ -124,34 +133,11 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
         } finally { setBusy(''); }
     };
 
-    const close = () => { if (!busy) { onClose(); if (done) { setDone(false); setFiles([]); setSchool(null); setRegion(''); setDistrict(''); setNote(''); } } };
+    const close = () => { if (!busy) { onClose(); if (done) { setDone(false); setListDone(0); setFiles([]); setSchool(null); setRegion(''); setDistrict(''); setNote(''); } } };
     const field = 'w-full rounded-[14px] border-0 bg-[#F2F4F6] px-[14px] py-[13px] text-[16px] text-[#17202C] outline-none focus:ring-2 focus:ring-[#1B7E7A]/30';
     const h3 = 'm-0 text-[15px] font-bold text-[#17202C]';
 
-    return (
-        <div className="rd rd-overlay"
-            onClick={e => { if (e.target === e.currentTarget) close(); }}>
-            <div role="dialog" aria-modal="true" aria-labelledby="original-report-title" className="rd-modal" style={{ maxWidth: 600 }}>
-                <div className="rd-sheet-handle" />
-                <div className="rd-modal-head">
-                    <h2 id="original-report-title" className="rd-modal-title">무료 타이핑 신청</h2>
-                    <button type="button" aria-label="닫기" onClick={close} className="rd-modal-x"><X size={20} /></button>
-                </div>
-
-                {done ? (
-                    <div className="text-center" style={{ padding: '32px 0 4px' }}>
-                        <CheckCircle2 size={48} className="mx-auto text-[#1B7E7A]" />
-                        <p className="mt-4 text-[18px] font-bold text-[#17202C]">신청이 접수됐어요. 고맙습니다!</p>
-                        {bulk
-                            ? <p className="rd-modal-text" style={{ marginTop: 8 }}>회차별로 나눠 확인한 뒤 <b className="text-[#17202C]">회차마다 {REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>
-                            : <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>}
-                        <div className="rd-modal-actions" style={{ marginTop: 28 }}>
-                            <button type="button" onClick={close} className="rd-btn rd-btn-primary rd-btn-block">확인</button>
-                        </div>
-                    </div>
-                ) : (
-                    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                        <div className="rd-modal-body space-y-6">
+    const top = (<>
                             <div className="flex gap-3 rounded-[20px] bg-[#E8F6F5] px-4 py-[14px]">
                                 <Gift size={20} className="text-[#1B7E7A] shrink-0 mt-0.5" />
                                 <p className="m-0 text-[15px] leading-[1.6] text-[#17202C]">
@@ -162,9 +148,59 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
 
                             {/* [10/13] 강사는 학교 기출을 여러 해치 갖고 있다 — 회차마다 폼을 채우게 하면 묶음을 안 보낸다 */}
                             <div className="rd-seg" role="radiogroup" aria-label="올리는 방식" style={{ display: 'flex' }}>
-                                <button type="button" role="radio" aria-checked={!bulk} aria-pressed={!bulk} onClick={() => setBulk(false)} style={{ flex: 1 }}>시험지 1회차</button>
-                                <button type="button" role="radio" aria-checked={bulk} aria-pressed={bulk} onClick={() => setBulk(true)} style={{ flex: 1 }}>여러 회차 한꺼번에</button>
+                                <button type="button" role="radio" aria-checked={!list} aria-pressed={!list} onClick={() => setList(false)} style={{ flex: 1 }}>시험지 1회차</button>
+                                <button type="button" role="radio" aria-checked={list} aria-pressed={list} onClick={() => setList(true)} style={{ flex: 1 }}>여러 시험지 한꺼번에</button>
                             </div>
+    </>);
+    const notifyNode = (
+                            <section className="space-y-2">
+                                <h3 className={h3}>{list ? '3' : '4'}. 완성 알림</h3>
+                                <label className="flex items-center gap-2 min-h-[44px] text-[15px] text-[#17202C] cursor-pointer">
+                                    <input type="checkbox" checked={notifySms} onChange={e => setNotifySms(e.target.checked)} className="w-5 h-5 accent-[#1B7E7A]" />
+                                    한글 파일이 완성되면 문자로 알려 주세요
+                                </label>
+                                {notifySms && <>
+                                    <select aria-label="문자 받을 시간" value={notifyWhen} onChange={e => setNotifyWhen(e.target.value as NotifyWhen)} className={field}>
+                                        {NOTIFY_WHEN.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                    </select>
+                                    <p className="m-0 text-[14px] leading-[1.6] text-[#5F6B78]">가입할 때 인증한 휴대폰 번호로 한 번만 보내요.{bulk ? ' 회차가 여러 개면 완성된 것끼리 모아서 보내요.' : ''}</p>
+                                </>}
+                            </section>
+    );
+
+    return (
+        <div className="rd rd-overlay"
+            onClick={e => { if (e.target === e.currentTarget) close(); }}>
+            <div role="dialog" aria-modal="true" aria-labelledby="original-report-title" className="rd-modal" style={{ maxWidth: list && !done ? 780 : 600 }}>
+                <div className="rd-sheet-handle" />
+                <div className="rd-modal-head">
+                    <h2 id="original-report-title" className="rd-modal-title">무료 타이핑 신청</h2>
+                    <button type="button" aria-label="닫기" onClick={close} className="rd-modal-x"><X size={20} /></button>
+                </div>
+
+                {done ? (
+                    <div className="text-center" style={{ padding: '32px 0 4px' }}>
+                        <CheckCircle2 size={48} className="mx-auto text-[#1B7E7A]" />
+                        <p className="mt-4 text-[18px] font-bold text-[#17202C]">신청이 접수됐어요. 고맙습니다!</p>
+                        {listDone > 0
+                            ? <p className="rd-modal-text" style={{ marginTop: 8 }}>시험지 <b className="text-[#17202C]">{listDone}개</b>를 접수했어요. 확인 후 <b className="text-[#17202C]">회차마다 {REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>
+                            : bulk
+                            ? <p className="rd-modal-text" style={{ marginTop: 8 }}>회차별로 나눠 확인한 뒤 <b className="text-[#17202C]">회차마다 {REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>
+                            : <p className="rd-modal-text" style={{ marginTop: 8 }}>검토 후 <b className="text-[#17202C]">{REPORT_REWARD_LABEL}</b>를 넣어 드리고,<br />완성된 한글 파일은 마이페이지 › 내 요청에서 받을 수 있어요.</p>}
+                        {notifySms && <p className="rd-modal-text" style={{ marginTop: 4 }}><b className="text-[#17202C]">{NOTIFY_WHEN.find(w => w.value === notifyWhen)?.done}</b> 문자로 알려 드릴게요.</p>}
+                        <div className="rd-modal-actions" style={{ marginTop: 28 }}>
+                            <button type="button" onClick={close} className="rd-btn rd-btn-primary rd-btn-block">확인</button>
+                        </div>
+                    </div>
+                ) : list ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                        <BatchReport schools={schools} supabase={supabase} top={top} notify={{ sms: notifySms, when: notifyWhen }} notifySection={notifyNode}
+                            onBusy={b => setBusy(b ? '보내는 중' : '')} onDone={n => { setListDone(n); setDone(true); }} />
+                    </div>
+                ) : (
+                    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                        <div className="rd-modal-body space-y-6">
+                            {top}
 
                             <section className="space-y-3">
                                 <h3 className={h3}>1. 어느 학교 시험인가요?</h3>
@@ -255,6 +291,8 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                                 <h3 className={h3}>3. 남길 말 <span className="font-normal text-[#5F6B78]">{bulk ? '(어떤 시험들인지 적어 주시면 빨라요)' : '(선택)'}</span></h3>
                                 <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={300} rows={2} placeholder={bulk ? '예: 2022~2025년 1학년 1·2학기 중간·기말이에요' : '예: 서술형 답안지는 따로 찍었어요'} className={field} />
                             </section>
+
+                            {notifyNode}
 
                             {error && <div role="alert" className="flex items-start gap-2 rounded-[14px] bg-[#FDECEC] px-[14px] py-3 text-[15px] text-[#C0392B]"><AlertCircle size={16} className="shrink-0 mt-[3px]" />{error}</div>}
                         </div>
