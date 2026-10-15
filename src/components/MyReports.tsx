@@ -49,10 +49,10 @@ export default function MyReports({ onOpenPurchases }: { onOpenPurchases?: () =>
                         </div>
                     ) : !row.reward && !row.rejected && <p className="rd-my-req-wait">운영자가 확인 중입니다. 채택되면 한글 파일과 포인트를 드려요.</p>}
                     {row.rejected && <p className="rd-my-req-wait">이 시험은 다시 신청하실 수 있어요.</p>}
-                    {/* [10/8] 무료 타이핑 — 채택되면 판매용 한글 파일이 0원 구매로 들어간다 → 구매 내역에서 30일 받기 */}
+                    {/* [10/8] 무료 타이핑 — 채택되면 판매용 한글 파일이 0원 구매로 들어간다 → 구매 내역에서 받기. [10/15] 기간 없음(30일 제한은 결제 자료만) */}
                     {row.typed?.status === 'ready' && <div className="rd-my-typed">
                         <p className="rd-my-reply-head"><Download size={15} /> 한글 파일이 준비됐어요</p>
-                        <p className="rd-my-typed-sub">{row.typed.title} · 구매 내역에서 {Math.max(0, 30 - Math.ceil((Date.now() - new Date(row.typed.grantedAt).getTime()) / 864e5))}일 동안 받을 수 있어요</p>
+                        <p className="rd-my-typed-sub">{row.typed.title} · 구매 내역에서 기간 없이 받을 수 있어요</p>
                         {onOpenPurchases && <button type="button" className="rd-btn rd-btn-primary rd-my-typed-btn" onClick={onOpenPurchases}><Download size={16} aria-hidden="true" /> 구매 내역에서 받기</button>}
                     </div>}
                     {row.typed?.status === 'working' && <p className="rd-my-req-wait">채택됐어요. 한글 파일로 타이핑하는 중이에요 — 완성되면 여기와 구매 내역에서 받을 수 있어요.</p>}

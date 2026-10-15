@@ -56,7 +56,11 @@ export default function BatchReport({ schools, supabase, top, notify, notifySect
     const area = useMemo(() => schools.filter(x => x.region === region && (!district || x.district === district)).sort((a, b) => a.name.localeCompare(b.name, 'ko')), [schools, region, district]);
     const byCode = useMemo(() => new Map(schools.map(s => [s.code, s])), [schools]);
     const sending = !!busy;
+    // [10/15 버그] 접수가 끝나면 부모가 완료 화면으로 바꿔 이 컴포넌트가 먼저 사라진다 → '보내는 중'이 켜진 채 남아 창이 안 닫혔다.
+    //   사라질 때 꺼 주고, 부모도 onDone 에서 끈다.
     useEffect(() => { onBusy(sending); }, [sending, onBusy]);
+    const onBusyRef = useRef(onBusy); onBusyRef.current = onBusy;   // 부모가 매번 새 함수를 넘겨도 정리는 한 번만
+    useEffect(() => () => onBusyRef.current(false), []);
 
     // 고른 학교마다 이미 있는 회차·접수된 제보를 한 번씩 읽어 둔다
     const codes = useMemo(() => Array.from(new Set(rows.map(r => r.code).filter(Boolean))), [rows]);
