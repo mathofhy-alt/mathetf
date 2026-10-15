@@ -17,6 +17,9 @@ import MyReports from '@/components/MyReports';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 import { paywallOn } from '@/lib/qbPassConfig';
 
+// 무료 타이핑으로 받은 한글 파일(lib/typedGrant 가 payment_id 'typing-<제보 id>' 로 넣는다)
+const isTypingGrant = (p: any) => String(p?.payment_id || '').startsWith('typing-');
+
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
     const [activeTab, setActiveTab] = useState<'purchases' | 'requests' | 'settings'>('purchases');
@@ -99,6 +102,7 @@ export default function MyPage() {
                     id: p.id,
                     user_id: p.user_id,
                     created_at: p.created_at,
+                    payment_id: p.payment_id,   // [10/15] 무료 타이핑(typing-) 판별 — 기간 제한 없음
                     price: p.price_paid,
                     exam_id: p.item_id,
                     exam: examMap[p.item_id] || {
@@ -194,7 +198,8 @@ export default function MyPage() {
 
         try {
             // [PG사 심사 요건] 결제일로부터 30일 다운로드 제한
-            if (purchase.created_at) {
+            // [10/15] 무료 타이핑(payment_id 'typing-…')은 결제가 아니라 원본을 준 회원에게 돌려주는 파일 → 기간 없음(사용자 승인)
+            if (purchase.created_at && !isTypingGrant(purchase)) {
                 const purchaseDate = new Date(purchase.created_at);
                 const now = new Date();
                 const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
@@ -406,12 +411,13 @@ export default function MyPage() {
                                                         </div>
                                                     ) : (
                                                         (() => {
+                                                            const typing = isTypingGrant(p);
                                                             const purchaseDate = new Date(p.created_at);
                                                             const now = new Date();
                                                             const diffTime = now.getTime() - purchaseDate.getTime();
                                                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                                             const daysLeft = Math.max(0, 30 - diffDays);
-                                                            const isExpired = daysLeft === 0;
+                                                            const isExpired = !typing && daysLeft === 0;
 
                                                             return (
                                                                 <div className="rd-my-act">
@@ -423,7 +429,9 @@ export default function MyPage() {
                                                                     >
                                                                         <Download size={18} /> 다운로드
                                                                     </button>
-                                                                    {isExpired ? (
+                                                                    {typing ? (
+                                                                        <span className="rd-my-act-note">무료 타이핑 · 기간 없음</span>
+                                                                    ) : isExpired ? (
                                                                         <span className="rd-my-act-note is-bad">다운로드 기간 만료</span>
                                                                     ) : (
                                                                         <span className="rd-my-act-note">{daysLeft}일 남음</span>

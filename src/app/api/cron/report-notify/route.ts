@@ -94,7 +94,7 @@ async function donePass(admin: Admin): Promise<Record<string, any>> {
     for (const [uid, list] of Object.entries(ready)) {
         const { data: au } = await admin.auth.admin.getUserById(uid);
         const phone = (au?.user?.user_metadata as any)?.phone || au?.user?.phone;
-        const tailText = ' 한글파일 완성! 마이페이지 구매내역(30일)';
+        const tailText = ' 한글파일 완성! 마이페이지 구매내역에서 받으세요';
         let text: string;
         if (list.length > 1) text = `[수학ETF] 제보 ${list.length}건${tailText}`;
         else {

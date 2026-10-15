@@ -3,7 +3,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 /**
  * 무료 타이핑 (10/8) — 채택된 제보의 신청자에게 그 시험의 판매용 한글 파일([문제+해설] HWP)을 0원 구매로 넣어 준다.
  * 사용자: "어차피 내가 한글 작업해서 등록할 텐데, 2,000원짜리 파일을 한 달간 받을 수 있게 붙여 주는 게 편하다"
- *   → 따로 올리지 않는다. 등록이 끝나 판매 파일이 생기면, 마이페이지 › 구매 내역에서 30일 받기(기존 규칙).
+ *   → 따로 올리지 않는다. 등록이 끝나 판매 파일이 생기면, 마이페이지 › 구매 내역에서 받기. [10/15] 30일 제한은 결제 자료만 — 이 0원 구매(payment_id typing-)는 기간 없음(mypage isTypingGrant).
  * 조건: 채택(submission_reward 지급) + 같은 학교·연도·학년·학기·시험·과목의 HWP 판매 자료가 있음. 여러 번 불러도 한 번만 넣는다.
  */
 export type TypedGrant = { status: 'ready'; title: string; grantedAt: string } | { status: 'working' } | { status: 'none' };
