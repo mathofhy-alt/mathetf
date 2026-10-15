@@ -195,7 +195,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                 ) : list ? (
                     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         <BatchReport schools={schools} supabase={supabase} top={top} notify={{ sms: notifySms, when: notifyWhen }} notifySection={notifyNode}
-                            onBusy={b => setBusy(b ? '보내는 중' : '')} onDone={n => { setListDone(n); setDone(true); }} />
+                            onBusy={b => setBusy(b ? '보내는 중' : '')} onDone={n => { setBusy(''); setListDone(n); setDone(true); }} />
                     </div>
                 ) : (
                     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
