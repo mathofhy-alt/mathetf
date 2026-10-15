@@ -605,7 +605,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
             // [10/7] 하루 한도 — 경고창 대신 안내 창(횟수는 이때만 알린다)
             if (issued.status === 429 && issuedJson?.limited) {
                 setDlState(prev => { const n = { ...prev }; delete n[stateKey]; return n; });
-                openPdfLimit(issuedJson.limit); return;
+                openPdfLimit(issuedJson.limit, issuedJson.period, issuedJson.resetAt); return;
             }
             if (!issued.ok) throw new Error(issuedJson?.error || '무료 PDF를 준비 중입니다');
             const url = issuedJson.url as string;
