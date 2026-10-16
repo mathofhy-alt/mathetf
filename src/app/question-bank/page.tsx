@@ -35,6 +35,7 @@ import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 import ConfigModal from '@/components/question-bank/ConfigModal';
 import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsModal';
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
+import ReportModal from '@/components/ReportModal';
 import { prefetchSimilar } from '@/lib/similarPrefetch';
 import Header from '@/components/Header';
 import AccessPolicy from '@/components/AccessPolicy';
@@ -45,7 +46,7 @@ import UploadModal from '@/components/UploadModal';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 import LadderModal from '@/components/question-bank/LadderModal';
 import { QB_LIMITS } from '@/lib/qbPassConfig';
-import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
+import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import type { UserItem } from '@/types/storage';
 
 
@@ -159,6 +160,8 @@ export default function QuestionBankPage() {
     const [buddyMood, setBuddyMood] = useState<'idle' | 'busy' | 'done'>('idle');
     const [regenerateItem,setRegenerateItem]=useState<any>(null);
     const [user, setUser] = useState<any>(null);
+    // [10/16] 문항 오류 제보 — 회원 메일 '오류·오타 어떻게 제보하냐'. 신고 목록(exam_reports)에 group_key 'question:<id>' 로 쌓인다
+    const [reportQuestion, setReportQuestion] = useState<any>(null);
     const [isDbInitialized, setIsDbInitialized] = useState(false);
     const isAdmin = user?.email === 'mathofhy@naver.com';
     const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -1911,6 +1914,14 @@ export default function QuestionBankPage() {
                                             {/* [10/6] 검토 화면에서도 해설보기 — 예전엔 검색 화면에서만 보여 '해설보기가 어디 갔냐'(사용자) */}
                                             <div className="flex items-center gap-2 transition-opacity" data-no-drag="true">
                                                 <button
+                                                    aria-label={`${idx+1}번 문항 오류 제보`} title="오류 제보"
+                                                    className="question-action"
+                                                    onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate('solution'); return; } setReportQuestion(q); }}
+                                                >
+                                                    <AlertTriangle size={12} />
+                                                    <span className="hidden sm:inline">오류</span>
+                                                </button>
+                                                <button
                                                     aria-label={`${idx+1}번 문항 해설보기`}
                                                     className="question-action"
                                                     onClick={(e) => { e.stopPropagation(); if (!user) { setShowLoginGate('solution'); return; } setSolutionTarget(q); }}
@@ -2214,8 +2225,11 @@ export default function QuestionBankPage() {
                     <SolutionViewerModal
                         question={solutionTarget}
                         onClose={() => setSolutionTarget(null)}
+                        onReport={user ? () => setReportQuestion(solutionTarget) : undefined}
                     />
                 )}
+                <ReportModal isOpen={!!reportQuestion} onClose={() => setReportQuestion(null)} user={user} kind="question"
+                    examGroup={reportQuestion ? { key: `question:${reportQuestion.id}`, title: `${reportQuestion.school || ''} ${reportQuestion.year || reportQuestion.exam_year || ''}년 ${reportQuestion.grade || ''} ${reportQuestion.semester || ''} ${reportQuestion.subject || ''} ${reportQuestion.question_number ? `${reportQuestion.question_number}번` : ''}`.replace(/\s+/g, ' ').trim() } : null} />
 
             </div>
 
