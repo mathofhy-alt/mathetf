@@ -53,7 +53,7 @@ export async function GET() {
         // 같은 회차의 과목을 알아야 source_db_id 를 만들 수 있다.
         const { data: mats } = await admin
             .from('exam_materials')
-            .select('school, exam_year, semester, exam_type, subject, grade')
+            .select('school, exam_year, semester, exam_type, subject, grade, source_db_id')
             .eq('school', school).eq('exam_year', year)
             .eq('grade', grade).eq('semester', semester)
             .eq('exam_type', examType)

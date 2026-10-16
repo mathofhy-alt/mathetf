@@ -2,15 +2,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, AlertTriangle } from 'lucide-react';
 import QuestionRenderer from '@/components/QuestionRenderer';
 
 interface SolutionViewerModalProps {
     onClose: () => void;
     question: any;
+    /** [10/16] 해설을 보다가 틀린 곳을 찾으면 바로 제보 */
+    onReport?: () => void;
 }
 
-export default function SolutionViewerModal({ onClose, question }: SolutionViewerModalProps) {
+export default function SolutionViewerModal({ onClose, question, onReport }: SolutionViewerModalProps) {
     // [2026-10-02] 해설 캡쳐는 로그인한 사람에게만 내려온다(lib/questions/imageAccess).
     // 비로그인 때 담아 둔 문항은 해설 없이 보관돼 있을 수 있으니, 열 때마다 이 문항 이미지를 새로 받는다.
     const [images, setImages] = useState<any[] | null>(null);
@@ -40,12 +42,17 @@ export default function SolutionViewerModal({ onClose, question }: SolutionViewe
                             {question.school} {question.year||question.exam_year} #{question.question_number || '?'}
                         </p>
                     </div>
-                    <button
-                        aria-label="해설 닫기" onClick={onClose}
-                        className="rd-modal-x"
-                    >
-                        <X size={20} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 'none' }}>
+                        {onReport && <button type="button" onClick={onReport} className="question-action" aria-label="이 문항 오류 제보">
+                            <AlertTriangle size={12} /> 오류 제보
+                        </button>}
+                        <button
+                            aria-label="해설 닫기" onClick={onClose}
+                            className="rd-modal-x"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body */}
