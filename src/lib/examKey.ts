@@ -11,7 +11,11 @@ export function buildSourceDbId(row: {
     semester?: number | string | null;
     exam_type?: string | null;
     subject?: string | null;
+    source_db_id?: string | null;
 }): string | null {
+    // [10/16] 행에 저장된 출처 이름이 있으면 그대로 쓴다 — 학년만 다른 같은 과목은 '학교_연도_학기_N학년_과목'으로
+    //   등록해서(용화여고 2026 2중간 2학년·3학년 기하) 아래 조립값과 다르다. 저장값이 없는 옛 행은 지금처럼 조립.
+    if (row.source_db_id) return row.source_db_id;
     const et = row.exam_type || '';
     let examPart: string;
     if (et.includes('중간')) examPart = `${row.semester}학기중간`;
