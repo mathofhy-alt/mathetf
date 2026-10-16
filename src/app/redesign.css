@@ -2132,8 +2132,11 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-chatgen-form .rd-btn { padding: 0 16px; min-height: 52px; border-radius: 14px; background: #497AB7; }
 .rd .rd-chatgen-form .rd-btn:hover { background: #3E6A9F; }
 @media (max-width: 640px) {
-  .qbb { right: 10px; bottom: 10px; }
-  .qbb-btn { width: 88px; height: 88px; }
+  /* [10/17] 휴대폰에서 88px 캐릭터가 아래 '최종 생성' 막대·카드 버튼을 덮었다(대표) — 작게, 막대가 있으면 그 위로 */
+  .qbb { right: 8px; bottom: max(10px, env(safe-area-inset-bottom)); }
+  .qbb-btn { width: 60px; height: 60px; }
+  body:has(.rd-qb-bar) .qbb { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  .qbb-bubble { display: none; }
   .rd.qbb-panel { left: 0; right: 0; bottom: 0; width: auto; height: 88dvh; border-radius: 24px 24px 0 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
   .qbb.is-open { display: none; }
 }
