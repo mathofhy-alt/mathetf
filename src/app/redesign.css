@@ -88,7 +88,7 @@ a.rd-card:hover { background: #ebeef1; }
 }
 
 /* 홈 '전국 학교 기출' 목록 (옛 기출 아카이브 — 기능 그대로, 겉모습만 규칙대로) */
-.rd .rd-catalog { padding-top: clamp(40px, 6vw, 72px); padding-bottom: 40px; outline: none; }
+.rd .rd-catalog { padding-top: clamp(40px, 6vw, 72px); padding-bottom: 40px; outline: none; scroll-margin-top: 60px; }
 .rd .rd-catalog-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 36px; }
 .rd .rd-catalog-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
 .rd .rd-filter { position: sticky; top: 92px; background: var(--rd-zone); border-radius: 28px; padding: 24px; }
@@ -97,6 +97,12 @@ a.rd-card:hover { background: #ebeef1; }
 .rd .rd-span2 { grid-column: span 2; }
 .rd .rd-select { width: 100%; min-width: 0; height: 46px; border: 0; border-radius: 14px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23B0B8C1' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; padding: 0 34px 0 14px; font: inherit; font-size: 16px; color: var(--rd-text); appearance: none; -webkit-appearance: none; cursor: pointer; }
 .rd .rd-select:disabled { color: #a3abb5; cursor: not-allowed; }
+/* [10/17] 홈 '조건으로 찾기' — 앞 칸을 안 고른 구/군·학교 칸(잠금 대신 안내) */
+.rd .rd-select.is-wait { color: #a3abb5; }
+.rd .rd-select.is-nudge { box-shadow: 0 0 0 3px var(--rd-brand); }
+.rd .rd-filter-nudge { margin: 0; font-size: 14px; font-weight: 700; color: var(--rd-ink); }
+.rd .rd-showcase-link { display: block; border-radius: 20px 20px 0 0; }
+.rd .rd-showcase-link:hover img { box-shadow: 0 -6px 40px rgba(23, 32, 44, 0.16); }
 .rd .rd-filter-search { margin-top: 8px; display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 14px; padding: 0 14px; }
 .rd .rd-filter-search input { flex: 1; min-width: 0; border: 0; background: transparent; height: 46px; font: inherit; font-size: 16px; color: var(--rd-text); outline: none; }
 .rd .rd-check { margin-top: 16px; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }

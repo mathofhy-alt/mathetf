@@ -119,6 +119,20 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
         }
     };
 
+    // [10/17] 홈에서 '내신기출'을 누르면 같은 홈으로 가서 아무 변화가 없었다(Clarity 헛클릭 7회/3일) → 아래 '전국 학교 기출' 목록으로 내려 준다
+    const toCatalog = (e: React.MouseEvent, href: string) => {
+        if (href !== '/' || pathname !== '/') return;
+        const el = document.getElementById('catalog');
+        if (!el) return;
+        e.preventDefault();
+        // 모바일 메뉴가 펼쳐진 채로 위치를 재면 메뉴가 닫히며 그 높이만큼 지나친다(390px 실측 744px) → 닫힌 뒤에 스크롤
+        setMobileMenuOpen(false);
+        window.setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            el.focus({ preventScroll: true });
+        }, 60);
+    };
+
     type NavChild = { href: string; label: string; badge?: string; desc?: string };
     type NavItem = { href: string; label: string; badge?: string; children?: NavChild[] };
     const navItems: NavItem[] = [
@@ -180,7 +194,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                     </div>
                                 </div>
                             ) : (
-                                <Link key={item.href} href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="rd-nav-link">
+                                <Link key={item.href} href={item.href} onClick={e => toCatalog(e, item.href)} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined} className="rd-nav-link">
                                     {item.label}
                                     
                                 </Link>
@@ -290,7 +304,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                         {navItems.map(item => (
                             <div key={item.href}>
                                 <Link
-                                    href={item.href} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined}
+                                    href={item.href} onClick={e => toCatalog(e, item.href)} aria-current={(item.href==='/'?pathname==='/':activePath.startsWith(item.href))?'page':undefined}
                                     className={`rd-m-link ${pathname === item.href ? 'is-on' : ''}`}
                                 >
                                     {item.label}
