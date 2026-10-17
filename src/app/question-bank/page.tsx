@@ -1318,16 +1318,17 @@ export default function QuestionBankPage() {
                                             .filter(i => i.type === 'personal_db')
                                             .map(i => i.reference_id || i.id);
                                         const allSelected = allDbIds.length > 0 && allDbIds.every(id => selectedDbIds.includes(id));
-                                        const hasOtherSelected = selectedDbIds.some(id => !allDbIds.includes(id));
+                                        // [10/17] 다른 탭에서 고른 것은 건드리지 않는다 — 예전엔 '이 탭만 전체 선택'이 다른 탭 선택을 지웠다
+                                        //   (대표: 내신 몇 개·사관 몇 개·전국연합 몇 개를 섞어 고르려는데 탭을 바꾸면 앞의 것이 사라짐)
                                         return (
                                             <button
                                                 onClick={() => {
-                                                    setSelectedDbIds(hasOtherSelected ? allDbIds : allSelected ? [] : allDbIds);
+                                                    setSelectedDbIds(prev => allSelected ? prev.filter(id => !allDbIds.includes(id)) : [...new Set([...prev, ...allDbIds])]);
                                                 }}
                                                 className={`rd-btn rd-btn-sm ${allSelected ? 'rd-btn-tint rd-btn-on' : 'rd-btn-gray'}`}
                                             >
                                                 <CheckSquare size={16} />
-                                                {hasOtherSelected ? '이 탭만 전체 선택' : allSelected ? '이 탭 선택 해제' : '이 탭 전체 선택'}
+                                                {allSelected ? '이 탭 선택 해제' : '이 탭 전체 선택'}
                                                 {selectedDbIds.length > 0 && (
                                                     <span style={{ fontSize: 12, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: 'var(--rd-ink)', color: '#fff' }}>
                                                         {selectedDbIds.length}

@@ -72,8 +72,22 @@ export type BuildResult = { reply: string; plan: ChatPlan; by: string; chosen: C
 
 /** 문항 id → 개념 태그(태그별로 번갈아 담을 때만 쓴다) */
 export type ConceptsOf = (ids: string[]) => Promise<Map<string, string[]>>;
+/** 문항 id → 원본 문항 번호(시험지 한 회차를 통째로 담을 때 번호 순서로) */
+export type NumbersOf = (ids: string[]) => Promise<Map<string, number>>;
 
-export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null, callTopic: CallTopic, conceptsOf?: ConceptsOf): Promise<BuildResult> {
+/**
+ * [10/17] 한 회차를 통째로 달라는 말인가 — '26년1중간중동고1학년'(대표). AI 가 매번 단원·난이도를 임의로 골라 20문항 시험에서 6개만 담았다.
+ * 학교(모의고사 아님)·연도 하나·학기 하나가 정해졌고, 단원·난이도·유형 같은 좁히는 말이 없으면 그 회차 전부.
+ */
+function wholeExamAsk(plan: ChatPlan, said: string, unitHits: string[]): boolean {
+    const f = plan.filters;
+    const school = f.schools.filter(x => !/^(평가원|수능|전국연합)$/.test(x));
+    if (!school.length || f.years.length !== 1 || f.semesters.length !== 1) return false;
+    if (unitHits.length || plan.keywords.length) return false;
+    return !/난이도|쉬운|어려운|킬러|준킬러|레벨|lv|단원|유형|비슷|변형|서술|서답|객관식|주관식|\d+\s*점/i.test(said);
+}
+
+export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null, callTopic: CallTopic, conceptsOf?: ConceptsOf, numbersOf?: NumbersOf): Promise<BuildResult> {
     const messages = rawMessages.map(m => m.role === 'user' ? { ...m, content: normalizeAsk(m.content) } : m);
     const plan = await planFromChat(messages, concepts, maxCount, lastPlan);
     // 강사가 과목을 말하지 않았으면 2015·2022 짝 과목의 같은 단원을 같이 넣는다 — 프롬프트로 시켜도 가끔 한쪽만 골랐다(10/11 실측: 수학II 만)
@@ -116,6 +130,21 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
     if (unitHits.length && !plan.targets.some(t => unitHits.includes(t))) {
         plan.targets = unitHits;
         plan.concepts = plan.concepts.filter(c => unitHits.some(t => concepts[t]?.[c]));
+    }
+
+    // [10/17] 한 회차 통째로 — 단원·난이도·주제 없이 그 시험 문항 전부를 원본 번호 순서로(과목을 말했으면 그 과목만)
+    if (wholeExamAsk(plan, said, unitHits)) {
+        const keep = named.length ? plan.targets.filter(t => named.includes(t.split('|')[0])) : [];
+        const whole: ChatPlan = { ...plan, targets: keep, concepts: [], keywords: [], topic: '', topicLabel: '', minDifficulty: 1, maxDifficulty: 10, fillRest: false };
+        const all = await callTopic(whole, keep, null);
+        const nums = numbersOf && all.length ? await numbersOf(all.map(c => c.id)) : new Map<string, number>();
+        const chosen = [...all].sort((a, b) => (nums.get(a.id) ?? 999) - (nums.get(b.id) ?? 999)).slice(0, maxCount);
+        const fl = whole.filters;
+        const tag = [fl.years.join('·') + '년', fl.grades.join('·'), fl.semesters.join('·'), fl.schools.join('·')].filter(Boolean).join(' · ');
+        const reply = chosen.length
+            ? `[${tag}] 이 시험 문항 ${chosen.length}개를 원래 번호 순서대로 담았어요.${all.length > maxCount ? ` (전체 ${all.length}개 중 ${maxCount}개까지만 담을 수 있어요.)` : ''}`
+            : `[${tag}] 이 시험 문항을 찾지 못했어요. 학교 이름이나 연도·학기를 한 번 더 확인해 주세요.`;
+        return { reply, plan: { ...whole, count: chosen.length || plan.count }, by: 'whole_exam', chosen, widened: false };
     }
 
     // 요청 글자와 태그 이름이 직접 겹치면 그 태그를 쓴다 — AI 가 태그를 못 고르거나 엉뚱한 단원을 골랐을 때(10/11 3차: '삼각함수 덧셈정리' → 0문항)

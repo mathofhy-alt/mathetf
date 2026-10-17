@@ -87,17 +87,19 @@ export async function POST(req: NextRequest) {
     const lastPlan: ChatPlan | null = body?.lastPlan && typeof body.lastPlan === 'object' ? body.lastPlan : null;
     // [10/11 사용자 요청] 사람들이 챗봇에 쓴 말과 챗봇 반응을 다 남긴다 — 그래야 고친다(qb_chat_logs, 서버만 읽고 쓴다)
     const t0 = Date.now();
-    const log = (row: Record<string, unknown>) => {
-        void createAdminClient().from('qb_chat_logs').insert({
+    // [10/17] 응답을 보내기 전에 저장을 기다린다 — 던져 두기만 하면 서버가 응답 뒤 멈춰 기록이 사라질 수 있다(10/12 뒤 0건이었다)
+    const log = async (row: Record<string, unknown>) => {
+        const { error } = await createAdminClient().from('qb_chat_logs').insert({
             user_id: user.id, request: messages[messages.length - 1].content, history: messages.slice(0, -1), ms: Date.now() - t0, ...row,
-        }).then(({ error }) => { if (error) console.error('[chat-generate] log', error.message); });
+        });
+        if (error) console.error('[chat-generate] log', error.message);
     };
 
     try {
         const selected: string[] = Array.isArray(body?.selectedDbs) ? body.selectedDbs.filter((x: unknown) => typeof x === 'string') : [];
         const { scope, whole, ineligible, concepts } = await prepare(selected, includeOff);
         const tPrep = Date.now() - t0;
-        if (!scope.length || !Object.keys(concepts).length) return NextResponse.json({ error: '출제할 자료를 불러오지 못했어요. 잠시 뒤에 다시 해 주세요.' }, { status: 503 });
+        if (!scope.length || !Object.keys(concepts).length) { await log({ error: 'no_scope' }); return NextResponse.json({ error: '출제할 자료를 불러오지 못했어요. 잠시 뒤에 다시 해 주세요.' }, { status: 503 }); }
 
         const useWhole = whole && ineligible !== null;   // '전체' 빠른길 함수가 없으면 범위 규칙 길로
         let dbMs = 0;
@@ -119,14 +121,22 @@ export async function POST(req: NextRequest) {
                 for (const r of data || []) m.set(r.id, r.key_concepts || []);
             }
             return m;
+        }, async (ids) => {
+            // [10/17] 한 회차 통째로 담을 때 원본 번호 순서
+            const m = new Map<string, number>();
+            for (let i = 0; i < ids.length; i += 200) {
+                const { data } = await createAdminClient().from('questions').select('id,question_number').in('id', ids.slice(i, i + 200));
+                for (const r of data || []) { const n = parseInt(String(r.question_number ?? '').replace(/\D/g, ''), 10); if (!isNaN(n)) m.set(r.id, n); }
+            }
+            return m;
         });
         // 단계별 시간(ms) — 느린 곳을 숫자로 찾으려고. ai = AI 조건 해석 + 임베딩(나머지)
         const total = Date.now() - t0;
-        log({ plan: { ...out.plan, _ms: { prep: tPrep, db: dbMs, ai: total - tPrep - dbMs, total } }, reply: out.reply, by: out.by, question_ids: out.chosen.map(c => c.id) });
+        await log({ plan: { ...out.plan, _ms: { prep: tPrep, db: dbMs, ai: total - tPrep - dbMs, total } }, reply: out.reply, by: out.by, question_ids: out.chosen.map(c => c.id) });
         return NextResponse.json({ reply: out.reply, plan: out.plan, by: out.by, questions: out.chosen.map(c => ({ id: c.id, difficulty: c.difficulty })) });
     } catch (e) {
         console.error('[chat-generate]', (e as Error).message);
-        log({ error: (e as Error).message.slice(0, 500) });
+        await log({ error: (e as Error).message.slice(0, 500) });
         return NextResponse.json({ error: '시험지를 만들지 못했어요. 잠시 뒤에 다시 해 주세요.' }, { status: 500 });
     }
 }
