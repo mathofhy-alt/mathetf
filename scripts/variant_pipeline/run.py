@@ -52,6 +52,23 @@ def norm(ans):
     return nums[-1] if nums else s
 
 
+def same_value(a, b):
+    """두 답이 같은 값인가 — sympy 로 값 비교, 못 읽으면 숫자 부분 비교. 판단 불가면 None"""
+    def val(s):
+        s = re.sub(r'[①②③④⑤]', '', str(s or '')).replace('번', '').strip()
+        s = s.replace('√', 'sqrt').replace('π', 'pi').replace('×', '*').replace('−', '-').replace('^', '**')
+        s = re.sub(r'sqrt(\d+)', r'sqrt(\1)', s)
+        s = re.sub(r'(\d|\))\s*(sqrt|pi|\()', r'\1*\2', s)   # 3√2 → 3*sqrt(2), 2π → 2*pi
+        try:
+            import sympy
+            return float(sympy.sympify(s))
+        except Exception:
+            return None
+    x, y = val(a), val(b)
+    if x is not None and y is not None: return abs(x - y) < 1e-9
+    return norm(a) == norm(b)
+
+
 def slot_pipeline(D, slot, level, maxtry=3):
     # 사람(대표·본 세션) 반려 이유가 feedback.json {칸: "이유"} 에 있으면 첫 시도부터 넘긴다
     fbf = load(os.path.join(D, 'feedback.json')) or {}
@@ -72,12 +89,15 @@ def slot_pipeline(D, slot, level, maxtry=3):
             list(ex.map(lambda a: codex(D, prompt(a[0], SLOT=slot), f'{slot}_{a[0]}{attempt}', a[1]), [('solve', 'high'), ('judge', 'high')]))
         s = load(os.path.join(D, f'{slot}_solve.json')) or {}; j = load(os.path.join(D, f'{slot}_judge.json')) or {}
         problems = []
-        if norm(s.get('answer')) != norm(g.get('answer')):
+        if same_value(s.get('answer_value') or s.get('answer'), g.get('answer_value') or g.get('answer')) is False:
             problems.append(f"독립 풀이 답 {s.get('answer')} ≠ 출제 답 {g.get('answer')} (독립 풀이 요지: {str(s.get('method'))[:300]})")
         if s.get('defects'): problems.append('독립 풀이가 찾은 결함: ' + ' / '.join(map(str, s['defects']))[:600])
         if j.get('verdict') != level:
             problems.append(f"난이도 판정 '{j.get('verdict')}' (요청 '{level}'): {j.get('reason')} / 쉬워진 점: {j.get('made_easier')}")
         if j.get('forced'): problems.append('억지스러운 덧붙임: ' + str(j['forced'])[:300])
+        if j.get('exam_like') is False: problems.append('시험 문제답지 않음: ' + str(j.get('exam_like_reason'))[:300])
+        if re.search(r'[a-zA-Zα-ω]', str(g.get('answer_value') or '').replace('sqrt', '').replace('pi', '')):
+            problems.append(f"답이 수 하나가 아님: {g.get('answer_value')}")
         if j.get('wording'): problems.append('표현 문제(교과서 용어·기호로 고칠 것): ' + ' / '.join(map(str, j['wording']))[:400])
         g.update(attempt=attempt, solve=s, judge=j, problems=problems)
         json.dump(g, open(os.path.join(D, f'{slot}.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
