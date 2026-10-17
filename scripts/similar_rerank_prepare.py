@@ -9,7 +9,8 @@
 대기열 우선순위: 유사 버튼 클릭 수(similar_click_log) → 최근 등록 → (지정) --ids / --source 회차
 사용: python scripts/similar_rerank_prepare.py 40   |  --source "<source_db_id>"  |  --ids id1,id2
 """
-import os, re, sys, json, time, html, random, argparse, collections, requests, urllib3
+import os, re, sys, json, time, html, random, argparse, collections, threading, requests, urllib3
+from concurrent.futures import ThreadPoolExecutor
 urllib3.disable_warnings()
 try: sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
 except Exception: pass
@@ -20,8 +21,9 @@ for line in open(os.path.join(ROOT, '.env.local'), encoding='utf-8'):
     m = re.match(r'^\s*([\w.-]+)\s*=\s*(.*)\s*$', line)
     if m: env[m.group(1)] = m.group(2).strip().strip('"').strip("'")
 URL = env['NEXT_PUBLIC_SUPABASE_URL'].rstrip('/'); KEY = env['SUPABASE_SERVICE_ROLE_KEY']; H = {'apikey': KEY, 'Authorization': 'Bearer ' + KEY}
-STATE = os.path.join(ROOT, '.cache', 'rerank', 'state.json'); S = requests.Session()
+STATE = os.path.join(ROOT, '.cache', 'rerank', 'state.json'); _TL = threading.local()
 def get(path, params, tries=3):
+    S = getattr(_TL, 's', None) or setattr(_TL, 's', requests.Session()) or _TL.s   # 스레드마다 세션 하나
     for t in range(tries):
         try:
             r = S.get(f'{URL}/rest/v1/{path}', headers=H, params=params, verify=False, timeout=(10, 60))
@@ -123,19 +125,30 @@ def main():
                 if len(pick) >= a.n * 2: break
     pick = [q for q in pick if a.redo or q not in done][:a.n]
     bdir = os.path.join(ROOT, '.cache', 'rerank', time.strftime('batch_%Y%m%d_%H%M%S')); os.makedirs(bdir, exist_ok=True)
-    key = {}; random.seed(len(pick) * 7 + int(time.time()) % 1000)
-    for i, base in enumerate(pick):
+    # [10/17] 준비가 1000문항에 약 1시간(문항마다 후보 본문 40개를 10개씩 순서대로 받음) → 코덱스(13분)보다 오래 걸렸다.
+    #   ① 받은 본문 글은 배치 안에서 다시 쓴다(같은 단원 후보가 많이 겹친다) ② 문항 4개를 동시에(DB MICRO 부하를 생각해 4개까지)
+    key = {}; seed = len(pick) * 7 + int(time.time()) % 1000
+    TEXT = {}; lock = threading.Lock(); done_n = [0]
+    def build(i, base):
         b, cands = candidates(base)
-        if not b or len(cands) < 6: print('  건너뜀(후보 부족)', base[:8]); continue
-        need = [base] + cands; xml = {}
+        if not b or len(cands) < 6: print('  건너뜀(후보 부족)', base[:8]); return None
+        need = [q for q in [base] + cands if q not in TEXT]
         for j in range(0, len(need), 10):
-            for r in get('questions', {'select': 'id,content_xml', 'id': 'in.(' + ','.join(need[j:j + 10]) + ')'}): xml[r['id']] = r
+            for r in get('questions', {'select': 'id,content_xml', 'id': 'in.(' + ','.join(need[j:j + 10]) + ')'}):
+                t = text_of(r)
+                with lock: TEXT[r['id']] = t
             time.sleep(0.3)
-        c = list(cands); random.shuffle(c); name = base[:8]
-        body = [f'### 사례 {name}\n## 기준\n{text_of(xml[base])}\n'] + [f'## 후보 C{k + 1}\n{text_of(xml[q])}\n' for k, q in enumerate(c) if q in xml]
+        c = [q for q in cands if q in TEXT]; random.Random(seed + i).shuffle(c); name = base[:8]
+        if base not in TEXT: return None
+        body = [f'### 사례 {name}\n## 기준\n{TEXT[base]}\n'] + [f'## 후보 C{k + 1}\n{TEXT[q]}\n' for k, q in enumerate(c)]
         open(os.path.join(bdir, f'{name}.txt'), 'w', encoding='utf-8').write('\n'.join(body))
-        key[name] = {'base': base, 'cands': [q for q in c if q in xml]}
-        if (i + 1) % 10 == 0: print(f'  {i + 1}/{len(pick)}')
+        with lock:
+            done_n[0] += 1
+            if done_n[0] % 50 == 0: print(f'  {done_n[0]}/{len(pick)}')
+        return name, {'base': base, 'cands': c}
+    with ThreadPoolExecutor(4) as ex:
+        for res in ex.map(lambda x: build(*x), list(enumerate(pick))):   # map 은 순서를 지킨다 → 작업 파일 묶음이 예전과 같은 우선순위
+            if res: key[res[0]] = res[1]
     names = list(key); jobs = [names[i:i + 3] for i in range(0, len(names), 3)]   # 후보가 최대 40개라 에이전트 1명당 3문항
     for j, g in enumerate(jobs): open(os.path.join(bdir, f'job{j + 1}.txt'), 'w', encoding='utf-8').write('\n'.join(g))
     json.dump(key, open(os.path.join(bdir, 'key.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
