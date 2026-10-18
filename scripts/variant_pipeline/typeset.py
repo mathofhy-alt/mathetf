@@ -41,7 +41,7 @@ def add_queue(key, name, path, meta):
     q['items'] = [it for it in q['items'] if it['key'] != key]
     school = meta['school'].replace('고등학교', '고').replace('여자고', '여고')
     q['items'].append({'key': key, 'src': path, 'status': '대기', 'outname': name, 'region': '변형', 'school': f"{school} {meta['question_number']}번",
-                       'year': f"{meta['year']}년", 'grade': '', 'term': '', 'exam': '변형문제', 'subject': meta['subject'],
+                       'year': f"{meta['year']}년", 'grade': '', 'term': '', 'exam': '변형문제', 'subject': re.sub(r'II$', 'Ⅱ', re.sub(r'(?<!I)I$', 'Ⅰ', meta['subject'])),   # 굽기 범위검사는 Ⅰ·Ⅱ 로 과목을 찾는다
                        'mod': f'content_{key}', 'figmodule': f'figures_{key}', 'figdir': f'figs_{key}', 'filler': f'filler_{key}.json',
                        'range': meta['unit'], 'note': '변형 파이프라인 3라운드(2026-10-18) — 원본 PDF 없음, 발문대조 제외'})
     json.dump(q, open(qp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
