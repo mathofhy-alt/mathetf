@@ -39,6 +39,7 @@ EXTRA = '''
 - 이 폴더는 `C:\\gpt_solve` 다. 위 틀의 `C:\\20260909` 는 모두 `C:\\gpt_solve` 로 읽는다. 원본 경로는 위 「원본」 줄이 맞다.
 - 그림은 `tools/그림도구_현재.md` 가 `그림도구.md` 보다 우선한다. `C:\\trans_gpt` 는 절대 건드리지 않는다.
 - 다른 작업자들이 다른 시험지를 동시에 만들고 있다. 공용 도구·검사기·`queue.json` 은 고치지 말고 고칠 점은 보고에 적어라.
+- **문제 그림은 다 그린 뒤 원본 그림과 나란히 놓고 대조한다**(2026-10-19 대표 지적 — 축 아래 점에서 내린 투영 점선을 빠뜨림). 점선(투영선·점근선·수준선·숨은 선, 축 아래·왼쪽 방향 포함)·●/○ 점·라벨·빗금이 원본과 같아야 끝이다. 원본에 없는 선은 넣지 않는다.
 - **원본은 위 「원본」 경로의 파일 하나뿐이다.** 쪽보기.py 등 도구가 이름이 비슷한 다른 파일을 열 수 있으니, 먼저 연 PDF 표지의 학교·학년·과목·차수(1차/2차)가 시험지 이름과 맞는지 확인하고, 다르면 fitz 로 위 경로를 직접 열어라. (2026-10-18 효원고 중간·기말 파일을 헷갈린 일이 있었다.)
 - **원본이 스캔이면 발문을 옮긴 뒤 원본과 한 문항씩 다시 대조하라** — 등차↔등비, 최댓값↔최솟값, 부등호·등호, 지수·첨자, 부호, 선지 값을 특히. (2026-10-18 등비수열을 등차수열로 옮겨 답이 틀린 일이 있었다.)
 - 마지막 메시지에는 「보고」 형식만 한국어로 쓴다.
@@ -102,8 +103,13 @@ def prompt_figfix(key):
 FIXNOTE = {}
 
 
+def prompt_figaudit(key):
+    it = queue_item(key)
+    return open(os.path.join(HERE, 'prompts', 'figaudit.md'), encoding='utf-8').read().replace('{KEY}', key).replace('{SRC}', it['src'])
+
+
 def run(kind, key, log):
-    p = {'type': prompt_type, 'recheck': prompt_recheck, 'vtype': prompt_vtype, 'figfix': prompt_figfix}[kind](key)
+    p = {'type': prompt_type, 'recheck': prompt_recheck, 'vtype': prompt_vtype, 'figfix': prompt_figfix, 'figaudit': prompt_figaudit}[kind](key)
     t = time.time()
     try:
         r = subprocess.run(CODEX + ['exec', '--skip-git-repo-check', '-c', 'notify=[]', '-c', 'mcp_servers={}', '--sandbox', 'workspace-write',
@@ -132,7 +138,7 @@ START = __import__('datetime').datetime.now()
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--type'); ap.add_argument('--recheck'); ap.add_argument('--vtype'); ap.add_argument('--figfix'); ap.add_argument('--fixnote', default='{}')
+    ap = argparse.ArgumentParser(); ap.add_argument('--type'); ap.add_argument('--recheck'); ap.add_argument('--vtype'); ap.add_argument('--figfix'); ap.add_argument('--figaudit'); ap.add_argument('--fixnote', default='{}')
     ap.add_argument('--log', required=True); ap.add_argument('--par', type=int, default=20); a = ap.parse_args()
     os.makedirs(a.log, exist_ok=True)
     jobs = Q.Queue()
@@ -141,6 +147,7 @@ def main():
     for k in expand(a.type): jobs.put(('type', k, 0))
     FIXNOTE.update(json.loads(a.fixnote))
     for k in expand(a.figfix): jobs.put(('figfix', k, 0))
+    for k in expand(a.figaudit): jobs.put(('figaudit', k, 0))
     lock = threading.Lock(); pending = [jobs.qsize()]
 
     def worker():
