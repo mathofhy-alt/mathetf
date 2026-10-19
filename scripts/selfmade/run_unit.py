@@ -12,10 +12,13 @@ sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'variant_pipeline'))
 import run as V          # codex(), load(), same_value() 재사용
+DIR = []   # 단원 폴더(unit.json: subject·unit_name)
 
 
 def prompt(name, **kw):
     t = open(os.path.join(HERE, 'prompts', name + '.md'), encoding='utf-8').read()
+    meta = json.load(open(os.path.join(DIR[0], 'unit.json'), encoding='utf-8')) if DIR and os.path.exists(os.path.join(DIR[0], 'unit.json')) else {'subject': '공통수학2', 'unit_name': '합성함수와 역함수'}
+    t = t.replace('{SUBJECT}', meta['subject']).replace('{UNIT_NAME}', meta['unit_name'])
     for k, v in kw.items(): t = t.replace('{' + k + '}', str(v))
     return t
 
@@ -52,7 +55,7 @@ def slot(D, cause, level, maxtry=3):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('dir'); ap.add_argument('--levels', default='기본,중,상'); ap.add_argument('--par', type=int, default=12); ap.add_argument('--only')
-    a = ap.parse_args(); D = os.path.abspath(a.dir); os.makedirs(os.path.join(D, 'logs'), exist_ok=True)
+    a = ap.parse_args(); D = os.path.abspath(a.dir); DIR.append(D); os.makedirs(os.path.join(D, 'logs'), exist_ok=True)
     cat = json.load(open(os.path.join(D, 'catalog.json'), encoding='utf-8'))
     jobs = [(c['id'], lv) for c in cat['causes'] for lv in a.levels.split(',')]
     if a.only: jobs = [j for j in jobs if f'{j[0]}-{j[1]}' in a.only.split(',')]
