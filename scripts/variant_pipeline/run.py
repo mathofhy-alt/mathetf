@@ -356,6 +356,9 @@ PRIOR = {'공통수학1': [], '공통수학2': ['공통수학1'], '대수': ['�
          '미적분': ['수학(상)', '수학(하)', '수학I', '수학II']}
 
 
+GRAPH_NOTE = '그래프 개형으로 교점·근의 존재를 읽는 것은 허용한다(대표 10/20: "원래 사람은 그렇게 푼다"): 끊기지 않는 두 그래프의 위아래 순서가 바뀌면 만난다, 한쪽이 증가하고 다른 쪽이 감소하면 많아야 한 번 만난다, 점근선 높이를 비교한다 같은 판단. 사잇값 정리의 이름이나 엄밀한 존재 증명을 요구하지 않고, 이것을 범위 밖 방법이나 보류 사유로 삼지 않는다.'
+
+
 def course_key(course):
     c = re.sub(r'\s', '', course or '').replace('Ⅰ', 'I').replace('Ⅱ', 'II').replace('Ⅲ', 'III')
     return {'수학상': '수학(상)', '수학하': '수학(하)', '미적분1': '미적분I', '미적분2': '미적분II', '수학1': '수학I', '수학2': '수학II'}.get(c, c)
@@ -374,7 +377,7 @@ def make_policy(original, requested, max_attempts, unit=''):
         'source_metadata': source, 'unit_cli': unit,
         'prior_courses': PRIOR.get(course_key(course.group() if course else ''), []),
         'curriculum_note': ('출처 범위를 우선한다. 중학교 전 과정, prior_courses 의 과목, 같은 과목의 앞 단원은 학생이 이미 배운 내용이므로 허용한다. '
-                            '그 밖(뒤 과목·교육과정 밖)의 내용·방법은 허용을 추정하지 않는다.')}
+                            '그 밖(뒤 과목·교육과정 밖)의 내용·방법은 허용을 추정하지 않는다. ' + GRAPH_NOTE)}
 
 
 REAL_ERRORS = 'C:/selfmade/오답조사/real_errors.json'
