@@ -157,7 +157,9 @@ def codex(D, text, tag, effort='high', ticket=None):
 def garbled(path):
     try: text = Path(path).read_text(encoding='utf-8-sig')
     except (OSError, UnicodeError): return True
-    return '\ufffd' in text or chr(8) in text or (text.count('???') >= 5 and not re.search('[가-힣]', text))
+    # 입력에서 베낀 한글 몇 단어가 섞여도 깨진 것으로 본다(10/20 묶음 비교: '?' 1천여 개에 한글 3단어) — 한글 글자 수가 '?' 의 1/5 미만이면 깨짐
+    q, h = text.count('?'), len(re.findall('[가-힣]', text))
+    return '\ufffd' in text or chr(8) in text or (q >= 30 and h * 5 < q)
 
 
 def codex_out(D, text, tag, out, effort='high', tries=2, ticket=None, records=None,
@@ -295,7 +297,9 @@ def section(text, title):
 def choices(problem):
     marks = list(re.finditer('[①②③④⑤]', problem))
     if not marks: return None
-    if [m.group() for m in marks] != list('①②③④⑤'): raise ValueError('선지는 ①~⑤ 정확히 5개 필요')
+    # 발문 안에서도 ①② 를 절차 번호로 쓴다(10/20 휘문고 원본 '① A에서… ② B에서…') — 선지는 끝의 ①~⑤ 다섯 개로 본다
+    marks = marks[-5:]
+    if [m.group() for m in marks] != list('①②③④⑤'): raise ValueError('선지는 끝에 ①~⑤ 정확히 5개 필요')
     return [problem[m.end():marks[i+1].start() if i < 4 else len(problem)].strip() for i, m in enumerate(marks)]
 
 
