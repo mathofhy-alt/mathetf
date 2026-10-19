@@ -13,3 +13,5 @@
 출력 `catalog.json`:
 {"unit": "...", "total_cases": N, "causes": [{"name": "...", "cases": n, "exams": m, "what": "어디서 어떻게 어긋나는가 2문장 이내", "trigger": "함정이 작동하는 문제 조건", "examples": [{"exam": "...", "no": 0, "trace": "..."}], "item_refs": ["exam#no", ...]}], "other": n}
 모든 사례는 정확히 한 원인(또는 other)에 들어가야 한다 — item_refs 합 + other = total_cases.
+
+`catalog.json` 은 반드시 UTF-8 로 쓴다(Python 으로 open(..., 'w', encoding='utf-8')). PowerShell Set-Content/Out-File 로 쓰지 마라 — 한글이 ? 로 깨진다.

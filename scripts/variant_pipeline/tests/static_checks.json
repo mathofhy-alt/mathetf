@@ -1,0 +1,60 @@
+{
+  "syntax_checks": [
+    {
+      "path": "scripts/variant_pipeline/run.py",
+      "ast": "OK",
+      "backspace_bytes": 0,
+      "forbidden_escape": 0
+    },
+    {
+      "path": "scripts/variant_pipeline/golden/replay.py",
+      "ast": "OK",
+      "backspace_bytes": 0,
+      "forbidden_escape": 0
+    },
+    {
+      "path": "scripts/variant_pipeline/golden/golden_runner.py",
+      "ast": "OK",
+      "backspace_bytes": 0,
+      "forbidden_escape": 0
+    },
+    {
+      "path": "scripts/variant_pipeline/tests/test_run.py",
+      "ast": "OK",
+      "backspace_bytes": 0,
+      "forbidden_escape": 0
+    }
+  ],
+  "prompt_keys": {
+    "analyze": [
+      "EASY",
+      "HARD",
+      "KEEP"
+    ],
+    "generate": [
+      "FEEDBACK",
+      "LEVEL",
+      "SLOT"
+    ],
+    "solve": [
+      "SLOT"
+    ],
+    "judge": [
+      "SLOT"
+    ],
+    "review": [
+      "SLOT"
+    ],
+    "bundle": []
+  },
+  "latest_prompts_match": true,
+  "golden_static_paths": 13,
+  "golden_expected_counts": {
+    "채택": 5,
+    "시험용 미채택": 4,
+    "보류": 2,
+    "제공 불가": 2
+  },
+  "golden_model_calls": 0,
+  "offline_test_count": 13
+}

@@ -13,9 +13,12 @@ sys_out = os.sys.stdout.reconfigure(encoding='utf-8')
 BASE = 'C:/selfmade/오답조사'
 key = lambda u: (u or '').replace(' ', '')
 rows = json.load(open(f'{BASE}/seoul/wrong_items.json', encoding='utf-8'))
-cats = json.load(open(f'{BASE}/seoul_causes/_all.json', encoding='utf-8'))
+# 단원 이름은 폴더 이름으로 — catalog.json 의 unit 칸은 코덱스가 '????' 로 깨뜨린 것이 있었다(10/19 코덱스 지적: 유리함수·지수함수)
 by_unit = {}
-for c in cats:
+for u in sorted(os.listdir(f'{BASE}/seoul_causes')):
+    f = f'{BASE}/seoul_causes/{u}/catalog.json'
+    if not os.path.exists(f): continue
+    c = json.load(open(f, encoding='utf-8-sig')); c['unit'] = u
     cs = [{k: x.get(k) for k in ('name', 'cases', 'exams', 'what', 'trigger', 'examples')} for x in c['causes'] if x['cases'] >= 2]
     by_unit[key(c['unit'])] = sorted(cs, key=lambda x: (-x['exams'], -x['cases']))
 by_q = collections.defaultdict(list)
