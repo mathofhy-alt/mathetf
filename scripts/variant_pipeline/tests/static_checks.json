@@ -1,60 +1,96 @@
 {
+  "round": 5,
   "syntax_checks": [
     {
-      "path": "scripts/variant_pipeline/run.py",
+      "path": "scripts\\variant_pipeline\\gs_all.py",
       "ast": "OK",
       "backspace_bytes": 0,
       "forbidden_escape": 0
     },
     {
-      "path": "scripts/variant_pipeline/golden/replay.py",
+      "path": "scripts\\variant_pipeline\\run.py",
       "ast": "OK",
       "backspace_bytes": 0,
       "forbidden_escape": 0
     },
     {
-      "path": "scripts/variant_pipeline/golden/golden_runner.py",
+      "path": "scripts\\variant_pipeline\\typeset.py",
       "ast": "OK",
       "backspace_bytes": 0,
       "forbidden_escape": 0
     },
     {
-      "path": "scripts/variant_pipeline/tests/test_run.py",
+      "path": "scripts\\variant_pipeline\\golden\\golden_runner.py",
+      "ast": "OK",
+      "backspace_bytes": 0,
+      "forbidden_escape": 0
+    },
+    {
+      "path": "scripts\\variant_pipeline\\golden\\replay.py",
+      "ast": "OK",
+      "backspace_bytes": 0,
+      "forbidden_escape": 0
+    },
+    {
+      "path": "scripts\\variant_pipeline\\tests\\test_run.py",
       "ast": "OK",
       "backspace_bytes": 0,
       "forbidden_escape": 0
     }
   ],
-  "prompt_keys": {
-    "analyze": [
-      "EASY",
-      "HARD",
-      "KEEP"
-    ],
-    "generate": [
-      "FEEDBACK",
-      "LEVEL",
-      "SLOT"
-    ],
-    "solve": [
-      "SLOT"
-    ],
-    "judge": [
-      "SLOT"
-    ],
-    "review": [
-      "SLOT"
-    ],
-    "bundle": []
+  "prompt_checks": {
+    "analyze": {
+      "keys": [
+        "EASY",
+        "HARD",
+        "KEEP"
+      ],
+      "backspace_bytes": 0,
+      "sha256": "1ba7137e1ffafb23d22af7e8b52db981baf3f6e3b813bb032e528136f8cff9c6"
+    },
+    "generate": {
+      "keys": [
+        "FEEDBACK",
+        "LEVEL",
+        "SLOT"
+      ],
+      "backspace_bytes": 0,
+      "sha256": "88ec3ea4c0fe54c093085b7b213871594f0ca79efc58a8f2b42a1297184dc4da"
+    },
+    "solve": {
+      "keys": [
+        "SLOT"
+      ],
+      "backspace_bytes": 0,
+      "sha256": "9f92fa421a658e2fe176b772b35a2d6fb43f86eb0e91ff7be9739d0fa466c128"
+    },
+    "judge": {
+      "keys": [
+        "SLOT"
+      ],
+      "backspace_bytes": 0,
+      "sha256": "65a7038767a3d39fb918faef2ba2069810241b4f1895cd377604791a2d3724a8"
+    },
+    "review": {
+      "keys": [
+        "SLOT"
+      ],
+      "backspace_bytes": 0,
+      "sha256": "5aeb8da2b293952725903c067a0773aad7d25a7ed4dd5b4edafd593162175cdd"
+    },
+    "bundle": {
+      "keys": [],
+      "backspace_bytes": 0,
+      "sha256": "4cb7f784203ce068ea97ac226b0099c71d91b24cce81f9c021deec9f9ab6ecf3"
+    }
   },
-  "latest_prompts_match": true,
-  "golden_static_paths": 13,
-  "golden_expected_counts": {
-    "채택": 5,
-    "시험용 미채택": 4,
-    "보류": 2,
-    "제공 불가": 2
-  },
-  "golden_model_calls": 0,
-  "offline_test_count": 13
+  "excluded_inaccessible_old_empty_dirs": [
+    "tmp66pu91z6",
+    "tmp9i0ucytj"
+  ],
+  "offline_test_command": "python -m unittest discover -s scripts/variant_pipeline/tests -v",
+  "offline_test_count": 20,
+  "offline_tests_passed": true,
+  "model_calls": 0,
+  "live02_check_record": "scripts\\variant_pipeline\\tests\\live02_regression.json"
 }

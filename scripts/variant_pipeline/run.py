@@ -234,6 +234,7 @@ def judge(D, slot, ticket=None):
 def review(D, slot, ticket=None):
     inputs = ['original_problem.txt', f'{slot}_problem.txt', f'{slot}_solve.json',
               f'{slot}_judge.json', f'{slot}.json', *optional_policy(D)]
+    if (Path(D) / 'real_errors.md').is_file(): inputs.append('real_errors.md')
     inputs += [f'{slot}{suffix}' for suffix in ('_check.py', '_solve.py') if (Path(D) / f'{slot}{suffix}').is_file()]
     return isolated_call(D, 'review', inputs, f'{slot}_review.json', slot=slot, ticket=ticket, SLOT=slot)
 
@@ -295,12 +296,12 @@ def section(text, title):
 
 
 def choices(problem):
-    marks = list(re.finditer('[①②③④⑤]', problem))
-    if not marks: return None
-    # 발문 안에서도 ①② 를 절차 번호로 쓴다(10/20 휘문고 원본 '① A에서… ② B에서…') — 선지는 끝의 ①~⑤ 다섯 개로 본다
-    marks = marks[-5:]
-    if [m.group() for m in marks] != list('①②③④⑤'): raise ValueError('선지는 끝에 ①~⑤ 정확히 5개 필요')
-    return [problem[m.end():marks[i+1].start() if i < 4 else len(problem)].strip() for i, m in enumerate(marks)]
+    # 절차 번호는 선지가 아니다. 끝의 순서 있는 다섯 표지 뒤가 각각 수 값인 경우만 선지 묶음이다.
+    marks = list(re.finditer('[①②③④⑤]', problem))[-5:]
+    if [m.group() for m in marks] != list('①②③④⑤'): return None
+    options = [problem[m.end():marks[i+1].start() if i < 4 else len(problem)].strip()
+               for i, m in enumerate(marks)]
+    return options if all(numeric_value(option) is not None for option in options) else None
 
 
 def answer_parts(answer):
@@ -440,6 +441,7 @@ def generation_errors(g, slot, level):
         options = choices(g['problem'])
         index, display = answer_parts(g['answer'])
         if options is None:
+            if index is not None: errors.append('객관식 정답 표기에는 끝의 수 값 선지 ①~⑤ 정확히 5개 필요')
             value = numeric_value(g['answer_value'])
             if value is None or value.is_Integer is not True or not 0 <= value <= 999:
                 errors.append('단답형은 0~999 정수 필요')
@@ -509,6 +511,17 @@ def review_shape(j, r):
         for row in r['solution_checks']:
             if isinstance(row, dict) and any(not isinstance(x, str) or not x.strip() for x in row.values()):
                 errors.append('solution_checks: 빈 검사 근거')
+    # 과거 실측 출처는 학생용 해설의 수학적 줄과 분리한다. 기존 review에도 호환된다.
+    if isinstance(r, dict) and 'evidence_checks' in r:
+        if not isinstance(r['evidence_checks'], list):
+            errors.append('evidence_checks: list 필요')
+        else:
+            for row in r['evidence_checks']:
+                errors += require_shape(row, dict.fromkeys(('location', 'claim', 'check', 'status'), str), 'evidence_check')
+                if (not isinstance(row, dict) or row.get('status') not in ('확인', '오류', '미확인')
+                        or any(not isinstance(row.get(k), str) or not row[k].strip()
+                               for k in ('location', 'claim', 'check'))):
+                    errors.append('evidence_checks: 상태/근거 오류')
     return errors
 
 
@@ -546,7 +559,38 @@ def adoption_errors(g, s, j, r, level, original_value, executions):
     if j.get('non_numeric_status') not in allowed: errors.append('비수치 시험 변형 조건 미충족')
     if isinstance(r.get('solution_checks'), list) and any(not isinstance(x, dict) or x.get('status') != '확인' for x in r['solution_checks']):
         errors.append('해설에 미확인/오류 줄이 남음')
+    if isinstance(r.get('evidence_checks'), list) and any(isinstance(x, dict) and x.get('status') == '오류'
+                                                       for x in r['evidence_checks']):
+        errors.append('근거표시에 확인된 오류가 남음')
     return errors
+
+
+def script_dependency_errors(source):
+    """자기완결형 검산 계약의 보수적 정적 검사. OS 보안 경계를 대신하지 않는다."""
+    try: tree = ast.parse(source)
+    except SyntaxError as exc: return [f'검산 스크립트 구문 오류: {exc}']
+    allowed_modules = {'math', 'cmath', 'fractions', 'decimal', 'itertools', 'collections',
+        'functools', 'operator', 'statistics', 'typing', 're', 'json', 'sympy', 'numpy',
+        'scipy', 'heapq', 'bisect', 'copy', 'dataclasses', 'enum'}
+    file_members = {'open', 'read_text', 'read_bytes', 'write_text', 'write_bytes', 'read',
+        'readline', 'readlines', 'write', 'writelines', 'load', 'save', 'loadtxt', 'savetxt',
+        'fromfile', 'tofile', 'memmap', 'exists', 'is_file', 'is_dir', 'iterdir', 'glob',
+        'rglob', 'mkdir', 'unlink', 'rename', 'rmdir', 'touch'}
+    dynamic_names = {'open', 'eval', 'exec', 'compile', '__import__', '__builtins__',
+                     'getattr', 'setattr', 'globals', 'locals', 'vars', 'input', 'breakpoint'}
+    errors = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            modules = [a.name for a in node.names] if isinstance(node, ast.Import) else [node.module or '']
+            if (isinstance(node, ast.ImportFrom) and node.level) or any(m.split('.')[0] not in allowed_modules for m in modules):
+                errors.append(f'{node.lineno}행: 외부 파일/실행 의존 가능 import {", ".join(modules)}')
+            if isinstance(node, ast.ImportFrom) and any(a.name in file_members or a.name == '*' for a in node.names):
+                errors.append(f'{node.lineno}행: 파일 접근/정적 확인 불가 import')
+        if isinstance(node, ast.Name) and node.id in dynamic_names:
+            errors.append(f'{node.lineno}행: 파일 접근/동적 실행 {node.id}')
+        if isinstance(node, ast.Attribute) and (node.attr in file_members or node.attr.startswith('__')):
+            errors.append(f'{node.lineno}행: 파일 접근/정적 확인 불가 속성 {node.attr}')
+    return sorted(set(errors))
 
 
 def execute_script(D, slot, suffix, timeout=120):
@@ -557,8 +601,14 @@ def execute_script(D, slot, suffix, timeout=120):
         result['stderr'] = '필수 검산 스크립트 누락'
     else:
         result['sha256'] = digest(script)
+        source = script.read_text(encoding='utf-8-sig')
+        result['dependency_errors'] = script_dependency_errors(source)
+        if result['dependency_errors']:
+            result['stderr'] = '자기완결형 검산 계약 위반: ' + '; '.join(result['dependency_errors'])
+            write_json(D / f'{slot}_{suffix}_run.json', result)
+            return result
         work = fresh_dir(D / 'calls', f'{slot}_{suffix}_exec_')
-        write_text(work / script.name, script.read_text(encoding='utf-8-sig'))
+        write_text(work / script.name, source)
         started = time.monotonic()
         if BUDGET and BUDGET.deadline: timeout = min(timeout, max(0.01, BUDGET.deadline-time.monotonic()))
         try:
@@ -616,11 +666,18 @@ def slot_pipeline(D, slot, level, maxtry=2, original_value=None):
                 break
             write_text(D / f'{slot}_problem.txt', g['problem'])
             check_run = execute_script(D, slot, 'check')
+            result['runner_executions'] = {'check': check_run}
+            if check_run.get('returncode') != 0 or not check_run.get('stdout', '').strip():
+                raise ValueError('생성 단계 검산 결함: ' + (check_run['stderr'] or '실행 실패/출력 누락'))
             s = isolated_call(D, 'solve', [f'{slot}_problem.txt'], f'{slot}_solve.json',
                 outputs=(f'{slot}_solve.py',), slot=slot, ticket=ticket, SLOT=slot)
             issues = require_shape(s, {'answer': str, 'answer_value': str, 'method': str, 'defects': list, 'script_output': str}, 'solve')
             if issues: raise ValueError('; '.join(issues))
             solve_run = execute_script(D, slot, 'solve')
+            result['solve'] = s
+            result['runner_executions']['solve'] = solve_run
+            if solve_run.get('returncode') != 0 or not solve_run.get('stdout', '').strip():
+                raise ValueError('독립 풀이 검산 결함: ' + (solve_run['stderr'] or '실행 실패/출력 누락'))
             # 모델의 script_output 주장을 실행 증거로 쓰지 않는다. runner 결과를 고정 입력에 포함.
             s['runner_execution'] = solve_run
             write_json(D / f'{slot}_solve.json', s)
@@ -718,12 +775,16 @@ def bundle(D, rows, requested, ticket=None):
         compared = set()
         same_decisions = set()
         for row in response['comparisons']:
-            if require_shape(row, {'slots': list, 'same_decision': bool, 'evidence': str}, 'comparison') or not row['evidence'].strip():
+            if (require_shape(row, {'slots': list, 'evidence': str}, 'comparison')
+                    or 'same_decision' not in row
+                    or (row['same_decision'] is not None and type(row['same_decision']) is not bool)
+                    or not row['evidence'].strip()):
                 raise ValueError('묶음 비교 근거/형식 오류')
             key = pair_key(row['slots'], set(ids))
             if key in compared: raise ValueError('중복 비교 쌍')
             compared.add(key)
-            if row['same_decision']: same_decisions.add(key)
+            # null은 비교 완료 후에도 판단을 확정할 수 없다는 뜻이다. 모델 conflicts 누락에도 강제 차단.
+            if row['same_decision'] is not False: same_decisions.add(key)
         if compared != set(itertools.combinations(ids, 2)): raise ValueError('모든 n(n-1)/2 쌍 비교 필요')
         model_conflicts = set()
         for row in response['conflicts']:

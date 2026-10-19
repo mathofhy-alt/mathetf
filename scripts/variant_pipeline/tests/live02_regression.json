@@ -1,0 +1,489 @@
+{
+  "model_calls": 0,
+  "source_files_unchanged": true,
+  "source_file_hashes": {
+    "scratch\\variant_live_02\\analyze_execution.json": "1c705bbeec6a09317244d9b0ce905a13be6451b4682687d8a7b93c46f7838faf",
+    "scratch\\variant_live_02\\bundle_execution.json": "f462f398a11b38618b34b15af5a15a348b01b851c951a18838b4a9945ab853e5",
+    "scratch\\variant_live_02\\bundle_input.json": "4c1973d7afa3e214db3448dcc048e907c76eddf5c955d9900b5df088cd626277",
+    "scratch\\variant_live_02\\bundle_review.json": "c03ab4140c00cda0a0473825ca04d7ad49fddfdccd0259642ee0776b27a2224c",
+    "scratch\\variant_live_02\\bundle_selection.json": "63dd6f7e20e893729a3c23149f649723eacc87638429c9fa663f5b86481fa0fe",
+    "scratch\\variant_live_02\\delivery_policy.json": "64881a9564847fca6e87a26a4df9ec08b2d0c346347aea59986bed9138e15d80",
+    "scratch\\variant_live_02\\delivery_report.json": "f5bf61fdad8f42b6752144662b81ae3c803b4cc54151aef6f3d737d5aa916891",
+    "scratch\\variant_live_02\\e1.generated.json": "3bba7a5be9ce07b009eb1969af1c828f50be808ac1787c49af2165c2d379c0db",
+    "scratch\\variant_live_02\\e1.generated.try1.json": "3bba7a5be9ce07b009eb1969af1c828f50be808ac1787c49af2165c2d379c0db",
+    "scratch\\variant_live_02\\e1.json": "be391d1f1e545559d38abacf7a207971b91a697c4dfae91af2290b776702ad3e",
+    "scratch\\variant_live_02\\e1.try1.json": "be391d1f1e545559d38abacf7a207971b91a697c4dfae91af2290b776702ad3e",
+    "scratch\\variant_live_02\\e1_attempt.json": "351fe8e3d582c27deb7023e9c1a84289f304d973491da6c82742b3c327f4eae9",
+    "scratch\\variant_live_02\\e1_attempt.try1.json": "351fe8e3d582c27deb7023e9c1a84289f304d973491da6c82742b3c327f4eae9",
+    "scratch\\variant_live_02\\e1_check.py": "71dc0733ccba6def81259c618fd55ae283993a075c308e7c2038a6e4b8c4139e",
+    "scratch\\variant_live_02\\e1_check.try1.py": "71dc0733ccba6def81259c618fd55ae283993a075c308e7c2038a6e4b8c4139e",
+    "scratch\\variant_live_02\\e1_check_run.json": "e32aef449f723dc5b81c757bf64fccdfca21d1f97134d1b26016e98bca96d4fa",
+    "scratch\\variant_live_02\\e1_check_run.try1.json": "e32aef449f723dc5b81c757bf64fccdfca21d1f97134d1b26016e98bca96d4fa",
+    "scratch\\variant_live_02\\e1_generate_execution.json": "b980059a1678fb850dbd153080de3c14b62d79084274e9c0e405164e44d6fbbd",
+    "scratch\\variant_live_02\\e1_generate_execution.try1.json": "b980059a1678fb850dbd153080de3c14b62d79084274e9c0e405164e44d6fbbd",
+    "scratch\\variant_live_02\\e1_judge.json": "8e528f79ef3c1c20605f55408c507480d8b3af0e988b320b9ae8e52b2cb24f7d",
+    "scratch\\variant_live_02\\e1_judge.try1.json": "8e528f79ef3c1c20605f55408c507480d8b3af0e988b320b9ae8e52b2cb24f7d",
+    "scratch\\variant_live_02\\e1_judge_execution.json": "9f066a407642634ccb209ce221ade4aab24824719594712507197276a5505534",
+    "scratch\\variant_live_02\\e1_judge_execution.try1.json": "9f066a407642634ccb209ce221ade4aab24824719594712507197276a5505534",
+    "scratch\\variant_live_02\\e1_problem.try1.txt": "d7a296907a9e71fbd46620eb65bba748cc6e4cb426fbc05cb671561472dc7552",
+    "scratch\\variant_live_02\\e1_problem.txt": "d7a296907a9e71fbd46620eb65bba748cc6e4cb426fbc05cb671561472dc7552",
+    "scratch\\variant_live_02\\e1_review.json": "4e1442933df852a987d38251d4d0543260aca193560a301c82d463f74386610f",
+    "scratch\\variant_live_02\\e1_review.try1.json": "4e1442933df852a987d38251d4d0543260aca193560a301c82d463f74386610f",
+    "scratch\\variant_live_02\\e1_review_execution.json": "4f5d83da14f8fff6eebb2c757dd8d0bdfa830dbcc3873d7bbfb3e17d6bf45133",
+    "scratch\\variant_live_02\\e1_review_execution.try1.json": "4f5d83da14f8fff6eebb2c757dd8d0bdfa830dbcc3873d7bbfb3e17d6bf45133",
+    "scratch\\variant_live_02\\e1_solve.json": "36498148cc1f234bc1b3de94a4403c78fb2cb6315c6da67857eabb9f054bfb3a",
+    "scratch\\variant_live_02\\e1_solve.py": "c8284723c5b428282c6328046ab836f19c026f73c93d913d2ff12a6e99c9e05e",
+    "scratch\\variant_live_02\\e1_solve.try1.json": "36498148cc1f234bc1b3de94a4403c78fb2cb6315c6da67857eabb9f054bfb3a",
+    "scratch\\variant_live_02\\e1_solve.try1.py": "c8284723c5b428282c6328046ab836f19c026f73c93d913d2ff12a6e99c9e05e",
+    "scratch\\variant_live_02\\e1_solve_execution.json": "6dec7150df0b5b8dc6e336afdd0fa3a47bccd5c23f955262029f8e8833a36990",
+    "scratch\\variant_live_02\\e1_solve_execution.try1.json": "6dec7150df0b5b8dc6e336afdd0fa3a47bccd5c23f955262029f8e8833a36990",
+    "scratch\\variant_live_02\\e1_solve_run.json": "d8b0fd1250357f2ed846823dd1e08cc834382896eb4cff97f197f9c43f8f3637",
+    "scratch\\variant_live_02\\e1_solve_run.try1.json": "d8b0fd1250357f2ed846823dd1e08cc834382896eb4cff97f197f9c43f8f3637",
+    "scratch\\variant_live_02\\e2.generated.json": "90a9552cd1bc3dde8b56a68d714e6a684f69f1f354eb56d03cf794f7a930ab57",
+    "scratch\\variant_live_02\\e2.generated.try1.json": "90a9552cd1bc3dde8b56a68d714e6a684f69f1f354eb56d03cf794f7a930ab57",
+    "scratch\\variant_live_02\\e2.json": "633579d016b72424d2aadc15481c1eee7695e8bda2e26dcf19221b1e85fa5c0d",
+    "scratch\\variant_live_02\\e2.try1.json": "633579d016b72424d2aadc15481c1eee7695e8bda2e26dcf19221b1e85fa5c0d",
+    "scratch\\variant_live_02\\e2_attempt.json": "f4b832c65020caf8d20dc6c0713533cf3435d984d4c38eba6f628925571b29fb",
+    "scratch\\variant_live_02\\e2_attempt.try1.json": "f4b832c65020caf8d20dc6c0713533cf3435d984d4c38eba6f628925571b29fb",
+    "scratch\\variant_live_02\\e2_check.py": "07b475e103f6457e83fcdad99c6c96ba22e5d9dde66ee45b9734bb7086165a7b",
+    "scratch\\variant_live_02\\e2_check.try1.py": "07b475e103f6457e83fcdad99c6c96ba22e5d9dde66ee45b9734bb7086165a7b",
+    "scratch\\variant_live_02\\e2_check_run.json": "f29bbbefa28aebbaf06095d49560bfc10997e89570c9a731c6aee98634e432ca",
+    "scratch\\variant_live_02\\e2_check_run.try1.json": "f29bbbefa28aebbaf06095d49560bfc10997e89570c9a731c6aee98634e432ca",
+    "scratch\\variant_live_02\\e2_generate_execution.json": "6d59df8fe614310088b83be52dddd31b2cb0a48f7c42b73f8daa3c625ff4a60e",
+    "scratch\\variant_live_02\\e2_generate_execution.try1.json": "6d59df8fe614310088b83be52dddd31b2cb0a48f7c42b73f8daa3c625ff4a60e",
+    "scratch\\variant_live_02\\e2_judge.json": "65eb145c9515a09150cca43d55b4f3bc7e765d740c5a78d0e5b320e1ddcad61c",
+    "scratch\\variant_live_02\\e2_judge.try1.json": "65eb145c9515a09150cca43d55b4f3bc7e765d740c5a78d0e5b320e1ddcad61c",
+    "scratch\\variant_live_02\\e2_judge_execution.json": "ea01817f71c51321f28b89eed991db0cc5b7534dd2e10f70c7a5981801aa48e8",
+    "scratch\\variant_live_02\\e2_judge_execution.try1.json": "ea01817f71c51321f28b89eed991db0cc5b7534dd2e10f70c7a5981801aa48e8",
+    "scratch\\variant_live_02\\e2_problem.try1.txt": "83e2538737dc7bb4cdc386f5f3abf769da228ba1ae1ff39dcfc0c43ba737ac15",
+    "scratch\\variant_live_02\\e2_problem.txt": "83e2538737dc7bb4cdc386f5f3abf769da228ba1ae1ff39dcfc0c43ba737ac15",
+    "scratch\\variant_live_02\\e2_review.json": "13478fbf606750719fe5d4d5409a48ce43f188ad9ef9cbd0ab00dc6b25258f2c",
+    "scratch\\variant_live_02\\e2_review.try1.json": "13478fbf606750719fe5d4d5409a48ce43f188ad9ef9cbd0ab00dc6b25258f2c",
+    "scratch\\variant_live_02\\e2_review_execution.json": "94668e229c5539880dcdffc1157fc1cf87815375a0f5d6a89c558691621a0de3",
+    "scratch\\variant_live_02\\e2_review_execution.try1.json": "94668e229c5539880dcdffc1157fc1cf87815375a0f5d6a89c558691621a0de3",
+    "scratch\\variant_live_02\\e2_solve.json": "b8889a8e952f833aff68c88e18448bae415d6cd265e470dfe761efa3d86577cb",
+    "scratch\\variant_live_02\\e2_solve.py": "e44c6c9a717f6b96e54aca32dde2726a4f46f7f57391a6f09f791d679c4637b1",
+    "scratch\\variant_live_02\\e2_solve.try1.json": "b8889a8e952f833aff68c88e18448bae415d6cd265e470dfe761efa3d86577cb",
+    "scratch\\variant_live_02\\e2_solve.try1.py": "e44c6c9a717f6b96e54aca32dde2726a4f46f7f57391a6f09f791d679c4637b1",
+    "scratch\\variant_live_02\\e2_solve_execution.json": "121e4173e93caf299e6b5907da699ddc7dfad4d4013ab21e04cd21820c3a9675",
+    "scratch\\variant_live_02\\e2_solve_execution.try1.json": "121e4173e93caf299e6b5907da699ddc7dfad4d4013ab21e04cd21820c3a9675",
+    "scratch\\variant_live_02\\e2_solve_run.json": "0445e2d26ab968c27c7ba2107f715771f9f68783e05020b2204972c08dba9cf7",
+    "scratch\\variant_live_02\\e2_solve_run.try1.json": "0445e2d26ab968c27c7ba2107f715771f9f68783e05020b2204972c08dba9cf7",
+    "scratch\\variant_live_02\\execution_manifest.json": "b1383af8a93071a0bc2a517d00674a5e29e1b0c8d648ea4cf8a98e24de1401f2",
+    "scratch\\variant_live_02\\h1.generated.json": "635260460da7a7392a5f98fb7ce8d0379774be3a15d49f750f41c6af5dc831da",
+    "scratch\\variant_live_02\\h1.generated.try1.json": "635260460da7a7392a5f98fb7ce8d0379774be3a15d49f750f41c6af5dc831da",
+    "scratch\\variant_live_02\\h1.json": "a6669e39788144fa4b8308260a3ceb366f0cf184a58bd9c5a261de5c2c04fdc6",
+    "scratch\\variant_live_02\\h1.try1.json": "a6669e39788144fa4b8308260a3ceb366f0cf184a58bd9c5a261de5c2c04fdc6",
+    "scratch\\variant_live_02\\h1_attempt.json": "1f8ab79632c958fcb6723a2d3fb577d1a2150f7c759935bc4a9bab4705cea66e",
+    "scratch\\variant_live_02\\h1_attempt.try1.json": "1f8ab79632c958fcb6723a2d3fb577d1a2150f7c759935bc4a9bab4705cea66e",
+    "scratch\\variant_live_02\\h1_check.py": "cbc7b15b7f10a36eac1e8cf51e31767ea7ebc0d6b8699d2d00d78cbe5d49b7c2",
+    "scratch\\variant_live_02\\h1_check.try1.py": "cbc7b15b7f10a36eac1e8cf51e31767ea7ebc0d6b8699d2d00d78cbe5d49b7c2",
+    "scratch\\variant_live_02\\h1_check_run.json": "273eb299639672a15dfb197d2b8a3e935160681cffa4a693f1c33c1107e62a06",
+    "scratch\\variant_live_02\\h1_check_run.try1.json": "273eb299639672a15dfb197d2b8a3e935160681cffa4a693f1c33c1107e62a06",
+    "scratch\\variant_live_02\\h1_generate_execution.json": "9d7b64b5ebb3af0431189912e8f2583cc1badf7d31681af0acbb31d82c88cb34",
+    "scratch\\variant_live_02\\h1_generate_execution.try1.json": "9d7b64b5ebb3af0431189912e8f2583cc1badf7d31681af0acbb31d82c88cb34",
+    "scratch\\variant_live_02\\h1_judge.json": "74846977e2679145fbcb7b89a9b4d560af46ae65915977b1d0de1431431df996",
+    "scratch\\variant_live_02\\h1_judge.try1.json": "74846977e2679145fbcb7b89a9b4d560af46ae65915977b1d0de1431431df996",
+    "scratch\\variant_live_02\\h1_judge_execution.json": "19b1705c47e926bdc83c966773c98ad92ab4dad8e06f23dcd6db495b86db75d8",
+    "scratch\\variant_live_02\\h1_judge_execution.try1.json": "19b1705c47e926bdc83c966773c98ad92ab4dad8e06f23dcd6db495b86db75d8",
+    "scratch\\variant_live_02\\h1_problem.try1.txt": "a0a025c2a3bb2e7de62cb986cd81c847135dce3391acee9093a061eda5727840",
+    "scratch\\variant_live_02\\h1_problem.txt": "a0a025c2a3bb2e7de62cb986cd81c847135dce3391acee9093a061eda5727840",
+    "scratch\\variant_live_02\\h1_review.json": "deeb5f6116b8f26830de7c4c5dccb7a225563237fd233ad9503331cda61ce531",
+    "scratch\\variant_live_02\\h1_review.try1.json": "deeb5f6116b8f26830de7c4c5dccb7a225563237fd233ad9503331cda61ce531",
+    "scratch\\variant_live_02\\h1_review_execution.json": "e1b0fddabcf43caab6a55da3c815b4032482c931089a0f1e1645b1cd2b3127fb",
+    "scratch\\variant_live_02\\h1_review_execution.try1.json": "e1b0fddabcf43caab6a55da3c815b4032482c931089a0f1e1645b1cd2b3127fb",
+    "scratch\\variant_live_02\\h1_solve.json": "1cb25f046548fb0e8e8db9514b2e14bd3f3eacc8c4745cf82c3339c353bd4c65",
+    "scratch\\variant_live_02\\h1_solve.py": "aa3525e228ca35787eca310c78b7e9216c708dca7e43276e079b0ef364c56b4b",
+    "scratch\\variant_live_02\\h1_solve.try1.json": "1cb25f046548fb0e8e8db9514b2e14bd3f3eacc8c4745cf82c3339c353bd4c65",
+    "scratch\\variant_live_02\\h1_solve.try1.py": "aa3525e228ca35787eca310c78b7e9216c708dca7e43276e079b0ef364c56b4b",
+    "scratch\\variant_live_02\\h1_solve_execution.json": "04db381c40117c7273e28f2903e2910d0d435ed1ea0cc07c779278c6624741a1",
+    "scratch\\variant_live_02\\h1_solve_execution.try1.json": "04db381c40117c7273e28f2903e2910d0d435ed1ea0cc07c779278c6624741a1",
+    "scratch\\variant_live_02\\h1_solve_run.json": "ff782dbd04081dd206c37b2a58f3acfb88f24c675b16feaa380d24f0820d4925",
+    "scratch\\variant_live_02\\h1_solve_run.try1.json": "ff782dbd04081dd206c37b2a58f3acfb88f24c675b16feaa380d24f0820d4925",
+    "scratch\\variant_live_02\\h2.generated.json": "5f1d01f387f7719d1f9b6506bb3c5ce6d56f2bc2f20377737dcfc8b14e04b466",
+    "scratch\\variant_live_02\\h2.generated.try1.json": "5f1d01f387f7719d1f9b6506bb3c5ce6d56f2bc2f20377737dcfc8b14e04b466",
+    "scratch\\variant_live_02\\h2.json": "a1a515747a59961d2cc81cfd79951713e1bc33bbf0ee74a736c5be088bcf6b87",
+    "scratch\\variant_live_02\\h2.try1.json": "a1a515747a59961d2cc81cfd79951713e1bc33bbf0ee74a736c5be088bcf6b87",
+    "scratch\\variant_live_02\\h2_attempt.json": "72a4285e4d4a2873c76903ebf7421aa8bba4acfe5379d8b874126c0e4a7eb1de",
+    "scratch\\variant_live_02\\h2_attempt.try1.json": "72a4285e4d4a2873c76903ebf7421aa8bba4acfe5379d8b874126c0e4a7eb1de",
+    "scratch\\variant_live_02\\h2_check.py": "bfab93ec01cd9f86a304e54a80e3ae78f546165bb79d0aa93550648dee0e3641",
+    "scratch\\variant_live_02\\h2_check.try1.py": "bfab93ec01cd9f86a304e54a80e3ae78f546165bb79d0aa93550648dee0e3641",
+    "scratch\\variant_live_02\\h2_generate_execution.json": "b4dafcc9f9e3f4b4de161f08fe0f61c8c6244c0f53045e0f55943b20ab074717",
+    "scratch\\variant_live_02\\h2_generate_execution.try1.json": "b4dafcc9f9e3f4b4de161f08fe0f61c8c6244c0f53045e0f55943b20ab074717",
+    "scratch\\variant_live_02\\k1.generated.json": "de990b4c5e95b6b9037d2aa303971d39cba8b83f9736b886b5a7b6bb151ab8f1",
+    "scratch\\variant_live_02\\k1.generated.try1.json": "de990b4c5e95b6b9037d2aa303971d39cba8b83f9736b886b5a7b6bb151ab8f1",
+    "scratch\\variant_live_02\\k1.json": "de990b4c5e95b6b9037d2aa303971d39cba8b83f9736b886b5a7b6bb151ab8f1",
+    "scratch\\variant_live_02\\k1.try1.json": "de990b4c5e95b6b9037d2aa303971d39cba8b83f9736b886b5a7b6bb151ab8f1",
+    "scratch\\variant_live_02\\k1_attempt.json": "91863c6edca3a839fc50ee3511cd10601faaaedc72a6fcbc39f68307c23345ff",
+    "scratch\\variant_live_02\\k1_attempt.try1.json": "91863c6edca3a839fc50ee3511cd10601faaaedc72a6fcbc39f68307c23345ff",
+    "scratch\\variant_live_02\\k1_check.py": "b93f7e54adc28d7b95e5eb5ea07f55b990f4be1533301a91ae93ec9fd4fee524",
+    "scratch\\variant_live_02\\k1_check.try1.py": "b93f7e54adc28d7b95e5eb5ea07f55b990f4be1533301a91ae93ec9fd4fee524",
+    "scratch\\variant_live_02\\k1_generate_execution.json": "7fddf25ae71e02d90421b1591c6d9b333975f2249a5c196eb057c79581f9b665",
+    "scratch\\variant_live_02\\k1_generate_execution.try1.json": "7fddf25ae71e02d90421b1591c6d9b333975f2249a5c196eb057c79581f9b665",
+    "scratch\\variant_live_02\\k2.generated.json": "a5bdfc29f47e207dd0c9fe983db12fb2da36cd6299d39d3669f9217be3d6d2eb",
+    "scratch\\variant_live_02\\k2.generated.try1.json": "a5bdfc29f47e207dd0c9fe983db12fb2da36cd6299d39d3669f9217be3d6d2eb",
+    "scratch\\variant_live_02\\k2.json": "a5bdfc29f47e207dd0c9fe983db12fb2da36cd6299d39d3669f9217be3d6d2eb",
+    "scratch\\variant_live_02\\k2.try1.json": "a5bdfc29f47e207dd0c9fe983db12fb2da36cd6299d39d3669f9217be3d6d2eb",
+    "scratch\\variant_live_02\\k2_attempt.json": "2bd40df483a7ba827c10c6f908ed15e0aaccca360da953bb0820a4beaf876855",
+    "scratch\\variant_live_02\\k2_attempt.try1.json": "2bd40df483a7ba827c10c6f908ed15e0aaccca360da953bb0820a4beaf876855",
+    "scratch\\variant_live_02\\k2_check.py": "87c7d7d053a653967f633761036a5d16386409df45840a303cd0d19243b0e3f1",
+    "scratch\\variant_live_02\\k2_check.try1.py": "87c7d7d053a653967f633761036a5d16386409df45840a303cd0d19243b0e3f1",
+    "scratch\\variant_live_02\\k2_generate_execution.json": "233f94e7ed492c9fd100f4e75026e22a0d9d79e8e6c1dc5421f6264d0276c20d",
+    "scratch\\variant_live_02\\k2_generate_execution.try1.json": "233f94e7ed492c9fd100f4e75026e22a0d9d79e8e6c1dc5421f6264d0276c20d",
+    "scratch\\variant_live_02\\menu.md": "5f501b674ed8032398529325708016119a686dccdde4216c4c273a4802089da7",
+    "scratch\\variant_live_02\\original.md": "e92f2761f2ef7bc2e576ef7e288759a03e13bb6d0043068030cccaaf65b2f10d",
+    "scratch\\variant_live_02\\original_answer.json": "e6c735b4e8954f92116cd568bae80834265388fc13210a13eb007ceff791b9f7",
+    "scratch\\variant_live_02\\original_problem.txt": "114f07651a2e9c854e94a5da06de66f693ed4c830c062b43bf800aafb86b8732",
+    "scratch\\variant_live_02\\plan.json": "8acbdcbe6492b29fa9c03b2691d3dcf3d2239375eff41aa107e3ecb0907ca6ef",
+    "scratch\\variant_live_02\\real_errors.md": "fa70a74bd764eadc3cff88890650cd96120367c83cc21190902a41370224c1bf",
+    "scratch\\variant_live_02\\report.md": "321bfb085d90f29c473708397b227f75e72b4f60c0659cff7f287fcaaa56b5b1"
+  },
+  "slots": [
+    {
+      "slot": "e1",
+      "generated_path": "scratch\\variant_live_02\\e1.generated.json",
+      "answer": "② 1/20",
+      "answer_value": "1/20",
+      "has_terminal_choices": true,
+      "generation_errors": [],
+      "script_dependency_errors": {
+        "check": [
+          "111행: 파일 접근/동적 실행 open",
+          "112행: 파일 접근/정적 확인 불가 속성 load",
+          "115행: 파일 접근/정적 확인 불가 속성 exists",
+          "116행: 파일 접근/동적 실행 open",
+          "117행: 파일 접근/정적 확인 불가 속성 load",
+          "146행: 파일 접근/동적 실행 open",
+          "148행: 파일 접근/정적 확인 불가 속성 write",
+          "149행: 파일 접근/동적 실행 open",
+          "150행: 파일 접근/정적 확인 불가 속성 load",
+          "4행: 외부 파일/실행 의존 가능 import pathlib",
+          "91행: 파일 접근/정적 확인 불가 속성 read_text"
+        ],
+        "solve": [
+          "40행: 파일 접근/동적 실행 open"
+        ]
+      },
+      "actual_solution_status": "확인",
+      "unconfirmed_checks": [
+        {
+          "location": "e1.json.design_evidence.evidence_ref 및 check_output의 오답 관찰 근거 문장",
+          "claim": "실제 관찰 자료의 근거 표시",
+          "check": "원고는 '동일 문항 오답 2건', 관찰 식과 답을 기재하지만 허용 입력에는 해당 기록이나 스캔이 없고 참고 경로의 명칭만 있다. 실제 관찰 건수와 관찰 내용의 출처는 확인할 수 없다. 금지된 plan.json이나 허용 밖 자료를 열어 보충하지 않았다. 1/16은 원고도 추정 결과라고 구분하며 발생률·학생 수·실측 난도는 주장하지 않는다. 이 출처 주장은 수학적 정답·설계·교육과정 확인의 근거로 사용하지 않았다.",
+          "status": "미확인"
+        }
+      ],
+      "actual_disagreements": [
+        "e1_judge.json의 findings=[]와 달리 현재 원고의 실제 오답 관찰 2건에 대한 근거 표시 권고를 추가한다. 허용 입력만으로 그 관찰 자료는 확인되지 않으며 생성자의 evidence_ref만으로 승인 근거를 삼을 수 없다. 수학 확인·쉬움 내부 추정·핵심 관계 일치·시험 및 교육과정 적합 판단에는 이견이 없다."
+      ]
+    },
+    {
+      "slot": "e2",
+      "generated_path": "scratch\\variant_live_02\\e2.generated.json",
+      "answer": "③ 43/2000",
+      "answer_value": "43/2000",
+      "has_terminal_choices": true,
+      "generation_errors": [],
+      "script_dependency_errors": {
+        "check": [
+          "147행: 파일 접근/정적 확인 불가 속성 read_text",
+          "172행: 파일 접근/정적 확인 불가 속성 exists",
+          "172행: 파일 접근/정적 확인 불가 속성 read_text",
+          "199행: 파일 접근/동적 실행 open",
+          "201행: 파일 접근/동적 실행 open",
+          "202행: 파일 접근/정적 확인 불가 속성 load",
+          "5행: 외부 파일/실행 의존 가능 import pathlib"
+        ],
+        "solve": [
+          "60행: 파일 접근/동적 실행 open"
+        ]
+      },
+      "actual_solution_status": "확인",
+      "unconfirmed_checks": [],
+      "actual_disagreements": []
+    },
+    {
+      "slot": "k1",
+      "generated_path": "scratch\\variant_live_02\\k1.generated.json",
+      "answer": "377",
+      "answer_value": "377",
+      "has_terminal_choices": false,
+      "generation_errors": [],
+      "script_dependency_errors": {
+        "check": [
+          "10행: 파일 접근/동적 실행 open",
+          "11행: 파일 접근/정적 확인 불가 속성 read",
+          "158행: 파일 접근/정적 확인 불가 속성 exists",
+          "159행: 파일 접근/동적 실행 open",
+          "160행: 파일 접근/정적 확인 불가 속성 load",
+          "187행: 파일 접근/동적 실행 open",
+          "189행: 파일 접근/정적 확인 불가 속성 write",
+          "190행: 파일 접근/동적 실행 open",
+          "191행: 파일 접근/정적 확인 불가 속성 load",
+          "5행: 외부 파일/실행 의존 가능 import pathlib",
+          "8행: 파일 접근/동적 실행 open",
+          "9행: 파일 접근/정적 확인 불가 속성 load"
+        ]
+      }
+    },
+    {
+      "slot": "k2",
+      "generated_path": "scratch\\variant_live_02\\k2.generated.json",
+      "answer": "76",
+      "answer_value": "76",
+      "has_terminal_choices": false,
+      "generation_errors": [],
+      "script_dependency_errors": {
+        "check": [
+          "154행: 파일 접근/정적 확인 불가 속성 read_text",
+          "174행: 파일 접근/정적 확인 불가 속성 exists",
+          "175행: 파일 접근/동적 실행 open",
+          "176행: 파일 접근/정적 확인 불가 속성 load",
+          "205행: 파일 접근/동적 실행 open",
+          "207행: 파일 접근/정적 확인 불가 속성 write",
+          "208행: 파일 접근/동적 실행 open",
+          "209행: 파일 접근/정적 확인 불가 속성 load",
+          "5행: 외부 파일/실행 의존 가능 import pathlib"
+        ]
+      }
+    },
+    {
+      "slot": "h1",
+      "generated_path": "scratch\\variant_live_02\\h1.generated.json",
+      "answer": "1",
+      "answer_value": "1",
+      "has_terminal_choices": false,
+      "generation_errors": [],
+      "script_dependency_errors": {
+        "check": [
+          "135행: 파일 접근/정적 확인 불가 속성 read_text",
+          "148행: 파일 접근/정적 확인 불가 속성 exists",
+          "149행: 파일 접근/동적 실행 open",
+          "150행: 파일 접근/정적 확인 불가 속성 load",
+          "172행: 파일 접근/동적 실행 open",
+          "174행: 파일 접근/동적 실행 open",
+          "175행: 파일 접근/정적 확인 불가 속성 load",
+          "3행: 외부 파일/실행 의존 가능 import pathlib"
+        ],
+        "solve": [
+          "89행: 파일 접근/동적 실행 open"
+        ]
+      },
+      "actual_solution_status": "확인",
+      "unconfirmed_checks": [
+        {
+          "location": "h1.json.design_evidence.evidence_ref: “실측 근거는 … 사례 1건이다”",
+          "claim": "과거 관찰 사례의 실측 근거 표시",
+          "check": "허용 입력에는 해당 스캔·관찰 기록이 없고 생성자가 파일명과 수치를 서술한 주장만 있다. 실제 사례 1건인지는 확인할 수 없다. 금지된 plan.json이나 허용 밖 real_errors.md를 찾아 보충하지 않았다. 수학적으로 검증한 정규화 누락 경로와 별개로 이 실측 주장은 승인 근거에서 제외한다.",
+          "status": "미확인"
+        }
+      ],
+      "actual_disagreements": [
+        "h1_judge.json.findings는 빈 목록이지만, 현재 h1.json.design_evidence.evidence_ref의 과거 실측 사례 1건 주장은 허용 자료에서 검증되지 않아 근거표시 권고를 추가한다. 수학 확인·설계 적합·교육과정 적합 및 어려움의 내부 추정에는 이견이 없다."
+      ]
+    },
+    {
+      "slot": "h2",
+      "generated_path": "scratch\\variant_live_02\\h2.generated.json",
+      "answer": "254",
+      "answer_value": "254",
+      "has_terminal_choices": false,
+      "generation_errors": [],
+      "script_dependency_errors": {
+        "check": [
+          "10행: 외부 파일/실행 의존 가능 import pathlib",
+          "15행: 파일 접근/동적 실행 open",
+          "16행: 파일 접근/정적 확인 불가 속성 load",
+          "200행: 파일 접근/동적 실행 open",
+          "201행: 파일 접근/정적 확인 불가 속성 read"
+        ]
+      }
+    }
+  ],
+  "bundle_actual_response_mock_replay": {
+    "complete": true,
+    "errors": [],
+    "selected_slots": [],
+    "excluded_slots": [],
+    "conflicts": [
+      [
+        "e1",
+        "h2"
+      ],
+      [
+        "e1",
+        "k1"
+      ],
+      [
+        "e1",
+        "k2"
+      ],
+      [
+        "e2",
+        "h2"
+      ],
+      [
+        "e2",
+        "k1"
+      ],
+      [
+        "e2",
+        "k2"
+      ],
+      [
+        "h1",
+        "h2"
+      ],
+      [
+        "h1",
+        "k1"
+      ],
+      [
+        "h1",
+        "k2"
+      ],
+      [
+        "h2",
+        "k1"
+      ],
+      [
+        "h2",
+        "k2"
+      ],
+      [
+        "k1",
+        "k2"
+      ]
+    ],
+    "answer_comparisons": [
+      {
+        "slots": [
+          "e1",
+          "e2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e1",
+          "h1"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e1",
+          "h2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e1",
+          "k1"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e1",
+          "k2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e2",
+          "h1"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e2",
+          "h2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e2",
+          "k1"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "e2",
+          "k2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "h1",
+          "h2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "h1",
+          "k1"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "h1",
+          "k2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "h2",
+          "k1"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "h2",
+          "k2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      },
+      {
+        "slots": [
+          "k1",
+          "k2"
+        ],
+        "same_answer": false,
+        "status": "다름"
+      }
+    ],
+    "model_recommended_slots": [],
+    "selection_reason": "최대 충족 수량, 미해결 권고 수, 시험표현 권고 수, slot id 순 전수 비교",
+    "subset_count_bound": 64,
+    "layout_verified": false
+  },
+  "bundle_output_dir": "scratch\\variant_round5_offline_863abbe22566422cac61cf68906e2b28",
+  "source_approval_unchanged": true,
+  "all_15_answer_pairs_distinct": true,
+  "note": "실제 생성 JSON/스크립트 정적 검사 및 실제 묶음 응답의 mock 재검증. 승인 재실행 아님."
+}

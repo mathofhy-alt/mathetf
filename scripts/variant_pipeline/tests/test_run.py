@@ -96,6 +96,131 @@ class RunnerTests(unittest.TestCase):
         g.update(problem='값은?', answer='1000')
         self.assertTrue(v.generation_errors(g, 'e1', '쉬움'))
 
+    def test_procedure_numbers_are_not_choices(self):
+        g = fixtures()[0]
+        for value in ('377', '76', '254', '0', '999'):
+            with self.subTest(value=value):
+                g.update(problem='① 공을 옮긴다. ② 다시 꺼낸다. ①, ②를 한 시행이라 한다. p+q는?',
+                         answer=value, answer_value=value)
+                self.assertIsNone(v.choices(g['problem']))
+                self.assertEqual(v.generation_errors(g, 'e1', '쉬움'), [])
+        g.update(answer='1000', answer_value='1000')
+        self.assertIn('단답형은 0~999 정수 필요', v.generation_errors(g, 'e1', '쉬움'))
+        g.update(problem='① 준비 ② 이동 ③ 확인 ④ 계산 ⑤ 값을 구하시오.', answer='5', answer_value='5')
+        self.assertEqual(v.generation_errors(g, 'e1', '쉬움'), [])
+        g.update(problem='① 준비 ② 이동. 값은? ① 1 ② 2 ③ 3 ④ 4 ⑤ 5', answer='⑤ 5')
+        self.assertEqual(v.generation_errors(g, 'e1', '쉬움'), [])
+        g['answer'] = '5'
+        self.assertTrue(v.generation_errors(g, 'e1', '쉬움'))
+        for text in ('① 공을 옮긴다. ② 다시 꺼낸다.', '값? ① 1 ② 2 ③ 3 ④ 4'):
+            g.update(problem=text, answer='① 5')
+            self.assertTrue(v.generation_errors(g, 'e1', '쉬움'))
+        original = '## 문제\n① 공을 옮긴다. ② 다시 꺼낸다. 답은?\n\n## 정답\n77'
+        self.assertEqual(v.original_answer(original, v.section(original, '문제'))['answer_value'], '77')
+
+    def test_check_script_dependency_is_generation_defect_and_stops_calls(self):
+        g = fixtures()[0]
+        with workspace() as temp:
+            D = Path(temp)
+            for name in ('original.md', 'plan.json', 'real_errors.md'):
+                v.write_text(D / name, '{}')
+            def fake(folder, text, tag, effort='high', ticket=None):
+                self.assertEqual(tag, 'generate')
+                v.write_json(Path(folder) / 'e1.json', g)
+                v.write_text(Path(folder) / 'e1_check.py', 'from pathlib import Path\nprint(Path("plan.json").read_text())\n')
+                return {'returncode': 0, 'tokens': 1}
+            with patch.object(v, 'codex', side_effect=fake) as model, patch.object(v, 'BUDGET', None), patch.object(v.subprocess, 'run') as execute:
+                row = v.slot_pipeline(D, 'e1', '쉬움', 1, '77')
+            self.assertFalse(row['eligible'])
+            self.assertIn('생성 단계 검산 결함', row['problems'][0])
+            self.assertTrue(row['runner_executions']['check']['dependency_errors'])
+            self.assertIsNone(v.load(D / 'e1_check_run.json')['returncode'])
+            self.assertEqual(model.call_count, 1)
+            execute.assert_not_called()
+            self.assertFalse((D / 'e1_solve.json').exists())
+
+    def test_failed_check_or_solve_does_not_spend_downstream_calls(self):
+        for failed in ('check', 'solve'):
+            with self.subTest(failed=failed), workspace() as temp:
+                D = Path(temp)
+                g, solve, _, _, _ = fixtures()
+                order = []
+                def fake(folder, stage, *args, **kwargs):
+                    order.append(stage)
+                    if stage == 'generate':
+                        v.write_text(D / 'e1_check.py', 'print(5)\n')
+                        return g
+                    self.assertEqual(stage, 'solve')
+                    v.write_text(D / 'e1_solve.py', 'print(5)\n')
+                    return solve
+                def execute(folder, slot, suffix):
+                    return {'returncode': 1 if suffix == failed else 0,
+                            'stdout': '' if suffix == failed else '5', 'stderr': 'assertion failure' if suffix == failed else ''}
+                with patch.object(v, 'isolated_call', fake), patch.object(v, 'execute_script', execute), patch.object(v, 'BUDGET', None):
+                    result = v.slot_pipeline(D, 'e1', '쉬움', 1, '77')
+                self.assertFalse(result['eligible'])
+                self.assertEqual(order, ['generate'] if failed == 'check' else ['generate', 'solve'])
+                self.assertIn('검산 결함', result['problems'][0])
+
+    def test_script_static_contract_and_isolated_execution(self):
+        sources = ['open("plan.json")', 'reader = open; reader("x")',
+            'from pathlib import Path as P; P("x").read_text()',
+            'import io as x; x.open("x")', 'import os as x; x.listdir()',
+            'from numpy import load as reader; reader("x")',
+            '__import__("pathlib")', 'getattr(object(), "open")',
+            'from .local import result', 'from fractions import *', 'broken(']
+        for source in sources:
+            with self.subTest(source=source): self.assertTrue(v.script_dependency_errors(source))
+        source = 'from fractions import Fraction as F\nassert F(1, 4)*F(1, 5)==F(1, 20)\nprint(F(1,20))\n'
+        self.assertEqual(v.script_dependency_errors(source), [])
+        with workspace() as temp:
+            D = Path(temp)
+            v.write_text(D / 'e1_check.py', source)
+            v.write_text(D / 'plan.json', 'private')
+            with patch.object(v, 'BUDGET', None): result = v.execute_script(D, 'e1', 'check')
+            self.assertEqual(result['returncode'], 0)
+            self.assertEqual(result['stdout'].strip(), '1/20')
+            self.assertEqual({p.name for work in (D / 'calls').iterdir() for p in work.iterdir()}, {'e1_check.py'})
+
+    def test_review_receives_readonly_error_records_and_judge_stays_independent(self):
+        with workspace() as temp:
+            D = Path(temp)
+            inputs = ('original_problem.txt', 'e1_problem.txt', 'e1_solve.json', 'e1_judge.json',
+                      'e1.json', 'real_errors.md', 'delivery_policy.json')
+            for name in inputs: v.write_text(D / name, '{}')
+            before = v.digest(D / 'real_errors.md')
+            def fake(folder, text, tag, effort='high', ticket=None):
+                folder = Path(folder)
+                self.assertEqual((folder / 'real_errors.md').is_file(), tag.startswith('review'))
+                v.write_json(folder / ('e1_review.json' if tag.startswith('review') else 'e1_judge.json'), {'ok': True})
+                if tag.startswith('review'): v.write_text(folder / 'real_errors.md', 'changed')
+                return {'returncode': 0, 'tokens': 1}
+            with patch.object(v, 'codex', fake):
+                v.judge(D, 'e1')
+                with self.assertRaises(ValueError): v.review(D, 'e1')
+            self.assertEqual(v.digest(D / 'real_errors.md'), before)
+            self.assertFalse(v.load(D / 'e1_review_execution.json')['calls'][0]['inputs_unchanged'])
+
+    def test_nonessential_evidence_advisory_does_not_mask_solution_or_disagreement(self):
+        g, solve, judge, review, exe = fixtures()
+        review['evidence_checks'] = [{'location': 'design_evidence.evidence_ref',
+            'claim': '과거 사례 1건', 'check': '제공 기록에 없어 승인 근거에서 제외', 'status': '미확인'}]
+        review['findings'] = [{'category': '근거표시', 'severity': '권고', 'location': 'design_evidence.evidence_ref',
+            'evidence': '비필수 출처 미확인', 'required_action': '출처 확인 또는 미확인 표시'}]
+        self.assertEqual(v.adoption_errors(g, solve, judge, review, '쉬움', '77', exe), [])
+        review['solution_checks'][0]['status'] = '미확인'
+        self.assertIn('해설에 미확인/오류 줄이 남음', v.adoption_errors(g, solve, judge, review, '쉬움', '77', exe))
+        review['solution_checks'][0]['status'] = '오류'
+        self.assertIn('해설에 미확인/오류 줄이 남음', v.adoption_errors(g, solve, judge, review, '쉬움', '77', exe))
+        review['solution_checks'][0]['status'] = '확인'
+        review['disagreements'] = ['실제 설계 판정 이견']
+        self.assertTrue(v.adoption_errors(g, solve, judge, review, '쉬움', '77', exe))
+        review['disagreements'] = []
+        review['evidence_checks'][0]['status'] = '오류'
+        self.assertIn('근거표시에 확인된 오류가 남음', v.adoption_errors(g, solve, judge, review, '쉬움', '77', exe))
+        review['evidence_checks'] = None
+        self.assertTrue(v.review_shape(judge, review))
+
     def test_original_choice_and_policy(self):
         original = '## 문제\n값? ① 1 ② 2 ③ 3 ④ 4 ⑤ 5\n\n## 정답\n④\n\n## 출처\n학교_2025_수학I 15번 · 지수함수 · 난이도 6'
         self.assertEqual(v.original_answer(original, v.section(original, '문제'))['answer_value'], '4')
@@ -134,7 +259,7 @@ class RunnerTests(unittest.TestCase):
                 'generate': {'original.md', 'plan.json', 'real_errors.md'}, 'solve': {'e1_problem.txt'},
                 'judge': {'original_problem.txt', 'e1_problem.txt', 'e1_solve.json', 'delivery_policy.json'},
                 'review': {'original_problem.txt', 'e1_problem.txt', 'e1_solve.json', 'e1_judge.json', 'e1.json',
-                           'e1_check.py', 'e1_solve.py', 'delivery_policy.json'}}
+                           'e1_check.py', 'e1_solve.py', 'delivery_policy.json', 'real_errors.md'}}
             def fake_codex(folder, text, tag, effort='high', ticket=None):
                 folder = Path(folder)
                 order.append(tag)
@@ -193,6 +318,40 @@ class RunnerTests(unittest.TestCase):
                 invalid = v.bundle(temp, rows, {'쉬움': 2, '유지': 0, '어려움': 0})
             self.assertFalse(invalid['complete'])
             self.assertEqual(invalid['selected_slots'], [])
+
+    def test_bundle_null_is_valid_but_forces_pair_conflict(self):
+        rows = []
+        for sid, value in (('e1', '5'), ('e2', '6')):
+            g, solve, judge, review, _ = fixtures()
+            g['answer_value'] = value
+            row = v.held_result(sid, '쉬움', '')
+            row.update(eligible=True, generated=g, solve=solve, judge=judge, review=review, problems=[])
+            rows.append(row)
+        response = dict(schema_version=2, complete=True, status='부분 충족',
+            comparisons=[{'slots': ['e1', 'e2'], 'same_decision': None, 'evidence': '독립 판단 근거 부족'}],
+            conflicts=[], recommended_slots=['e1'], shortfalls=[{'level': '쉬움', 'count': 1, 'reason': '비교 미확인'}])
+        requested = {'쉬움': 2, '유지': 0, '어려움': 0}
+        with workspace() as temp:
+            with patch.object(v, 'isolated_call', return_value=response): selected = v.bundle(temp, rows, requested)
+            self.assertTrue(selected['complete'])
+            self.assertEqual(selected['selected_slots'], ['e1'])
+            self.assertIn(['e1', 'e2'], selected['conflicts'])
+            for invalid in ('false', 0, [], {}):
+                response['comparisons'][0]['same_decision'] = invalid
+                with patch.object(v, 'isolated_call', return_value=response): result = v.bundle(temp, rows, requested)
+                self.assertFalse(result['complete'])
+            del response['comparisons'][0]['same_decision']
+            with patch.object(v, 'isolated_call', return_value=response): result = v.bundle(temp, rows, requested)
+            self.assertFalse(result['complete'])
+            response['comparisons'][0]['same_decision'] = None
+            response['comparisons'][0]['evidence'] = ''
+            with patch.object(v, 'isolated_call', return_value=response): result = v.bundle(temp, rows, requested)
+            self.assertFalse(result['complete'])
+            response['comparisons'][0]['evidence'] = '미확인'
+            response['recommended_slots'] = ['e1', 'e2']
+            response['shortfalls'] = []
+            with patch.object(v, 'isolated_call', return_value=response): result = v.bundle(temp, rows, requested)
+            self.assertFalse(result['complete'])
 
     def test_plan_schema_ids_and_holds(self):
         requested = {'쉬움': 1, '유지': 0, '어려움': 0}
