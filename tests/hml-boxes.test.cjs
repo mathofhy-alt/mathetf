@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { DOMParser } = require('xmldom');
+const { DOMParser, XMLSerializer } = require('xmldom');
 const { generateHmlFile } = require('../src/lib/hml-v2/generator.ts');
 const { validateHml } = require('../src/lib/hml-v2/validate.ts');
 
@@ -146,4 +146,90 @@ test('Without explanations, inter-question column breaks remain and no page brea
     const body = children(descendants(doc, 'SECTION')[0]);
     assert.equal(body.filter(p => p.getAttribute('ColumnBreak') === 'true').length, 1);
     assert.equal(body.filter(p => p.getAttribute('PageBreak') === 'true').length, 0);
+});
+
+function assertTemplateTypography(doc) {
+    const styles = new Map(descendants(doc, 'STYLE').map(s => [s.getAttribute('Name'), s]));
+    const chars = new Map(descendants(doc, 'CHARSHAPE').map(c => [c.getAttribute('Id'), c]));
+    const paras = new Map(descendants(doc, 'PARASHAPE').map(p => [p.getAttribute('Id'), p]));
+    const fonts = new Map(descendants(doc, 'FONTFACE').filter(f => f.getAttribute('Lang') === 'Hangul')
+        .flatMap(f => descendants(f, 'FONT').map(font => [font.getAttribute('Id'), font.getAttribute('Name')])));
+    for (const [name, font, height] of [['문항_스타일1', '신명 중명조', '1150'], ['3선지', '신명 중명조', '1100'], ['박스안', 'HC중명조', '1000']]) {
+        const shape = chars.get(styles.get(name).getAttribute('CharShape'));
+        assert.equal(fonts.get(descendants(shape, 'FONTID')[0].getAttribute('Hangul')), font);
+        assert.equal(shape.getAttribute('Height'), height);
+    }
+    const checked = { QUESTION: 0, CHOICE: 0, BOX_BOGI: 0, BOX_JOKUN: 0, BOX_MIJU: 0, ENDNOTE: 0 };
+    for (const p of descendants(descendants(doc, 'SECTION')[0], 'P')) {
+        let role = p.getAttribute('data-hml-style');
+        for (let a = p.parentNode; a?.nodeType === 1; a = a.parentNode) {
+            if (a.tagName === 'ENDNOTE') { role = 'ENDNOTE'; break; }
+            if (a.tagName === 'TABLE' && a.getAttribute('data-hml-style').startsWith('BOX_')) {
+                role = a.getAttribute('data-hml-style'); break;
+            }
+        }
+        if (!(role in checked)) continue;
+        checked[role]++;
+        const expected = styles.get(role === 'QUESTION' ? '문항_스타일1' : role === 'CHOICE' ? '3선지' : '박스안');
+        assert.equal(p.getAttribute('Style'), expected.getAttribute('Id'), `${role}: paragraph style`);
+        if (role === 'QUESTION') {
+            const actual = paras.get(p.getAttribute('ParaShape')).cloneNode(true);
+            const base = paras.get(expected.getAttribute('ParaShape')).cloneNode(true);
+            actual.removeAttribute('Id'); base.removeAttribute('Id');
+            actual.removeAttribute('KeepWithNext'); base.removeAttribute('KeepWithNext');
+            assert.equal(actual.toString(), base.toString(), 'Question layout only adds glue');
+            assert.equal(paras.get(p.getAttribute('ParaShape')).getAttribute('KeepWithNext'), 'true');
+        } else {
+            assert.equal(p.getAttribute('ParaShape'), expected.getAttribute('ParaShape'), `${role}: paragraph shape`);
+        }
+        // Only TEXT owned by this P, excluding TEXT in descendant notes/tables.
+        for (const text of descendants(p, 'TEXT')) {
+            let owner = text.parentNode;
+            while (owner && owner.tagName !== 'P') owner = owner.parentNode;
+            if (owner !== p) continue;
+            const reference = children(text).some(n => n.tagName === 'ENDNOTE');
+            assert.equal(text.getAttribute('CharShape'), reference ? '14' : expected.getAttribute('CharShape'), `${role}: text shape`);
+            if (reference) {
+                assert.equal(chars.get('14').getAttribute('Height'), '100');
+                assert.equal(chars.get('14').getAttribute('TextColor'), '16777215');
+            }
+        }
+    }
+    for (const [role, count] of Object.entries(checked)) assert.ok(count > 0, `Checked ${role}`);
+}
+
+test('All role paragraphs and TEXT use template typography, including nested tables and native notes', () => {
+    const note = `<ENDNOTE><PARALIST><P Style="4" ParaShape="9"><TEXT CharShape="11"><AUTONUM Number="21" NumberType="Endnote"/><CHAR>해설 본문</CHAR></TEXT></P><P><TEXT>${dataTable}</TEXT></P></PARALIST></ENDNOTE>`;
+    const source = `<P data-hml-style="QUESTION" Style="4" ParaShape="9"><TEXT CharShape="11"><CHAR>발문</CHAR>${equation}${picture}</TEXT><TEXT CharShape="11">${note}</TEXT></P>`
+        + paragraph('이어지는 발문')
+        + frame('BOX_BOGI', '&lt;보기&gt;', paragraph('보기 본문') + `<P data-hml-style="CHOICE" data-hml-orig-style="3선지"><TEXT CharShape="11">${dataTable}</TEXT></P>`)
+        + frame('BOX_JOKUN', '조건', paragraph('조건 본문') + `<P><TEXT>${dataTable}</TEXT></P>`)
+        + frame('BOX_MIJU', '해설', paragraph('직접 해설 본문'))
+        + '<P data-hml-style="CHOICE" data-hml-orig-style="박스"><TEXT CharShape="11"><CHAR>① 선지</CHAR></TEXT></P>';
+    const doc = generate(source);
+    assertTemplateTypography(doc);
+    assert.ok(descendants(doc, 'SCRIPT').every(s => s.textContent === 'x^2+1'));
+    assert.ok(descendants(doc, 'IMAGE').length >= 1);
+    const serializer = new XMLSerializer();
+    for (const eq of descendants(doc, 'EQUATION')) assert.equal(serializer.serializeToString(eq), equation);
+});
+
+test('Template style, paragraph and character IDs may change without changing role typography', () => {
+    const doc = new DOMParser().parseFromString(template, 'text/xml');
+    const remap = (attr, value) => attr === 'CharShape' && value === '14' ? value
+        : String(Number(value) + ({ Style: 100, NextStyle: 100, CharShape: 200, ParaShape: 300 }[attr]));
+    for (const el of descendants(doc, '*')) {
+        for (const attr of ['Style', 'NextStyle', 'CharShape', 'ParaShape']) {
+            if (el.hasAttribute(attr)) el.setAttribute(attr, remap(attr, el.getAttribute(attr)));
+        }
+        const attr = { STYLE: 'Style', CHARSHAPE: 'CharShape', PARASHAPE: 'ParaShape' }[el.tagName];
+        if (attr) el.setAttribute('Id', remap(attr, el.getAttribute('Id')));
+    }
+    const note = `<ENDNOTE><PARALIST>${paragraph('해설')}</PARALIST></ENDNOTE>`;
+    const source = `<P><TEXT CharShape="11"><CHAR>발문</CHAR></TEXT><TEXT>${note}</TEXT></P>`
+        + frame('BOX_BOGI', '&lt;보기&gt;', paragraph('보기'))
+        + frame('BOX_JOKUN', '조건', paragraph('조건'))
+        + frame('BOX_MIJU', '해설', paragraph('해설'))
+        + '<P data-hml-style="CHOICE"><TEXT CharShape="11"><CHAR>① 선지</CHAR></TEXT></P>';
+    assertTemplateTypography(generate(source, 1, new XMLSerializer().serializeToString(doc)));
 });

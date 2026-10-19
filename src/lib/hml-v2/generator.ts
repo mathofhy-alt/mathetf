@@ -48,10 +48,10 @@ export function generateHmlFromTemplate(
     const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase();
 
     // [V35] ROBUST STYLE DETECTION
-    let styleIdToApply = "1";
+    let styleIdToApply = "";
     let targetParaId = "";
     let targetCharId = "";
-    let normalParaId = "1"; // 바탕글 ParaShape Fallback
+    let normalParaId = "";
 
     // [V52] DOM-BASED INJECTION FOR ROBUSTNESS
     const serializer = new XMLSerializer();
@@ -88,8 +88,10 @@ export function generateHmlFromTemplate(
         }
 
         const nameKeywords = "(문제|문항|Question|Item|문항_스타일)";
-        const normalStyle = styleEls.find(s => s.id === "0") || styleEls.find(s => s.engName === "Normal") || styleEls[0];
-        const questionStyle = styleEls.find(s => s.id === "1") || styleEls.find(s => new RegExp(nameKeywords, "i").test(s.name)) || styleEls[0];
+        const normalStyle = styleEls.find(s => s.engName === 'Normal')
+            || styleEls.find(s => s.name === '바탕글' || s.name === 'Normal') || styleEls[0];
+        const questionStyle = styleEls.find(s => normalize(s.name) === normalize('문항_스타일1'))
+            || styleEls.find(s => new RegExp(nameKeywords, "i").test(s.name)) || normalStyle;
 
         normalParaId = normalStyle.ps;
         styleIdToApply = questionStyle.id;
@@ -207,8 +209,8 @@ export function generateHmlFromTemplate(
                 validStyles.ParaShape.add(gutterPsId);
 
                 // --- 3. Glue ParaShape (Choice) [V54] ---
-                const choiceStyleId = validStyles.StyleNames.get('3선지') || "4";
-                const choicePsId = validStyles.StyleParaShapes.get(choiceStyleId) || "4";
+                const choiceStyleId = validStyles.StyleNames.get('3선지') || normalStyle.id;
+                const choicePsId = validStyles.StyleParaShapes.get(choiceStyleId) || normalParaId;
                 const choiceParaSource = getParaXML(choicePsId) || nParaSource;
                 if (choiceParaSource) {
                     const psChoiceGlue = choiceParaSource.cloneNode(true) as Element;
@@ -227,62 +229,9 @@ export function generateHmlFromTemplate(
                 styleGlue.setAttribute('ParaShape', gluePsId);
                 styleGlue.setAttribute('Name', glueStyleName);
 
-                // [V58] Dynamic Font Search for '함초롬바탕'
-                let targetCsId = "";
-
-                // 1. Search for a style that might already be '함초롬바탕'
-                const 함초롬StyleId = validStyles.NormalizedStyleNames.get('함초롬바탕');
-                if (함초롬StyleId) {
-                    targetCsId = validStyles.StyleCharShapes.get(함초롬StyleId) || "";
-                }
-
-                // 2. If not found via style name, search for the FONT name directly in MAPPINGTABLE
-                if (!targetCsId) {
-                    try {
-                        let 바탕FontId = "";
-                        const fontFaces = mappingTable.getElementsByTagName('FONTFACE');
-                        for (let i = 0; i < fontFaces.length; i++) {
-                            if (fontFaces[i].getAttribute('Lang') === 'Hangul') {
-                                const fonts = fontFaces[i].getElementsByTagName('FONT');
-                                for (let j = 0; j < fonts.length; j++) {
-                                    const fontName = fonts[j].getAttribute('Name') || "";
-                                    if (fontName.includes('함초롬바탕')) {
-                                        바탕FontId = fonts[j].getAttribute('Id') || "";
-                                        break;
-                                    }
-                                }
-                            }
-                            if (바탕FontId) break;
-                        }
-
-                        if (바탕FontId) {
-                            const charShapes = mappingTable.getElementsByTagName('CHARSHAPE');
-                            for (let i = 0; i < charShapes.length; i++) {
-                                const fontIdEl = charShapes[i].getElementsByTagName('FONTID')[0];
-                                if (fontIdEl && fontIdEl.getAttribute('Hangul') === 바탕FontId) {
-                                    targetCsId = charShapes[i].getAttribute('Id') || "";
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (fontErr) {
-                        console.error(`[HML-V2] V58 Font Search Error:`, fontErr);
-                    }
-                }
-
-                // 3. Fallback to any 바탕 style if 함초롬바탕 search yielded nothing
-                if (!targetCsId) {
-                    const fallbackStyleId = validStyles.NormalizedStyleNames.get('바탕글') || validStyles.NormalizedStyleNames.get('바탕');
-                    if (fallbackStyleId) {
-                        targetCsId = validStyles.StyleCharShapes.get(fallbackStyleId) || "";
-                    }
-                }
-
-                if (targetCsId) {
-                    console.log(`[HML-V2] V58 Font Audit: Applying CharShape=${targetCsId} (found via 함초롬바탕 search) to ${glueStyleName}`);
-                    styleGlue.setAttribute('CharShape', targetCsId);
-                    targetCharId = targetCsId; // [V58.1] Sync global targetCharId so earlier loops use it!
-                }
+                // Glue changes paragraph layout only; typography comes from the named template style.
+                const targetCsId = questionStyle.cs;
+                styleGlue.setAttribute('CharShape', targetCsId);
 
                 styleList.appendChild(styleGlue);
                 styleList.setAttribute('Count', (existingStyles.length + 1).toString());
@@ -382,22 +331,6 @@ export function generateHmlFromTemplate(
         const normMatch = validStyles.NormalizedStyleNames.get(normTarget);
         if (normMatch) return normMatch;
 
-        // NUCLEAR FALLBACK: If "문제1" is absolutely missing, search for similar roles
-        if (normTarget === '문제1') {
-            let fallbackId = '';
-            validStyles.StyleNames.forEach((id, name) => {
-                if (fallbackId) return;
-                const n = normalize(name);
-                if (n.includes('해설') || n.includes('정답') || n.includes('미주') || n.includes('본문1')) {
-                    console.log(`[HML-V2 NUCLEAR-STYLE] "문제1" missing. Using "${name}" (ID: ${id}) instead.`);
-                    fallbackId = id;
-                }
-            });
-            if (fallbackId) return fallbackId;
-            // Absolute last resort: Style ID "2" or "1" if they exist
-            if (validStyles.Style.has('2')) return '2';
-            if (validStyles.Style.has('1')) return '1';
-        }
         return '';
     };
 
@@ -602,67 +535,14 @@ export function generateHmlFromTemplate(
         }
 
         if (firstVisualP) {
-            const styleId = styleIdToApply;
-            const paraShapeId = "9997"; // Always use 9997 for Body (Glue + Indent)
-            const charShapeId = targetCharId || '0';
-
-            console.log(`[HML-V2 styling] Q${qIndex} Applying Style=${styleId}, PS=${paraShapeId}, CS=${charShapeId}`);
-
-            // Apply to ALL top-level paragraphs to ensure they stick together (KeepWithNext)
-            const topPsInQ = Array.from(root.getElementsByTagName('P')).filter(p => p.parentNode === root);
-            topPsInQ.forEach((p: Element) => {
-                const semanticRole = p.getAttribute('data-hml-style');
-                const isMainQuestion = semanticRole === 'QUESTION' || p === firstVisualP;
-                const isChoice = semanticRole === 'CHOICE';
-
-                const glueStyleId = (validStyles as any).glueStyleId || "9999";
-                const gluePsId = (validStyles as any).gluePsId || "9997";
-                const glueChoicePsId = (validStyles as any).glueChoicePsId;
-                const choiceStyleId = validStyles.StyleNames.get('3선지') || "4";
-
-                if (isMainQuestion) {
-                    p.setAttribute('Style', glueStyleId);
-                    p.setAttribute('ParaShape', gluePsId);
-                } else if (isChoice) {
-                    // [V54] Choices use '오선지' style (no Ctrl+2) but still glued ParaShape
-                    p.setAttribute('Style', choiceStyleId);
-                    if (glueChoicePsId) {
-                        p.setAttribute('ParaShape', glueChoicePsId);
-                    }
-                } else {
-                    // For other roles (BOX_, ANSWER), keep original but try to glue them to the next question part
-                    // Actually, if it's not the last paragraph, we should ideally glue it.
-                    // For simplicity, let's just make everything top-level PS glued if it's not the last one?
-                    // No, let's stick to the core fix for now.
-                    if (!p.hasAttribute('ParaShape')) p.setAttribute('ParaShape', gluePsId);
+            // Preserve semantic roles until recursive styling, so nested boxes and notes
+            // can override the question typography without inheriting school formatting.
+            for (const p of topPs) {
+                const role = p.getAttribute('data-hml-style');
+                if (!role || (p === firstVisualP && !role.startsWith('BOX_'))) {
+                    p.setAttribute('data-hml-style', 'QUESTION');
                 }
-
-                // 3. Set CharShape (Font) - Force fallback for non-main-style if needed
-                const textNodes = Array.from(p.getElementsByTagName('TEXT'));
-                for (const tn of textNodes) {
-                    if (isMainQuestion) {
-                        tn.setAttribute('CharShape', charShapeId);
-                    } else {
-                        if (!tn.hasAttribute('CharShape')) tn.setAttribute('CharShape', '0');
-                    }
-                }
-
-
-                // [FIX ENDNOTE INVISIBLE] 미주 번호(위첨자)를 흰색+1pt로 숨기기
-                // ENDNOTE를 직접 자식으로 가진 TEXT만 타겟 (풀이 본문 TEXT는 건드리지 않음)
-                const allTextsInP = Array.from(p.getElementsByTagName('TEXT'));
-                for (const tn of allTextsInP) {
-                    const directEndnote = Array.from(tn.childNodes).find(
-                        (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
-                    );
-                    if (directEndnote) {
-                        tn.setAttribute('CharShape', '14'); // Height=100, TextColor=16777215(흰색)
-                        console.log(`[HML-V2] Endnote ref TEXT → invisible CharShape(14).`);
-                    }
-                }
-
-                if (!semanticRole?.startsWith('BOX_')) p.removeAttribute('data-hml-style');
-            });
+            }
 
             // [FIX V6] Cleanup V5/V4 attempts
             // removed NewList="false" (ineffective)
@@ -934,7 +814,7 @@ export function generateHmlFromTemplate(
                         } else {
                             // This case shouldn't really happen with current logic as non-boxes aren't in groups
                             currentGroup.forEach(node => {
-                                sanitizeNodeStyles(node, validStyles, serializer, (validStyles as any).glueCharShape);
+                                sanitizeNodeStyles(node, validStyles, serializer, undefined, 'QUESTION');
                                 finalNodes.push(serializer.serializeToString(node));
                             });
                         }
@@ -951,7 +831,7 @@ export function generateHmlFromTemplate(
                     }
 
                     // 2. Process and Serialize the node
-                    sanitizeNodeStyles(el, validStyles, serializer, (validStyles as any).glueCharShape);
+                    sanitizeNodeStyles(el, validStyles, serializer, undefined, 'QUESTION');
                     finalNodes.push(serializer.serializeToString(el));
                 }
             }
@@ -996,7 +876,7 @@ export function generateHmlFromTemplate(
         if (boxPatterns['BOX_MIJU']) {
             console.log(`[HML-V2 Generator] V19: Restoring ${allEndnotes.length} endnotes into BOX_MIJU pattern.`);
 
-            const styleId = getStyleId('문제1') || getStyleId('Question 1') || '0';
+            const styleId = getStyleId('박스안') || getStyleId('문항_스타일1') || '0';
             const paraShapeId = validStyles.StyleParaShapes.get(styleId) || '0';
             console.log(`[HML-V2 restored] Using StyleID: ${styleId}, ParaShapeID: ${paraShapeId} for endnotes.`);
             const workingDoc = parser.parseFromString('<root/>', 'text/xml');
@@ -1019,7 +899,7 @@ export function generateHmlFromTemplate(
                         let tNode = p.getElementsByTagName('TEXT')[0];
                         if (!tNode) {
                             tNode = workingDoc.createElement('TEXT');
-                            if (validStyles.CharShape.has('11')) tNode.setAttribute('CharShape', '11');
+                            tNode.setAttribute('CharShape', validStyles.StyleCharShapes.get(styleId) || targetCharId || '0');
                             p.appendChild(tNode);
                         }
                         // Insert number at the very beginning of the TEXT node
@@ -1048,7 +928,7 @@ export function generateHmlFromTemplate(
             }
         } else {
             console.log(`[HML-V2 Generator] V19: BOX_MIJU pattern NOT found/empty. Appending raw endnotes as fallback. `);
-            const styleId = getStyleId('문제1') || getStyleId('Question 1') || '0';
+            const styleId = getStyleId('박스안') || getStyleId('문항_스타일1') || '0';
             const paraShapeId = validStyles.StyleParaShapes.get(styleId) || '0';
             console.log(`[HML-V2 restored-fallback] Using StyleID: ${styleId}, ParaShapeID: ${paraShapeId} for endnote fallback.`);
             const workingDoc = parser.parseFromString('<root/>', 'text/xml');
@@ -1066,7 +946,7 @@ export function generateHmlFromTemplate(
                             let tNode = clonedP.getElementsByTagName('TEXT')[0];
                             if (!tNode) {
                                 tNode = workingDoc.createElement('TEXT');
-                                if (validStyles.CharShape.has('11')) tNode.setAttribute('CharShape', '11');
+                                tNode.setAttribute('CharShape', validStyles.StyleCharShapes.get(styleId) || targetCharId || '0');
                                 clonedP.appendChild(tNode);
                             }
                             const newNumNode = workingDoc.createTextNode(numberStr);
@@ -1076,13 +956,14 @@ export function generateHmlFromTemplate(
                                 tNode.appendChild(newNumNode);
                             }
                         }
+                        sanitizeNodeStyles(clonedP, validStyles, serializer, undefined, 'BOX_MIJU');
                         const pXml = serializer.serializeToString(clonedP);
                         combinedContentXmlFull += pXml;
                     });
                 } else {
                     // Raw text or empty? Preserve anyway.
                     const text = en.textContent || '';
-                    const fallbackP = `<P ParaShape="${paraShapeId}" Style="${styleId}"><TEXT CharShape="11">${numberStr}${text}</TEXT></P>`;
+                    const fallbackP = `<P ParaShape="${paraShapeId}" Style="${styleId}"><TEXT CharShape="${validStyles.StyleCharShapes.get(styleId) || targetCharId || '0'}">${numberStr}${escapeXml(text)}</TEXT></P>`;
                     combinedContentXmlFull += fallbackP;
                 }
             });
@@ -1288,11 +1169,12 @@ function sanitizeNodeStyles(node: any, validSets: {
     Style: Set<string>;
     StyleNames: Map<string, string>;
     StyleParaShapes: Map<string, string>;
+    StyleCharShapes: Map<string, string>;
     BorderFills: Map<string, string>;
     BorderFillIds: Set<string>;
     InjectedBorders: { id: string; xml: string }[];
     nextBorderId: number;
-}, serializer: any, forcedCs?: string) {
+}, serializer: any, forcedCs?: string, inheritedRole?: string) {
     if (node.nodeType !== 1) return;
 
     const checkAndStrip = (attr: string, set: Set<string>) => {
@@ -1302,57 +1184,38 @@ function sanitizeNodeStyles(node: any, validSets: {
         }
     };
 
+    // Equations carry their own typography; do not rewrite their attributes or children.
+    if (node.tagName === 'EQUATION') return;
+
+    const ownRole = node.getAttribute('data-hml-style') || '';
+    // Every paragraph inside a box (including nested data tables) uses 박스안.
+    // Native endnote bodies follow the same rule as the restored explanation box.
+    const role = /^(hp:)?endnote$/i.test(node.tagName) ? 'BOX_MIJU'
+        : inheritedRole?.startsWith('BOX_') ? inheritedRole
+        : ownRole || inheritedRole;
     if (node.tagName === 'P') {
-        const semanticRole = node.getAttribute('data-hml-style');
-        if (semanticRole) {
-            let targetStyleName = '';
-            // 1. Priority: Semantic Role Default Mapping (V53: Route to Sequential Glue Style)
-            const glueStyleName = (validSets as any).glueStyleName || 'Glued_Question_9999';
-            if (semanticRole === 'QUESTION') {
-                targetStyleName = glueStyleName;
-                // [V58.1] If Question, propagate the intended CharShape to children
-                forcedCs = (validSets as any).glueCharShape;
-            }
-            else if (semanticRole === 'CHOICE') targetStyleName = '3선지';
-            else if (semanticRole.startsWith('BOX_')) targetStyleName = '3선지';
-
-            // Fallback for original question style if Glued Style injection failed
-            if (semanticRole === 'QUESTION' && !validSets.StyleNames.has(targetStyleName)) {
-                targetStyleName = '문제1';
-            }
-
-            // 2. Original Style Preservation (Don't override for QUESTIONS)
-            const originalStyleName = node.getAttribute('data-hml-orig-style');
-            if (originalStyleName && validSets.StyleNames.has(originalStyleName) && semanticRole !== 'QUESTION') {
-                targetStyleName = originalStyleName;
-            }
-
-            if (targetStyleName) {
-                const targetId = validSets.StyleNames.get(targetStyleName);
-                if (targetId) {
-                    node.setAttribute('Style', targetId);
-                    // Also enforce ParaShape if available in the map
-                    const targetPara = validSets.StyleParaShapes.get(targetId);
-                    if (targetPara) {
-                        node.setAttribute('ParaShape', targetPara);
-                    }
-                    // console.log(`[HML-V2 Generator] sanitizeNodeStyles: Applied Style '${targetStyleName}' (Id=${targetId}, Para=${targetPara}) to P`);
-                } else {
-                    console.warn(`[HML-V2 Generator] Style Name '${targetStyleName}' not found via validSets.StyleNames!`);
-                }
-            }
+        const targetStyleName = role?.startsWith('BOX_') ? '박스안'
+            : role === 'CHOICE' ? '3선지'
+            : role === 'QUESTION' ? '문항_스타일1' : '';
+        const targetId = validSets.StyleNames.get(targetStyleName);
+        if (targetId) {
+            node.setAttribute('Style', targetId);
+            const targetPara = role === 'QUESTION'
+                ? (validSets as any).gluePsId || validSets.StyleParaShapes.get(targetId)
+                : validSets.StyleParaShapes.get(targetId);
+            if (targetPara) node.setAttribute('ParaShape', targetPara);
+            forcedCs = validSets.StyleCharShapes.get(targetId);
         }
+        node.removeAttribute('data-hml-orig-style');
     }
 
-    // [V58.1] Apply forced CharShape (Font)
-    // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 자식으로 가진 TEXT는 예외 처리
-    // → validStyles.CharShape.add('14')로 이미 보호됨. 여기서 다시 "14"로 강제 설정
-    if (node.tagName === 'TEXT' || node.tagName === 'CHARSHAPE') {
+    // Only the native endnote reference is invisible, not its body text.
+    if (node.tagName === 'TEXT') {
         const hasDirectEndnote = Array.from(node.childNodes || []).some(
-            (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
+            (n: any) => /^(hp:)?endnote$/i.test(n.nodeName)
         );
         if (hasDirectEndnote) {
-            node.setAttribute('CharShape', '14'); // Id="14" = Height=100, TextColor=16777215(흰색)
+            node.setAttribute('CharShape', '14'); // Existing white 1pt reference shape.
         } else if (forcedCs) {
             node.setAttribute('CharShape', forcedCs);
         }
@@ -1419,7 +1282,7 @@ function sanitizeNodeStyles(node: any, validSets: {
     }
 
     for (let i = 0; i < node.childNodes.length; i++) {
-        sanitizeNodeStyles(node.childNodes[i], validSets, serializer, forcedCs);
+        sanitizeNodeStyles(node.childNodes[i], validSets, serializer, forcedCs, role);
     }
 }
 
@@ -1611,7 +1474,7 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
     if (!patternXml) {
         console.warn(`[HML-V2 Generator] No pattern found for role: ${role}`);
         return elements.map(el => {
-            sanitizeNodeStyles(el, validSets, serializer);
+            sanitizeNodeStyles(el, validSets, serializer, undefined, role);
             return serializer.serializeToString(el);
         }).join('\n');
     }
@@ -1621,6 +1484,7 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
         const table = patternDoc.documentElement;
 
         // Update InstId for uniqueness
+        table.setAttribute('data-hml-style', role);
         table.setAttribute('InstId', String(nextInstId));
         directElements(table, 'SHAPEOBJECT')[0]?.setAttribute('InstId', String(nextInstId));
 
@@ -1673,6 +1537,8 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
             }
         }
 
+        // Include template title/decorative paragraphs and all nested table paragraphs.
+        sanitizeNodeStyles(table, validSets, serializer, undefined, role);
         return serializer.serializeToString(table);
     } catch (e) {
         console.error(`[HML-V2 Generator] Failed to wrap in box pattern for role ${role}`, e);
