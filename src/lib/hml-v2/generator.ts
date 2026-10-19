@@ -48,10 +48,10 @@ export function generateHmlFromTemplate(
     const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase();
 
     // [V35] ROBUST STYLE DETECTION
-    let styleIdToApply = "1";
+    let styleIdToApply = "";
     let targetParaId = "";
     let targetCharId = "";
-    let normalParaId = "1"; // 바탕글 ParaShape Fallback
+    let normalParaId = "";
 
     // [V52] DOM-BASED INJECTION FOR ROBUSTNESS
     const serializer = new XMLSerializer();
@@ -88,8 +88,10 @@ export function generateHmlFromTemplate(
         }
 
         const nameKeywords = "(문제|문항|Question|Item|문항_스타일)";
-        const normalStyle = styleEls.find(s => s.id === "0") || styleEls.find(s => s.engName === "Normal") || styleEls[0];
-        const questionStyle = styleEls.find(s => s.id === "1") || styleEls.find(s => new RegExp(nameKeywords, "i").test(s.name)) || styleEls[0];
+        const normalStyle = styleEls.find(s => s.engName === 'Normal')
+            || styleEls.find(s => s.name === '바탕글' || s.name === 'Normal') || styleEls[0];
+        const questionStyle = styleEls.find(s => normalize(s.name) === normalize('문항_스타일1'))
+            || styleEls.find(s => new RegExp(nameKeywords, "i").test(s.name)) || normalStyle;
 
         normalParaId = normalStyle.ps;
         styleIdToApply = questionStyle.id;
@@ -207,8 +209,8 @@ export function generateHmlFromTemplate(
                 validStyles.ParaShape.add(gutterPsId);
 
                 // --- 3. Glue ParaShape (Choice) [V54] ---
-                const choiceStyleId = validStyles.StyleNames.get('3선지') || "4";
-                const choicePsId = validStyles.StyleParaShapes.get(choiceStyleId) || "4";
+                const choiceStyleId = validStyles.StyleNames.get('3선지') || normalStyle.id;
+                const choicePsId = validStyles.StyleParaShapes.get(choiceStyleId) || normalParaId;
                 const choiceParaSource = getParaXML(choicePsId) || nParaSource;
                 if (choiceParaSource) {
                     const psChoiceGlue = choiceParaSource.cloneNode(true) as Element;
@@ -227,62 +229,9 @@ export function generateHmlFromTemplate(
                 styleGlue.setAttribute('ParaShape', gluePsId);
                 styleGlue.setAttribute('Name', glueStyleName);
 
-                // [V58] Dynamic Font Search for '함초롬바탕'
-                let targetCsId = "";
-
-                // 1. Search for a style that might already be '함초롬바탕'
-                const 함초롬StyleId = validStyles.NormalizedStyleNames.get('함초롬바탕');
-                if (함초롬StyleId) {
-                    targetCsId = validStyles.StyleCharShapes.get(함초롬StyleId) || "";
-                }
-
-                // 2. If not found via style name, search for the FONT name directly in MAPPINGTABLE
-                if (!targetCsId) {
-                    try {
-                        let 바탕FontId = "";
-                        const fontFaces = mappingTable.getElementsByTagName('FONTFACE');
-                        for (let i = 0; i < fontFaces.length; i++) {
-                            if (fontFaces[i].getAttribute('Lang') === 'Hangul') {
-                                const fonts = fontFaces[i].getElementsByTagName('FONT');
-                                for (let j = 0; j < fonts.length; j++) {
-                                    const fontName = fonts[j].getAttribute('Name') || "";
-                                    if (fontName.includes('함초롬바탕')) {
-                                        바탕FontId = fonts[j].getAttribute('Id') || "";
-                                        break;
-                                    }
-                                }
-                            }
-                            if (바탕FontId) break;
-                        }
-
-                        if (바탕FontId) {
-                            const charShapes = mappingTable.getElementsByTagName('CHARSHAPE');
-                            for (let i = 0; i < charShapes.length; i++) {
-                                const fontIdEl = charShapes[i].getElementsByTagName('FONTID')[0];
-                                if (fontIdEl && fontIdEl.getAttribute('Hangul') === 바탕FontId) {
-                                    targetCsId = charShapes[i].getAttribute('Id') || "";
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (fontErr) {
-                        console.error(`[HML-V2] V58 Font Search Error:`, fontErr);
-                    }
-                }
-
-                // 3. Fallback to any 바탕 style if 함초롬바탕 search yielded nothing
-                if (!targetCsId) {
-                    const fallbackStyleId = validStyles.NormalizedStyleNames.get('바탕글') || validStyles.NormalizedStyleNames.get('바탕');
-                    if (fallbackStyleId) {
-                        targetCsId = validStyles.StyleCharShapes.get(fallbackStyleId) || "";
-                    }
-                }
-
-                if (targetCsId) {
-                    console.log(`[HML-V2] V58 Font Audit: Applying CharShape=${targetCsId} (found via 함초롬바탕 search) to ${glueStyleName}`);
-                    styleGlue.setAttribute('CharShape', targetCsId);
-                    targetCharId = targetCsId; // [V58.1] Sync global targetCharId so earlier loops use it!
-                }
+                // Glue changes paragraph layout only; typography comes from the named template style.
+                const targetCsId = questionStyle.cs;
+                styleGlue.setAttribute('CharShape', targetCsId);
 
                 styleList.appendChild(styleGlue);
                 styleList.setAttribute('Count', (existingStyles.length + 1).toString());
@@ -359,6 +308,28 @@ export function generateHmlFromTemplate(
         cleanedTemplate = removeTableByInstId(cleanedTemplate, instId);
     }
 
+    // 박스 견본을 지우고 남은 빈 문단/단 나눔은 문서 내용이 아니다.
+    // 특히 템플릿 끝의 ColumnBreak 두 개가 미주의 시작 단을 밀어내지 않게 한다.
+    const cleanedDoc = parser.parseFromString(cleanedTemplate, 'text/xml');
+    for (const section of Array.from(cleanedDoc.getElementsByTagName('SECTION'))) {
+        if (!(section.textContent || '').includes('{{CONTENT_HERE}}')) continue;
+        removeTrailingEmptyParagraphs(section);
+        // 머리 장식은 보존하고 문제 자리 바로 앞의 빈 자리 문단만 제거한다.
+        const anchorP = directElements(section, 'P').find(p => (p.textContent || '').includes('{{CONTENT_HERE}}'));
+        if (anchorP) {
+            let previous = anchorP.previousSibling;
+            while (previous) {
+                const nextPrevious = previous.previousSibling;
+                if ((previous.nodeType === 3 && !(previous.textContent || '').trim())
+                    || (previous.nodeType === 1 && isEmptyParagraph(previous as Element))) {
+                    section.removeChild(previous);
+                } else break;
+                previous = nextPrevious;
+            }
+        }
+    }
+    cleanedTemplate = serializer.serializeToString(cleanedDoc);
+
 
     // 3. Build Full Content XML (Using DOM construction for each question)
     let combinedContentXmlFull = '';
@@ -373,22 +344,6 @@ export function generateHmlFromTemplate(
         const normMatch = validStyles.NormalizedStyleNames.get(normTarget);
         if (normMatch) return normMatch;
 
-        // NUCLEAR FALLBACK: If "문제1" is absolutely missing, search for similar roles
-        if (normTarget === '문제1') {
-            let fallbackId = '';
-            validStyles.StyleNames.forEach((id, name) => {
-                if (fallbackId) return;
-                const n = normalize(name);
-                if (n.includes('해설') || n.includes('정답') || n.includes('미주') || n.includes('본문1')) {
-                    console.log(`[HML-V2 NUCLEAR-STYLE] "문제1" missing. Using "${name}" (ID: ${id}) instead.`);
-                    fallbackId = id;
-                }
-            });
-            if (fallbackId) return fallbackId;
-            // Absolute last resort: Style ID "2" or "1" if they exist
-            if (validStyles.Style.has('2')) return '2';
-            if (validStyles.Style.has('1')) return '1';
-        }
         return '';
     };
 
@@ -490,6 +445,22 @@ export function generateHmlFromTemplate(
 
     let qIndex = 0;
     const allEndnotes: Element[] = []; // [NEW] Collect all endnotes for final restoration
+    const replaceNestedBoxes = (container: Element, skipTopLevel = false) => {
+        const nestedTables = Array.from(container.getElementsByTagName('TABLE')).reverse();
+        for (const table of nestedTables) {
+            if (skipTopLevel && table.parentNode === container) continue;
+            // Preserve the original explanation boxes inside native endnotes.
+            let ancestor = table.parentNode;
+            while (ancestor && ancestor !== container && !/^(hp:)?endnote$/i.test(ancestor.nodeName)) {
+                ancestor = ancestor.parentNode;
+            }
+            if (ancestor && /^(hp:)?endnote$/i.test(ancestor.nodeName)) continue;
+            const role = table.getAttribute('data-hml-style') || '';
+            if (!boxPatterns[role]) continue;
+            const xml = wrapInBoxPattern([table], role, boxPatterns, serializer, parser, nextInstId++, validStyles);
+            table.parentNode?.replaceChild(parser.parseFromString(xml, 'text/xml').documentElement, table);
+        }
+    };
 
     for (const qwi of questionsWithImages) {
         qIndex++;
@@ -508,6 +479,11 @@ export function generateHmlFromTemplate(
 
         const qDoc = parser.parseFromString(`<WRAP>${cleanContent}</WRAP>`, 'text/xml');
         const root = qDoc.documentElement;
+        // 원본의 선행 빈 줄도 단 첫 줄로 옮기지 않는다.
+        while (root.firstChild && ((root.firstChild.nodeType === 3 && !(root.firstChild.textContent || '').trim())
+            || (root.firstChild.nodeType === 1 && isEmptyParagraph(root.firstChild as Element)))) {
+            root.removeChild(root.firstChild);
+        }
 
         // [FIX V15] IMMEDIATE ENDNOTE ACCUMULATION (Before any mutations)
         // [FIX V19] Robust tag search to handle potential namespaces like hp:ENDNOTE
@@ -530,6 +506,10 @@ export function generateHmlFromTemplate(
                 endnoteClones.push(clone);
                 allEndnotes.push(clone);
             }
+        }
+
+        if (qIndex === questionsWithImages.length && allEndnotes.length > 0) {
+            removeTrailingEmptyParagraphs(root);
         }
 
         // [V30] PRESERVE PARSER HINTS
@@ -573,67 +553,14 @@ export function generateHmlFromTemplate(
         }
 
         if (firstVisualP) {
-            const styleId = styleIdToApply;
-            const paraShapeId = "9997"; // Always use 9997 for Body (Glue + Indent)
-            const charShapeId = targetCharId || '0';
-
-            console.log(`[HML-V2 styling] Q${qIndex} Applying Style=${styleId}, PS=${paraShapeId}, CS=${charShapeId}`);
-
-            // Apply to ALL top-level paragraphs to ensure they stick together (KeepWithNext)
-            const topPsInQ = Array.from(root.getElementsByTagName('P')).filter(p => p.parentNode === root);
-            topPsInQ.forEach((p: Element) => {
-                const semanticRole = p.getAttribute('data-hml-style');
-                const isMainQuestion = semanticRole === 'QUESTION' || p === firstVisualP;
-                const isChoice = semanticRole === 'CHOICE';
-
-                const glueStyleId = (validStyles as any).glueStyleId || "9999";
-                const gluePsId = (validStyles as any).gluePsId || "9997";
-                const glueChoicePsId = (validStyles as any).glueChoicePsId;
-                const choiceStyleId = validStyles.StyleNames.get('3선지') || "4";
-
-                if (isMainQuestion) {
-                    p.setAttribute('Style', glueStyleId);
-                    p.setAttribute('ParaShape', gluePsId);
-                } else if (isChoice) {
-                    // [V54] Choices use '오선지' style (no Ctrl+2) but still glued ParaShape
-                    p.setAttribute('Style', choiceStyleId);
-                    if (glueChoicePsId) {
-                        p.setAttribute('ParaShape', glueChoicePsId);
-                    }
-                } else {
-                    // For other roles (BOX_, ANSWER), keep original but try to glue them to the next question part
-                    // Actually, if it's not the last paragraph, we should ideally glue it.
-                    // For simplicity, let's just make everything top-level PS glued if it's not the last one?
-                    // No, let's stick to the core fix for now.
-                    if (!p.hasAttribute('ParaShape')) p.setAttribute('ParaShape', gluePsId);
+            // Preserve semantic roles until recursive styling, so nested boxes and notes
+            // can override the question typography without inheriting school formatting.
+            for (const p of topPs) {
+                const role = p.getAttribute('data-hml-style');
+                if (!role || (p === firstVisualP && !role.startsWith('BOX_'))) {
+                    p.setAttribute('data-hml-style', 'QUESTION');
                 }
-
-                // 3. Set CharShape (Font) - Force fallback for non-main-style if needed
-                const textNodes = Array.from(p.getElementsByTagName('TEXT'));
-                for (const tn of textNodes) {
-                    if (isMainQuestion) {
-                        tn.setAttribute('CharShape', charShapeId);
-                    } else {
-                        if (!tn.hasAttribute('CharShape')) tn.setAttribute('CharShape', '0');
-                    }
-                }
-
-
-                // [FIX ENDNOTE INVISIBLE] 미주 번호(위첨자)를 흰색+1pt로 숨기기
-                // ENDNOTE를 직접 자식으로 가진 TEXT만 타겟 (풀이 본문 TEXT는 건드리지 않음)
-                const allTextsInP = Array.from(p.getElementsByTagName('TEXT'));
-                for (const tn of allTextsInP) {
-                    const directEndnote = Array.from(tn.childNodes).find(
-                        (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
-                    );
-                    if (directEndnote) {
-                        tn.setAttribute('CharShape', '14'); // Height=100, TextColor=16777215(흰색)
-                        console.log(`[HML-V2] Endnote ref TEXT → invisible CharShape(14).`);
-                    }
-                }
-
-                p.removeAttribute('data-hml-style');
-            });
+            }
 
             // [FIX V6] Cleanup V5/V4 attempts
             // removed NewList="false" (ineffective)
@@ -874,6 +801,10 @@ export function generateHmlFromTemplate(
                 for (let i = 0; i < enPictures.length; i++) processImageNode(enPictures[i]);
             }
 
+            // 발문 P/TEXT 안의 박스도 최상위 박스와 같은 템플릿 규칙을 적용한다.
+            // 안쪽부터 바꾸므로 박스 내용에 들어 있는 실제 표는 그대로 보존된다.
+            replaceNestedBoxes(root, true);
+
             const children = Array.from(root.childNodes);
             for (const child of children) {
                 // console.log(`[HML-V2 DEBUG]   - Node: ${child.nodeName}`);
@@ -901,7 +832,7 @@ export function generateHmlFromTemplate(
                         } else {
                             // This case shouldn't really happen with current logic as non-boxes aren't in groups
                             currentGroup.forEach(node => {
-                                sanitizeNodeStyles(node, validStyles, serializer, (validStyles as any).glueCharShape);
+                                sanitizeNodeStyles(node, validStyles, serializer, undefined, 'QUESTION');
                                 finalNodes.push(serializer.serializeToString(node));
                             });
                         }
@@ -918,7 +849,7 @@ export function generateHmlFromTemplate(
                     }
 
                     // 2. Process and Serialize the node
-                    sanitizeNodeStyles(el, validStyles, serializer, (validStyles as any).glueCharShape);
+                    sanitizeNodeStyles(el, validStyles, serializer, undefined, 'QUESTION');
                     finalNodes.push(serializer.serializeToString(el));
                 }
             }
@@ -926,7 +857,26 @@ export function generateHmlFromTemplate(
             if (currentRole.startsWith('BOX_')) {
                 finalNodes.push(wrapInBoxPattern(currentGroup, currentRole, boxPatterns, serializer, parser, nextInstId++, validStyles));
             }
-            questionXml = finalNodes.join('\n');
+            const questionRoot = parser.parseFromString(`<WRAP>${finalNodes.join('\n')}</WRAP>`, 'text/xml').documentElement;
+            if (layoutPlan[qIndex - 2]?.colBreakAfter) {
+                // 다음 문제의 실제 첫 문단이 단 넘김을 소유한다.
+                let first = Array.from(questionRoot.childNodes).find(n => n.nodeType === 1) as Element | undefined;
+                if (first && first.tagName !== 'P') {
+                    const p = questionRoot.ownerDocument.createElement('P');
+                    p.setAttribute('Style', '0');
+                    p.setAttribute('ParaShape', normalParaId || '0');
+                    const text = questionRoot.ownerDocument.createElement('TEXT');
+                    text.setAttribute('CharShape', targetCharId || '0');
+                    questionRoot.insertBefore(p, first);
+                    p.appendChild(text);
+                    text.appendChild(first);
+                    first = p;
+                }
+                first?.setAttribute('ColumnBreak', 'true');
+            }
+            const plan = layoutPlan[qIndex - 1];
+            if (plan?.colBreakAfter) removeTrailingEmptyParagraphs(questionRoot);
+            questionXml = Array.from(questionRoot.childNodes).map(n => serializer.serializeToString(n)).join('');
 
             // [V47] Advanced Layout: Gutter Protection (150pt + KeepTogether)
             // We apply ParaShape 9998 (KeepTogether, 150pt margin) to the VERY LAST paragraph of the question block.
@@ -934,17 +884,13 @@ export function generateHmlFromTemplate(
             combinedContentXmlFull += questionXml;
 
             // [LAYOUT V3] 동적 단 레이아웃 — 패킹 결과 적용
-            const plan = layoutPlan[qIndex - 1]; // qIndex는 1-based
-            if (plan) {
+            const isLastQuestion = qIndex === questionsWithImages.length;
+            // 해설 앞 여백은 PageBreak가 만든다. 빈 풀이 문단이 다음 단/쪽으로 넘치지 않게 한다.
+            if (plan && !plan.colBreakAfter && !(isLastQuestion && allEndnotes.length > 0)) {
                 const gutterCount = Math.max(1, plan.gutterLines);
                 const emptyLine = `<P Style="0" ParaShape="0"><TEXT CharShape="0"></TEXT></P>`;
                 combinedContentXmlFull += '\n' + Array(gutterCount).fill(emptyLine).join('\n') + '\n';
                 console.log(`[LAYOUT V3] Q${qIndex}: gutter=${gutterCount}줄`);
-
-                if (plan.colBreakAfter) {
-                    console.log(`[LAYOUT V3] Q${qIndex}: ColBreak 삽입`);
-                    combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
-                }
             }
 
 
@@ -955,10 +901,16 @@ export function generateHmlFromTemplate(
     // If we accumulated endnotes and have a BOX_MIJU template pattern, inject it now.
 
     if (allEndnotes.length > 0) {
+        // Keep the native ENDNOTE controls and the direct SECTION/BOX_MIJU structure.
+        // A single page break starts explanations in the first column of the next page.
+        const headingStyle = getStyleId('박스안') || getStyleId('문항_스타일1') || '0';
+        const headingPara = validStyles.StyleParaShapes.get(headingStyle) || '0';
+        const headingChar = validStyles.StyleCharShapes.get(headingStyle) || '0';
+        combinedContentXmlFull += `<P PageBreak="true" ColumnBreak="false" ParaShape="${headingPara}" Style="${headingStyle}"><TEXT CharShape="${headingChar}"><CHAR>정답 및 해설</CHAR></TEXT></P>`;
         if (boxPatterns['BOX_MIJU']) {
             console.log(`[HML-V2 Generator] V19: Restoring ${allEndnotes.length} endnotes into BOX_MIJU pattern.`);
 
-            const styleId = getStyleId('문제1') || getStyleId('Question 1') || '0';
+            const styleId = getStyleId('박스안') || getStyleId('문항_스타일1') || '0';
             const paraShapeId = validStyles.StyleParaShapes.get(styleId) || '0';
             console.log(`[HML-V2 restored] Using StyleID: ${styleId}, ParaShapeID: ${paraShapeId} for endnotes.`);
             const workingDoc = parser.parseFromString('<root/>', 'text/xml');
@@ -981,7 +933,7 @@ export function generateHmlFromTemplate(
                         let tNode = p.getElementsByTagName('TEXT')[0];
                         if (!tNode) {
                             tNode = workingDoc.createElement('TEXT');
-                            if (validStyles.CharShape.has('11')) tNode.setAttribute('CharShape', '11');
+                            tNode.setAttribute('CharShape', validStyles.StyleCharShapes.get(styleId) || targetCharId || '0');
                             p.appendChild(tNode);
                         }
                         // Insert number at the very beginning of the TEXT node
@@ -1010,7 +962,7 @@ export function generateHmlFromTemplate(
             }
         } else {
             console.log(`[HML-V2 Generator] V19: BOX_MIJU pattern NOT found/empty. Appending raw endnotes as fallback. `);
-            const styleId = getStyleId('문제1') || getStyleId('Question 1') || '0';
+            const styleId = getStyleId('박스안') || getStyleId('문항_스타일1') || '0';
             const paraShapeId = validStyles.StyleParaShapes.get(styleId) || '0';
             console.log(`[HML-V2 restored-fallback] Using StyleID: ${styleId}, ParaShapeID: ${paraShapeId} for endnote fallback.`);
             const workingDoc = parser.parseFromString('<root/>', 'text/xml');
@@ -1028,7 +980,7 @@ export function generateHmlFromTemplate(
                             let tNode = clonedP.getElementsByTagName('TEXT')[0];
                             if (!tNode) {
                                 tNode = workingDoc.createElement('TEXT');
-                                if (validStyles.CharShape.has('11')) tNode.setAttribute('CharShape', '11');
+                                tNode.setAttribute('CharShape', validStyles.StyleCharShapes.get(styleId) || targetCharId || '0');
                                 clonedP.appendChild(tNode);
                             }
                             const newNumNode = workingDoc.createTextNode(numberStr);
@@ -1038,13 +990,14 @@ export function generateHmlFromTemplate(
                                 tNode.appendChild(newNumNode);
                             }
                         }
+                        sanitizeNodeStyles(clonedP, validStyles, serializer, undefined, 'BOX_MIJU');
                         const pXml = serializer.serializeToString(clonedP);
                         combinedContentXmlFull += pXml;
                     });
                 } else {
                     // Raw text or empty? Preserve anyway.
                     const text = en.textContent || '';
-                    const fallbackP = `<P ParaShape="${paraShapeId}" Style="${styleId}"><TEXT CharShape="11">${numberStr}${text}</TEXT></P>`;
+                    const fallbackP = `<P ParaShape="${paraShapeId}" Style="${styleId}"><TEXT CharShape="${validStyles.StyleCharShapes.get(styleId) || targetCharId || '0'}">${numberStr}${escapeXml(text)}</TEXT></P>`;
                     combinedContentXmlFull += fallbackP;
                 }
             });
@@ -1250,11 +1203,12 @@ function sanitizeNodeStyles(node: any, validSets: {
     Style: Set<string>;
     StyleNames: Map<string, string>;
     StyleParaShapes: Map<string, string>;
+    StyleCharShapes: Map<string, string>;
     BorderFills: Map<string, string>;
     BorderFillIds: Set<string>;
     InjectedBorders: { id: string; xml: string }[];
     nextBorderId: number;
-}, serializer: any, forcedCs?: string) {
+}, serializer: any, forcedCs?: string, inheritedRole?: string) {
     if (node.nodeType !== 1) return;
 
     const checkAndStrip = (attr: string, set: Set<string>) => {
@@ -1264,57 +1218,42 @@ function sanitizeNodeStyles(node: any, validSets: {
         }
     };
 
+    // Equations carry their own typography; do not rewrite their attributes or children.
+    if (node.tagName === 'EQUATION') return;
+
+    const ownRole = node.getAttribute('data-hml-style') || '';
+    // Box content (including nested data tables) uses 박스안; template labels
+    // have their own style so narrow title cells retain their original layout.
+    // Native endnote bodies follow the same rule as the restored explanation box.
+    const role = /^(hp:)?endnote$/i.test(node.tagName) ? 'BOX_MIJU'
+        : inheritedRole?.startsWith('BOX_') ? inheritedRole
+        : ownRole || inheritedRole;
     if (node.tagName === 'P') {
-        const semanticRole = node.getAttribute('data-hml-style');
-        if (semanticRole) {
-            let targetStyleName = '';
-            // 1. Priority: Semantic Role Default Mapping (V53: Route to Sequential Glue Style)
-            const glueStyleName = (validSets as any).glueStyleName || 'Glued_Question_9999';
-            if (semanticRole === 'QUESTION') {
-                targetStyleName = glueStyleName;
-                // [V58.1] If Question, propagate the intended CharShape to children
-                forcedCs = (validSets as any).glueCharShape;
-            }
-            else if (semanticRole === 'CHOICE') targetStyleName = '3선지';
-            else if (semanticRole.startsWith('BOX_')) targetStyleName = '3선지';
-
-            // Fallback for original question style if Glued Style injection failed
-            if (semanticRole === 'QUESTION' && !validSets.StyleNames.has(targetStyleName)) {
-                targetStyleName = '문제1';
-            }
-
-            // 2. Original Style Preservation (Don't override for QUESTIONS)
-            const originalStyleName = node.getAttribute('data-hml-orig-style');
-            if (originalStyleName && validSets.StyleNames.has(originalStyleName) && semanticRole !== 'QUESTION') {
-                targetStyleName = originalStyleName;
-            }
-
-            if (targetStyleName) {
-                const targetId = validSets.StyleNames.get(targetStyleName);
-                if (targetId) {
-                    node.setAttribute('Style', targetId);
-                    // Also enforce ParaShape if available in the map
-                    const targetPara = validSets.StyleParaShapes.get(targetId);
-                    if (targetPara) {
-                        node.setAttribute('ParaShape', targetPara);
-                    }
-                    // console.log(`[HML-V2 Generator] sanitizeNodeStyles: Applied Style '${targetStyleName}' (Id=${targetId}, Para=${targetPara}) to P`);
-                } else {
-                    console.warn(`[HML-V2 Generator] Style Name '${targetStyleName}' not found via validSets.StyleNames!`);
-                }
-            }
+        const isTemplateLabel = role?.startsWith('BOX_')
+            && node.getAttribute('Style') === validSets.StyleNames.get('박스제목');
+        const targetStyleName = isTemplateLabel ? '박스제목'
+            : role?.startsWith('BOX_') ? '박스안'
+            : role === 'CHOICE' ? '3선지'
+            : role === 'QUESTION' ? '문항_스타일1' : '';
+        const targetId = validSets.StyleNames.get(targetStyleName);
+        if (targetId) {
+            node.setAttribute('Style', targetId);
+            const targetPara = role === 'QUESTION'
+                ? (validSets as any).gluePsId || validSets.StyleParaShapes.get(targetId)
+                : validSets.StyleParaShapes.get(targetId);
+            if (targetPara) node.setAttribute('ParaShape', targetPara);
+            forcedCs = validSets.StyleCharShapes.get(targetId);
         }
+        node.removeAttribute('data-hml-orig-style');
     }
 
-    // [V58.1] Apply forced CharShape (Font)
-    // [FIX ENDNOTE INVISIBLE] ENDNOTE를 직접 자식으로 가진 TEXT는 예외 처리
-    // → validStyles.CharShape.add('14')로 이미 보호됨. 여기서 다시 "14"로 강제 설정
-    if (node.tagName === 'TEXT' || node.tagName === 'CHARSHAPE') {
+    // Only the native endnote reference is invisible, not its body text.
+    if (node.tagName === 'TEXT') {
         const hasDirectEndnote = Array.from(node.childNodes || []).some(
-            (n: any) => n.nodeName === 'ENDNOTE' || n.nodeName === 'hp:ENDNOTE'
+            (n: any) => /^(hp:)?endnote$/i.test(n.nodeName)
         );
         if (hasDirectEndnote) {
-            node.setAttribute('CharShape', '14'); // Id="14" = Height=100, TextColor=16777215(흰색)
+            node.setAttribute('CharShape', '14'); // Existing white 1pt reference shape.
         } else if (forcedCs) {
             node.setAttribute('CharShape', forcedCs);
         }
@@ -1381,7 +1320,7 @@ function sanitizeNodeStyles(node: any, validSets: {
     }
 
     for (let i = 0; i < node.childNodes.length; i++) {
-        sanitizeNodeStyles(node.childNodes[i], validSets, serializer, forcedCs);
+        sanitizeNodeStyles(node.childNodes[i], validSets, serializer, forcedCs, role);
     }
 }
 
@@ -1503,12 +1442,79 @@ function repairPictureStructure(pic: Element, serializer: any) {
     }
 }
 
+function isEmptyParagraph(node: Element): boolean {
+    return node.tagName === 'P' && !(node.textContent || '').trim()
+        && !Array.from(node.getElementsByTagName('*')).some(el => !['TEXT', 'CHAR'].includes(el.tagName));
+}
+
+function removeTrailingEmptyParagraphs(container: Element): void {
+    while (container.lastChild) {
+        const last = container.lastChild;
+        if (last.nodeType === 3 && !(last.textContent || '').trim()) {
+            container.removeChild(last);
+        } else if (last.nodeType === 1 && isEmptyParagraph(last as Element)) {
+            container.removeChild(last);
+        } else {
+            break;
+        }
+    }
+}
+
+function directElements(node: Element, tagName: string): Element[] {
+    return Array.from(node.childNodes).filter(
+        (child): child is Element => child.nodeType === 1 && child.nodeName === tagName);
+}
+
+function getBoxParagraphs(container: Element): Element[] {
+    const paralist = directElements(container, 'PARALIST')[0];
+    return directElements(paralist || container, 'P');
+}
+
+const boxTitles: Record<string, string[]> = {
+    BOX_BOGI: ['보기'],
+    BOX_JOKUN: ['조건'],
+    BOX_MIJU: ['미주', '해설', '정답', '정답및해설'],
+    BOX_INNER: ['박스안'],
+};
+
+function isBoxTitle(node: Element, role: string): boolean {
+    if (hasBoxObjects(node)) return false;
+    const text = (node.textContent || '').replace(/[\s<>〈〉《》\[\]【】()（）]/g, '');
+    return (boxTitles[role] || []).includes(text);
+}
+
+function hasBoxObjects(node: Element): boolean {
+    return ['TABLE', 'EQUATION', 'PICTURE', 'IMAGE', 'DRAWINGOBJECT'].some(
+        tag => node.getElementsByTagName(tag).length > 0);
+}
+
+function extractBoxContent(table: Element, role: string): Element[] {
+    // 직계 칸만 조사한다. 내용 속 증감표/대응표의 칸과 문단은 여기서 펼치지 않는다.
+    const cells = directElements(table, 'ROW').flatMap(row => directElements(row, 'CELL'));
+    if (cells.length === 1) return getBoxParagraphs(cells[0]);
+    const titleCells = cells.filter(cell => isBoxTitle(cell, role));
+    const contentCells = cells.filter(cell => !isBoxTitle(cell, role)
+        && ((cell.textContent || '').trim() || hasBoxObjects(cell)));
+    const hasDecoration = cells.length > titleCells.length + contentCells.length;
+    const columns = Number(table.getAttribute('ColCount'));
+    const fullWidthContent = columns > 0 && contentCells.every(
+        cell => Number(cell.getAttribute('ColSpan') || '1') === columns);
+
+    // 박스 틀 판정: 독립된 제목 칸 + 단일 내용 칸(또는 전폭 내용 행들),
+    // 혹은 빈 장식 칸 + 전폭 내용 행들만 펼친다. 여러 열에 값이 든 표는
+    // BOX_* 힌트가 있어도 실제 데이터 표로 보아 표째 보존한다(테두리 유무로 판정하지 않음).
+    const isFrame = contentCells.length > 0 && (
+        (titleCells.length > 0 && (contentCells.length === 1 || fullWidthContent))
+        || (hasDecoration && fullWidthContent));
+    return isFrame ? contentCells.flatMap(cell => getBoxParagraphs(cell)) : [table];
+}
+
 function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<string, string>, serializer: any, parser: any, nextInstId: number, validSets: any): string {
     const patternXml = boxPatterns[role];
     if (!patternXml) {
         console.warn(`[HML-V2 Generator] No pattern found for role: ${role}`);
         return elements.map(el => {
-            sanitizeNodeStyles(el, validSets, serializer);
+            sanitizeNodeStyles(el, validSets, serializer, undefined, role);
             return serializer.serializeToString(el);
         }).join('\n');
     }
@@ -1518,14 +1524,16 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
         const table = patternDoc.documentElement;
 
         // Update InstId for uniqueness
+        table.setAttribute('data-hml-style', role);
         table.setAttribute('InstId', String(nextInstId));
+        directElements(table, 'SHAPEOBJECT')[0]?.setAttribute('InstId', String(nextInstId));
 
         const cells = Array.from(table.getElementsByTagName('CELL')) as Element[];
         for (const cell of cells) {
             const pElem = cell.getElementsByTagName('P')[0];
             const text = (pElem?.textContent || '').trim();
 
-            if (text === '보기박스' || text === '조건박스' || text === '미주박스') {
+            if (['보기박스', '조건박스', '미주박스', '해설박스', '정답박스', '박스안'].includes(text)) {
                 // Find PARALIST to append content to
                 const paralist = cell.getElementsByTagName('PARALIST')[0];
                 if (paralist) {
@@ -1533,41 +1541,25 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
                     while (paralist.firstChild) paralist.removeChild(paralist.firstChild);
 
                     // 1. Extract content to manifest
-                    let contentToAppend: any[] = [];
+                    const contentToAppend: Element[] = [];
                     for (let k = 0; k < elements.length; k++) {
                         const el = elements[k];
                         const tagName = (el.tagName || '').toUpperCase();
                         if (tagName === 'TABLE') {
-                            const rowCount = el.getElementsByTagName('ROW').length;
-                            const cellCount = el.getElementsByTagName('CELL').length;
-                            if (rowCount > 1 || cellCount > 1) {
-                                contentToAppend.push(el);
-                            } else {
-                                // Extract P nodes from single-cell table
-                                Array.from(el.getElementsByTagName('P')).forEach(p => contentToAppend.push(p));
-                            }
+                            contentToAppend.push(...extractBoxContent(el, role));
                         } else {
                             contentToAppend.push(el);
                         }
                     }
 
                     // 2. Title Deduplication on the flattened content
-                    let startIndex = 0;
-                    if (role === 'BOX_BOGI' && contentToAppend.length > 0) {
-                        const firstText = (contentToAppend[0].textContent || '').trim();
-                        if (firstText.includes('보  기') || firstText.includes('보 기') || firstText.includes('보기')) {
-                            // Check if template already has title
-                            const originalCells = Array.from(table.getElementsByTagName('CELL'));
-                            if (originalCells.some((c: any) => (c.textContent || '').includes('보  기'))) {
-                                console.log(`[HML-V2] Skipping redundant title: "${firstText}"`);
-                                startIndex = 1;
-                            }
-                        }
-                    }
+                    const templateHasTitle = cells.some(c => isBoxTitle(c, role));
 
                     // 3. Append and Sanitize
-                    for (let k = startIndex; k < contentToAppend.length; k++) {
+                    for (let k = 0; k < contentToAppend.length; k++) {
                         const nodeToAppend = contentToAppend[k];
+                        // 제목과 정확히 일치하는 문단만 제외한다. '보기'가 포함된 본문은 보존한다.
+                        if (templateHasTitle && isBoxTitle(nodeToAppend, role)) continue;
 
                         // If it's a paragraph from a box, and it doesn't have its own role, give it the box role
                         if (nodeToAppend.tagName === 'P' && !nodeToAppend.hasAttribute('data-hml-style')) {
@@ -1585,6 +1577,8 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
             }
         }
 
+        // Include template title/decorative paragraphs and all nested table paragraphs.
+        sanitizeNodeStyles(table, validSets, serializer, undefined, role);
         return serializer.serializeToString(table);
     } catch (e) {
         console.error(`[HML-V2 Generator] Failed to wrap in box pattern for role ${role}`, e);

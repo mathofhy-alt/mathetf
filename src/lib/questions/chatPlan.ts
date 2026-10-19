@@ -15,12 +15,15 @@ export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
 /** '과목|단원' → { 태그: 문항 수 } */
 export type ConceptCatalog = Record<string, Record<string, number>>;
+export type QuestionType = { unit: string; code: string };
+export type TypeCatalog = Record<string, (QuestionType & { name: string; what: string; ord: number; count: number; offcur: boolean })[]>;
 
 export type ChatPlan = {
     action: 'build' | 'ask';
     reply: string;              // 'ask' 일 때 되묻는 말 (build 안내 문구는 라우트가 실제 결과로 만든다)
     targets: string[];          // '과목|단원' — 같은 단원 이름이 과목마다 내용이 달라(도함수의활용: 수학II·미적분I·미적분II) 짝으로 고른다
     concepts: string[];         // 개념 태그 — 주제와 직접 맞는 것만. 없으면 []
+    types: QuestionType[];      // 대표 유형을 요청했을 때만. 단원 전체 요청은 []
     keywords: string[];         // 해설·발문 본문에 실제로 쓰이는 말(예: 비율관계) — 태그가 없는 주제를 잡는다
     topic: string;              // '' = 주제 없음. 있으면 그 유형의 문제 발문처럼 지은 문장(임베딩 검색용)
     topicLabel: string;         // 짧은 이름 — 안내 문구용
@@ -39,12 +42,13 @@ export type PlanFilters = { years: string[]; kinds: string[]; qtype: string; gra
 
 const SCHEMA = {
     type: 'object', additionalProperties: false,
-    required: ['action', 'reply', 'targets', 'concepts', 'keywords', 'topic', 'topicLabel', 'count', 'minDifficulty', 'maxDifficulty', 'order', 'fillRest', 'filters', 'unsupported'],
+    required: ['action', 'reply', 'targets', 'concepts', 'types', 'keywords', 'topic', 'topicLabel', 'count', 'minDifficulty', 'maxDifficulty', 'order', 'fillRest', 'filters', 'unsupported'],
     properties: {
         action: { type: 'string', enum: ['build', 'ask'] },
         reply: { type: 'string' },
         targets: { type: 'array', items: { type: 'string' } },
         concepts: { type: 'array', items: { type: 'string' } },
+        types: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['unit', 'code'], properties: { unit: { type: 'string' }, code: { type: 'string' } } } },
         keywords: { type: 'array', items: { type: 'string' } },
         topic: { type: 'string' },
         topicLabel: { type: 'string' },
@@ -77,13 +81,19 @@ function catalogText(catalog: ConceptCatalog) {
     }).join('\n');
 }
 
-function systemPrompt(catalog: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null) {
+function systemPrompt(catalog: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null, types: TypeCatalog) {
     return `너는 고등학교 수학 시험지 출제 도우미다. 강사가 말로 요청하면 문제은행에서 문항을 고를 '조건'을 JSON 으로 만든다.
 
 [문제은행 목록 — 한 줄에 '과목|단원: 그 단원 문항에 붙은 개념 태그들(많은 순)']
 ${catalogText(catalog)}
 
+[단원별 대표 유형 — unit / code: 이름 — 한 줄 설명 (전체 유형 배정 문항 수; 선택 자료·난이도에 따라 줄어들 수 있음)]
+${Object.entries(types).map(([unit, defs]) => defs.map(d => `${unit} / ${d.code}: ${d.name} — ${d.what.replace(/\s+/g, ' ')} (${d.count}문항)`).join('\n')).join('\n') || '유형 목록 없음: 기존 개념 태그로 선택한다.'}
+
 [규칙]
+- types: 강사가 대표 유형 이름이나 비슷한 뜻으로 좁혀 요청하면 목록에서 unit+code를 고른다. 예: '역함수의 함숫값 유형으로 10문제', '공통현 문제만'. 유형 설명으로 뜻을 판단하며 같은 code라도 unit이 다르면 다른 유형이다.
+  유형을 고르면 targets도 그 unit이 속한 과목|단원으로 맞춘다. 유형 조건은 개념 태그·키워드·임베딩보다 우선하며 다른 유형으로 채우지 않는다.
+  '합성함수 20문제'처럼 단원·넓은 주제만 말하면 types=[]로 두고 여러 유형을 섞는다. 목록에 없는 유형은 만들어내지 않는다. '더 어렵게', '10개만'은 직전 types를 유지하고, '유형 상관없이/단원 전체'는 types=[]로 해제한다.
 - targets: 문항을 찾을 '과목|단원' (위 목록의 줄 이름 그대로). 주제가 실제로 들어 있는 단원만 고른다.
   강사가 말한 단원 이름보다 태그 목록이 우선이다 — 주제에 맞는 태그가 붙어 있는 단원을 고른다
   (예: '다항식 나머지정리' → 나머지 관련 태그가 있는 항등식 단원).
@@ -174,17 +184,27 @@ export let lastUsage: PlanUsage | null = null;   // 시험·기록용
 /** 프로세스 안 누적 토큰(대량 시험의 비용 계산용) */
 export const usageTotals = { calls: 0, inputTokens: 0, cachedTokens: 0, outputTokens: 0, embedTokens: 0 };
 
-export async function planFromChat(history: ChatTurn[], catalog: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null): Promise<ChatPlan> {
-    const { text, usage } = await callModel(systemPrompt(catalog, maxCount, lastPlan), history.slice(-8));
+export async function planFromChat(history: ChatTurn[], catalog: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null, types: TypeCatalog = {}): Promise<ChatPlan> {
+    const { text, usage } = await callModel(systemPrompt(catalog, maxCount, lastPlan, types), history.slice(-8));
     lastUsage = usage;
     usageTotals.calls++; usageTotals.inputTokens += usage.inputTokens; usageTotals.cachedTokens += usage.cachedTokens; usageTotals.outputTokens += usage.outputTokens;
-    return sanitizePlan(JSON.parse(text || '{}') as ChatPlan, catalog, maxCount);
+    return sanitizePlan(JSON.parse(text || '{}') as ChatPlan, catalog, maxCount, types);
 }
 
 /** 목록 밖 과목|단원·태그, 범위 밖 숫자를 바로잡는다 */
-export function sanitizePlan(p: ChatPlan, catalog: ConceptCatalog, maxCount: number): ChatPlan {
+export function sanitizePlan(p: ChatPlan, catalog: ConceptCatalog, maxCount: number, typeCatalog: TypeCatalog = {}): ChatPlan {
     const norm = (t: string) => String(t).split('|').map(x => x.trim()).join('|');
     const targets = [...new Set((p.targets || []).map(norm).filter(t => catalog[t]))];
+    const types = (Array.isArray(p.types) ? p.types : []).filter((t, i, all) => t &&
+        typeCatalog[t.unit]?.some(d => d.code === t.code) &&
+        Object.keys(catalog).some(k => k.split('|')[1] === t.unit) &&
+        all.findIndex(x => x?.unit === t.unit && x?.code === t.code) === i
+    ).map(t => ({ unit: t.unit, code: t.code }));
+    if (types.length) {
+        const subjects = new Set(targets.map(t => t.split('|')[0]));
+        const matching = Object.keys(catalog).filter(t => types.some(x => x.unit === t.split('|')[1]) && (!subjects.size || subjects.has(t.split('|')[0])));
+        targets.splice(0, targets.length, ...matching.length ? matching : Object.keys(catalog).filter(t => types.some(x => x.unit === t.split('|')[1])));
+    }
     // 태그는 목록 전체에서 받는다 — 고른 단원 밖 태그라고 버리면 '치환적분 부분적분' 처럼 한쪽 주제가 통째로 빠졌다(10/11 6차).
     // 그 태그가 있는 단원은 고른 과목(없으면 전체) 안에서 범위에 더한다
     const tagsIn = new Set(Object.values(catalog).flatMap(o => Object.keys(o)));
@@ -215,7 +235,7 @@ export function sanitizePlan(p: ChatPlan, catalog: ConceptCatalog, maxCount: num
         // 단원 없이 키워드(풀이 기법)만 있어도 만든다 — 서버가 전체 단원에서 키워드로 찾는다
         action: p.action === 'ask' ? 'ask' : 'build',
         reply: String(p.reply || '').slice(0, 300) || (p.targets?.length ? '말씀하신 단원을 출제 자료에서 찾지 못했어요. 과목과 단원 이름을 한 번 더 알려 주세요. 예: "미적분I 정적분"' : '어느 과목·단원에서 낼지 알려 주세요. 예: "미적분I 도함수의 활용에서 삼차함수 비율 30문항"'),
-        targets, concepts, keywords,
+        targets, concepts, keywords, types,
         topic: String(p.topic || '').slice(0, 600), topicLabel: String(p.topicLabel || '').slice(0, 30),
         count: clamp(p.count, 1, Math.max(1, maxCount)), minDifficulty: lo, maxDifficulty: hi,
         order: (['easy_to_hard', 'hard_to_easy', 'mixed'] as const).includes(p.order) ? p.order : 'easy_to_hard',
@@ -224,7 +244,7 @@ export function sanitizePlan(p: ChatPlan, catalog: ConceptCatalog, maxCount: num
     };
 }
 
-export type Candidate = { id: string; difficulty: string | number; unit: string; similarity: number | null; tag_hit: boolean; kw_hit: boolean };
+export type Candidate = { id: string; difficulty: string | number; unit: string; similarity: number | null; tag_hit: boolean; kw_hit: boolean; type?: QuestionType & { sort_key: number | null; ord: number } };
 
 /** ILIKE 패턴 — 사용자가 쓴 % _ \ 는 글자 그대로 */
 export const likePattern = (k: string) => `%${k.replace(/\s+/g, '').replace(/[\\%_]/g, m => '\\' + m)}%`;   // SQL 이 본문 띄어쓰기를 빼고 비교한다
@@ -274,6 +294,38 @@ function interleave<T>(arr: T[], key: (x: T) => string): T[] {
  * 그래서 '1~10 전부 30문항'이면 각 난이도에서 3개씩, 없는 난이도는 이웃이 메운다.
  */
 export function pickSpread(cands: Candidate[], n: number, order: ChatPlan['order']): Candidate[] {
+    // 유형별로 먼저 돌아가며 뽑고, 각 유형 안에서는 기존 난이도 분산을 유지한다.
+    if (cands.some(c => c.type)) {
+        const groups = new Map<string, Candidate[]>();
+        for (const c of cands) {
+            const key = JSON.stringify([c.type?.unit || c.unit, c.type?.code || '']);
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(c);
+        }
+        // 유형마다 시작 난이도를 달리해 한 유형에서 한 개씩 뽑아도 쉬운 문항만 담기지 않게 한다.
+        const queues = [...groups.values()].map((g, i) => difficultySpread(g, g.length, i));
+        const out: Candidate[] = [];
+        for (let i = 0; out.length < n && queues.some(q => q[i]); i++) for (const q of queues) {
+            if (q[i]) out.push(q[i]);
+            if (out.length >= n) break;
+        }
+        return out.sort((a, b) => {
+            const au = a.type?.sort_key == null ? Infinity : Math.floor(a.type.sort_key / 100);
+            const bu = b.type?.sort_key == null ? Infinity : Math.floor(b.type.sort_key / 100);
+            return au - bu || (a.type?.unit || a.unit).localeCompare(b.type?.unit || b.unit, 'ko') ||
+                (a.type?.ord ?? Infinity) - (b.type?.ord ?? Infinity) ||
+                (a.type?.code || '\uffff').localeCompare(b.type?.code || '\uffff') ||
+                (Number(a.difficulty) || 0) - (Number(b.difficulty) || 0);
+        });
+    }
+    const out = difficultySpread(cands, n);
+    const diff = (c: Candidate) => Number(c.difficulty) || 0;
+    if (order === 'easy_to_hard') out.sort((a, b) => diff(a) - diff(b));
+    else if (order === 'hard_to_easy') out.sort((a, b) => diff(b) - diff(a));
+    return out;
+}
+
+function difficultySpread(cands: Candidate[], n: number, levelOffset = 0): Candidate[] {
     const byDiff = new Map<number, Candidate[]>();
     for (const c of cands) {
         const d = Number(c.difficulty) || 0;
@@ -281,7 +333,9 @@ export function pickSpread(cands: Candidate[], n: number, order: ChatPlan['order
         byDiff.get(d)!.push(c);
     }
     for (const [d, list] of byDiff) byDiff.set(d, interleave(list, c => c.unit));
-    const levels = [...byDiff.keys()].sort((a, b) => a - b);
+    const sorted = [...byDiff.keys()].sort((a, b) => a - b);
+    const start = sorted.length ? levelOffset % sorted.length : 0;
+    const levels = [...sorted.slice(start), ...sorted.slice(0, start)];
     const out: Candidate[] = [];
     for (let round = 0; out.length < n; round++) {
         let took = false;
@@ -291,9 +345,6 @@ export function pickSpread(cands: Candidate[], n: number, order: ChatPlan['order
         }
         if (!took) break;
     }
-    const diff = (c: Candidate) => Number(c.difficulty) || 0;
-    if (order === 'easy_to_hard') out.sort((a, b) => diff(a) - diff(b));
-    else if (order === 'hard_to_easy') out.sort((a, b) => diff(b) - diff(a));
     return out;
 }
 

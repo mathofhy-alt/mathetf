@@ -1800,6 +1800,18 @@ export default function QuestionBankPage() {
                                     const inCart = q && cartIdSet.has(q.id);
                                     const typeGroup = viewMode === 'search' && searchSortBy === 'type' ? typeGroups[idx] : null;
                                     const collapsed = !!typeGroup && collapsedTypeGroups.has(typeGroup.key);
+                                    // 검토용 표시만 계산한다. cart 순서와 저장·출력 번호는 그대로 유지한다.
+                                    const isSimilarReview = viewMode === 'review' && !!q._similarOf;
+                                    const parentIdx = isSimilarReview ? cart.findIndex(c => c.id === q._similarOf) : -1;
+                                    const similarOrder = isSimilarReview
+                                        ? cart.slice(0, idx + 1).filter(c => c._similarOf === q._similarOf).length
+                                        : 0;
+                                    const similarCount = viewMode === 'review' && !q._similarOf
+                                        ? cart.filter(c => c._similarOf === q.id).length
+                                        : 0;
+                                    const reviewLabel = isSimilarReview && parentIdx !== -1
+                                        ? `${parentIdx + 1}-${similarOrder}`
+                                        : idx + 1;
                                 return (
                                     <Fragment key={`${viewMode}-${q.id}`}>
                                     {typeGroup && typeGroup.start === idx && (
@@ -1854,16 +1866,18 @@ export default function QuestionBankPage() {
                                         className={`qb-card relative min-h-[450px] max-h-[780px] rounded-2xl shadow-sm border transition flex flex-col overflow-hidden group
                                             ${viewMode === 'review'
                                                 ? draggingIndex === idx
-                                                    ? 'opacity-40 scale-95 border-[#1B7E7A] border-dashed'
+                                                    ? `opacity-40 scale-95 border-dashed ${isSimilarReview ? 'border-orange-200 border-l-4 border-l-orange-400' : 'border-[#1B7E7A]'}`
                                                     : selectedReviewIds.has(q.id)
-                                                        ? 'bg-[#E8F6F5] border-[#1B7E7A] ring-2 ring-[#1B7E7A] cursor-move hover:shadow-md'
-                                                        : 'bg-white border-slate-200 cursor-move hover:border-[#BFE5E2] hover:shadow-md'
+                                                        ? `bg-[#E8F6F5] ring-2 ring-[#1B7E7A] cursor-move hover:shadow-md ${isSimilarReview ? 'border-orange-200 border-l-4 border-l-orange-400' : 'border-[#1B7E7A]'}`
+                                                        : isSimilarReview
+                                                            ? 'bg-white border-orange-200 border-l-4 border-l-orange-400 cursor-move hover:border-orange-300 hover:shadow-md'
+                                                            : 'bg-white border-slate-200 cursor-move hover:border-[#BFE5E2] hover:shadow-md'
                                                 : inCart ? 'bg-[#E8F6F5] border-[#1B7E7A] ring-2 ring-[#1B7E7A] shadow-md cursor-pointer' : 'bg-white hover:shadow-lg border-gray-200 cursor-pointer'}
                                         `}
                                     >
                                         {/* Header */}
-                                        <div className="flex justify-between items-center p-4 border-b bg-gray-50/50">
-                                            <div className="flex items-center gap-2 flex-wrap">
+                                        <div className={`flex justify-between items-center p-4 border-b ${viewMode === 'review' ? 'flex-wrap gap-2' : ''} ${isSimilarReview ? 'bg-orange-50 border-orange-100' : 'bg-gray-50/50'}`}>
+                                            <div className={`flex items-center gap-2 flex-wrap ${viewMode === 'review' ? 'w-full min-w-0 break-words' : ''}`}>
                                                 {/* 번호 뱃지 클릭 시 선택/해제 토글 */}
                                                 <span
                                                     data-no-drag="true"
@@ -1881,26 +1895,24 @@ export default function QuestionBankPage() {
                                                             return next;
                                                         });
                                                     }}
-                                                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition-colors select-none
+                                                    className={`${isSimilarReview ? 'min-w-7 px-1.5 shrink-0' : 'w-7'} h-7 rounded-lg flex items-center justify-center font-black text-sm transition-colors select-none
                                                         ${viewMode === 'review' && !q._similarOf ? 'cursor-pointer' : ''}
-                                                        ${selectedReviewIds.has(q.id)
+                                                        ${isSimilarReview
+                                                            ? `bg-orange-100 text-orange-800 ${selectedReviewIds.has(q.id) ? 'ring-2 ring-[#1B7E7A]/50' : ''}`
+                                                            : selectedReviewIds.has(q.id)
                                                             ? 'bg-[#1B7E7A] text-white ring-2 ring-[#1B7E7A]/50'
                                                             : viewMode === 'review' ? 'bg-[#1B7E7A] text-white hover:bg-[#1B7E7A]' : 'bg-slate-200 text-slate-500'
                                                         }`}
                                                     title={viewMode === 'review' && !q._similarOf ? '클릭하여 선택' : ''}
                                                 >
-                                                    {(viewMode==='search'?inCart:selectedReviewIds.has(q.id)) ? '✓' : idx + 1}
+                                                    {isSimilarReview ? reviewLabel : (viewMode==='search'?inCart:selectedReviewIds.has(q.id)) ? '✓' : idx + 1}
                                                 </span>
-                                                {/* [유사문제 뱃지] _similarOf가 있으면 원본 문제 번호 표시 */}
-                                                {viewMode === 'review' && q._similarOf && (() => {
-                                                    const parentIdx = cart.findIndex(c => c.id === q._similarOf);
-                                                    return parentIdx !== -1 ? (
-                                                        <span className="bg-orange-100 text-orange-700 text-[10px] px-2 py-0.5 rounded-md font-bold border border-orange-200">
-                                                            🔗 {parentIdx + 1}번 유사
-                                                        </span>
-                                                    ) : null;
-                                                })()}
-                                                <span className="bg-[#E8F6F5] text-[#1B7E7A] text-xs px-2 py-0.5 rounded-md font-bold">
+                                                {similarCount > 0 && (
+                                                    <span className="max-w-full border border-orange-300 text-orange-700 text-[10px] px-2 py-0.5 rounded-md font-bold">
+                                                        유사 {similarCount}개 ↓
+                                                    </span>
+                                                )}
+                                                <span className={`bg-[#E8F6F5] text-[#1B7E7A] text-xs px-2 py-0.5 rounded-md font-bold ${viewMode === 'review' ? 'max-w-full' : ''}`}>
                                                     {q.unit || '단원 미정'}
                                                 </span>
                                                 {/* [교과외] 현행 교육과정에서 삭제된 단원 — 시험지에 담기 전에 눈에 띄어야 함 */}
@@ -1916,7 +1928,7 @@ export default function QuestionBankPage() {
                                                     {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.school === '수능' ? '대학수학능력시험' : q.semester}{examFormLabel(q.source_db_id)} 원본 {q.question_number}번
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className={`flex items-center gap-2 ${viewMode === 'review' ? 'flex-wrap max-w-full ml-auto' : ''}`}>
                                                 {/* [수업 사다리] 이 문항을 가르치기 전에 시킬 쉬운 문항부터 3단으로 담는다.
                                                     난이도 5 이상에서만 의미가 있다(그 아래는 내려갈 계단이 없다). */}
                                                 {Number(q.difficulty) >= 5 && (
@@ -2277,9 +2289,12 @@ export default function QuestionBankPage() {
                         sourceName={regenerateItem?.name}
                         initialCount={regenerateItem?.ids.length}
                         ignoreSavedDraft={!!regenerateItem}
-                        onGenerate={(newQuestions,notice) => {
+                        onGenerate={(newQuestions,notice,typeCount) => {
                             setRecentOpen(false);
-                            if(regenerateItem){setSelectedDbIds(regenerateItem.dbIds);setFilterState(regenerateItem.filters);setFilterVersion(v=>v+1);setQuestionsPerColumn(regenerateItem.questionsPerColumn);setExamTitle(`${regenerateItem.name} 재출제`.slice(0,100));setEntryLabel(`${regenerateItem.name}과 같은 범위 · 이전 ${regenerateItem.ids.length}문항 제외`);setEntryFailure(false);setExcludedQuestionIds(regenerateItem.ids);setCart(newQuestions);setRegenerateItem(null);setViewMode('review');showToast(notice||`이전 문항과 겹치지 않는 ${newQuestions.length}문항을 담았습니다.`);return;}
+                            // 자동 출제는 서버가 돌려준 단원·유형·난이도 순서를 유지한다.
+                            setSortKeys([]);sortBaseRef.current=null;
+                            const typeNotice = typeCount !== undefined ? ` 유형 ${typeCount}가지에서 골랐어요.` : '';
+                            if(regenerateItem){setSelectedDbIds(regenerateItem.dbIds);setFilterState(regenerateItem.filters);setFilterVersion(v=>v+1);setQuestionsPerColumn(regenerateItem.questionsPerColumn);setExamTitle(`${regenerateItem.name} 재출제`.slice(0,100));setEntryLabel(`${regenerateItem.name}과 같은 범위 · 이전 ${regenerateItem.ids.length}문항 제외`);setEntryFailure(false);setExcludedQuestionIds(regenerateItem.ids);setCart(newQuestions);setRegenerateItem(null);setViewMode('review');showToast((notice||`이전 문항과 겹치지 않는 ${newQuestions.length}문항을 담았습니다.`)+typeNotice);return;}
                             // [퍼널] 자동생성이 실제로 쓰이는지 기록이 없었다.
                             // '프리셋 10문항 원클릭' 을 새로 만들지 말지는 이 수를 보고 정한다 —
                             // 이미 '단원·난이도만 정하면 채워주는' 기능이 여기 있는데 안 쓰이는 것인지,
@@ -2296,7 +2311,7 @@ export default function QuestionBankPage() {
                             if (dropped > 0) {
                                 showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${kept.length}개만 담았습니다. (${dropped}개 제외)`, 'info');
                             }
-                            setViewMode('review');showToast(notice||`${kept.length}문항을 담았습니다. 문항을 확인한 뒤 저장하세요.`);
+                            setViewMode('review');showToast((notice||`${kept.length}문항을 담았습니다. 문항을 확인한 뒤 저장하세요.`)+typeNotice);
                         }}
                     />
                 )}

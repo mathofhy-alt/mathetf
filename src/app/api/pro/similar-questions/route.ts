@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         //      (발문·풀이 유사도만으론 '같은 단원 다른 풀이'를 못 가르고, 태그·난이도가 그걸 조금 가른다 — 459쌍 실측)
         //   ② 똑같은 문제(가형·나형 중복 출제, 학교가 평가원 문제를 그대로 낸 것)는 뺀다 — 본문+수식이 같으면 같은 문제
         //   ③ 변형 회차 짝([id, 1, 'variant'], scripts/inject_variant_pairs.py)은 단원·임계값과 상관없이 맨 위
-        //   basis=solution 을 고르면 예전처럼 풀이 유사도 순서만 쓴다(화면의 '풀이 유사' 토글).
+        //   basis=solution 을 고르면 풀이 유사도에 같은 유형 가산을 적용한다(화면의 '풀이 유사' 토글).
         const admin = createAdminClient();
         //   [10/14 재정렬] basis='rerank' = 후보 20개를 LLM(Haiku)이 발문·해설을 읽고 다시 줄 세운 결과(scripts/similar_rerank_*.py).
         //   개발 40사례 실측 상위5 적합 108→130/200. 있으면 그 순서를 맨 앞에 쓰고, 없으면 아래 합산 점수 그대로.
@@ -67,10 +67,13 @@ export async function GET(req: NextRequest) {
             const rrScore = new Map(rr.map(([q, s]) => [q, Number(s)]));
             const candIds = Array.from(new Set((combined ? [...rr, ...stmt, ...sol] : main).map(p => p[0])));
             const SEL = 'id, school, grade, year, semester, subject, unit, question_number, key_concepts, difficulty, source_db_id, question_type, is_off_curriculum, plain_text, equation_scripts';
-            const [{ data: srcRow }, { data: rows, error: rowsError }] = await Promise.all([
+            const [{ data: srcRow }, { data: rows, error: rowsError }, { data: typeRows }] = await Promise.all([
                 admin.from('questions').select('unit, difficulty, key_concepts, plain_text, equation_scripts').eq('id', id).maybeSingle(),
                 candIds.length ? admin.from('questions').select(SEL).in('id', candIds).eq('work_status', 'sorted')
                     : Promise.resolve({ data: [] as any[], error: null }),
+                candIds.length ? admin.from('question_types').select('question_id, unit, code').in('question_id', [id, ...candIds])
+                    .then(({ data, error }) => ({ data: error ? [] : (data || []) }), () => ({ data: [] }))
+                    : Promise.resolve({ data: [] }),
             ]);
             if (srcRow && !rowsError) {
                 const sig = (r: any) => `${String(r.plain_text || '').replace(/\s|[①②③④⑤]/g, '')}|${(Array.isArray(r.equation_scripts) ? r.equation_scripts.join(' ') : String(r.equation_scripts || '')).replace(/\s/g, '')}`;
@@ -84,6 +87,8 @@ export async function GET(req: NextRequest) {
                 const floorS = stmt.length ? Math.min(...stmt.map(p => Number(p[1]))) - 0.01 : 0.85;
                 const floorO = sol.length ? Math.min(...sol.map(p => Number(p[1]))) - 0.01 : 0.85;
                 const byId = new Map((rows || []).map((r: any) => [r.id, r]));
+                const typesById = new Map(typeRows.map(t => [t.question_id, t]));
+                const srcType = typesById.get(id);
                 const scored: any[] = [];
                 for (const qid of candIds) {
                     const r = byId.get(qid); if (!r) continue;
@@ -95,10 +100,14 @@ export async function GET(req: NextRequest) {
                     if (!isVariant && srcSig.length > 1 && sig(r) === srcSig) continue;   // ② 같은 문제
                     let tagHit = 0; for (const t of tagsOf(r)) if (srcTags.has(t)) tagHit++;
                     const rrs = rrScore.get(qid);
+                    const candidateType = typesById.get(qid);
+                    // [10/19 같은 유형 우선] 40문항×20후보 실측 상위5 적합 108→130/200: 같은 (unit, code)에 +1 (적합률 같은 유형 75%, 다른 유형 14%).
+                    const typeBonus = srcType?.unit != null && srcType.code != null
+                        && candidateType?.unit === srcType.unit && candidateType?.code === srcType.code ? 1 : 0;
                     const score = isVariant ? 9 : rrs !== undefined ? 5 + rrs / 100   // 재정렬된 후보는 합산 점수(최대 약 2.1)보다 항상 위
-                        : combined
+                        : (combined
                         ? ss + so - 0.02 * Math.abs((Number(r.difficulty) || 5) - srcDiff) + 0.03 * tagHit
-                        : shown;
+                        : shown) + typeBonus;
                     scored.push({ r, score, shown, isVariant });
                 }
                 scored.sort((a, b) => b.score - a.score);
