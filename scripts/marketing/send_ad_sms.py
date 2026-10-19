@@ -31,6 +31,7 @@ ap.add_argument('--send', action='store_true')
 ap.add_argument('--persona', default='')
 ap.add_argument('--test', default='')
 ap.add_argument('--subject', default='(광고) 수학ETF')
+ap.add_argument('--retry', default='', help='이전 발송 기록 json — 실패(HTTP 200 아님)한 묶음의 회원에게만 다시')
 A = ap.parse_args()
 
 text = open(A.text_file, encoding='utf-8').read().strip()
@@ -69,6 +70,14 @@ else:
         if want and r['persona'] not in want: continue
         seen.add(ph); targets.append({'id': r['id'], 'phone': ph, 'persona': r['persona'] or '(없음)'})
 
+if A.retry:   # 10/19 첫 발송이 잔액 부족(402)으로 200명 묶음이 통째로 안 나감 → 그 묶음만 다시
+    prev = json.load(open(A.retry, encoding='utf-8'))
+    redo, k = set(), 0
+    for r in prev['results']:
+        if r['status'] != 200: redo.update(prev['targets'][k:k + r['count']])
+        k += r['count']
+    targets = [t for t in targets if t['id'] in redo]
+
 by = {}
 for t in targets: by[t['persona']] = by.get(t['persona'], 0) + 1
 kind = 'SMS' if nbytes <= 90 else 'LMS'
@@ -94,7 +103,7 @@ for i in range(0, len(targets), 200):
     r = requests.post('https://api.solapi.com/messages/v4/send-many/detail', headers=auth_header(), json={'messages': msgs}, timeout=60)
     body = r.json() if r.headers.get('content-type', '').startswith('application/json') else {'raw': r.text[:500]}
     results.append({'status': r.status_code, 'count': len(chunk), 'body': body})
-    print(f'{i + len(chunk)}/{len(targets)}  HTTP {r.status_code}  실패 {len(body.get("failedMessageList", []) or [])}')
+    print(f'{i + len(chunk)}/{len(targets)}  HTTP {r.status_code}  실패 {len(chunk) if r.status_code != 200 else len(body.get("failedMessageList", []) or [])}  {body.get("errorCode", "")}')
     time.sleep(1)
 json.dump({'at': now.isoformat(), 'text': text, 'targets': [t['id'] for t in targets], 'results': results},
           open(log, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
