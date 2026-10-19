@@ -359,6 +359,15 @@ export function generateHmlFromTemplate(
         cleanedTemplate = removeTableByInstId(cleanedTemplate, instId);
     }
 
+    // 박스 견본을 지우고 남은 빈 문단/단 나눔은 문서 내용이 아니다.
+    // 특히 템플릿 끝의 ColumnBreak 두 개가 미주의 시작 단을 밀어내지 않게 한다.
+    const cleanedDoc = parser.parseFromString(cleanedTemplate, 'text/xml');
+    for (const section of Array.from(cleanedDoc.getElementsByTagName('SECTION'))) {
+        if (!(section.textContent || '').includes('{{CONTENT_HERE}}')) continue;
+        removeTrailingEmptyParagraphs(section);
+    }
+    cleanedTemplate = serializer.serializeToString(cleanedDoc);
+
 
     // 3. Build Full Content XML (Using DOM construction for each question)
     let combinedContentXmlFull = '';
@@ -490,6 +499,22 @@ export function generateHmlFromTemplate(
 
     let qIndex = 0;
     const allEndnotes: Element[] = []; // [NEW] Collect all endnotes for final restoration
+    const replaceNestedBoxes = (container: Element, skipTopLevel = false) => {
+        const nestedTables = Array.from(container.getElementsByTagName('TABLE')).reverse();
+        for (const table of nestedTables) {
+            if (skipTopLevel && table.parentNode === container) continue;
+            // Preserve the original explanation boxes inside native endnotes.
+            let ancestor = table.parentNode;
+            while (ancestor && ancestor !== container && !/^(hp:)?endnote$/i.test(ancestor.nodeName)) {
+                ancestor = ancestor.parentNode;
+            }
+            if (ancestor && /^(hp:)?endnote$/i.test(ancestor.nodeName)) continue;
+            const role = table.getAttribute('data-hml-style') || '';
+            if (!boxPatterns[role]) continue;
+            const xml = wrapInBoxPattern([table], role, boxPatterns, serializer, parser, nextInstId++, validStyles);
+            table.parentNode?.replaceChild(parser.parseFromString(xml, 'text/xml').documentElement, table);
+        }
+    };
 
     for (const qwi of questionsWithImages) {
         qIndex++;
@@ -530,6 +555,10 @@ export function generateHmlFromTemplate(
                 endnoteClones.push(clone);
                 allEndnotes.push(clone);
             }
+        }
+
+        if (qIndex === questionsWithImages.length && allEndnotes.length > 0) {
+            removeTrailingEmptyParagraphs(root);
         }
 
         // [V30] PRESERVE PARSER HINTS
@@ -632,7 +661,7 @@ export function generateHmlFromTemplate(
                     }
                 }
 
-                p.removeAttribute('data-hml-style');
+                if (!semanticRole?.startsWith('BOX_')) p.removeAttribute('data-hml-style');
             });
 
             // [FIX V6] Cleanup V5/V4 attempts
@@ -874,6 +903,10 @@ export function generateHmlFromTemplate(
                 for (let i = 0; i < enPictures.length; i++) processImageNode(enPictures[i]);
             }
 
+            // 발문 P/TEXT 안의 박스도 최상위 박스와 같은 템플릿 규칙을 적용한다.
+            // 안쪽부터 바꾸므로 박스 내용에 들어 있는 실제 표는 그대로 보존된다.
+            replaceNestedBoxes(root, true);
+
             const children = Array.from(root.childNodes);
             for (const child of children) {
                 // console.log(`[HML-V2 DEBUG]   - Node: ${child.nodeName}`);
@@ -935,13 +968,15 @@ export function generateHmlFromTemplate(
 
             // [LAYOUT V3] 동적 단 레이아웃 — 패킹 결과 적용
             const plan = layoutPlan[qIndex - 1]; // qIndex는 1-based
-            if (plan) {
+            const isLastQuestion = qIndex === questionsWithImages.length;
+            // 해설 앞 여백은 PageBreak가 만든다. 빈 풀이 문단이 다음 단/쪽으로 넘치지 않게 한다.
+            if (plan && !(isLastQuestion && allEndnotes.length > 0)) {
                 const gutterCount = Math.max(1, plan.gutterLines);
                 const emptyLine = `<P Style="0" ParaShape="0"><TEXT CharShape="0"></TEXT></P>`;
                 combinedContentXmlFull += '\n' + Array(gutterCount).fill(emptyLine).join('\n') + '\n';
                 console.log(`[LAYOUT V3] Q${qIndex}: gutter=${gutterCount}줄`);
 
-                if (plan.colBreakAfter) {
+                if (plan.colBreakAfter && !isLastQuestion) {
                     console.log(`[LAYOUT V3] Q${qIndex}: ColBreak 삽입`);
                     combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
                 }
@@ -955,6 +990,9 @@ export function generateHmlFromTemplate(
     // If we accumulated endnotes and have a BOX_MIJU template pattern, inject it now.
 
     if (allEndnotes.length > 0) {
+        // Keep the native ENDNOTE controls and the direct SECTION/BOX_MIJU structure.
+        // A single page break starts explanations in the first column of the next page.
+        combinedContentXmlFull += '<P PageBreak="true" ColumnBreak="false" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>';
         if (boxPatterns['BOX_MIJU']) {
             console.log(`[HML-V2 Generator] V19: Restoring ${allEndnotes.length} endnotes into BOX_MIJU pattern.`);
 
@@ -1503,6 +1541,71 @@ function repairPictureStructure(pic: Element, serializer: any) {
     }
 }
 
+function removeTrailingEmptyParagraphs(container: Element): void {
+    while (container.lastChild) {
+        const last = container.lastChild;
+        if (last.nodeType === 3 && !(last.textContent || '').trim()) {
+            container.removeChild(last);
+        } else if (last.nodeType === 1 && last.nodeName === 'P'
+            && !(last.textContent || '').trim()
+            && !Array.from((last as Element).getElementsByTagName('*')).some(
+                el => !['TEXT', 'CHAR'].includes(el.tagName))) {
+            container.removeChild(last);
+        } else {
+            break;
+        }
+    }
+}
+
+function directElements(node: Element, tagName: string): Element[] {
+    return Array.from(node.childNodes).filter(
+        (child): child is Element => child.nodeType === 1 && child.nodeName === tagName);
+}
+
+function getBoxParagraphs(container: Element): Element[] {
+    const paralist = directElements(container, 'PARALIST')[0];
+    return directElements(paralist || container, 'P');
+}
+
+const boxTitles: Record<string, string[]> = {
+    BOX_BOGI: ['보기'],
+    BOX_JOKUN: ['조건'],
+    BOX_MIJU: ['미주', '해설', '정답', '정답및해설'],
+    BOX_INNER: ['박스안'],
+};
+
+function isBoxTitle(node: Element, role: string): boolean {
+    if (hasBoxObjects(node)) return false;
+    const text = (node.textContent || '').replace(/[\s<>〈〉《》\[\]【】()（）]/g, '');
+    return (boxTitles[role] || []).includes(text);
+}
+
+function hasBoxObjects(node: Element): boolean {
+    return ['TABLE', 'EQUATION', 'PICTURE', 'IMAGE', 'DRAWINGOBJECT'].some(
+        tag => node.getElementsByTagName(tag).length > 0);
+}
+
+function extractBoxContent(table: Element, role: string): Element[] {
+    // 직계 칸만 조사한다. 내용 속 증감표/대응표의 칸과 문단은 여기서 펼치지 않는다.
+    const cells = directElements(table, 'ROW').flatMap(row => directElements(row, 'CELL'));
+    if (cells.length === 1) return getBoxParagraphs(cells[0]);
+    const titleCells = cells.filter(cell => isBoxTitle(cell, role));
+    const contentCells = cells.filter(cell => !isBoxTitle(cell, role)
+        && ((cell.textContent || '').trim() || hasBoxObjects(cell)));
+    const hasDecoration = cells.length > titleCells.length + contentCells.length;
+    const columns = Number(table.getAttribute('ColCount'));
+    const fullWidthContent = columns > 0 && contentCells.every(
+        cell => Number(cell.getAttribute('ColSpan') || '1') === columns);
+
+    // 박스 틀 판정: 독립된 제목 칸 + 단일 내용 칸(또는 전폭 내용 행들),
+    // 혹은 빈 장식 칸 + 전폭 내용 행들만 펼친다. 여러 열에 값이 든 표는
+    // BOX_* 힌트가 있어도 실제 데이터 표로 보아 표째 보존한다(테두리 유무로 판정하지 않음).
+    const isFrame = contentCells.length > 0 && (
+        (titleCells.length > 0 && (contentCells.length === 1 || fullWidthContent))
+        || (hasDecoration && fullWidthContent));
+    return isFrame ? contentCells.flatMap(cell => getBoxParagraphs(cell)) : [table];
+}
+
 function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<string, string>, serializer: any, parser: any, nextInstId: number, validSets: any): string {
     const patternXml = boxPatterns[role];
     if (!patternXml) {
@@ -1519,13 +1622,14 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
 
         // Update InstId for uniqueness
         table.setAttribute('InstId', String(nextInstId));
+        directElements(table, 'SHAPEOBJECT')[0]?.setAttribute('InstId', String(nextInstId));
 
         const cells = Array.from(table.getElementsByTagName('CELL')) as Element[];
         for (const cell of cells) {
             const pElem = cell.getElementsByTagName('P')[0];
             const text = (pElem?.textContent || '').trim();
 
-            if (text === '보기박스' || text === '조건박스' || text === '미주박스') {
+            if (['보기박스', '조건박스', '미주박스', '해설박스', '정답박스', '박스안'].includes(text)) {
                 // Find PARALIST to append content to
                 const paralist = cell.getElementsByTagName('PARALIST')[0];
                 if (paralist) {
@@ -1533,41 +1637,25 @@ function wrapInBoxPattern(elements: any[], role: string, boxPatterns: Record<str
                     while (paralist.firstChild) paralist.removeChild(paralist.firstChild);
 
                     // 1. Extract content to manifest
-                    let contentToAppend: any[] = [];
+                    const contentToAppend: Element[] = [];
                     for (let k = 0; k < elements.length; k++) {
                         const el = elements[k];
                         const tagName = (el.tagName || '').toUpperCase();
                         if (tagName === 'TABLE') {
-                            const rowCount = el.getElementsByTagName('ROW').length;
-                            const cellCount = el.getElementsByTagName('CELL').length;
-                            if (rowCount > 1 || cellCount > 1) {
-                                contentToAppend.push(el);
-                            } else {
-                                // Extract P nodes from single-cell table
-                                Array.from(el.getElementsByTagName('P')).forEach(p => contentToAppend.push(p));
-                            }
+                            contentToAppend.push(...extractBoxContent(el, role));
                         } else {
                             contentToAppend.push(el);
                         }
                     }
 
                     // 2. Title Deduplication on the flattened content
-                    let startIndex = 0;
-                    if (role === 'BOX_BOGI' && contentToAppend.length > 0) {
-                        const firstText = (contentToAppend[0].textContent || '').trim();
-                        if (firstText.includes('보  기') || firstText.includes('보 기') || firstText.includes('보기')) {
-                            // Check if template already has title
-                            const originalCells = Array.from(table.getElementsByTagName('CELL'));
-                            if (originalCells.some((c: any) => (c.textContent || '').includes('보  기'))) {
-                                console.log(`[HML-V2] Skipping redundant title: "${firstText}"`);
-                                startIndex = 1;
-                            }
-                        }
-                    }
+                    const templateHasTitle = cells.some(c => isBoxTitle(c, role));
 
                     // 3. Append and Sanitize
-                    for (let k = startIndex; k < contentToAppend.length; k++) {
+                    for (let k = 0; k < contentToAppend.length; k++) {
                         const nodeToAppend = contentToAppend[k];
+                        // 제목과 정확히 일치하는 문단만 제외한다. '보기'가 포함된 본문은 보존한다.
+                        if (templateHasTitle && isBoxTitle(nodeToAppend, role)) continue;
 
                         // If it's a paragraph from a box, and it doesn't have its own role, give it the box role
                         if (nodeToAppend.tagName === 'P' && !nodeToAppend.hasAttribute('data-hml-style')) {
