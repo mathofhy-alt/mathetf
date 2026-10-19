@@ -1188,13 +1188,17 @@ function sanitizeNodeStyles(node: any, validSets: {
     if (node.tagName === 'EQUATION') return;
 
     const ownRole = node.getAttribute('data-hml-style') || '';
-    // Every paragraph inside a box (including nested data tables) uses 박스안.
+    // Box content (including nested data tables) uses 박스안; template labels
+    // have their own style so narrow title cells retain their original layout.
     // Native endnote bodies follow the same rule as the restored explanation box.
     const role = /^(hp:)?endnote$/i.test(node.tagName) ? 'BOX_MIJU'
         : inheritedRole?.startsWith('BOX_') ? inheritedRole
         : ownRole || inheritedRole;
     if (node.tagName === 'P') {
-        const targetStyleName = role?.startsWith('BOX_') ? '박스안'
+        const isTemplateLabel = role?.startsWith('BOX_')
+            && node.getAttribute('Style') === validSets.StyleNames.get('박스제목');
+        const targetStyleName = isTemplateLabel ? '박스제목'
+            : role?.startsWith('BOX_') ? '박스안'
             : role === 'CHOICE' ? '3선지'
             : role === 'QUESTION' ? '문항_스타일1' : '';
         const targetId = validSets.StyleNames.get(targetStyleName);

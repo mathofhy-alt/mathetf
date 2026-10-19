@@ -152,12 +152,29 @@ function assertTemplateTypography(doc) {
     const styles = new Map(descendants(doc, 'STYLE').map(s => [s.getAttribute('Name'), s]));
     const chars = new Map(descendants(doc, 'CHARSHAPE').map(c => [c.getAttribute('Id'), c]));
     const paras = new Map(descendants(doc, 'PARASHAPE').map(p => [p.getAttribute('Id'), p]));
-    const fonts = new Map(descendants(doc, 'FONTFACE').filter(f => f.getAttribute('Lang') === 'Hangul')
-        .flatMap(f => descendants(f, 'FONT').map(font => [font.getAttribute('Id'), font.getAttribute('Name')])));
-    for (const [name, font, height] of [['문항_스타일1', '신명 중명조', '1150'], ['3선지', '신명 중명조', '1100'], ['박스안', 'HC중명조', '1000']]) {
-        const shape = chars.get(styles.get(name).getAttribute('CharShape'));
-        assert.equal(fonts.get(descendants(shape, 'FONTID')[0].getAttribute('Hangul')), font);
+    const fonts = new Map(descendants(doc, 'FONTFACE').map(face => [face.getAttribute('Lang'),
+        new Map(descendants(face, 'FONT').map(font => [font.getAttribute('Id'), font.getAttribute('Name')]))]));
+    // Representative HML typography (2026-10-19), including all language faces and both choice styles.
+    for (const [name, height, lineSpacing, align, margins, tabPositions] of [
+        ['문항_스타일1', '1150', '160', 'Left', ['-2800', '0', '1600', '0', '600'], []],
+        ['3선지', '1100', '165', 'Justify', ['800', '2800', '0', '1400', '0'], ['0', '24000', '43000']],
+        ['오선지', '1100', '160', 'Justify', ['0', '2800', '0', '1400', '0'], [...Array(36).fill('0'), '14512', '26760', '39008', '51248']],
+        ['박스안', '1150', '145', 'Left', ['-2000', '1000', '0', '0', '2000'], ['2400']],
+    ]) {
+        const style = styles.get(name);
+        const shape = chars.get(style.getAttribute('CharShape'));
+        const fontIds = descendants(shape, 'FONTID')[0];
+        for (const [lang, faces] of fonts) assert.equal(faces.get(fontIds.getAttribute(lang)), '문체부 돋음체', `${name}: ${lang} font`);
         assert.equal(shape.getAttribute('Height'), height);
+        assert.equal(shape.getAttribute('TextColor'), '0');
+        const para = paras.get(style.getAttribute('ParaShape'));
+        const margin = descendants(para, 'PARAMARGIN')[0];
+        assert.equal(para.getAttribute('Align'), align);
+        assert.equal(margin.getAttribute('LineSpacing'), lineSpacing);
+        assert.equal(margin.getAttribute('LineSpacingType'), 'Percent');
+        assert.deepEqual(['Indent', 'Left', 'Right', 'Prev', 'Next'].map(attr => margin.getAttribute(attr)), margins);
+        const tabs = descendants(doc, 'TABDEF').find(n => n.getAttribute('Id') === para.getAttribute('TabDef'));
+        assert.deepEqual(descendants(tabs, 'TABITEM').map(n => n.getAttribute('Pos')), tabPositions, `${name}: tab stops`);
     }
     const checked = { QUESTION: 0, CHOICE: 0, BOX_BOGI: 0, BOX_JOKUN: 0, BOX_MIJU: 0, ENDNOTE: 0 };
     for (const p of descendants(descendants(doc, 'SECTION')[0], 'P')) {
@@ -170,7 +187,8 @@ function assertTemplateTypography(doc) {
         }
         if (!(role in checked)) continue;
         checked[role]++;
-        const expected = styles.get(role === 'QUESTION' ? '문항_스타일1' : role === 'CHOICE' ? '3선지' : '박스안');
+        const label = role.startsWith('BOX_') && p.getAttribute('Style') === styles.get('박스제목').getAttribute('Id');
+        const expected = styles.get(label ? '박스제목' : role === 'QUESTION' ? '문항_스타일1' : role === 'CHOICE' ? '3선지' : '박스안');
         assert.equal(p.getAttribute('Style'), expected.getAttribute('Id'), `${role}: paragraph style`);
         if (role === 'QUESTION') {
             const actual = paras.get(p.getAttribute('ParaShape')).cloneNode(true);
@@ -197,6 +215,29 @@ function assertTemplateTypography(doc) {
     }
     for (const [role, count] of Object.entries(checked)) assert.ok(count > 0, `Checked ${role}`);
 }
+
+test('Template bogi labels keep their original centered 11pt shapes in top-level and nested boxes', () => {
+    const templateDoc = new DOMParser().parseFromString(template, 'text/xml');
+    const labelCell = descendants(templateDoc, 'CELL').find(c => c.textContent.replace(/\s/g, '') === '<보기>');
+    const original = descendants(labelCell, 'P')[0];
+    assert.equal(original.getAttribute('ParaShape'), '13');
+    assert.equal(descendants(original, 'TEXT')[0].getAttribute('CharShape'), '15');
+    for (const nested of [false, true]) {
+        const source = frame('BOX_BOGI', '&lt;보기&gt;', paragraph('보기 본문'));
+        const doc = generate(paragraph('발문') + (nested ? `<P><TEXT>${source}</TEXT></P>` : source));
+        const title = descendants(bogis(doc)[0], 'CELL').find(c => c.textContent.replace(/\s/g, '') === '<보기>');
+        assert.equal(descendants(title, 'P')[0].getAttribute('ParaShape'), '13');
+        assert.equal(descendants(title, 'TEXT')[0].getAttribute('CharShape'), '15');
+        for (const [tag, id] of [['PARASHAPE', '13'], ['CHARSHAPE', '15']]) {
+            assert.equal(descendants(doc, tag).find(n => n.getAttribute('Id') === id).toString(),
+                descendants(templateDoc, tag).find(n => n.getAttribute('Id') === id).toString());
+        }
+        const content = descendants(bogis(doc)[0], 'CELL').find(c => c.textContent === '보기 본문');
+        const boxStyle = descendants(doc, 'STYLE').find(s => s.getAttribute('Name') === '박스안');
+        assert.equal(descendants(content, 'P')[0].getAttribute('ParaShape'), boxStyle.getAttribute('ParaShape'));
+        assert.equal(descendants(content, 'TEXT')[0].getAttribute('CharShape'), boxStyle.getAttribute('CharShape'));
+    }
+});
 
 test('All role paragraphs and TEXT use template typography, including nested tables and native notes', () => {
     const note = `<ENDNOTE><PARALIST><P Style="4" ParaShape="9"><TEXT CharShape="11"><AUTONUM Number="21" NumberType="Endnote"/><CHAR>해설 본문</CHAR></TEXT></P><P><TEXT>${dataTable}</TEXT></P></PARALIST></ENDNOTE>`;
