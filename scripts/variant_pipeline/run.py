@@ -106,12 +106,35 @@ def slot_pipeline(D, slot, level, maxtry=3):
     return slot, 'FAIL', maxtry, g if 'g' in dir() else {}
 
 
+REAL_ERRORS = 'C:/selfmade/오답조사/real_errors.json'
+
+
+def write_real_errors(D, unit, src, no):
+    """실측 오답 자료를 작업 폴더에 real_errors.md 로. 자료가 없으면 '없음'이라고 적는다(분석 담당이 추정임을 밝히게)."""
+    R = load(REAL_ERRORS) or {}
+    out = ['# 실제 학생 오답 (서울 학생 시험지 스캔 조사, 10/19)', '']
+    q = (R.get('by_question') or {}).get(f'{src}#{no}') if src and no else None
+    if q:
+        out.append(f'## 이 원본 문항에서 실제로 틀린 학생 {len(q)}명')
+        for x in q: out.append(f"- 원인: {x.get('cause')} / 학생 답 {x.get('student_answer')} (정답 {x.get('correct')}) / 흔적: {x.get('work')} / 어긋난 곳: {x.get('diverge')}")
+        out.append('')
+    cs = (R.get('by_unit') or {}).get(unit.replace(' ', '')) if unit else None
+    if cs:
+        out.append(f'## 같은 단원({unit})에서 실제로 반복된 오답 원인 — 많은 순, 시험지 수 = 근거 학생 수')
+        for x in cs[:15]: out.append(f"- **{x['name']}** (시험지 {x['exams']}장·{x['cases']}건) — {x.get('what')} / 함정이 작동하는 조건: {x.get('trigger')}")
+    if not q and not cs: out.append('(이 문항·단원의 실측 자료 없음 — 흔한 오답은 추정이라고 표시할 것)')
+    open(os.path.join(D, 'real_errors.md'), 'w', encoding='utf-8').write('\n'.join(out))
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('dir'); ap.add_argument('original')
     ap.add_argument('--easy', type=int, default=2); ap.add_argument('--keep', type=int, default=2); ap.add_argument('--hard', type=int, default=2); ap.add_argument('--only')
+    # [10/19] 학생 스캔 실측 오답(서울 1,022장) — 단원·원본 출처를 주면 real_errors.md 로 넘겨 '흔한 오답'을 상상 대신 실측에서 고르게
+    ap.add_argument('--unit', default=''); ap.add_argument('--src', default='', help='원본 source_db_id'); ap.add_argument('--no', default='', help='원본 문항 번호')
     a = ap.parse_args(); D = os.path.abspath(a.dir); os.makedirs(os.path.join(D, 'logs'), exist_ok=True)
     shutil.copy(a.original, os.path.join(D, 'original.md'))
     shutil.copy(os.path.join(HERE, 'menu.md'), os.path.join(D, 'menu.md'))
+    write_real_errors(D, a.unit, a.src, a.no)
     orig = open(a.original, encoding='utf-8').read()
     prob = re.search(r'## 문제\s*\n(.*?)(?=\n## )', orig, re.S).group(1).strip()
     open(os.path.join(D, 'original_problem.txt'), 'w', encoding='utf-8').write(prob)
