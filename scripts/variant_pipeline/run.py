@@ -586,6 +586,8 @@ def script_dependency_errors(source):
         'readline', 'readlines', 'write', 'writelines', 'load', 'save', 'loadtxt', 'savetxt',
         'fromfile', 'tofile', 'memmap', 'exists', 'is_file', 'is_dir', 'iterdir', 'glob',
         'rglob', 'mkdir', 'unlink', 'rename', 'rmdir', 'touch'}
+    numpy_file = {'load', 'save', 'savez', 'savez_compressed', 'loadtxt', 'savetxt', 'genfromtxt',
+                  'fromfile', 'tofile', 'memmap', 'read_text', 'read_bytes', 'write_text', 'write_bytes'}
     dynamic_names = {'open', 'eval', 'exec', 'compile', '__import__', '__builtins__',
                      'getattr', 'setattr', 'globals', 'locals', 'vars', 'input', 'breakpoint'}
     errors = []
@@ -598,7 +600,9 @@ def script_dependency_errors(source):
                 errors.append(f'{node.lineno}행: 파일 접근/정적 확인 불가 import')
         if isinstance(node, ast.Name) and node.id in dynamic_names:
             errors.append(f'{node.lineno}행: 파일 접근/동적 실행 {node.id}')
-        if isinstance(node, ast.Attribute) and (node.attr in file_members or node.attr.startswith('__')):
+        # [10/20] 속성 이름만으로는 막지 않는다 — sympy.Interval.open(0, oo) 를 파일 열기로 오인해 6칸 중 5칸이 멈췄다.
+        # os·io·pathlib 은 import 단계에서 이미 막히므로, 남는 파일 경로는 내장 open() 과 numpy 의 파일 함수뿐이다.
+        if isinstance(node, ast.Attribute) and (node.attr in numpy_file or node.attr.startswith('__')):
             errors.append(f'{node.lineno}행: 파일 접근/정적 확인 불가 속성 {node.attr}')
     return sorted(set(errors))
 

@@ -419,5 +419,17 @@ class RunnerTests(unittest.TestCase):
         v.BUDGET = None
 
 
+class SympyOpenAttributeTest(unittest.TestCase):
+    """10/20 실전 5회차: sympy Interval.open 을 파일 열기로 오인해 5칸이 멈췄다."""
+    def test_interval_open_is_not_file_access(self):
+        src = 'import sympy as s\nassert s.Interval.open(0, s.oo) == s.Interval.open(0, s.oo)\n'
+        self.assertEqual(v.script_dependency_errors(src), [])
+
+    def test_real_file_access_still_blocked(self):
+        self.assertTrue(v.script_dependency_errors('open("plan.json")'))
+        self.assertTrue(v.script_dependency_errors('import numpy as np\nnp.loadtxt("a.txt")'))
+        self.assertTrue(v.script_dependency_errors('import pathlib'))
+
+
 if __name__ == '__main__':
     unittest.main()
