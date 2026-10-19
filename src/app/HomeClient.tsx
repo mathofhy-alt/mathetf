@@ -196,6 +196,14 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
     const [files, setFiles] = useState<FileItem[]>([]);
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedDistrict, setSelectedDistrict] = useState('');
+    // [10/17] 구/군·학교 칸이 disabled 라 눌러도 아무 반응이 없었다(Clarity 헛클릭) → 열지 않고 앞 칸을 짚어 준다
+    const [filterNudge, setFilterNudge] = useState<'' | 'region' | 'district'>('');
+    const needFirst = (e: React.MouseEvent<HTMLSelectElement>, need: 'region' | 'district') => {
+        e.preventDefault();
+        setFilterNudge(need);
+        document.querySelector<HTMLSelectElement>(need === 'region' ? '[aria-label="시/도 선택"]' : '[aria-label="구/군 선택"]')?.focus();
+        window.setTimeout(() => setFilterNudge(''), 2500);
+    };
     const [selectedSchool, setSelectedSchool] = useState('');
     const [targetMaterialId, setTargetMaterialId] = useState<string | null>(null);
     // URL ?school= 파라미터 → 해당 학교로 필터 + 자료 목록으로 스크롤
@@ -728,18 +736,21 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                     <div data-tour="search-filter" className="rd-filter">
                         <p className="rd-filter-title">조건으로 찾기</p>
                         <div className="rd-filter-grid">
-                            <select className="rd-select" aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); }}>
+                            <select className={`rd-select ${filterNudge === 'region' ? 'is-nudge' : ''}`} aria-label="시/도 선택" value={selectedRegion} onChange={e => { setSelectedRegion(e.target.value); setSelectedDistrict(''); setFilterNudge(''); }}>
                                 <option value="">시/도</option>
                                 {regions.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
-                            <select className="rd-select" aria-label="구/군 선택" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedRegion}>
+                            <select className={`rd-select ${!selectedRegion ? 'is-wait' : ''} ${filterNudge === 'district' ? 'is-nudge' : ''}`} aria-label="구/군 선택" aria-disabled={!selectedRegion} value={selectedDistrict}
+                                onMouseDown={e => { if (!selectedRegion) needFirst(e, 'region'); }} onChange={e => { setSelectedDistrict(e.target.value); setFilterNudge(''); }}>
                                 <option value="">구/군</option>
                                 {districts.map(d => <option key={d} value={d}>{d}</option>)}
                             </select>
-                            <select className="rd-select rd-span2" aria-label="학교 선택" value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} disabled={!selectedDistrict}>
+                            <select className={`rd-select rd-span2 ${!selectedDistrict ? 'is-wait' : ''}`} aria-label="학교 선택" aria-disabled={!selectedDistrict} value={selectedSchool}
+                                onMouseDown={e => { if (!selectedRegion) needFirst(e, 'region'); else if (!selectedDistrict) needFirst(e, 'district'); }} onChange={e => setSelectedSchool(e.target.value)}>
                                 <option value="">학교 전체</option>
                                 {schools.map(sc => <option key={sc} value={sc}>{sc}</option>)}
                             </select>
+                            {filterNudge && <p role="status" className="rd-filter-nudge rd-span2">{filterNudge === 'region' ? '시/도를 먼저 골라 주세요' : '구/군을 먼저 골라 주세요'}</p>}
                             <select className="rd-select" aria-label="학년 선택" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
                                 <option value="">학년 전체</option>
                                 {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}

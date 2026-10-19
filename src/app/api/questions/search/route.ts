@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { isWholeCatalog, resolveRequestScope, wholeCatalogIneligible } from '@/lib/questions/fastScope';
+import { typeDefinitionKey, type TypeDefinitions } from '@/lib/questions/type-groups';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,41 @@ export const dynamic = 'force-dynamic';
  */
 
 const PAGE_SIZE_MAX = 50; // 서버 강제 상한 ("전부 한 번에" 불가)
+const TYPE_CACHE_MS = 10 * 60_000;
+type SearchQuestion = Record<string, unknown> & { unit: string | null; type_code?: string | null };
+let typedRpcMissingUntil = 0;
+let typeDefsCache: { value: TypeDefinitions; expiresAt: number } | null = null;
+let typeDefsLoading: Promise<TypeDefinitions> | null = null;
+
+function isMissingTypedRpc(error: { code?: string; message?: string; details?: string; hint?: string }): boolean {
+    return error.code === 'PGRST202'
+        || /\b(question_bank_typed|type_(sort|code|offcur))\b/i.test([error.message, error.details, error.hint].join(' '));
+}
+
+async function getTypeDefinitions(supabase: ReturnType<typeof createAdminClient>): Promise<TypeDefinitions> {
+    if (typeDefsCache && Date.now() < typeDefsCache.expiresAt) return typeDefsCache.value;
+    if (typeDefsLoading) return typeDefsLoading;
+    typeDefsLoading = (async () => {
+        const value: TypeDefinitions = {};
+        try {
+            // 전체 목록을 캐시하되 PostgREST의 기본 1,000행 제한에 잘리지 않게 읽는다.
+            for (let from = 0; ; from += 1000) {
+                const { data, error } = await supabase.from('question_type_defs')
+                    .select('unit, code, name, ord').order('unit').order('code').range(from, from + 999);
+                if (error) throw error;
+                for (const row of data || []) value[typeDefinitionKey(row.unit, row.code)] = { name: row.name, ord: row.ord };
+                if (!data || data.length < 1000) break;
+            }
+            typeDefsCache = { value, expiresAt: Date.now() + TYPE_CACHE_MS };
+        } catch {
+            // 유형 사전이 없거나 조회에 실패해도 검색은 계속 제공한다.
+            typeDefsCache = { value: {}, expiresAt: Date.now() + TYPE_CACHE_MS };
+        }
+        return typeDefsCache.value;
+    })();
+    try { return await typeDefsLoading; }
+    finally { typeDefsLoading = null; }
+}
 
 // ── 경량 IP 속도제한 (best-effort, 인스턴스 단위) ──
 // 사람은 절대 안 걸리고 봇만 걸리는 수준. 운영 강화 시 Upstash/Redis 권장.
@@ -61,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     // DB 필터가 전혀 없으면 결과 없음 (구매하지 않은 'sorted' 문항 유출 방지)
     if (!Array.isArray(selectedDbs)) {
-        return NextResponse.json({ success: true, data: [], count: 0 });
+        return NextResponse.json({ success: true, data: [], count: 0, typeDefs: {} });
     }
 
     const targetPage = Math.max(1, Math.min(10000, Math.floor(Number(page) || 1)));
@@ -89,46 +125,65 @@ export async function POST(req: NextRequest) {
     // BMP 등 무거운 base64가 섞이면 응답이 수 MB로 커져 검색 체감속도가 들쭉날쭉하던 원인.
     // 카드 골격은 이 메타데이터로 즉시 뜨고, 이미지는 /api/questions/images 가 청크로 따라간다.
     const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, is_off_curriculum';
-    let query = (wholeExcluded
-        ? supabase.rpc('question_bank_all', { p_excluded: [...wholeExcluded, ...userExcluded] }, wantCount ? {count:'estimated'} : {})
-        : supabase.rpc('question_bank_candidates', { p_scope: scope, p_excluded: userExcluded }, wantCount ? {count:'estimated'} : {}))
-        .select(SELECT_COLS)
-        // private = 회원 전용 개인DB(10/6). 범위 함수가 그 회원 범위(sources 직접 지정)에서만 내주므로 여기선 통과시킨다
-        .in('work_status', ['sorted', 'private'])
-        .order('question_number', { ascending: true }).order('id', { ascending: true })
-        .range(from, to);
+    const buildQuery = (withTypes: boolean) => {
+        const countOptions = wantCount ? { count: 'estimated' as const } : {};
+        let query = (withTypes
+            ? supabase.rpc('question_bank_typed', {
+                p_scope: scope,
+                p_excluded: wholeExcluded ? [...wholeExcluded, ...userExcluded] : userExcluded,
+                p_all: !!wholeExcluded,
+            }, countOptions)
+            : wholeExcluded
+                ? supabase.rpc('question_bank_all', { p_excluded: [...wholeExcluded, ...userExcluded] }, countOptions)
+                : supabase.rpc('question_bank_candidates', { p_scope: scope, p_excluded: userExcluded }, countOptions))
+            .select(withTypes ? `${SELECT_COLS}, type_sort, type_code` : SELECT_COLS)
+            // private = 회원 전용 개인DB(10/6). 범위 함수가 그 회원 범위(sources 직접 지정)에서만 내주므로 여기선 통과시킨다
+            .in('work_status', ['sorted', 'private']);
+        if (withTypes) {
+            query = query.order('type_sort', { ascending: true, nullsFirst: false });
+        }
+        query = query.order('question_number', { ascending: true }).order('id', { ascending: true }).range(from, to);
 
-    // [교과외] 옛 회차의 폐지 단원(부등식의 영역·이중근호·이항연산 등)은 기본 제외.
-    // 사용자가 사이드바에서 "교과외 문항 포함"을 켰을 때만 함께 검색된다.
-    if (!advancedFilters?.includeOffCurriculum) {
-        query = query.eq('is_off_curriculum', false);
-    }
+        // [교과외] 옛 회차의 폐지 단원(부등식의 영역·이중근호·이항연산 등)은 기본 제외.
+        // 사용자가 사이드바에서 "교과외 문항 포함"을 켰을 때만 함께 검색된다.
+        if (!advancedFilters?.includeOffCurriculum) {
+            query = query.eq('is_off_curriculum', false);
+            if (withTypes) query = query.eq('type_offcur', false);
+        }
 
-    // 고급 필터
-    if (advancedFilters) {
-        if (advancedFilters.units && advancedFilters.units.length > 0) {
-            // 시험지출제는 facets(DB 실제 단원명)로 드롭다운을 만들므로 exact 매칭이 맞다.
-            query = query.in('unit', advancedFilters.units);
+        // 고급 필터
+        if (advancedFilters) {
+            if (advancedFilters.units && advancedFilters.units.length > 0) {
+                // 시험지출제는 facets(DB 실제 단원명)로 드롭다운을 만들므로 exact 매칭이 맞다.
+                query = query.in('unit', advancedFilters.units);
+            }
+            if (advancedFilters.concepts && advancedFilters.concepts.length > 0) {
+                query = query.overlaps('key_concepts', advancedFilters.concepts);
+            }
+            if (advancedFilters.difficulty && advancedFilters.difficulty.length > 0) {
+                query = query.in('difficulty', advancedFilters.difficulty);
+            }
+            if (advancedFilters.subjects && advancedFilters.subjects.length > 0) {
+                query = query.in('subject', advancedFilters.subjects);
+            }
+            if (advancedFilters.keywords && advancedFilters.keywords.length > 0) {
+                advancedFilters.keywords.forEach((keyword: string) => {
+                    const term = (keyword || '').trim();
+                    if (term) query = query.ilike('plain_text', `%${term}%`);
+                });
+            }
         }
-        if (advancedFilters.concepts && advancedFilters.concepts.length > 0) {
-            query = query.overlaps('key_concepts', advancedFilters.concepts);
-        }
-        if (advancedFilters.difficulty && advancedFilters.difficulty.length > 0) {
-            query = query.in('difficulty', advancedFilters.difficulty);
-        }
-        if (advancedFilters.subjects && advancedFilters.subjects.length > 0) {
-            query = query.in('subject', advancedFilters.subjects);
-        }
-        if (advancedFilters.keywords && advancedFilters.keywords.length > 0) {
-            advancedFilters.keywords.forEach((keyword: string) => {
-                const term = (keyword || '').trim();
-                if (term) query = query.ilike('plain_text', `%${term}%`);
-            });
-        }
-    }
+        return query.returns<SearchQuestion[]>();
+    };
 
     try {
-        const { data, error, count } = await query;
+        const withTypes = advancedFilters?.sortBy !== 'exam' && Date.now() >= typedRpcMissingUntil;
+        let result = await buildQuery(withTypes);
+        if (withTypes && result.error && isMissingTypedRpc(result.error)) {
+            typedRpcMissingUntil = Date.now() + TYPE_CACHE_MS;
+            result = await buildQuery(false);
+        }
+        const { data, error, count } = result;
         if (error) {
             console.error('[questions/search] query error:', error);
             return NextResponse.json(
@@ -136,8 +191,15 @@ export async function POST(req: NextRequest) {
                 { status: 500 }
             );
         }
+        const allTypeDefs = data?.some(q => q.type_code) ? await getTypeDefinitions(supabase) : {};
+        const typeDefs: TypeDefinitions = {};
+        for (const q of data || []) {
+            if (!q.type_code) continue;
+            const key = typeDefinitionKey(q.unit, q.type_code);
+            if (allTypeDefs[key]) typeDefs[key] = allTypeDefs[key];
+        }
         // count 는 1페이지에서만 계산. 그 외 페이지는 null → 클라이언트가 기존 총개수 유지.
-        return NextResponse.json({ success: true, data: data || [], count: wantCount ? (count ?? 0) : null, countIsEstimate: wantCount && (count ?? 0) > 1000 });
+        return NextResponse.json({ success: true, data: data || [], typeDefs, count: wantCount ? (count ?? 0) : null, countIsEstimate: wantCount && (count ?? 0) > 1000 });
     } catch (e: any) {
         console.error('[questions/search] error:', e);
         return NextResponse.json({ success: false, error: e.message || '검색 실패' }, { status: 500 });

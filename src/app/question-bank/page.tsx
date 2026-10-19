@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { Fragment, useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { PERSONAL_DB_FREE_MODE, SAVED_EXAM_LIMIT } from '@/lib/config';
 import { questionBankLoginUrl } from '@/lib/auth-return';
 import { DRAFT_KEY, parseDraft, draftContext, shouldRestoreDraft, shouldSearchRestoredDraft } from '@/lib/questions/draft';
 import { logQuestionBankEvent, questionBankSession } from '@/lib/analytics/question-bank';
+import { indexQuestionTypeGroups, typeDefinitionKey, type TypeDefinitions } from '@/lib/questions/type-groups';
 import SaveLocationModal from '@/components/storage/SaveLocationModal';
 import AutoGenModal from '@/components/question-bank/AutoGenModal';
 import ChatGenModal from '@/components/question-bank/ChatGenModal';
@@ -143,6 +144,22 @@ export default function QuestionBankPage() {
     const [solutionTarget, setSolutionTarget] = useState<any | null>(null);
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [viewMode, setViewMode] = useState<'search' | 'review'>('search');
+    const [searchSortBy, setSearchSortBy] = useState<'type' | 'exam'>('type');
+    const searchSortRef = useRef<'type' | 'exam'>('type');
+    const searchRequestToken = useRef(0);
+    const [typeDefs, setTypeDefs] = useState<TypeDefinitions>({});
+    const [collapsedTypeGroups, setCollapsedTypeGroups] = useState<Set<string>>(new Set());
+    const typeGroups = useMemo(() => indexQuestionTypeGroups(questions), [questions]);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMoreTypes, setHasMoreTypes] = useState(false);
+    useEffect(() => {
+        try {
+            if (localStorage.getItem('qb_search_sort_by') === 'exam') {
+                searchSortRef.current = 'exam';
+                setSearchSortBy('exam');
+            }
+        } catch { }
+    }, []);
     // 검색 결과 카드 열 수 (3=크게, 4=많이) — 사용자 선택, localStorage 유지
     const [searchCols, setSearchCols] = useState<3 | 4>(3);
     const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
@@ -188,6 +205,7 @@ export default function QuestionBankPage() {
         ? '전체 출제자료' : `출제자료 ${selectedDbIds.length}개`;
     // 마지막 검색이 실제로 쓴 DB 범위. 미선택('전체 문제 검색')일 때 페이징이 범위를 잃지 않게 한다.
     const lastSearchDbIds = useRef<string[]>([]);
+    const lastSearchFilters = useRef<any>(null);
     const [filterState, setFilterState] = useState<any>(null); // Store filters locally for manual search
     const activeFilterCount = ['subjects', 'units', 'concepts', 'difficulty', 'keywords'].reduce(
         (count, key) => count + (Array.isArray(filterState?.[key]) ? filterState[key].length : 0), 0
@@ -412,8 +430,8 @@ export default function QuestionBankPage() {
     // [성능 2026-10-01] 청크를 하나씩 기다리지 않고 동시에 보낸다(50장 = 3청크 → 왕복 1번 시간).
     // 토큰: 새 검색/페이지 이동 시 이전 검색의 늦은 응답이 화면을 덮어쓰지 않게 차단.
     const imageLoadToken = useRef(0);
-    const loadImagesProgressively = async (ids: string[]) => {
-        const token = ++imageLoadToken.current;
+    const loadImagesProgressively = async (ids: string[], append = false) => {
+        const token = append ? imageLoadToken.current : ++imageLoadToken.current;
         const CHUNK = 20;
         const chunks: string[][] = [];
         for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK));
@@ -452,18 +470,28 @@ export default function QuestionBankPage() {
         } catch { update([], true); }
     };
 
-    const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1) => {
+    const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1, sortBy = searchSortRef.current) => {
+        const requestToken = ++searchRequestToken.current;
+        const append = sortBy === 'type' && targetPage > 1;
+        if (!append) ++imageLoadToken.current;
         // Security: Do not fetch ANY questions if no specific DB filter is provided
         // This prevents leaking 'sorted' questions that the user hasn't purchased.
         if (!dbFilter) {
             setQuestions([]);
             setLoading(false);
+            setLoadingMore(false);
             return;
         }
 
-        setLoading(true);
+        setLoading(!append);
+        setLoadingMore(append);
         setSearchError('');
-        if (targetPage === 1) setCurrentPage(1);
+        if (targetPage === 1) {
+            setCurrentPage(1);
+            setCollapsedTypeGroups(new Set());
+            lastSearchDbIds.current = dbFilter;
+            lastSearchFilters.current = advancedFilters;
+        }
 
         // [보안] 문제 콘텐츠는 더 이상 클라이언트가 DB를 직접 조회하지 않는다.
         // RLS를 잠그고, 오직 서버 라우트(/api/questions/search)를 통해서만 콘텐츠가 나간다.
@@ -480,19 +508,28 @@ export default function QuestionBankPage() {
                     selectedDbs,
                     purchasedDbsCount: purchasedDbs.length,
                     excludedQuestionIds,
-                    advancedFilters,
+                    advancedFilters: { ...advancedFilters, sortBy },
                     page: targetPage,
                 }),
             });
             const result = await res.json();
+            if (searchRequestToken.current !== requestToken) return;
             if (!res.ok || !result.success) {
                 throw new Error(result.error || '데이터베이스 검색 중 오류가 발생했습니다.');
             }
             const data = result.data || [];
             // [성능] 검색 응답엔 이미지가 없음 → 카드 골격(스켈레톤)을 즉시 띄우고,
             // 이미지는 /api/questions/images 에서 청크 단위로 뒤따라 채운다.
-            setQuestions(data.map((q: any) => ({ ...q, question_images: null })));
-            loadImagesProgressively(data.map((q: any) => q.id));
+            const cards = data.map((q: any) => ({ ...q, question_images: null }));
+            setQuestions(prev => {
+                if (!append) return cards;
+                const loadedIds = new Set(prev.map(q => q.id));
+                return [...prev, ...cards.filter((q: any) => !loadedIds.has(q.id))];
+            });
+            setTypeDefs(prev => append ? { ...prev, ...result.typeDefs } : result.typeDefs || {});
+            setHasMoreTypes(data.length === itemsPerPage);
+            setCurrentPage(targetPage);
+            loadImagesProgressively(data.map((q: any) => q.id), append);
             if (result.count !== null && result.count !== undefined) {
                 setTotalQuestions(result.count);
                 setCountIsEstimate(Boolean(result.countIsEstimate));
@@ -506,14 +543,18 @@ export default function QuestionBankPage() {
                 showToast('해당 조건에 일치하는 문항이 없습니다. (0건)', 'info');
             }
         } catch (err: any) {
+            if (searchRequestToken.current !== requestToken) return;
             if (targetPage === 1) setIsFilterCollapsed(false);
             console.error("fetchQuestions error:", err);
             const message = err.message || '오류가 발생했습니다.';
             setSearchError(message);
             showToast(`검색 실패: ${message}`, 'error');
-            setQuestions([]);
+            if (!append) setQuestions([]);
         } finally {
-            setLoading(false);
+            if (searchRequestToken.current === requestToken) {
+                setLoading(false);
+                setLoadingMore(false);
+            }
         }
 
     };
@@ -552,13 +593,26 @@ export default function QuestionBankPage() {
     };
 
     const handlePageChange = (newPage: number) => {
-        setCurrentPage(newPage);
         // 미선택 상태로 '전체 문제 검색' 을 했으면 2페이지도 같은 범위여야 한다.
         // selectedDbIds 를 그대로 쓰면 빈 배열이 넘어가 2페이지부터 0건이 된다.
         fetchQuestions(lastSearchDbIds.current.length > 0 ? lastSearchDbIds.current : selectedDbIds,
-                       filterState, newPage);
+                       lastSearchFilters.current, newPage);
         // Scroll to top of the actual scrollable container
         if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
+    };
+
+    const changeSearchSortBy = (sortBy: 'type' | 'exam') => {
+        if (searchSortRef.current === sortBy) return;
+        searchSortRef.current = sortBy;
+        setSearchSortBy(sortBy);
+        setCollapsedTypeGroups(new Set());
+        setCurrentPage(1);
+        try { localStorage.setItem('qb_search_sort_by', sortBy); } catch { }
+        if (hasSearched || lastSearchDbIds.current.length > 0) {
+            fetchQuestions(lastSearchDbIds.current.length ? lastSearchDbIds.current : selectedDbIds,
+                lastSearchFilters.current, 1, sortBy);
+            if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
+        }
     };
 
     const handleDbToggle = (dbId: string) => {
@@ -1100,7 +1154,7 @@ export default function QuestionBankPage() {
        else if(d.cart){const detail=await fetch('/api/questions/by-ids',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:d.data.map((q:any)=>q.id)})}).then(r=>r.json());
         const rows=d.data.map((q:any)=>detail.data?.find((x:any)=>x.id===q.id)).filter(Boolean);if(!rows.length)throw Error('문항을 불러오지 못했습니다.');
         setCart(rows.slice(0,MAX_CART_SIZE));setExamTitle(String(d.label).slice(0,100));setViewMode('review');if(d.notice)showToast(d.notice,'info');logQb('qb_cart_add',`blueprint:${rows.length}`);}
-       else{setQuestions(d.data.map((q:any)=>({...q,question_images:null})));loadImagesProgressively(d.data.map((q:any)=>q.id));lastSearchDbIds.current=d.dbIds;setHasSearched(true);setTotalQuestions(d.total??d.data.length);setCurrentPage(1);}
+       else{await fetchQuestions(d.dbIds,d.filters,1);}
       }).catch(e=>{setEntryFailure(true);setSelectedDbIds([]);setQuestions([]);setTotalQuestions(0);setHasSearched(true);setEntryLabel((e as Error).message);showToast((e as Error).message,'error');});
     },[draftReady,isDbInitialized]);
     useEffect(()=>{
@@ -1703,6 +1757,15 @@ export default function QuestionBankPage() {
                     )}
 
                     {viewMode === 'search' && <div className="flex flex-wrap items-center gap-2 border-b border-[#ECEFF2] bg-[#F7F8FA] px-4 py-2 text-[11px] font-semibold text-[#5F6B78] sm:px-6">
+                        <div role="group" aria-label="검색 결과 보기" className="flex shrink-0 overflow-hidden rounded-lg border border-[#497AB7]/30 bg-white text-xs">
+                            {(['type', 'exam'] as const).map(sortBy => (
+                                <button key={sortBy} type="button" aria-pressed={searchSortBy === sortBy}
+                                    onClick={() => changeSearchSortBy(sortBy)}
+                                    className={`min-h-10 px-3 font-bold transition-colors ${searchSortBy === sortBy ? 'bg-[#497AB7] text-white' : 'text-[#497AB7] hover:bg-[#EDF3FA]'}`}>
+                                    {sortBy === 'type' ? '유형별' : '시험별'}
+                                </button>
+                            ))}
+                        </div>
                         <span>① {sourceScopeLabel}</span><span className="text-[#A9B8D2]">→</span>
                         <span>② 조건 {activeFilterCount > 0 ? `${activeFilterCount}개 적용` : '선택 사항'}</span><span className="text-[#A9B8D2]">→</span>
                         <span>③ {hasSearched ? `결과 ${countIsEstimate ? '약 ' : ''}${totalQuestions.toLocaleString()}문항에서 담기` : '검색 후 문항 담기'}</span>
@@ -1735,9 +1798,30 @@ export default function QuestionBankPage() {
                             <div className={`grid grid-cols-1 md:grid-cols-2 ${viewMode === 'review' ? 'lg:grid-cols-3 xl:grid-cols-4' : (searchCols === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4')} gap-6 px-6 pt-6 pb-10 animate-in fade-in duration-500`}>
                                 {(viewMode === 'search' ? questions : cart).length > 0 ? (viewMode === 'search' ? questions : cart).map((q, idx) => {
                                     const inCart = q && cartIdSet.has(q.id);
+                                    const typeGroup = viewMode === 'search' && searchSortBy === 'type' ? typeGroups[idx] : null;
+                                    const collapsed = !!typeGroup && collapsedTypeGroups.has(typeGroup.key);
                                 return (
+                                    <Fragment key={`${viewMode}-${q.id}`}>
+                                    {typeGroup && typeGroup.start === idx && (
+                                        <h3 className="col-span-full min-w-0">
+                                            <button type="button" aria-expanded={!collapsed}
+                                                onClick={() => setCollapsedTypeGroups(prev => {
+                                                    const next = new Set(prev);
+                                                    next.has(typeGroup.key) ? next.delete(typeGroup.key) : next.add(typeGroup.key);
+                                                    return next;
+                                                })}
+                                                className="flex w-full min-w-0 items-center gap-2 rounded-xl border border-[#3AADA9]/30 bg-[#F1F9F8] px-3 py-3 text-left text-sm font-bold text-[#365E8D] hover:bg-[#E8F6F5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#497AB7] sm:px-4">
+                                                <ChevronDown size={16} aria-hidden="true" className={`shrink-0 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+                                                <span className="min-w-0 flex-1 break-words">
+                                                    {typeGroup.unit || '단원 미정'} · {typeGroup.code ? (typeDefs[typeDefinitionKey(typeGroup.unit, typeGroup.code)]?.name || `유형 ${typeGroup.code}`) : '유형 미분류'}
+                                                </span>
+                                                {/* 불러온 개수다 — 마지막 묶음이고 더 불러올 문항이 남았으면 '+' (전체 개수로 오해하지 않게) */}
+                                                <span className="shrink-0 text-xs text-[#278581]">· {typeGroup.count}문항{typeGroup.start + typeGroup.count >= questions.length && questions.length < totalQuestions ? '+' : ''}</span>
+                                            </button>
+                                        </h3>
+                                    )}
+                                    {!collapsed && (
                                     <div
-                                        key={`${viewMode}-${q.id}`}
                                         role="checkbox"
                                         tabIndex={0}
                                         aria-label={`${idx+1}번 문항 ${viewMode==='search'?'담기':'선택'}`}
@@ -1933,6 +2017,8 @@ export default function QuestionBankPage() {
                                             </div>
                                         </div>
                                     </div>
+                                    )}
+                                    </Fragment>
                                 );
                             }) : (
                                 <div className="col-span-full">
@@ -2038,8 +2124,18 @@ export default function QuestionBankPage() {
                             )}
                         </div>
 
-                        {/* Pagination (Only in search mode) */}
-                        {viewMode === 'search' && totalQuestions > itemsPerPage && !loading && (
+                        {viewMode === 'search' && searchSortBy === 'type' && hasSearched && hasMoreTypes && !loading && (
+                            <div className="flex flex-col items-center gap-2 px-6 pb-8">
+                                <p className="text-xs text-slate-500">지금까지 {questions.length.toLocaleString()}문항 불러옴</p>
+                                <button type="button" disabled={loadingMore}
+                                    onClick={() => fetchQuestions(lastSearchDbIds.current, lastSearchFilters.current, currentPage + 1)}
+                                    className="min-h-11 rounded-xl border border-[#497AB7]/30 bg-white px-6 py-2 text-sm font-bold text-[#497AB7] hover:bg-[#EDF3FA] disabled:opacity-50">
+                                    {loadingMore ? '불러오는 중…' : searchError ? '다시 불러오기' : '더 불러오기'}
+                                </button>
+                            </div>
+                        )}
+                        {/* 시험별 보기는 기존 페이지 이동 유지 */}
+                        {viewMode === 'search' && searchSortBy === 'exam' && totalQuestions > itemsPerPage && !loading && (
                             <div className="py-8 flex justify-center gap-1">
                                 <button
                                     onClick={() => handlePageChange(Math.max(1, currentPage - 1))}

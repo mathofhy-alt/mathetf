@@ -51,7 +51,9 @@ def run_job(bdir, job, out):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('n', nargs='?', type=int, default=60); ap.add_argument('--par', type=int, default=8)
-    ap.add_argument('--batch'); ap.add_argument('--no-save', action='store_true'); a = ap.parse_args()
+    ap.add_argument('--batch'); ap.add_argument('--no-save', action='store_true'); ap.add_argument('--model'); a = ap.parse_args()
+    global MODEL
+    if a.model: MODEL = a.model   # 모델 비교용(10/18) — 평소엔 고정값
     if not CODEX: raise SystemExit('codex CLI 없음 — npm i -g @openai/codex')
     if a.batch: bdir = a.batch
     else:

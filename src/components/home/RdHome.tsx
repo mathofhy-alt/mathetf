@@ -50,7 +50,10 @@ export function RdHomeShowcase() {
                     <span>실제 서비스 화면, 고1 1학기 중간고사 기출</span>
                     <span className="rd-pill">20문항을 담은 검토 화면</span>
                 </div>
-                <Image src="/home/review.webp" alt="학교 기출 20문항을 담아 검토하는 시험지 만들기 화면" width={2200} height={653} priority sizes="(max-width: 1160px) 100vw, 1048px" />
+                {/* [10/17] 그림을 눌러 보는 사람이 있었다(Clarity 헛클릭) → 그대로 시험지 만들기 체험으로 */}
+                <Link href="/question-bank?demo=1&origin=home_showcase" className="rd-showcase-link" aria-label="시험지 만들기 체험해 보기">
+                    <Image src="/home/review.webp" alt="학교 기출 20문항을 담아 검토하는 시험지 만들기 화면" width={2200} height={653} priority sizes="(max-width: 1160px) 100vw, 1048px" />
+                </Link>
             </div>
         </section>
     );
