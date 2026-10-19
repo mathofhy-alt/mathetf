@@ -101,7 +101,7 @@ test('Native endnotes and direct BOX_MIJU keep their original numbering and box 
         assert.equal(explanation.tagName, 'TABLE', 'BOX_MIJU remains a direct SECTION child');
         assert.equal(boundary.getAttribute('PageBreak'), 'true');
         assert.equal(boundary.getAttribute('ColumnBreak'), 'false');
-        assert.equal(boundary.textContent, '');
+        assert.equal(boundary.textContent, '정답 및 해설', 'Page break belongs to the visible explanation heading');
         assert.equal(body.at(-3).textContent, '마지막 선지', 'No final source/gutter/column-break paragraphs');
         assert.equal(descendants(section, 'P').filter(p => p.getAttribute('PageBreak') === 'true').length, 1);
         assert.equal(descendants(section, 'P').filter(p => p.getAttribute('ColumnBreak') === 'true').length, Math.ceil(count / 2) - 1);
@@ -136,6 +136,7 @@ test('Missing explanation template retains native notes and raw paragraph restor
     const last = body.at(-1);
     assert.equal(body.at(-2).getAttribute('PageBreak'), 'true');
     assert.equal(body.at(-2).getAttribute('ColumnBreak'), 'false');
+    assert.equal(body.at(-2).textContent, '정답 및 해설');
     assert.equal(descendants(doc, 'ENDNOTE').length, 1);
     assert.equal(last.textContent, '1. 해설');
     assert.equal(descendants(last, 'TEXT')[0].firstChild.nodeType, 3);
@@ -146,6 +147,65 @@ test('Without explanations, inter-question column breaks remain and no page brea
     const body = children(descendants(doc, 'SECTION')[0]);
     assert.equal(body.filter(p => p.getAttribute('ColumnBreak') === 'true').length, 1);
     assert.equal(body.filter(p => p.getAttribute('PageBreak') === 'true').length, 0);
+});
+
+const isBlankParagraph = p => p.tagName === 'P' && !p.textContent.trim()
+    && descendants(p, '*').every(n => ['TEXT', 'CHAR'].includes(n.tagName));
+function assertNoBlankBreaks(doc) {
+    const body = children(descendants(doc, 'SECTION')[0]);
+    const breaks = descendants(descendants(doc, 'SECTION')[0], 'P')
+        .filter(p => ['ColumnBreak', 'PageBreak'].some(attr => ['true', '1'].includes(p.getAttribute(attr))));
+    assert.ok(breaks.length > 0);
+    for (const p of breaks) {
+        assert.equal(isBlankParagraph(p), false, 'Every break belongs to content');
+        assert.equal(p.parentNode.tagName, 'SECTION', 'Breaks must not be hidden in a table cell');
+        assert.equal(isBlankParagraph(body[body.indexOf(p) - 1]), false, 'No gutter/source blank immediately before a break');
+    }
+    const firstQuestion = body.findIndex(p => p.getAttribute('data-hml-style') === 'QUESTION');
+    assert.ok(firstQuestion > 0);
+    assert.equal(isBlankParagraph(body[firstQuestion - 1]), false, 'No template blank before the first question');
+    return { body, breaks };
+}
+
+test('First question and new columns have no leading blank, while within-column gutters remain', () => {
+    const note = `<ENDNOTE><PARALIST>${paragraph('해설 본문')}</PARALIST></ENDNOTE>`;
+    const content = paragraph('') + `<P data-hml-style="QUESTION"><TEXT><CHAR>발문</CHAR>${note}</TEXT></P>`
+        + paragraph('선지 끝') + paragraph('');
+    // Includes two template placeholder blanks, header artwork, native notes and source edge blanks.
+    const twoBlanks = template.replace('<P ParaShape="1" Style="0"><TEXT CharShape="0"/></P>',
+        '<P ParaShape="1" Style="0"><TEXT CharShape="0"/></P>'.repeat(2));
+    for (const count of [1, 2, 3, 4, 6]) {
+        const doc = generate(content, count, twoBlanks);
+        const { body, breaks } = assertNoBlankBreaks(doc);
+        assert.ok(body[0].textContent.includes('수학 영역'), 'Header artwork remains');
+        const columns = breaks.filter(p => p.getAttribute('ColumnBreak') === 'true');
+        assert.equal(columns.length, Math.ceil(count / 2) - 1);
+        assert.ok(columns.every(p => p.getAttribute('data-hml-style') === 'QUESTION'));
+        if (count > 1) assert.ok(body.some(isBlankParagraph), 'Inter-question gutters remain');
+    }
+});
+
+test('Column breaks with no explanations belong to question content and not empty paragraphs', () => {
+    const doc = generate(`<P data-hml-style="QUESTION"><TEXT><CHAR>발문</CHAR>${equation}${picture}</TEXT></P>`, 6);
+    const { breaks } = assertNoBlankBreaks(doc);
+    assert.ok(breaks.every(p => p.getAttribute('data-hml-style') === 'QUESTION'));
+    assert.equal(breaks.length, 2);
+});
+
+test('Object-only and table-first questions carry breaks on content paragraphs', () => {
+    for (const content of [`<P><TEXT>${picture}</TEXT></P>`, dataTable]) {
+        const doc = generate(content, 4);
+        const section = descendants(doc, 'SECTION')[0];
+        const [p] = descendants(section, 'P').filter(p => p.getAttribute('ColumnBreak') === 'true');
+        assert.equal(p.parentNode, section);
+        assert.equal(isBlankParagraph(p), false, 'Images and tables are content even without CHAR text');
+        assert.equal(descendants(p, 'IMAGE').length, 1);
+        if (content === dataTable) {
+            assert.equal(descendants(p, 'TABLE').length, 1);
+            assert.equal(descendants(section, 'TABLE').filter(t => t.getAttribute('RowCount') === '2'
+                && t.getAttribute('ColCount') === '2').length, 4, 'No duplicated or lost source tables');
+        }
+    }
 });
 
 function assertTemplateTypography(doc) {

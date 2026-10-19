@@ -314,6 +314,19 @@ export function generateHmlFromTemplate(
     for (const section of Array.from(cleanedDoc.getElementsByTagName('SECTION'))) {
         if (!(section.textContent || '').includes('{{CONTENT_HERE}}')) continue;
         removeTrailingEmptyParagraphs(section);
+        // 머리 장식은 보존하고 문제 자리 바로 앞의 빈 자리 문단만 제거한다.
+        const anchorP = directElements(section, 'P').find(p => (p.textContent || '').includes('{{CONTENT_HERE}}'));
+        if (anchorP) {
+            let previous = anchorP.previousSibling;
+            while (previous) {
+                const nextPrevious = previous.previousSibling;
+                if ((previous.nodeType === 3 && !(previous.textContent || '').trim())
+                    || (previous.nodeType === 1 && isEmptyParagraph(previous as Element))) {
+                    section.removeChild(previous);
+                } else break;
+                previous = nextPrevious;
+            }
+        }
     }
     cleanedTemplate = serializer.serializeToString(cleanedDoc);
 
@@ -466,6 +479,11 @@ export function generateHmlFromTemplate(
 
         const qDoc = parser.parseFromString(`<WRAP>${cleanContent}</WRAP>`, 'text/xml');
         const root = qDoc.documentElement;
+        // 원본의 선행 빈 줄도 단 첫 줄로 옮기지 않는다.
+        while (root.firstChild && ((root.firstChild.nodeType === 3 && !(root.firstChild.textContent || '').trim())
+            || (root.firstChild.nodeType === 1 && isEmptyParagraph(root.firstChild as Element)))) {
+            root.removeChild(root.firstChild);
+        }
 
         // [FIX V15] IMMEDIATE ENDNOTE ACCUMULATION (Before any mutations)
         // [FIX V19] Robust tag search to handle potential namespaces like hp:ENDNOTE
@@ -839,7 +857,26 @@ export function generateHmlFromTemplate(
             if (currentRole.startsWith('BOX_')) {
                 finalNodes.push(wrapInBoxPattern(currentGroup, currentRole, boxPatterns, serializer, parser, nextInstId++, validStyles));
             }
-            questionXml = finalNodes.join('\n');
+            const questionRoot = parser.parseFromString(`<WRAP>${finalNodes.join('\n')}</WRAP>`, 'text/xml').documentElement;
+            if (layoutPlan[qIndex - 2]?.colBreakAfter) {
+                // 다음 문제의 실제 첫 문단이 단 넘김을 소유한다.
+                let first = Array.from(questionRoot.childNodes).find(n => n.nodeType === 1) as Element | undefined;
+                if (first && first.tagName !== 'P') {
+                    const p = questionRoot.ownerDocument.createElement('P');
+                    p.setAttribute('Style', '0');
+                    p.setAttribute('ParaShape', normalParaId || '0');
+                    const text = questionRoot.ownerDocument.createElement('TEXT');
+                    text.setAttribute('CharShape', targetCharId || '0');
+                    questionRoot.insertBefore(p, first);
+                    p.appendChild(text);
+                    text.appendChild(first);
+                    first = p;
+                }
+                first?.setAttribute('ColumnBreak', 'true');
+            }
+            const plan = layoutPlan[qIndex - 1];
+            if (plan?.colBreakAfter) removeTrailingEmptyParagraphs(questionRoot);
+            questionXml = Array.from(questionRoot.childNodes).map(n => serializer.serializeToString(n)).join('');
 
             // [V47] Advanced Layout: Gutter Protection (150pt + KeepTogether)
             // We apply ParaShape 9998 (KeepTogether, 150pt margin) to the VERY LAST paragraph of the question block.
@@ -847,19 +884,13 @@ export function generateHmlFromTemplate(
             combinedContentXmlFull += questionXml;
 
             // [LAYOUT V3] 동적 단 레이아웃 — 패킹 결과 적용
-            const plan = layoutPlan[qIndex - 1]; // qIndex는 1-based
             const isLastQuestion = qIndex === questionsWithImages.length;
             // 해설 앞 여백은 PageBreak가 만든다. 빈 풀이 문단이 다음 단/쪽으로 넘치지 않게 한다.
-            if (plan && !(isLastQuestion && allEndnotes.length > 0)) {
+            if (plan && !plan.colBreakAfter && !(isLastQuestion && allEndnotes.length > 0)) {
                 const gutterCount = Math.max(1, plan.gutterLines);
                 const emptyLine = `<P Style="0" ParaShape="0"><TEXT CharShape="0"></TEXT></P>`;
                 combinedContentXmlFull += '\n' + Array(gutterCount).fill(emptyLine).join('\n') + '\n';
                 console.log(`[LAYOUT V3] Q${qIndex}: gutter=${gutterCount}줄`);
-
-                if (plan.colBreakAfter && !isLastQuestion) {
-                    console.log(`[LAYOUT V3] Q${qIndex}: ColBreak 삽입`);
-                    combinedContentXmlFull += `<P ColumnBreak="true" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>`;
-                }
             }
 
 
@@ -872,7 +903,10 @@ export function generateHmlFromTemplate(
     if (allEndnotes.length > 0) {
         // Keep the native ENDNOTE controls and the direct SECTION/BOX_MIJU structure.
         // A single page break starts explanations in the first column of the next page.
-        combinedContentXmlFull += '<P PageBreak="true" ColumnBreak="false" ParaShape="0" Style="0"><TEXT CharShape="0"></TEXT></P>';
+        const headingStyle = getStyleId('박스안') || getStyleId('문항_스타일1') || '0';
+        const headingPara = validStyles.StyleParaShapes.get(headingStyle) || '0';
+        const headingChar = validStyles.StyleCharShapes.get(headingStyle) || '0';
+        combinedContentXmlFull += `<P PageBreak="true" ColumnBreak="false" ParaShape="${headingPara}" Style="${headingStyle}"><TEXT CharShape="${headingChar}"><CHAR>정답 및 해설</CHAR></TEXT></P>`;
         if (boxPatterns['BOX_MIJU']) {
             console.log(`[HML-V2 Generator] V19: Restoring ${allEndnotes.length} endnotes into BOX_MIJU pattern.`);
 
@@ -1408,15 +1442,17 @@ function repairPictureStructure(pic: Element, serializer: any) {
     }
 }
 
+function isEmptyParagraph(node: Element): boolean {
+    return node.tagName === 'P' && !(node.textContent || '').trim()
+        && !Array.from(node.getElementsByTagName('*')).some(el => !['TEXT', 'CHAR'].includes(el.tagName));
+}
+
 function removeTrailingEmptyParagraphs(container: Element): void {
     while (container.lastChild) {
         const last = container.lastChild;
         if (last.nodeType === 3 && !(last.textContent || '').trim()) {
             container.removeChild(last);
-        } else if (last.nodeType === 1 && last.nodeName === 'P'
-            && !(last.textContent || '').trim()
-            && !Array.from((last as Element).getElementsByTagName('*')).some(
-                el => !['TEXT', 'CHAR'].includes(el.tagName))) {
+        } else if (last.nodeType === 1 && isEmptyParagraph(last as Element)) {
             container.removeChild(last);
         } else {
             break;
