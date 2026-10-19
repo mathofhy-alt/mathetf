@@ -159,7 +159,17 @@ def garbled(path):
     except (OSError, UnicodeError): return True
     # 입력에서 베낀 한글 몇 단어가 섞여도 깨진 것으로 본다(10/20 묶음 비교: '?' 1천여 개에 한글 3단어) — 한글 글자 수가 '?' 의 1/5 미만이면 깨짐
     q, h = text.count('?'), len(re.findall('[가-힣]', text))
-    return '\ufffd' in text or chr(8) in text or (q >= 30 and h * 5 < q)
+    if '\ufffd' in text or chr(8) in text or (q >= 30 and h * 5 < q): return True
+    # 일부 칸만 깨진 경우(10/20 실전 3회차: level·status 가 '??', 정답 '① …' 이 '? …') — 값 전체가 ? 이거나 '? ' 로 시작하는 문자열이 있으면 깨짐
+    try: value = json.loads(text)
+    except ValueError: return False
+    def strings(v):
+        if isinstance(v, str): yield v
+        elif isinstance(v, dict):
+            for x in v.values(): yield from strings(x)
+        elif isinstance(v, list):
+            for x in v: yield from strings(x)
+    return any(re.fullmatch(r'[?\s]{2,}', x) or re.match(r'\?\s', x) for x in strings(value))
 
 
 def codex_out(D, text, tag, out, effort='high', tries=2, ticket=None, records=None,
