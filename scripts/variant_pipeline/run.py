@@ -27,11 +27,17 @@ def prompt(name, **kw):
     return t
 
 
+# [10/19] 작업자가 PowerShell(Set-Content·Out-File·>)로 JSON 을 쓰면 한글이 '?' 로 깨진다(오답 원인 3단원·골든 세트 판정 1건) — 모든 지시 끝에 붙인다
+UTF8_NOTE = '\n\n[파일 쓰기 규칙] 결과 파일은 반드시 Python 으로 UTF-8 로 써라: open(경로, "w", encoding="utf-8") + json.dump(..., ensure_ascii=False). PowerShell 의 Set-Content·Out-File·리디렉션(>)으로 파일을 쓰지 마라 — 한글이 ? 로 깨진다.'
+
+
 def codex(D, text, tag, effort='high'):
     t = time.time()
+    os.makedirs(os.path.join(D, 'logs'), exist_ok=True)
     r = subprocess.run(CODEX + ['exec', '--skip-git-repo-check', '-m', MODEL, '-c', f'model_reasoning_effort={effort}', '-c', 'notify=[]',
-                        '-c', 'mcp_servers={}', '--sandbox', 'workspace-write', '-C', D, text],
-                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3600)
+                        '-c', 'mcp_servers={}', '--sandbox', 'workspace-write', '-C', D, text + UTF8_NOTE],
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3600,
+                       stdin=subprocess.DEVNULL)   # 표준 입력을 기다리며 몇 시간 멈춘 일이 있었다(10/19) — 항상 닫는다
     out = (r.stdout or '') + (r.stderr or '')
     open(os.path.join(D, 'logs', f'{tag}.log'), 'w', encoding='utf-8').write(out)
     m = re.search(r'tokens used\s*\n\s*([\d,]+)', out); n = int(m.group(1).replace(',', '')) if m else 0
@@ -42,6 +48,23 @@ def codex(D, text, tag, effort='high'):
 def load(path):
     try: return json.loads(open(path, 'rb').read().decode('utf-8-sig'))
     except Exception: return None
+
+
+def garbled(path):
+    """한글이 '?' 로 깨진 출력인가 — 지시해도 작업자가 가끔 PowerShell 로 쓴다(10/19 골든 시험 26건 중 3건)"""
+    try: t = open(path, encoding='utf-8-sig').read()
+    except Exception: return False
+    return t.count('???') >= 5 and not re.search(r'[가-힣]', t)
+
+
+def codex_out(D, text, tag, out, effort='high', tries=2):
+    """출력 파일이 없거나 깨졌으면 지우고 한 번 더 — 깨진 판정을 다음 단계가 읽지 않게"""
+    for i in range(tries):
+        codex(D, text, tag if i == 0 else f'{tag}_retry{i}', effort)
+        p = os.path.join(D, out)
+        if load(p) is not None and not garbled(p): return load(p)
+        if os.path.exists(p): os.replace(p, p + f'.garbled{i}')
+    return None
 
 
 def norm(ans):
@@ -115,13 +138,15 @@ def write_real_errors(D, unit, src, no):
     out = ['# 실제 학생 오답 (서울 학생 시험지 스캔 조사, 10/19)', '']
     q = (R.get('by_question') or {}).get(f'{src}#{no}') if src and no else None
     if q:
-        out.append(f'## 이 원본 문항에서 실제로 틀린 학생 {len(q)}명')
-        for x in q: out.append(f"- 원인: {x.get('cause')} / 학생 답 {x.get('student_answer')} (정답 {x.get('correct')}) / 흔적: {x.get('work')} / 어긋난 곳: {x.get('diverge')}")
+        out.append(f'## 이 원본 문항의 실제 오답 사례 {len(q)}건 (관찰=흔적, 해석=원인 — 둘을 구분해서 써라)')
+        for x in q: out.append(f"- 해석(확실도 {x.get('confidence')}): {x.get('cause')} / 학생 답 {x.get('student_answer')} (정답 {x.get('correct')}) / 관찰한 흔적: {x.get('work')} / 어긋난 곳: {x.get('diverge')}")
         out.append('')
     cs = (R.get('by_unit') or {}).get(unit.replace(' ', '')) if unit else None
     if cs:
-        out.append(f'## 같은 단원({unit})에서 실제로 반복된 오답 원인 — 많은 순, 시험지 수 = 근거 학생 수')
-        for x in cs[:15]: out.append(f"- **{x['name']}** (시험지 {x['exams']}장·{x['cases']}건) — {x.get('what')} / 함정이 작동하는 조건: {x.get('trigger')}")
+        out.append(f'## 같은 단원({unit})에서 관찰된 오답 원인 — 시험지 수 순. 분모(푼 학생 수)가 없으니 발생률·"가장 흔한"으로 쓰지 마라')
+        for x in cs[:15]:
+            out.append(f"- **{x['name']}** (시험지 {x['exams']}장·사례 {x['cases']}건) — {x.get('what')} / 함정이 작동하는 조건: {x.get('trigger')}")
+            for e in (x.get('examples') or [])[:2]: out.append(f"  - 사례: {e.get('exam')} {e.get('no')}번 — {e.get('trace')}")
     if not q and not cs: out.append('(이 문항·단원의 실측 자료 없음 — 흔한 오답은 추정이라고 표시할 것)')
     open(os.path.join(D, 'real_errors.md'), 'w', encoding='utf-8').write('\n'.join(out))
 
