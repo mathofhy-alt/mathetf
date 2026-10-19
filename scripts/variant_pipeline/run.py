@@ -332,6 +332,20 @@ def original_answer(original, problem):
     return {'raw': raw, 'answer_value': value, 'validated': True}
 
 
+# [10/20] 선수 과목 — 정책에 없으면 판정이 '공통수학2 문제에 판별식·근과 계수(공통수학1)'를 범위 밖으로 보고 3칸을 보류했다.
+# 앞 과목(과 중학교 전 과정, 같은 과목의 앞 단원)은 학생이 이미 배운 도구다. 뒤 과목의 방법은 계속 범위 밖.
+PRIOR = {'공통수학1': [], '공통수학2': ['공통수학1'], '대수': ['공통수학1', '공통수학2'],
+         '미적분I': ['공통수학1', '공통수학2', '대수'], '미적분II': ['공통수학1', '공통수학2', '대수', '미적분I'],
+         '확률과통계': ['공통수학1', '공통수학2'], '기하': ['공통수학1', '공통수학2'],
+         '수학(상)': [], '수학(하)': ['수학(상)'], '수학I': ['수학(상)', '수학(하)'], '수학II': ['수학(상)', '수학(하)', '수학I'],
+         '미적분': ['수학(상)', '수학(하)', '수학I', '수학II']}
+
+
+def course_key(course):
+    c = re.sub(r'\s', '', course or '').replace('Ⅰ', 'I').replace('Ⅱ', 'II').replace('Ⅲ', 'III')
+    return {'수학상': '수학(상)', '수학하': '수학(하)', '미적분1': '미적분I', '미적분2': '미적분II', '수학1': '수학I', '수학2': '수학II'}.get(c, c)
+
+
 def make_policy(original, requested, max_attempts, unit=''):
     source = section(original, '출처')
     course = re.search(r'(?:공통수학[12]?|수학(?:III|II|I|Ⅰ|Ⅱ|Ⅲ|[12상하])?|미적분|확률과\s*통계|기하)(?=[_\s·|,번]|$)', source)
@@ -341,9 +355,11 @@ def make_policy(original, requested, max_attempts, unit=''):
     return {'schema_version': 2, 'purpose': '비수치 시험 변형', 'requested_counts': requested,
         'no_original_answer': True, 'no_duplicate_answers': True, 'max_attempts': max_attempts,
         'layout_required': True, 'allow_alternative_delivery': False,
-        'course': course.group().strip() if course else '', 'unit': source_unit or unit,
+        'course': course.group().strip() if course else '', 'unit': unit or source_unit,   # 명령줄 --unit 이 있으면 우선(출처 줄 해석이 '회차 미확인)' 처럼 틀린 적 있음)
         'source_metadata': source, 'unit_cli': unit,
-        'curriculum_note': '출처 범위를 우선한다. 미명시 선수 내용·방법의 허용을 추정하지 않는다.'}
+        'prior_courses': PRIOR.get(course_key(course.group() if course else ''), []),
+        'curriculum_note': ('출처 범위를 우선한다. 중학교 전 과정, prior_courses 의 과목, 같은 과목의 앞 단원은 학생이 이미 배운 내용이므로 허용한다. '
+                            '그 밖(뒤 과목·교육과정 밖)의 내용·방법은 허용을 추정하지 않는다.')}
 
 
 REAL_ERRORS = 'C:/selfmade/오답조사/real_errors.json'
