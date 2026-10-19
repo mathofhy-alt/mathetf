@@ -236,14 +236,29 @@ def optional_policy(D):
     return ['delivery_policy.json'] if (Path(D) / 'delivery_policy.json').is_file() else []
 
 
+def optional_routes(D):
+    # [10/20] 출제 의도 경로(routes.json) — 원본 판단·해설 대조가 '변형이 의도 경로의 핵심 판단을 거치는가'를 보게
+    return ['routes.json'] if (Path(D) / 'routes.json').is_file() else []
+
+
+def validate_routes(r):
+    if not isinstance(r, dict) or not isinstance(r.get('routes'), list) or len(r['routes']) < 2:
+        raise ValueError('routes.json: 풀이 경로 2개 이상 필요')
+    names = [x.get('name') for x in r['routes'] if isinstance(x, dict)]
+    if r.get('intended') not in names: raise ValueError('routes.json: intended 가 routes 의 name 과 다름')
+    if not str(r.get('intended_core') or '').strip(): raise ValueError('routes.json: intended_core 비어 있음')
+    if r.get('confidence') not in ('높음', '중간', '낮음'): raise ValueError('routes.json: confidence 오류')
+    return r
+
+
 def judge(D, slot, ticket=None):
     return isolated_call(D, 'judge', ['original_problem.txt', f'{slot}_problem.txt',
-        f'{slot}_solve.json', *optional_policy(D)], f'{slot}_judge.json', slot=slot, ticket=ticket, SLOT=slot)
+        f'{slot}_solve.json', *optional_policy(D), *optional_routes(D)], f'{slot}_judge.json', slot=slot, ticket=ticket, SLOT=slot)
 
 
 def review(D, slot, ticket=None):
     inputs = ['original_problem.txt', f'{slot}_problem.txt', f'{slot}_solve.json',
-              f'{slot}_judge.json', f'{slot}.json', *optional_policy(D)]
+              f'{slot}_judge.json', f'{slot}.json', *optional_policy(D), *optional_routes(D)]
     if (Path(D) / 'real_errors.md').is_file(): inputs.append('real_errors.md')
     inputs += [f'{slot}{suffix}' for suffix in ('_check.py', '_solve.py') if (Path(D) / f'{slot}{suffix}').is_file()]
     return isolated_call(D, 'review', inputs, f'{slot}_review.json', slot=slot, ticket=ticket, SLOT=slot)
@@ -684,7 +699,7 @@ def slot_pipeline(D, slot, level, maxtry=2, original_value=None):
             if attempt > 1: archive_slot(D, slot, f'try{attempt-1}')
             result = held_result(slot, level, '검토 미완료', attempt)
             fb = '\n## 이전 반려 이유\n' + '\n'.join(history[-2:]) if history else ''
-            g = isolated_call(D, 'generate', ['original.md', 'plan.json', 'real_errors.md'],
+            g = isolated_call(D, 'generate', ['original.md', 'plan.json', 'real_errors.md', *optional_routes(D)],
                 f'{slot}.json', outputs=(f'{slot}_check.py',), slot=slot, ticket=ticket,
                 SLOT=slot, LEVEL=level, FEEDBACK=fb)
             write_json(D / f'{slot}.generated.json', g)
@@ -988,9 +1003,15 @@ def main(argv=None):
         write_json(D / 'original_answer.json', answer)
         # 묶음 검사 예산을 먼저 보호한다. 최초 분석도 JSON 깨짐 재호출을 예약.
         bundle_ticket = BUDGET.reserve(2)
+        routes_ticket = BUDGET.reserve(2)
+        try:
+            routes = validate_routes(isolated_call(D, 'routes', ['original_problem.txt', 'delivery_policy.json'], 'routes.json',
+                ticket=routes_ticket))
+            print(f"출제 의도 경로: {routes['intended']} (확신도 {routes['confidence']})", flush=True)
+        finally: BUDGET.release(routes_ticket)
         analyze_ticket = BUDGET.reserve(2)
         try:
-            candidate_plan = isolated_call(D, 'analyze', ['original.md', 'menu.md', 'real_errors.md'], 'plan.json',
+            candidate_plan = isolated_call(D, 'analyze', ['original.md', 'menu.md', 'real_errors.md', 'routes.json'], 'plan.json',
                 ticket=analyze_ticket, EASY=a.easy, KEEP=a.keep, HARD=a.hard)
         finally: BUDGET.release(analyze_ticket)
         slots = validate_plan(candidate_plan, requested)

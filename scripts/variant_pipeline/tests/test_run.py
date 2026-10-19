@@ -377,7 +377,7 @@ class RunnerTests(unittest.TestCase):
         with workspace() as temp:
             original = Path(temp) / 'source.md'
             v.write_text(original, '## 문제\n2+7은?\n\n## 정답\n9')
-            def fake(D, stage, *args, **kwargs): return plan if stage == 'analyze' else bundle
+            def fake(D, stage, *args, **kwargs): return ROUTES if stage == 'routes' else plan if stage == 'analyze' else bundle
             with patch.object(v, 'isolated_call', side_effect=fake), patch.object(v, 'ThreadPoolExecutor') as executor, patch('builtins.print'):
                 rc = v.main([str(Path(temp)/'work'), str(original), '--easy', '0', '--keep', '0', '--hard', '0'])
             self.assertEqual(rc, 0)
@@ -412,11 +412,30 @@ class RunnerTests(unittest.TestCase):
             v.write_json(D/'e2.json', {'internal_adopted': True, 'answer_value': '77'})
             original = Path(temp)/'source.md'
             v.write_text(original, '## 문제\n2+7은?\n\n## 정답\n9')
-            with patch.object(v, 'isolated_call', return_value=plan), patch.object(v, 'slot_pipeline', return_value=completed), patch.object(v, 'bundle', fake_bundle), patch('builtins.print'):
+            with patch.object(v, 'isolated_call', side_effect=lambda D, stage, *a, **k: ROUTES if stage == 'routes' else plan), patch.object(v, 'slot_pipeline', return_value=completed), patch.object(v, 'bundle', fake_bundle), patch('builtins.print'):
                 rc = v.main([str(D), str(original), '--easy', '2', '--keep', '0', '--hard', '0', '--only', 'e1', '--max-attempts', '1'])
             self.assertEqual(rc, 2)
             self.assertEqual(v.load(D/'delivery_report.json')['shortfalls']['쉬움'], 1)
         v.BUDGET = None
+
+
+ROUTES = {'schema_version': 2, 'routes': [
+    {'name': '그래프', 'steps': ['점근선'], 'answer': '9', 'decisive_judgment': '점근선 비교', 'unit_core': True},
+    {'name': '대수', 'steps': ['판별식'], 'answer': '9', 'decisive_judgment': '판별식', 'unit_core': False}],
+    'intended': '그래프', 'intended_core': '점근선 비교', 'criteria': {}, 'confidence': '높음', 'why_uncertain': ''}
+
+
+class RoutesTest(unittest.TestCase):
+    """10/20 출제 의도 경로: 문제만 보고 경로 2개 이상, intended 는 그중 하나."""
+    def test_valid(self):
+        self.assertEqual(v.validate_routes(ROUTES)['intended'], '그래프')
+
+    def test_rejects_bad(self):
+        import copy as c
+        for bad in ({'routes': ROUTES['routes'][:1], 'intended': '그래프', 'intended_core': 'x', 'confidence': '높음'},
+                    {**c.deepcopy(ROUTES), 'intended': '없는 경로'}, {**c.deepcopy(ROUTES), 'intended_core': ''},
+                    {**c.deepcopy(ROUTES), 'confidence': '?'}):
+            with self.assertRaises(ValueError): v.validate_routes(bad)
 
 
 class SympyOpenAttributeTest(unittest.TestCase):
