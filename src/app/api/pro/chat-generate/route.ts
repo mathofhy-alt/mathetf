@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { cachedFacets, isWholeCatalog, resolveRequestScope, wholeCatalogIneligible } from '@/lib/questions/fastScope';
-import { hasFilter, likePattern, type ChatPlan, type ChatTurn, type ConceptCatalog } from '@/lib/questions/chatPlan';
+import { hasFilter, likePattern, type ChatPlan, type ChatTurn, type ConceptCatalog, type TypeCatalog, type Candidate } from '@/lib/questions/chatPlan';
 import { buildFromChat } from '@/lib/questions/chatBuild';
+import { createTypeCatalogCache } from '@/lib/questions/chatTypes';
 import { uuidPattern } from '@/lib/payments/order';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,11 @@ function conceptCounts(): Promise<ConceptCatalog> {
     return value;
 }
 
+const typeCounts = createTypeCatalogCache((table, from, to, count) => createAdminClient().from(table)
+    .select('unit,code,name,what,ord,offcur', count ? { count: 'exact' } : {})
+    .order('unit').order('code').order('ord').range(from, to),
+    () => createAdminClient().rpc('question_type_counts'));
+
 // 한 사람이 짧은 시간에 몰아 부르면 AI 비용만 나간다 — 인스턴스 메모리로 10분 20회
 const recent: Map<string, number[]> = (globalThis as any).__qb_chat_rate || new Map();
 (globalThis as any).__qb_chat_rate = recent;
@@ -49,10 +55,11 @@ async function prepare(selectedDbs: string[], includeOff: boolean) {
     const ids = selectedDbs.length ? selectedDbs : await wholeIds();
     const { catalog, scope } = await resolveRequestScope(ids);
     const whole = isWholeCatalog(catalog, ids);
-    const [facets, counts, ineligible] = await Promise.all([
+    const [facets, counts, ineligible, allTypes] = await Promise.all([
         scope.length ? cachedFacets(catalog, scope, whole, includeOff) : Promise.resolve([]),
         conceptCounts(),
         whole ? wholeCatalogIneligible(catalog) : Promise.resolve(null),
+        typeCounts(),
     ]);
     const concepts: ConceptCatalog = {};
     for (const f of facets as any[]) {
@@ -60,7 +67,12 @@ async function prepare(selectedDbs: string[], includeOff: boolean) {
         const t = `${f.subject}|${f.unit}`;
         concepts[t] = { ...(concepts[t] || {}), ...(counts[t] || {}) };
     }
-    return { scope, whole, ineligible, concepts };
+    const types: TypeCatalog = {};
+    const units = new Set(Object.keys(concepts).map(t => t.split('|')[1]));
+    for (const [unit, defs] of Object.entries(allTypes || {})) if (units.has(unit)) {
+        types[unit] = defs.filter(d => includeOff || !d.offcur);
+    }
+    return { scope, whole, ineligible, concepts, types, typesAvailable: allTypes !== null };
 }
 
 /** 미리 데우기 — 시험지 만들기 화면이 열리면 부른다. AI 는 부르지 않는다(비용 0) */
@@ -97,16 +109,16 @@ export async function POST(req: NextRequest) {
 
     try {
         const selected: string[] = Array.isArray(body?.selectedDbs) ? body.selectedDbs.filter((x: unknown) => typeof x === 'string') : [];
-        const { scope, whole, ineligible, concepts } = await prepare(selected, includeOff);
+        const { scope, whole, ineligible, concepts, types, typesAvailable } = await prepare(selected, includeOff);
         const tPrep = Date.now() - t0;
         if (!scope.length || !Object.keys(concepts).length) { await log({ error: 'no_scope' }); return NextResponse.json({ error: '출제할 자료를 불러오지 못했어요. 잠시 뒤에 다시 해 주세요.' }, { status: 503 }); }
 
         const useWhole = whole && ineligible !== null;   // '전체' 빠른길 함수가 없으면 범위 규칙 길로
         let dbMs = 0;
-        const out = await buildFromChat(messages, concepts, maxCount, lastPlan, async (plan, targets, query) => {
+        const out = await buildFromChat(messages, concepts, maxCount, lastPlan, async (plan, targets, query, skipped = []) => {
             const td = Date.now();
             const { data, error } = await createAdminClient().rpc('question_bank_topic', {
-                p_scope: scope, p_whole: useWhole, p_excluded: useWhole ? [...excluded, ...(ineligible || [])] : excluded,
+                p_scope: scope, p_whole: useWhole, p_excluded: [...excluded, ...(useWhole ? ineligible || [] : []), ...skipped],
                 p_targets: targets, p_min: plan.minDifficulty, p_max: plan.maxDifficulty, p_include_off: includeOff,
                 p_concepts: plan.concepts, p_patterns: plan.keywords.map(likePattern),
                 p_query: query ? JSON.stringify(query) : null, p_limit: 600, ...(hasFilter(plan) ? { p_filter: plan.filters } : {}),
@@ -129,7 +141,18 @@ export async function POST(req: NextRequest) {
                 for (const r of data || []) { const n = parseInt(String(r.question_number ?? '').replace(/\D/g, ''), 10); if (!isNaN(n)) m.set(r.id, n); }
             }
             return m;
-        });
+        }, typesAvailable ? { catalog: types, typesOf: async (ids) => {
+            const m = new Map<string, NonNullable<Candidate['type']>>();
+            for (let i = 0; i < ids.length; i += 200) {
+                const { data, error } = await createAdminClient().from('question_types').select('question_id,unit,code,sort_key').in('question_id', ids.slice(i, i + 200));
+                if (error) throw new Error(error.message);
+                for (const r of data || []) m.set(r.question_id, {
+                    unit: r.unit, code: r.code, sort_key: r.sort_key,
+                    ord: types[r.unit]?.find(d => d.code === r.code)?.ord ?? (r.sort_key == null ? Number.MAX_SAFE_INTEGER : r.sort_key % 100),
+                });
+            }
+            return m;
+        } } : undefined);
         // 단계별 시간(ms) — 느린 곳을 숫자로 찾으려고. ai = AI 조건 해석 + 임베딩(나머지)
         const total = Date.now() - t0;
         await log({ plan: { ...out.plan, _ms: { prep: tPrep, db: dbMs, ai: total - tPrep - dbMs, total } }, reply: out.reply, by: out.by, question_ids: out.chosen.map(c => c.id) });

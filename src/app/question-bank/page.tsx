@@ -2277,9 +2277,12 @@ export default function QuestionBankPage() {
                         sourceName={regenerateItem?.name}
                         initialCount={regenerateItem?.ids.length}
                         ignoreSavedDraft={!!regenerateItem}
-                        onGenerate={(newQuestions,notice) => {
+                        onGenerate={(newQuestions,notice,typeCount) => {
                             setRecentOpen(false);
-                            if(regenerateItem){setSelectedDbIds(regenerateItem.dbIds);setFilterState(regenerateItem.filters);setFilterVersion(v=>v+1);setQuestionsPerColumn(regenerateItem.questionsPerColumn);setExamTitle(`${regenerateItem.name} 재출제`.slice(0,100));setEntryLabel(`${regenerateItem.name}과 같은 범위 · 이전 ${regenerateItem.ids.length}문항 제외`);setEntryFailure(false);setExcludedQuestionIds(regenerateItem.ids);setCart(newQuestions);setRegenerateItem(null);setViewMode('review');showToast(notice||`이전 문항과 겹치지 않는 ${newQuestions.length}문항을 담았습니다.`);return;}
+                            // 자동 출제는 서버가 돌려준 단원·유형·난이도 순서를 유지한다.
+                            setSortKeys([]);sortBaseRef.current=null;
+                            const typeNotice = typeCount !== undefined ? ` 유형 ${typeCount}가지에서 골랐어요.` : '';
+                            if(regenerateItem){setSelectedDbIds(regenerateItem.dbIds);setFilterState(regenerateItem.filters);setFilterVersion(v=>v+1);setQuestionsPerColumn(regenerateItem.questionsPerColumn);setExamTitle(`${regenerateItem.name} 재출제`.slice(0,100));setEntryLabel(`${regenerateItem.name}과 같은 범위 · 이전 ${regenerateItem.ids.length}문항 제외`);setEntryFailure(false);setExcludedQuestionIds(regenerateItem.ids);setCart(newQuestions);setRegenerateItem(null);setViewMode('review');showToast((notice||`이전 문항과 겹치지 않는 ${newQuestions.length}문항을 담았습니다.`)+typeNotice);return;}
                             // [퍼널] 자동생성이 실제로 쓰이는지 기록이 없었다.
                             // '프리셋 10문항 원클릭' 을 새로 만들지 말지는 이 수를 보고 정한다 —
                             // 이미 '단원·난이도만 정하면 채워주는' 기능이 여기 있는데 안 쓰이는 것인지,
@@ -2296,7 +2299,7 @@ export default function QuestionBankPage() {
                             if (dropped > 0) {
                                 showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${kept.length}개만 담았습니다. (${dropped}개 제외)`, 'info');
                             }
-                            setViewMode('review');showToast(notice||`${kept.length}문항을 담았습니다. 문항을 확인한 뒤 저장하세요.`);
+                            setViewMode('review');showToast((notice||`${kept.length}문항을 담았습니다. 문항을 확인한 뒤 저장하세요.`)+typeNotice);
                         }}
                     />
                 )}

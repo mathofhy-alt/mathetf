@@ -3,7 +3,8 @@
  * 라우트(api/pro/chat-generate)와 대량 시험 스크립트(scratch/chat_eval.ts)가 같은 코드를 쓰려고 떼어 냈다.
  * DB 호출은 callTopic 으로 받는다(라우트 = 사용자 범위·제외 목록, 시험 = 전체).
  */
-import { pickSpread, planFromChat, relevant, usageTotals, type Candidate, type ChatPlan, type ChatTurn, type ConceptCatalog } from './chatPlan';
+import { pickSpread, planFromChat, relevant, usageTotals, type Candidate, type ChatPlan, type ChatTurn, type ConceptCatalog, type TypeCatalog } from './chatPlan';
+import { withTypes, type TypesOf } from './chatTypes';
 
 export const CURRICULUM_PAIR: Record<string, string> = {
     '수학I': '대수', '대수': '수학I', '수학II': '미적분I', '미적분I': '수학II', '미적분': '미적분II', '미적분II': '미적분',
@@ -66,7 +67,7 @@ function scopeText(plan: ChatPlan) {
 }
 
 /** targets 안(또는 [] = 전체)에서 후보. withQuery=false 면 벡터 거리 없이(전체를 벡터로 훑지 않게) */
-export type CallTopic = (plan: ChatPlan, targets: string[], query: number[] | null) => Promise<Candidate[]>;
+export type CallTopic = (plan: ChatPlan, targets: string[], query: number[] | null, skipped?: string[]) => Promise<Candidate[]>;
 
 export type BuildResult = { reply: string; plan: ChatPlan; by: string; chosen: Candidate[]; widened: boolean };
 
@@ -87,9 +88,9 @@ function wholeExamAsk(plan: ChatPlan, said: string, unitHits: string[]): boolean
     return !/난이도|쉬운|어려운|킬러|준킬러|레벨|lv|단원|유형|비슷|변형|서술|서답|객관식|주관식|\d+\s*점/i.test(said);
 }
 
-export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null, callTopic: CallTopic, conceptsOf?: ConceptsOf, numbersOf?: NumbersOf): Promise<BuildResult> {
+export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCatalog, maxCount: number, lastPlan: ChatPlan | null, callTopic: CallTopic, conceptsOf?: ConceptsOf, numbersOf?: NumbersOf, typeSupport?: { catalog: TypeCatalog; typesOf: TypesOf }): Promise<BuildResult> {
     const messages = rawMessages.map(m => m.role === 'user' ? { ...m, content: normalizeAsk(m.content) } : m);
-    const plan = await planFromChat(messages, concepts, maxCount, lastPlan);
+    const plan = await planFromChat(messages, concepts, maxCount, lastPlan, typeSupport?.catalog);
     // 강사가 과목을 말하지 않았으면 2015·2022 짝 과목의 같은 단원을 같이 넣는다 — 프롬프트로 시켜도 가끔 한쪽만 골랐다(10/11 실측: 수학II 만)
     const said = messages.filter(m => m.role === 'user').map(m => m.content).join(' ');
     const named = namedSubjects(said, [...new Set(Object.keys(concepts).map(t => t.split('|')[0]))]);
@@ -121,10 +122,41 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         plan.filters.kinds = ['mock'];   // 배점은 모의고사·수능에만 있다(사관·경찰대·내신 없음)
         plan.unsupported = plan.unsupported.split(/[,·]/).map(x => x.trim()).filter(x => x && !/점|배점/.test(x)).join(', ');
     }
+    // '대비'는 특정 회차 기출만 고르라는 조건이 아니다. 유형 선택에도 동일하게 적용한다.
+    if (/대비/.test(said) && !/기출|나온|출제된/.test(said)) plan.filters.semesters = [];
+    if (plan.types.length && typeSupport) {
+        // 유형은 태그·키워드·임베딩의 추정 대신 실제 대표 유형으로만 제한한다.
+        const typeTargets = plan.targets.filter(t => plan.types.some(x => x.unit === t.split('|')[1]));
+        plan.targets = typeTargets.length ? typeTargets : Object.keys(concepts).filter(t => plan.types.some(x => x.unit === t.split('|')[1]) && (!named.length || named.includes(t.split('|')[0])));
+        const strict = { ...plan, action: 'build' as const, concepts: [], keywords: [], topic: '', fillRest: false };
+        const seen = new Set<string>(), matches: Candidate[] = [];
+        let failed = false;
+        for (;;) {
+            if (!strict.targets.length) break;
+            const batch = await callTopic(strict, strict.targets, null, [...seen]);
+            const fresh = batch.filter(c => !seen.has(c.id));
+            if (!fresh.length) break;
+            let assignments;
+            try { assignments = await typeSupport.typesOf(fresh.map(c => c.id)); }
+            catch { failed = true; break; }
+            for (const c of fresh) seen.add(c.id);
+            matches.push(...withTypes(fresh, assignments).filter(c => plan.types.some(t => t.unit === c.type?.unit && t.code === c.type.code)));
+            if (matches.length >= strict.count || batch.length < 600) break;
+        }
+        if (!failed) {
+            const chosen = pickSpread(matches, strict.count, strict.order);
+            const label = strict.types.map(t => typeSupport.catalog[t.unit]?.find(d => d.code === t.code)?.name || `${t.unit} ${t.code}`).join('·');
+            const missing = strict.count - chosen.length;
+            const reply = `'${label}' 유형 문항 ${chosen.length}개를 단원·유형·난이도 순으로 담았어요.` +
+                (missing > 0 ? ` 선택 자료와 조건 안에서 요청보다 ${missing}개 부족해요. 다른 유형은 보태지 않았어요.` : '') +
+                (strict.unsupported ? ` ('${strict.unsupported}' 조건은 아직 걸 수 없어 빼고 골랐어요.)` : '');
+            return { reply, plan: strict, by: 'type', chosen, widened: false };
+        }
+        // 유형 읽기가 실패하면 기존 주제 선택 흐름으로 돌아간다.
+        plan.types = [];
+    }
     if (plan.action === 'ask') return { reply: plan.reply, plan, by: 'ask', chosen: [], widened: false };
 
-    // '중간고사 대비' 의 '대비' 는 범위 — 그 회차 시험 문항으로 거르지 않는다(10/11 6차: '2학기 중간 대비 킬러' → 2학기중간 문항만)
-    if (/대비/.test(said) && !/기출|나온|출제된/.test(said)) plan.filters.semesters = [];
     // 강사 말에 단원 이름이 낱말로 있으면 그 단원을 꼭 넣는다(10/11 6차: '이항정리 계수' → AI 가 다항식 단원을 골랐다. 실제는 확률과통계|이항정리)
     const unitHits = Object.keys(concepts).filter(t => { const u = t.split('|')[1]; return u.length >= 3 && (said.startsWith(u) || said.includes(' ' + u)); });
     if (unitHits.length && !plan.targets.some(t => unitHits.includes(t))) {
@@ -212,6 +244,10 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         }
     }
 
+    if (typeSupport && cands.length) {
+        try { cands = withTypes(cands, await typeSupport.typesOf(cands.map(c => c.id))); }
+        catch { /* 기존 난이도 분산 선택을 유지한다. */ }
+    }
     const { list, by } = relevant(cands, plan.topic || !plan.topicLabel ? plan : { ...plan, topic: plan.topicLabel });
     let chosen = pickSpread(list, plan.count, plan.order);
     let filled = 0;
@@ -235,7 +271,7 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         fl.qtype === 'short_answer' ? '서답형' : fl.qtype === 'multiple_choice' ? '객관식' : '',
         fl.points?.length ? fl.points.join('·') + '점' : '',
     ].filter(Boolean);
-    const orderText = plan.order === 'easy_to_hard' ? '쉬운 것부터' : plan.order === 'hard_to_easy' ? '어려운 것부터' : '섞어서';
+    const orderText = chosen.some(c => c.type) ? '단원·유형·난이도 순으로' : plan.order === 'easy_to_hard' ? '쉬운 것부터' : plan.order === 'hard_to_easy' ? '어려운 것부터' : '섞어서';
     const unitsUsed = [...new Set(chosen.map(c => c.unit).filter(Boolean))];
     const where = widened || !plan.targets.length
         ? (unitsUsed.length <= 3 ? unitsUsed.join('·') : `${unitsUsed.slice(0, 3).join('·')} 등 ${unitsUsed.length}개 단원`)

@@ -11,7 +11,7 @@ export default function AutoGenModal({
     initialFilters, sourceName, initialCount=20, ignoreSavedDraft=false, maxCount = 50, selectedDbs = [], excludedQuestionIds = [], includeOffCurriculum = false
 }: {
     onClose: () => void,
-    onGenerate: (criteria: any, notice?:string) => void
+    onGenerate: (criteria: any, notice?:string, typeCount?:number) => void
     /** 장바구니 남은 자리. 이걸 안 넘기면 생성분이 기존 문항과 합쳐져 상한을 넘고
      *  저장할 때야 에러가 나 작업이 통째로 날아간다(8/29 92문항 요청 실패 사례). */
     initialFilters?: any;
@@ -104,7 +104,8 @@ export default function AutoGenModal({
                 const byId=new Map(loaded.data.map((q:any)=>[q.id,q]));
                 const complete=data.questions.map((q:any)=>byId.get(q.id));
                 logQuestionBankEvent('qb_auto_generate',{question_count:data.questions.length});
-                onGenerate(complete,data.questions.length<count?`조건에 맞는 ${data.questions.length}문항을 담았습니다. 요청한 ${count}문항보다 적으며 선택 범위는 유지했습니다.`:undefined);
+                const typeCount = Number.isInteger(data.typeCount) && data.typeCount >= 0 ? data.typeCount : undefined;
+                onGenerate(complete,data.questions.length<count?`조건에 맞는 ${data.questions.length}문항을 담았습니다. 요청한 ${count}문항보다 적으며 선택 범위는 유지했습니다.`:undefined,typeCount);
                 onClose();
             } else {
                 setMessage('조건에 맞는 문항이 없습니다. 자료·단원·난이도 또는 중복 제외 조건을 조정해주세요.');
