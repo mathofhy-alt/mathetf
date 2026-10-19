@@ -23,7 +23,7 @@ import similar_rerank_prepare as P          # get()(60초 제한·재시도), te
 from assign_types import UNITS
 
 PENDING = os.path.join(BASE, '_pending_new.json')
-UORD = {u: i + 1 for i, u in enumerate(UNITS)}
+UORD = {u: i + 1 for i, u in enumerate(json.load(open(os.path.join(HERE, 'unit_order.json'), encoding='utf-8')))}   # 교과서 순 (10/19)
 NPM = subprocess.run('npm root -g', shell=True, capture_output=True, text=True).stdout.strip()
 CODEX = [shutil.which('node'), os.path.join(NPM, '@openai', 'codex', 'bin', 'codex.js')]
 PROMPT = '''너는 고등학교 수학 강사다. 「{UNIT}」 단원 유형 체계(`types.json` — 유형 목록·설명·boundary_rules)가 확정돼 있다. `{PART}` 의 문항마다 **대표 유형 하나**를 붙인다.

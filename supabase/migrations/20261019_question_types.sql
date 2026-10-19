@@ -52,3 +52,27 @@ $$;
 REVOKE ALL ON FUNCTION public.type_offcur(public.questions) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.type_offcur(public.questions) TO service_role;
 NOTIFY pgrst, 'reload schema';
+
+-- 5) 유형 순 검색 함수 (10/19 측정: 계산 칸 type_sort 는 문항마다 따로 찾아 '전체' 범위에서 8초 제한 초과 → 조인으로 한 번에)
+--    '전체' 7.5만 문항 정렬 0.9초. 반환 칸 = 검색 라우트 SELECT 칸 + plain_text(키워드 조건용) + 유형 3칸.
+CREATE OR REPLACE FUNCTION public.question_bank_typed(p_scope jsonb, p_excluded uuid[] DEFAULT '{}', p_all boolean DEFAULT false)
+RETURNS TABLE(id uuid, question_number int, subject text, grade text, school text, year text, semester text, difficulty text,
+              key_concepts text[], unit text, work_status text, source_db_id text, question_type text, is_off_curriculum boolean, plain_text text,
+              type_sort bigint, type_code text, type_offcur boolean)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=public,pg_temp AS $$
+BEGIN
+ IF p_all THEN
+  RETURN QUERY SELECT q.id,q.question_number,q.subject,q.grade,q.school,q.year,q.semester,q.difficulty,q.key_concepts,q.unit,q.work_status,q.source_db_id,q.question_type,q.is_off_curriculum,q.plain_text,
+    t.sort_key::bigint*100 + coalesce(nullif(regexp_replace(coalesce(q.difficulty,''),'[^0-9]','','g'),'')::int,0), t.code, coalesce(d.offcur,false)
+   FROM public.question_bank_all(p_excluded) q
+   LEFT JOIN public.question_types t ON t.question_id=q.id LEFT JOIN public.question_type_defs d ON d.unit=t.unit AND d.code=t.code;
+ ELSE
+  RETURN QUERY SELECT q.id,q.question_number,q.subject,q.grade,q.school,q.year,q.semester,q.difficulty,q.key_concepts,q.unit,q.work_status,q.source_db_id,q.question_type,q.is_off_curriculum,q.plain_text,
+    t.sort_key::bigint*100 + coalesce(nullif(regexp_replace(coalesce(q.difficulty,''),'[^0-9]','','g'),'')::int,0), t.code, coalesce(d.offcur,false)
+   FROM public.question_bank_candidates(p_scope, p_excluded) q
+   LEFT JOIN public.question_types t ON t.question_id=q.id LEFT JOIN public.question_type_defs d ON d.unit=t.unit AND d.code=t.code;
+ END IF;
+END $$;
+REVOKE ALL ON FUNCTION public.question_bank_typed(jsonb,uuid[],boolean) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.question_bank_typed(jsonb,uuid[],boolean) TO service_role;
+NOTIFY pgrst, 'reload schema';

@@ -14,7 +14,7 @@ sys.stdout.reconfigure(encoding='utf-8', line_buffering=True); urllib3.disable_w
 import scratch_report_auto as A
 from assign_types import UNITS
 
-UORD = {u: i + 1 for i, u in enumerate(UNITS)}
+UORD = {u: i + 1 for i, u in enumerate(json.load(open(os.path.join(HERE, 'unit_order.json'), encoding='utf-8')))}   # 교과서 순 (10/19)
 
 
 def post(table, rows):
