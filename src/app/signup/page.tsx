@@ -554,6 +554,13 @@ export default function SignupPage() {
                                         </button>
                                     </div>
                                 )}
+                                {/* [10/21] 인증 문자 '착신거절' 6건(2명, 재발송을 거듭하다 못 받음) — 070 발신번호를 막는 휴대폰 설정·스팸 차단 앱 때문 */}
+                                {isOtpSent && !isPhoneVerified && (
+                                    <p className="rd-auth-hint" style={{ fontSize: 12, color: '#64748B', marginTop: 6, lineHeight: 1.5 }}>
+                                        문자가 오지 않으면 휴대폰의 스팸·070 번호 차단(후후·T전화 등)에서 <b>070-7954-4146</b>을 풀어 주신 뒤 재발송을 눌러 주세요.
+                                        그래도 안 오면 mathetf.team@gmail.com 으로 알려 주세요.
+                                    </p>
+                                )}
 
                                 {errorMsg && (
                                     <p className="rd-auth-error" role="alert">

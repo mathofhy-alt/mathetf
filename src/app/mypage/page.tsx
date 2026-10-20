@@ -41,9 +41,6 @@ export default function MyPage() {
     // Edit Modal State
 
     // School Data State
-    const [regions, setRegions] = useState<string[]>([]);
-    const [districtsMap, setDistrictsMap] = useState<Record<string, string[]>>({});
-    const [schoolsMap, setSchoolsMap] = useState<Record<string, Record<string, string[]>>>({});
 
     const router = useRouter();
     const supabase = createClient();
@@ -57,29 +54,29 @@ export default function MyPage() {
             }
             setUser(user);
 
-            // Fetch Points
-            const { data: profile } = await supabase.from('profiles').select('earned_points').eq('id', user.id).single();
-            if (profile) {
-                setEarnedPoints(profile.earned_points || 0);
-            }
-
-            // Fetch Purchases (Old Point System)
-            const { data: purchaseDataOld } = await supabase
-                .from('purchases')
-                .select(`
+            // [10/21 Clarity] 마이페이지 '로딩중' 동안의 반응 없는 클릭 — 포인트·옛 구매·새 구매를 하나씩 기다리던 것을 한 번에
+            const [{ data: profile }, { data: purchaseDataOld }, { data: purchaseDataNew }] = await Promise.all([
+                supabase.from('profiles').select('earned_points').eq('id', user.id).single(),
+                // Fetch Purchases (Old Point System)
+                supabase
+                    .from('purchases')
+                    .select(`
                     *,
                     exam:exam_materials(*)
                 `)
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            // Fetch New Cart Purchases
-            const { data: purchaseDataNew } = await supabase
-                .from('purchased_items')
-                .select('*')
-                .eq('user_id', user.id)
-                .neq('item_type', 'QB_PASS')   // 이용권은 위 '시험지 만들기' 칸에 따로(10/7) — 목록에서 지우면 기간이 사라진다
-                .order('created_at', { ascending: false });
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false }),
+                // Fetch New Cart Purchases
+                supabase
+                    .from('purchased_items')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .neq('item_type', 'QB_PASS')   // 이용권은 위 '시험지 만들기' 칸에 따로(10/7) — 목록에서 지우면 기간이 사라진다
+                    .order('created_at', { ascending: false }),
+            ]);
+            if (profile) {
+                setEarnedPoints(profile.earned_points || 0);
+            }
 
             let finalPurchases = purchaseDataOld || [];
             
@@ -130,62 +127,8 @@ export default function MyPage() {
             setLoading(false);
         };
 
-        const fetchSchoolData = async () => {
-            // Fetch all schools (handling 1000 row limit by chunking)
-            let allSchoolData: any[] = [];
-            let from = 0;
-            const step = 1000;
-
-            while (true) {
-                const { data, error } = await supabase
-                    .from('schools')
-                    .select('region, district, name')
-                    .range(from, from + step - 1);
-
-                if (error) break;
-                if (!data || data.length === 0) break;
-
-                allSchoolData = [...allSchoolData, ...data];
-                if (data.length < step) break;
-                from += step;
-            }
-
-            if (allSchoolData.length > 0) {
-                const newRegions = new Set<string>();
-                const newDistricts: Record<string, Set<string>> = {};
-                const newSchools: Record<string, Record<string, string[]>> = {};
-
-                allSchoolData.forEach(item => {
-                    newRegions.add(item.region);
-
-                    if (!newDistricts[item.region]) newDistricts[item.region] = new Set();
-                    newDistricts[item.region].add(item.district);
-
-                    if (!newSchools[item.region]) newSchools[item.region] = {};
-                    if (!newSchools[item.region][item.district]) newSchools[item.region][item.district] = [];
-                    newSchools[item.region][item.district].push(item.name);
-                });
-
-                setRegions(Array.from(newRegions).sort());
-
-                const finalDistricts: Record<string, string[]> = {};
-                Object.keys(newDistricts).forEach(r => {
-                    finalDistricts[r] = Array.from(newDistricts[r]).sort();
-                });
-                setDistrictsMap(finalDistricts);
-
-                // Sort schools
-                Object.keys(newSchools).forEach(r => {
-                    Object.keys(newSchools[r]).forEach(d => {
-                        newSchools[r][d].sort();
-                    });
-                });
-                setSchoolsMap(newSchools);
-            }
-        };
-
+        // [10/21] 학교 목록 전체(2,408행, 세 번 왕복)를 매번 읽던 fetchSchoolData 삭제 — 없앤 '내 자료 관리' 화면의 남은 코드, 화면에서 안 쓴다
         init();
-        fetchSchoolData();
     }, [router, supabase, reloadKey]);   // reloadKey: 무료 타이핑 파일이 막 들어왔을 때 구매 내역을 다시 읽는다(10/8)
 
     const handleDownload = async (purchase: any) => {

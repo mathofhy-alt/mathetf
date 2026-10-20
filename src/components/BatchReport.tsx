@@ -26,8 +26,9 @@ const ALL_SUBJECTS = CURRICULA.flatMap(c => [...c.subjects]).filter((s, i, a) =>
 
 async function pdfHeaderText(file: File): Promise<string> {
     try {
-        const pdfjs: any = await import('pdfjs-dist');
-        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+        // [10/21] 구형 브라우저(삼성 인터넷 등)에서도 열리게 legacy 판 — print-transform 과 같은 이유
+        const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.legacy.min.mjs';
         // 한글 CID 글꼴은 문자표(cMap)가 있어야 글자로 풀린다 — 한국어 문자표만 public/pdf-cmaps 에 복사해 뒀다(node_modules/pdfjs-dist/cmaps)
         const doc = await pdfjs.getDocument({ data: await file.arrayBuffer(), cMapUrl: '/pdf-cmaps/', cMapPacked: true }).promise;
         const page = await doc.getPage(1);

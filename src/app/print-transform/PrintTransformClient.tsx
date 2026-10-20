@@ -40,16 +40,21 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
         if (!file) return;
         setLoadingPdf(true); setNumPages(0); setCur(0); setCrops([]);
         try {
-            const pdfjs: any = await import('pdfjs-dist');
-            pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'; // public 정적 파일 (webpack 번들 회피)
+            // [10/21 Clarity] 삼성 인터넷 휴대폰에서 'PDF 여는 중…' 에 멈춰 여러 번 누르다 떠난 세션 — pdf.js 6 기본판은 최신 브라우저 전용이라
+            //   구형 브라우저용(legacy) 판으로 바꾸고, 30초 안에 안 열리면 멈춘 채 두지 않고 알린다.
+            const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
+            pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.legacy.min.mjs'; // public 정적 파일 (webpack 번들 회피)
             const buf = await file.arrayBuffer();
-            const doc = await pdfjs.getDocument({ data: buf }).promise;
+            const doc = await Promise.race([
+                pdfjs.getDocument({ data: buf }).promise,
+                new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 30000)),
+            ]) as any;
             pdfRef.current = doc;
             // 예전엔 여기서 전 페이지를 한꺼번에 렌더했다. 50쪽짜리 프린트를 올리면
             // 업로드가 한참 걸리고 스크롤도 감당이 안 됐다 → 현재 페이지만 렌더한다.
             setNumPages(doc.numPages);
         } catch (err) {
-            alert('PDF를 여는 데 실패했어요.');
+            alert(String((err as any)?.message) === 'timeout' ? 'PDF가 너무 오래 걸려 멈췄어요. 다른 브라우저(크롬)로 다시 열거나 쪽 수를 줄여 올려 주세요.' : 'PDF를 여는 데 실패했어요. 사진(JPG)이면 PDF로 바꿔 올려 주세요.');
         }
         setLoadingPdf(false);
     };
@@ -187,7 +192,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
 
             <div className="rd-wrap">
             {/* 업로드 */}
-            <label className="rd-tl-drop">
+            <label className="rd-tl-drop" aria-busy={loadingPdf} style={loadingPdf ? { pointerEvents: 'none', opacity: .7 } : undefined}>
                 <span className="rd-tl-drop-icon"><Upload size={22} /></span>
                 <span className="rd-tl-drop-text">{loadingPdf ? 'PDF 여는 중…' : '학교 프린트 PDF 올리기'}</span>
                 <input type="file" accept="application/pdf" onChange={onFile} className="hidden" />
