@@ -384,8 +384,13 @@ export default function MyPage() {
                                         const file = p.exam;
                                         if (!file) return null;
                                         const isDb = file.file_type === 'DB' || file.content_type === '개인DB';
+                                        // [10/21 Clarity] 줄(학교·제목·아이콘)을 누르는 반응 없는 클릭이 가장 많았다 — 줄 전체를 누르면 받기(만료·개인DB 제외)
+                                        const rowDownload = !isDb && (isTypingGrant(p) || Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000) < 30);
                                         return (
-                                            <li key={p.id} className="rd-my-item">
+                                            <li key={p.id} className={`rd-my-item${rowDownload ? ' is-clickable' : ''}`}
+                                                {...(rowDownload ? { role: 'button', tabIndex: 0, title: '눌러서 받기',
+                                                    onClick: (e: React.MouseEvent) => { if ((e.target as HTMLElement).closest('button, a')) return; handleDownload(p); },
+                                                    onKeyDown: (e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); handleDownload(p); } } } : {})}>
                                                 <span className={`rd-my-ficon${isDb ? ' is-db' : ''}`}>
                                                     {file.file_type === 'PDF' ? <PdfFileIcon size={26} /> : (file.file_type === 'DB' ? <Database size={22} /> : <HwpFileIcon size={26} />)}
                                                 </span>

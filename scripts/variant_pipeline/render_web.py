@@ -168,11 +168,40 @@ def build(run, title=None):
     return body
 
 
+COMPARE_CSS = '''
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:820px){.pair{grid-template-columns:1fr}}
+.pair>div{min-width:0;display:flex;flex-direction:column;gap:6px}
+.side{font-size:.8rem;font-weight:700;letter-spacing:.04em;color:var(--sub)}
+.wrap.wide{max-width:1240px}
+'''
+
+
+def build_compare(run_a, run_b, label_a, label_b, title):
+    """[10/20 대표: 수법을 더 모아 줬을 때와 적을 때 비교] 같은 원본 두 실행을 칸별로 나란히."""
+    page = build(run_a, title)
+    ra, rb = load(Path(run_a) / 'delivery_report.json') or {}, load(Path(run_b) / 'delivery_report.json') or {}
+    sa, sb = set(ra.get('selected_slots') or []), set(rb.get('selected_slots') or [])
+    by_b = {r['slot']: r for r in rb.get('rows') or []}
+    pairs = []
+    for r in ra.get('rows') or []:
+        other = by_b.get(r['slot'])
+        pairs.append(f'<section class="pair"><div><div class="side">{html.escape(label_a)}</div>{slot_card(r, sa)}</div>'
+                     f'<div><div class="side">{html.escape(label_b)}</div>{slot_card(other, sb) if other else "<p>없음</p>"}</div></section>')
+    cards = ''.join(slot_card(r, sa) for r in ra.get('rows') or [])
+    page = page.replace(cards, ''.join(pairs)).replace('<main class="wrap">', '<main class="wrap wide">').replace('</style>', COMPARE_CSS + '</style>', 1)
+    return page
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('run'); ap.add_argument('--out'); ap.add_argument('--title')
+    ap.add_argument('--compare', help='나란히 비교할 두 번째 실행 폴더'); ap.add_argument('--labels', default='A,B')
     a = ap.parse_args()
     out = Path(a.out or Path(a.run) / 'review.html')
-    out.write_text(build(a.run, a.title), encoding='utf-8')
+    if a.compare:
+        la, lb = (a.labels.split(',') + ['B'])[:2]
+        out.write_text(build_compare(a.run, a.compare, la, lb, a.title), encoding='utf-8')
+    else:
+        out.write_text(build(a.run, a.title), encoding='utf-8')
     print(out)
 
 

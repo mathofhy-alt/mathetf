@@ -3,7 +3,7 @@ from db import get; from ext import split
 def sig(r):
     eq = r.get('equation_scripts'); eq = ' '.join(eq) if isinstance(eq, list) else str(eq or '')
     return re.sub(r'\s|[①②③④⑤]', '', str(r.get('plain_text') or '')) + '|' + re.sub(r'\s', '', eq)
-def ranked(SRC, mode, n=10, threshold=0.5):
+def ranked(SRC, mode, n=10, threshold=0.5, light=False):
     s = {r['basis']: r['neighbors'] for r in get('question_similar', select='basis,neighbors', question_id='eq.' + SRC)}
     stmt, sol = s.get('statement', []), s.get('solution', [])
     combined = mode == 'statement' and len(stmt) > 0
@@ -13,7 +13,7 @@ def ranked(SRC, mode, n=10, threshold=0.5):
     rr = s.get('rerank', []) if combined else []
     rrS = {p[0]: float(p[1]) for p in rr}
     ids = list(dict.fromkeys([p[0] for p in ((rr + stmt + sol) if combined else main)]))
-    F = 'id,school,grade,year,semester,subject,unit,question_number,key_concepts,difficulty,plain_text,equation_scripts,content_xml'
+    F = 'id,school,grade,year,semester,subject,unit,question_number,key_concepts,difficulty,plain_text,equation_scripts' + ('' if light else ',content_xml')   # 고를 때는 본문(그림) 안 읽음
     rows = []
     for i in range(0, len(ids), 40):
         rows += get('questions', select=F, id='in.(' + ','.join(ids[i:i+40]) + ')', work_status='eq.sorted')
