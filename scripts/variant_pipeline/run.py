@@ -272,6 +272,7 @@ def latex_plain(text):
         t = re.sub(r'\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}', r'((\1)/(\2))', t)
         t = re.sub(r'\\sqrt\s*\{([^{}]*)\}', r'sqrt(\1)', t)
         t = re.sub(r'\^\s*\{([^{}]*)\}', r'^(\1)', t)
+    t = t.replace('\\sqrt', 'sqrt')   # [10/21] 괄호 없는 \sqrt3 — 13번 심한 변형이 이 표기로 정답 확인에서 떨어졌다(뒤 단계가 sqrt3 → sqrt(3))
     return t
 
 
