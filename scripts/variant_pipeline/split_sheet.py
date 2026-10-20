@@ -36,10 +36,18 @@ def prob(no, stem, choices=None, answer=None, sol=None, box=None, fig=None,
                   stem_tail2=stem_tail2, plan=plan))
 '''
 
+CODEX_HEAD = '''너는 수학 시험지 원고 직원이다(코덱스). 작업 폴더 `C:\\gpt_solve\\tools`. 원본은 이미 검산이 끝난 변형 문제 파일 `{SRC}` 이다(원본 PDF 없음).
+**읽을 것은 둘뿐이다**: `_parts/문제쪽_요약.md`(원고 형식·발문 줄바꿈·수식 문법·그림 형식·금지 사항), 그리고 문제 그림이 필요할 때만 `그림도구_현재.md`.
+다른 규칙 문서(한시험지.md 전체·해설규칙.md·과정.py 등)는 읽지 마라 — 요약에 다 있다. 막히는 표기가 있으면 한시험지.md 에서 그 낱말만 grep 해 그 줄만 본다.
+표기 견본이 필요하면 `content_e974.py` 의 prob 호출 하나만 열어 본다.
+**표기(10/21 시험에서 빠뜨린 것)**: 수식 안 문자마다 앞에 `it` — `$it f( it x)$`, `$it g( it x)$`, `$2 left | it x right |$` 처럼 요약의 견본 그대로 쓴다(`it f(x)` 처럼 줄이지 마라). 원본 md 에 그림이 없으면 문제 그림을 덧붙이지 마라.
+공용 도구·검사기·queue.json·다른 직원의 조각은 읽기만. 한글(HWP) 열기·굽기 금지. 임시 파일은 `scratch\\{KEY}_*`, 다 쓰면 지운다.
+'''
+
 CODEX_PART = '''
 
 ## 이번 실행은 「문항 조각」 — **{NO}번 한 문항만** (대표 10/21: 문항마다 직원 한 명씩 동시에)
-- 위 지시의 원고 형식·표기 규칙(한시험지.md·해설규칙.md 의 문제 쪽·그림도구_현재.md)은 그대로 따르되, **{SRC} 의 「## {NO}번」 한 문항만** 만든다.
+- `_parts/문제쪽_요약.md` 의 원고 형식·표기 규칙을 따르되, **{SRC} 의 「## {NO}번」 한 문항만** 만든다.
 - 만들 파일은 둘(또는 하나)뿐이다. `content_{KEY}.py`·`figures_{KEY}.py`·`queue.json`·다른 조각은 **만들지도 고치지도 마라**.
   1. `_parts/{KEY}/q{NN}.py` — `prob({NO}, ...)` 호출 **하나만**. `plan=''`, `sol={PLACE}` 로 둔다(해설은 클로드가 쓴다).
      `chk=` 는 그 문자열만으로 실행되는 자기완결 코드(HEAD 같은 바깥 변수 쓰지 마라)로, 끝에 `answer = '②'`(객관식) 또는 값(단답)을 남긴다.
@@ -68,6 +76,12 @@ SOL_{NN} = [
 확인: `python -X utf8 C:\\gpt_solve\\tools\\_parts\\check_part.py {KEY} {NN} --sol` 이 통과해야 끝(파일이 읽히고 SOL 이 문자열 목록이며 마지막 줄이 정답 문장인지).
 끝나면 「완료 {NO}번 · 방법 한 줄」만 답하라.'''
 
+SFIG_PART = '''너는 수학 시험지 그림 직원이다(코덱스). 작업 폴더 `C:\\gpt_solve\\tools`. 열쇠 {KEY} 의 **{NO}번 해설 그림만** 그린다(다른 문항은 다른 직원이 동시에 그린다).
+읽을 것: `그림도구_현재.md`, `해설규칙.md` 의 「### 그림」 절과 매개변수 여러 장 관련 절(grep 으로 그 절만), `content_{KEY}.py` 의 `# ── {NO}번 ──` 부분(그림 지시 주석·SOL_{NN} 의 @fig 줄·문제).
+만들 파일은 `_parts/{KEY}/sfig_q{NN}.py` 하나: `import figures as F`, `def draw(out):` 안에서 SOL_{NN} 의 `@fig:` 이름(s{NN}a…)마다 `F.save_scene(scene, '이름', out=out)`. 모듈을 불러올 때 그리면 안 된다.
+그림은 `# 그림 지시:` 와 해설 문장에 정확히 맞게(식·점·점근선·라벨). content·figures_{KEY}.py·다른 조각은 고치지 마라. 한글 열기·굽기 금지 — 단 그림 도구가 수식 라벨을 재려고 한글을 스스로 띄우는 것은 괜찮다.
+확인: `python -X utf8 _parts/check_part.py {KEY} {NN} --sfig` (모든 @fig 이름이 그려졌는지). 끝나면 「완료 {NO}번 그림 N장」 한 줄.'''
+
 CHECK_PART = r'''# -*- coding: utf-8 -*-
 """조각 확인: python -X utf8 _parts/check_part.py <열쇠> <NN> [--sol]"""
 import sys, importlib.util, pathlib, traceback, tempfile
@@ -75,6 +89,19 @@ key, nn = sys.argv[1], sys.argv[2]; D = pathlib.Path(__file__).resolve().parent 
 P = []
 def prob(no, stem, choices=None, answer=None, sol=None, box=None, fig=None, stem_tail=None, choice_lines=1, box2=None, chk=None, calc=None, stem_tail2=None, plan=''):
     P.append(dict(no=no, stem=stem, choices=choices, answer=answer, sol=sol, fig=fig, chk=chk, plan=plan))
+if '--sfig' in sys.argv:
+    import re as _re, json as _j
+    root = pathlib.Path(__file__).resolve().parent.parent; sys.path.insert(0, str(root))
+    txt = (root / f'content_{key}.py').read_text(encoding='utf-8'); a = txt.find(f'# ── {int(nn)}번 ──'); b = txt.find('# ── ', a + 5)
+    want = sorted(set(_re.findall(r'@fig:(s\w+)', txt[a:b if b > 0 else None])))
+    spec = importlib.util.spec_from_file_location('sf', D / f'sfig_q{nn}.py'); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    out = D / f'sfigs_q{nn}'; out.mkdir(exist_ok=True)
+    for name, empty in (('sizes.json', '{}'), ('assets.json', '[]')):
+        if not (out / name).exists(): (out / name).write_text(empty, encoding='utf-8')
+    m.draw(out)
+    got = set(_j.loads((out / 'sizes.json').read_text(encoding='utf-8')))
+    miss = [w for w in want if w not in got]
+    print('해설 그림', want, '| 빠짐', miss); sys.exit(1 if miss else 0)
 if '--sol' in sys.argv:
     g = {}; exec((D / f'sol_q{nn}.py').read_text(encoding='utf-8'), g)
     sol, plan = g.get(f'SOL_{nn}'), g.get(f'PLAN_{nn}')
@@ -101,6 +128,22 @@ print('통과', nn)
 '''
 
 
+SUMMARY_SECTIONS = ('## content_XX.py 형식', '## 수식 문법', '## figures_XX.py 형식', '## 수학Ⅱ(고2) 시험지에서 새로 부딪힌 것',
+                    '## 하지 말 것', '## 하지 말아야 할 것', '## 공집합 기호', '## 수식 밖에 물결', '## 모식도도 위치 관계는')
+
+
+def write_summary():
+    """[10/21] 문항 조각 직원이 규칙 문서 140KB 를 통째로 읽던 것(직원당 ~9만 토큰) → 문제 쪽에 필요한 절만.
+    원본(한시험지.md)에서 매번 뽑으므로 규칙이 바뀌면 따라간다."""
+    t = (TOOLS / '한시험지.md').read_text(encoding='utf-8')
+    heads = [m.start() for m in re.finditer(r'(?m)^## ', t)] + [len(t)]
+    keep = [t[a:b].rstrip() for a, b in zip(heads, heads[1:]) if t[a:b].startswith(SUMMARY_SECTIONS)]
+    out = ('# 문제 쪽 요약 — 한시험지.md 에서 문제 쪽(발문·선지·조건 상자·chk·문제 그림)에 필요한 절만 뽑았다(split_sheet.py 가 매번 새로 만든다)\n'
+           '# 해설(plan·sol)은 클로드 직원이 따로 쓴다. 해설 규칙 문서는 읽을 필요 없다.\n\n' + '\n\n'.join(keep) + '\n')
+    (TOOLS / '_parts' / '문제쪽_요약.md').write_text(out, encoding='utf-8')
+    return len(out)
+
+
 def say(log, *a):
     line = time.strftime('%H:%M ') + ' '.join(map(str, a)); print(line, flush=True)
     with open(log, 'a', encoding='utf-8') as f: f.write(line + '\n')
@@ -120,7 +163,7 @@ def numbers(src):
 def codex_part(key, no, log, logdir):
     it = G.queue_item(key); nn = f'{no:02d}'
     if (TOOLS / '_parts' / key / f'q{nn}.py').is_file(): return key, no, 'skip'
-    p = G.prompt_vtype(key) + CODEX_PART.replace('{NO}', str(no)).replace('{NN}', nn).replace('{KEY}', key).replace('{SRC}', it['src']).replace('{PLACE}', PLACE)
+    p = CODEX_HEAD.replace('{KEY}', key).replace('{SRC}', it['src']) + CODEX_PART.replace('{NO}', str(no)).replace('{NN}', nn).replace('{KEY}', key).replace('{SRC}', it['src']).replace('{PLACE}', PLACE)
     t = time.time()
     r = subprocess.run(G.CODEX + ['exec', '--skip-git-repo-check', '-c', 'notify=[]', '-c', 'mcp_servers={}', '--sandbox', 'workspace-write',
                        '-C', str(TOOLS), '-o', os.path.join(logdir, f'{key}_q{nn}_report.md'), p],
@@ -159,11 +202,11 @@ def merge(key, nos, log):
         if f'SOL_{nn}' not in q: say(log, key, f'⚠ {no}번 조각에 해설 자리표가 없어 해설을 못 붙임')
         out += [f'\n# ── {no}번 ──\n', sol.rstrip() + '\n\n', q.rstrip() + '\n']
     (TOOLS / f'content_{key}.py').write_text(''.join(out), encoding='utf-8')
-    figs = sorted(D.glob('fig_q*.py'))
+    figs = sorted(D.glob('fig_q*.py')) + sorted(D.glob('sfig_q*.py'))
     fm = [f'# -*- coding: utf-8 -*-\n"""{key} 그림 — 문항 조각(_parts/{key}/fig_qNN.py)의 draw(out)를 차례로 부른다(10/21 분업). 해설 그림은 아래에 덧붙인다."""\n',
           'import importlib.util\nfrom pathlib import Path\nimport figures as F\n\n',
           f"OUT = Path(__file__).resolve().parent / 'figs_{key}'\nPARTS = Path(__file__).resolve().parent / '_parts' / '{key}'\n\n\n",
-          'def build_parts():\n    OUT.mkdir(exist_ok=True)\n    for f in sorted(PARTS.glob("fig_q*.py")):\n'
+          'def build_parts():\n    OUT.mkdir(exist_ok=True)\n    for f in sorted(PARTS.glob("fig_q*.py")) + sorted(PARTS.glob("sfig_q*.py")):\n'
           '        s = importlib.util.spec_from_file_location(f.stem, f); m = importlib.util.module_from_spec(s); s.loader.exec_module(m); m.draw(OUT)\n\n\n',
           'def build():\n    build_parts()\n\n\nif __name__ == "__main__":\n    build()\n']
     (TOOLS / f'figures_{key}.py').write_text(''.join(fm), encoding='utf-8')
@@ -175,6 +218,28 @@ def merge(key, nos, log):
         say(log, key, '문제 그림 렌더', 'rc', r.returncode, (r.stderr or '')[-200:])
     chk = subprocess.run([SYSPY, '-X', 'utf8', '답검산.py', key], cwd=str(TOOLS), env=ENV, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=1800)
     say(log, key, '합침', f'{len(nos)}문항', '| 답검산', ((chk.stdout or '').strip().splitlines() or [''])[-1][:160])
+
+
+def sfig_part(key, no, log, logdir):
+    nn = f'{no:02d}'; c = (TOOLS / f'content_{key}.py').read_text(encoding='utf-8')
+    a = c.find(f'# ── {no}번 ──'); b = c.find('# ── ', a + 5)
+    if '@fig:s' not in c[a:b if b > 0 else None]: return key, no, 'none'
+    if (TOOLS / '_parts' / key / f'sfig_q{nn}.py').is_file(): return key, no, 'skip'
+    p = SFIG_PART.replace('{NO}', str(no)).replace('{NN}', nn).replace('{KEY}', key)
+    t = time.time()
+    r = subprocess.run(G.CODEX + ['exec', '--skip-git-repo-check', '-c', 'notify=[]', '-c', 'mcp_servers={}', '--sandbox', 'workspace-write',
+                       '-C', str(TOOLS), '-o', os.path.join(logdir, f'{key}_s{nn}_report.md'), p],
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3600, stdin=subprocess.DEVNULL, env=ENV)
+    open(os.path.join(logdir, f'{key}_s{nn}.log'), 'w', encoding='utf-8').write((r.stdout or '') + (r.stderr or ''))
+    m = re.search(r'tokens used\s*\n\s*([\d,]+)', (r.stdout or '') + (r.stderr or ''))
+    ok = (TOOLS / '_parts' / key / f'sfig_q{nn}.py').is_file()
+    say(log, key, f'{no}번 해설 그림', '완료' if ok else f'실패 rc{r.returncode}', m[1] if m else '?', '토큰', f'{(time.time() - t) / 60:.0f}분')
+    return key, no, 'ok' if ok else 'fail'
+
+
+def render_figs(key, log):
+    r = subprocess.run([SYSPY, '-X', 'utf8', f'figures_{key}.py'], cwd=str(TOOLS), env=ENV, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=1800)
+    say(log, key, '그림 다시 렌더(문제+해설 조각)', 'rc', r.returncode, (r.stderr or '')[-200:])
 
 
 def finish(key, log):
@@ -189,6 +254,7 @@ def main():
     keys = a.keys.split(',')
     logdir = os.path.join(G.GS, '_watch_logs', time.strftime('%m%d_%H%M') + '_split'); os.makedirs(logdir, exist_ok=True); log = os.path.join(logdir, 'run.log')
     (TOOLS / '_parts').mkdir(exist_ok=True); (TOOLS / '_parts' / 'check_part.py').write_text(CHECK_PART, encoding='utf-8')
+    say(log, '문제쪽 요약', write_summary(), '글자')
     jobs = []
     for k in keys:
         (TOOLS / '_parts' / k).mkdir(parents=True, exist_ok=True)
@@ -197,6 +263,9 @@ def main():
     with ThreadPoolExecutor(a.par) as ex: list(ex.map(lambda j: codex_part(j[0], j[1], log, logdir), jobs))
     with ThreadPoolExecutor(min(a.par, 14)) as ex: list(ex.map(lambda j: claude_part(j[0], j[1], log, logdir), jobs))
     for k in keys: merge(k, [n for kk, n in jobs if kk == k], log)
+    # [10/21] 해설 그림도 문항마다 한 명씩 동시에 → 마무리 직원은 형식만(그림이 다 있으면 그리지 않는다)
+    with ThreadPoolExecutor(a.par) as ex: list(ex.map(lambda j: sfig_part(j[0], j[1], log, logdir), jobs))
+    for k in keys: render_figs(k, log)
     with ThreadPoolExecutor(len(keys)) as ex: list(ex.map(lambda k: finish(k, log), keys))
     print('로그', logdir)
 
