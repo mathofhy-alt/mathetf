@@ -2,10 +2,11 @@ import { grantTypedFile } from '@/lib/typedGrant';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { REPORT_REWARD_POINTS } from '@/lib/report-reward';
 import { sendNotice } from '@/lib/sms';
+import { notifySendAt, parseNotify, type NotifyWhen } from '@/lib/reportDoneNotice';
 
 /**
  * 원본 제보 채택 (10/8 route 에서 옮김) — 관리자 화면 버튼(api/admin/approve-submission)과 등록 스크립트가 같은 코드를 쓴다.
- * 포인트 내역(멱등 열쇠) → 포인트 적립 → 판매용 한글 파일 0원 구매(있으면) → 제보자 문자(밤엔 오전 9시 예약).
+ * 포인트 내역(멱등 열쇠) → 포인트 적립 → 판매용 한글 파일 0원 구매(있으면) → 제보자 문자(회원이 제보 때 고른 받을지·시간대대로, 고른 기록이 없으면 밤엔 오전 9시 예약).
  */
 const REWARD_POINTS = REPORT_REWARD_POINTS;
 const REWARD_TYPE = 'submission_reward';
@@ -80,7 +81,9 @@ export async function approveSubmission(id: string, opts: { sms?: boolean } = {}
         ? `[수학ETF] 제보 감사합니다! ${points}P 적립. 한글파일은 마이페이지 구매내역에서`   // [10/9] 단문(90바이트) 안 — 장문 단가 회피
         : `[수학ETF] 제보 감사합니다! ${points}P 적립. 한글파일은 완성되면 마이페이지에 드려요`;
     // [10/8] 등록 스크립트가 한 사람의 제보 여러 건을 한꺼번에 채택할 때는 문자를 끄고 한 통으로 합쳐 보낸다(sendAdoptionSummary)
-    const sms = opts.sms === false ? 'skipped' : await sendNotice(phone, text, { quietHours: true });   // 밤에 누르면 오전 9시 예약
+    const choice = memberSmsChoice(desc);
+    const sms = opts.sms === false ? 'skipped' : choice === 'none' ? 'member_off'
+        : await sendNotice(phone, text, choice ? { at: notifySendAt(choice) } : { quietHours: true });
     // [10/15] 채택 때 이미 한글 파일이 있으면 채택 문자(또는 합친 문자)가 받는 곳까지 알린다 → 완성 문자(cron/report-notify)는 따로 안 보낸다
     if (typed?.status === 'ready' && desc.notify?.sms === true && !desc.notify.sent_at) {
         const { data: cur } = await admin.from('exam_materials').select('description').eq('id', id).maybeSingle();
@@ -88,16 +91,29 @@ export async function approveSubmission(id: string, opts: { sms?: boolean } = {}
         d.notify = { ...(d.notify || {}), sent_at: new Date().toISOString(), result: 'with_approval' };
         await admin.from('exam_materials').update({ description: JSON.stringify(d) }).eq('id', id);
     }
-    return { ok: true as const, rewarded: REWARD_POINTS, typed: typed?.status ?? 'working', sms, recipient, phone: phone || null };
+    return { ok: true as const, rewarded: REWARD_POINTS, typed: typed?.status ?? 'working', sms, recipient, phone: phone || null, smsChoice: choice };
+}
+
+/**
+ * [10/20 대표: "사용자들이 선택한 대로 문자 보내기로 한 거 아닌가"] 제보할 때 회원이 고른 문자 수신(받을지·언제)을 채택 문자에도 따른다.
+ * 예전엔 채택 문자가 고른 시간을 무시하고 밤이면 무조건 오전 9시 예약이었다('바로(새벽에도)'를 고른 14건이 다음 날 9시로 밀림).
+ * 반환: 고른 시간대 / 'none'(받지 않음을 고름) / null(고른 기록 없는 옛 제보 — 예전처럼 밤 규칙)
+ */
+export function memberSmsChoice(desc: any): NotifyWhen | 'none' | null {
+    const n = desc?.notify;
+    if (!n || typeof n !== 'object') return null;
+    if (n.sms !== true) return 'none';
+    return parseNotify(n)?.when ?? 'asap';
 }
 
 /** 한 사람에게 채택 n건을 문자 한 통으로 (10/8 사장님: "많이 하면 메세지는 한번만") */
-export async function sendAdoptionSummary(phone: string | null, count: number, allReady: boolean) {
+export async function sendAdoptionSummary(phone: string | null, count: number, allReady: boolean, choice: NotifyWhen | 'none' | null = null) {
+    if (choice === 'none') return { text: '', sms: 'member_off' as const };
     const points = (REWARD_POINTS * count).toLocaleString();
     // [10/9] 단문(90바이트) 안 — 장문 단가 회피. [10/12] '채택' → '감사합니다'(사용자) — 두 자리 건수·6자리 포인트여도 86바이트
     const head = count > 1 ? `제보 ${count}건 감사합니다! 총 ${points}P 적립.` : `제보 감사합니다! ${points}P 적립.`;
     const text = allReady
         ? `[수학ETF] ${head} 한글파일은 마이페이지 구매내역에서`
         : `[수학ETF] ${head} 한글파일은 ${count > 1 ? '완성되면 마이페이지에' : '완성되면 마이페이지에 드려요'}`;
-    return { text, sms: await sendNotice(phone, text, { quietHours: true }) };
+    return { text, sms: await sendNotice(phone, text, choice ? { at: notifySendAt(choice) } : { quietHours: true }) };
 }

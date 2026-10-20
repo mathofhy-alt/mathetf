@@ -48,6 +48,7 @@ import PassModal, { passLine, type PassInfo } from '@/components/question-bank/P
 import LadderModal from '@/components/question-bank/LadderModal';
 import { QB_LIMITS } from '@/lib/qbPassConfig';
 import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { SUBJECT_UNITS, SUBJECTS_2015, SUBJECTS_2022 } from '@/lib/curriculum';
 import type { UserItem } from '@/types/storage';
 
 
@@ -181,6 +182,20 @@ export default function QuestionBankPage() {
     const [reportQuestion, setReportQuestion] = useState<any>(null);
     const [isDbInitialized, setIsDbInitialized] = useState(false);
     const isAdmin = user?.email === 'mathofhy@naver.com';
+    // [10/20 대표] 운영자 전용 단원 옮기기 — 같은 과목은 바로, 다른 과목은 '이동 대기'(회차 개인DB 확인 후 apply_unit_moves.py 가 옮김)
+    const [unitMoves, setUnitMoves] = useState<Record<string, { unit: string; subject: string; queued: boolean }>>({});
+    const moveUnit = async (q: any, value: string) => {
+        const [subject, unit] = value.split('|');
+        if (!subject || !unit) return;
+        try {
+            const r = await fetch('/api/admin/questions/move-unit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: q.id, subject, unit }) });
+            const j = await r.json();
+            if (!j.success) { showToast(j.error || '옮기지 못했습니다.', 'error'); return; }
+            if (j.mode === 'moved') q.unit = unit;
+            setUnitMoves(prev => ({ ...prev, [q.id]: { unit, subject, queued: j.mode === 'queued' } }));
+            showToast(j.mode === 'queued' ? `${subject} ${unit}(으)로 이동 대기 — 회차 확인 뒤 옮깁니다` : `${unit}(으)로 옮겼습니다`, 'success');
+        } catch { showToast('옮기지 못했습니다.', 'error'); }
+    };
     const mainScrollRef = useRef<HTMLDivElement>(null);
     const [heroStats, setHeroStats] = useState({ questionCount: 0, schoolCount: 0 });
 
@@ -1915,6 +1930,31 @@ export default function QuestionBankPage() {
                                                 <span className={`bg-[#E8F6F5] text-[#1B7E7A] text-xs px-2 py-0.5 rounded-md font-bold ${viewMode === 'review' ? 'max-w-full' : ''}`}>
                                                     {q.unit || '단원 미정'}
                                                 </span>
+                                                {isAdmin && unitMoves[q.id]?.queued && (
+                                                    <span className="bg-amber-50 text-amber-700 text-[10px] px-2 py-0.5 rounded-md font-bold border border-amber-200">
+                                                        이동 대기: {unitMoves[q.id].subject} {unitMoves[q.id].unit}
+                                                    </span>
+                                                )}
+                                                {/* [10/20] 운영자 전용 단원 옮기기 — 같은 과목 단원은 바로, 다른 과목은 이동 대기 */}
+                                                {isAdmin && (
+                                                    <select
+                                                        data-no-drag="true" aria-label="단원 옮기기" value=""
+                                                        onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}
+                                                        onChange={e => moveUnit(q, e.target.value)}
+                                                        className="text-[10px] font-bold text-slate-500 border border-slate-200 rounded-md px-1 py-0.5 bg-white max-w-[7.5rem]"
+                                                    >
+                                                        <option value="">단원 옮기기</option>
+                                                        {(() => {
+                                                            const subs = ((SUBJECTS_2015 as readonly string[]).includes(q.subject) && !(SUBJECTS_2022 as readonly string[]).includes(q.subject) ? SUBJECTS_2015 : SUBJECTS_2022) as readonly string[];
+                                                            const order = [q.subject, ...subs.filter(s => s !== q.subject)].filter(s => SUBJECT_UNITS[s]);
+                                                            return order.map(s => (
+                                                                <optgroup key={s} label={s === q.subject ? `${s} (같은 과목 — 바로)` : `${s} (다른 과목 — 대기)`}>
+                                                                    {SUBJECT_UNITS[s].filter(u => !(s === q.subject && u === q.unit)).map(u => <option key={u} value={`${s}|${u}`}>{u}</option>)}
+                                                                </optgroup>
+                                                            ));
+                                                        })()}
+                                                    </select>
+                                                )}
                                                 {/* [교과외] 현행 교육과정에서 삭제된 단원 — 시험지에 담기 전에 눈에 띄어야 함 */}
                                                 {q.is_off_curriculum && (
                                                     <span

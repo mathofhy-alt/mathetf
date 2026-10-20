@@ -36,12 +36,14 @@ STYLE = '''
 EXTRA = '''
 
 ## 이번 실행에서 더 지킬 것 (본 세션)
-- 이 폴더는 `C:\\gpt_solve` 다. 위 틀의 `C:\\20260909` 는 모두 `C:\\gpt_solve` 로 읽는다. 원본 경로는 위 「원본」 줄이 맞다.
+- 이 폴더는 `C:\\gpt_solve` 다. 위 틀의 `C:\20260909` 는 모두 `C:\\gpt_solve` 로 읽는다. 원본 경로는 위 「원본」 줄이 맞다.
 - 그림은 `tools/그림도구_현재.md` 가 `그림도구.md` 보다 우선한다. `C:\\trans_gpt` 는 절대 건드리지 않는다.
 - 다른 작업자들이 다른 시험지를 동시에 만들고 있다. 공용 도구·검사기·`queue.json` 은 고치지 말고 고칠 점은 보고에 적어라.
 - **문제 그림은 다 그린 뒤 원본 그림과 나란히 놓고 대조한다**(2026-10-19 대표 지적 — 축 아래 점에서 내린 투영 점선을 빠뜨림). 점선(투영선·점근선·수준선·숨은 선, 축 아래·왼쪽 방향 포함)·●/○ 점·라벨·빗금이 원본과 같아야 끝이다. 원본에 없는 선은 넣지 않는다.
 - **원본은 위 「원본」 경로의 파일 하나뿐이다.** 쪽보기.py 등 도구가 이름이 비슷한 다른 파일을 열 수 있으니, 먼저 연 PDF 표지의 학교·학년·과목·차수(1차/2차)가 시험지 이름과 맞는지 확인하고, 다르면 fitz 로 위 경로를 직접 열어라. (2026-10-18 효원고 중간·기말 파일을 헷갈린 일이 있었다.)
 - **원본이 스캔이면 발문을 옮긴 뒤 원본과 한 문항씩 다시 대조하라** — 등차↔등비, 최댓값↔최솟값, 부등호·등호, 지수·첨자, 부호, 선지 값을 특히. (2026-10-18 등비수열을 등차수열로 옮겨 답이 틀린 일이 있었다.)
+- **풀이 경로는 문체 예시가 아니라 `tools/정석경로/<과목>/<단원>.md` 로 정한다**(2026-10-20 대표 — 그래프로 풀 문제를 대수로 풀어 리젝). 그 과목 폴더가 없으면(2015 미적분·수학Ⅱ 등) 같은 내용의 2022 과목 폴더(미적분I·대수 등)와 해설규칙으로 정한다. 예시 원고는 말투만 참고하고 그 풀이 경로·「고유 k」 같은 표현은 따르지 마라(해설규칙이 바뀌었다). 굽기 전에 본 세션의 경로검사가 문항마다 의도 경로와 대조해 어긋나면 돌려보낸다.
+- 매개변수에 따라 교점·근의 개수를 세는 문항은 `tools/견본/유리함수_교점개수_e954/` 꼴: 나누는 기준의 이유 한 줄 → 경우마다 범위의 개형 그림(특정 값 대입을 드러내지 않고 점근선은 문자로) + 그림에서 읽은 개수. 극한·사잇값을 말로 따지지 않는다.
 - 마지막 메시지에는 「보고」 형식만 한국어로 쓴다.
 '''
 _style_cache = {}
@@ -75,7 +77,10 @@ def prompt_type(key):
     tmpl = open(os.path.join(TOOLS, '작업자지시.md'), encoding='utf-8-sig').read()
     p = re.search(r'```\n(.*?)\n```', tmpl, re.S).group(1)
     p = p.replace('{KEY}', key).replace('{NAME}', name).replace('{SUBJECT_NOTE}', NOTE.get(it['subject'], it['subject']))
-    p = p.replace(rf'C:\20260909\{name}_파스칼.pdf', it['src']).replace('C:\\20260909', GS)
+    # 원본 줄: 틀이 원판 경로(C:\20260909)든 솔브부 경로(C:\gpt_solve, 10/20 고침)든 실제 src 로 — _원본제보 파일도 맞게
+    for root in ('C:\\20260909', GS):
+        p = p.replace(rf'{root}\{name}_파스칼.pdf', it['src'])
+    p = p.replace('`C:\20260909` 은 원판이다', '`C:\\2026_0909` 원판').replace('C:\\20260909', GS).replace('`C:\\2026_0909` 원판', '`C:\20260909` 은 원판이다')
     put_style(key, it['subject'])
     return p + EXTRA + STYLE.replace('{KEY}', key)
 
@@ -108,8 +113,36 @@ def prompt_figaudit(key):
     return open(os.path.join(HERE, 'prompts', 'figaudit.md'), encoding='utf-8').read().replace('{KEY}', key).replace('{SRC}', it['src'])
 
 
+QONLY = '''
+
+## 이번 실행은 업무 분담 — **해설은 쓰지 마라** (대표 2026-10-20: 해설 문장은 클로드가, 나머지는 코덱스가)
+- 위 틀 가운데 **문제 쪽만** 한다: RANGE·발문(stem)·선지·정답(answer)·독립 검산(chk)·**문제 그림**(원본 대조까지).
+- 모든 prob 의 `plan` 은 빈 문자열 `''`, `sol` 은 `['(해설 자리 — 클로드 작업자가 쓴다)']` 한 줄로 둔다. 해설 그림(@fig:s…)도 만들지 마라.
+  `prob()` 함수 정의는 넘긴 인자를 **그대로** 저장하게 두고(자리표를 함수 안에 박지 마라 — 10/20 9장 모두 클로드가 함수를 고쳐야 했다), 자리표는 각 prob 호출의 `plan=''`, `sol=[...]` 인자로 넣는다.
+- 발문 수식 안에 `text{…}` 를 쓰지 마라 — 한글에서 괄호가 깨진다. 한글 낱말은 `"는 자연수"` 처럼 따옴표로.
+- 검사: `python 검사전부.py {KEY}` 에서 **표기·수식·그림·답검산·발문** 이 통과(발문은 스캔 위치 인식 오경보면 수동 대조로 갈음)하면 된다. `검사`·`범위`·`검산` 은 해설이 비어 있어 걸리는 것이 정상이니 고치지 마라.
+- 보고에는 문항 수, 문제 그림 수, 원본 결함(있으면 표), 수동 대조 결과만.
+'''
+FINISH = '''너는 솔브부 마무리 작업자다(코덱스). 열쇠 {KEY}. 작업 폴더 `C:\\\\gpt_solve\\\\tools`. **한글 파일을 열거나 굽는 것(굽기.py)은 금지** — 단 그림 도구가 수식 라벨을 재려고 한글을 스스로 띄우는 것은 써도 된다(막지 마라, 10/20 e965 에서 이걸 막아 그림 3장이 빠졌다), `C:\\\\20260909` 금지, 공용 도구·queue.json·해설규칙 수정 금지.
+`content_{KEY}.py` 의 plan·sol 은 **클로드 작업자가 쓴 해설**이다. 너는 **해설의 수학 내용·풀이 경로·문장을 바꾸지 마라.** 네 일은 셋뿐이다.
+1. 해설 그림: sol 의 `@fig:이름` 마다 그림이 `figs_{KEY}/` 에 없으면, 원고 안의 `# 그림 지시:` 주석(또는 그 줄 앞뒤 문장)대로 `figures_{KEY}.py` 에 그려 렌더링한다(`그림도구_현재.md`). 해설규칙 「매개변수가 있으면 값에 따라 여러 장 그린다」의 개형·문자 점근선 기준을 지킨다.
+2. 형식: `python 검사전부.py {KEY}` 에서 걸리는 **형식 문제**(수식 문법, 줄 길이, 끝줄 꼴, 금지어 철자, 그림 이름 오타 등)만 고친다. 고치는 김에 문장을 다시 쓰지 마라 — 꼭 바꿔야 할 단어만.
+3. 발문(스캔 위치 인식 오경보)만 남고 나머지 일곱 가지 PASS 가 될 때까지. 수학 내용을 바꿔야만 통과되는 경우는 고치지 말고 보고에 「클로드에게 돌려보낼 것」으로 적어라.
+마지막에 고친 것 목록과 검사 결과를 짧게.
+'''
+
+
+def prompt_qonly(key):
+    return prompt_type(key) + QONLY.replace('{KEY}', key)
+
+
+def prompt_finish(key):
+    return FINISH.replace('{KEY}', key)
+
+
 def run(kind, key, log):
-    p = {'type': prompt_type, 'recheck': prompt_recheck, 'vtype': prompt_vtype, 'figfix': prompt_figfix, 'figaudit': prompt_figaudit}[kind](key)
+    p = {'type': prompt_type, 'recheck': prompt_recheck, 'vtype': prompt_vtype, 'figfix': prompt_figfix, 'figaudit': prompt_figaudit,
+         'qonly': prompt_qonly, 'finish': prompt_finish}[kind](key)
     t = time.time()
     try:
         r = subprocess.run(CODEX + ['exec', '--skip-git-repo-check', '-c', 'notify=[]', '-c', 'mcp_servers={}', '--sandbox', 'workspace-write',
@@ -138,7 +171,7 @@ START = __import__('datetime').datetime.now()
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--type'); ap.add_argument('--recheck'); ap.add_argument('--vtype'); ap.add_argument('--figfix'); ap.add_argument('--figaudit'); ap.add_argument('--fixnote', default='{}')
+    ap = argparse.ArgumentParser(); ap.add_argument('--type'); ap.add_argument('--recheck'); ap.add_argument('--vtype'); ap.add_argument('--figfix'); ap.add_argument('--figaudit'); ap.add_argument('--qonly'); ap.add_argument('--finish'); ap.add_argument('--fixnote', default='{}')
     ap.add_argument('--log', required=True); ap.add_argument('--par', type=int, default=20); a = ap.parse_args()
     os.makedirs(a.log, exist_ok=True)
     jobs = Q.Queue()
@@ -148,6 +181,8 @@ def main():
     FIXNOTE.update(json.loads(a.fixnote))
     for k in expand(a.figfix): jobs.put(('figfix', k, 0))
     for k in expand(a.figaudit): jobs.put(('figaudit', k, 0))
+    for k in expand(a.qonly): jobs.put(('qonly', k, 0))
+    for k in expand(a.finish): jobs.put(('finish', k, 0))
     lock = threading.Lock(); pending = [jobs.qsize()]
 
     def worker():
@@ -162,7 +197,7 @@ def main():
                 print(f'{time.strftime("%H:%M")} {kind:7} {key} rc{rc} {tok}토큰 {mins:.0f}분{" (서버 혼잡)" if busy else ""}', flush=True)
                 if (rc != 0 or busy) and tries < 2:
                     jobs.put((kind, key, tries + 1)); pending[0] += 1
-                elif kind == 'type' and rc == 0:
+                elif kind in ('type', 'qonly') and rc == 0:
                     jobs.put(('recheck', key, 0)); pending[0] += 1
                 pending[0] -= 1
     ts = [threading.Thread(target=worker, daemon=True) for _ in range(a.par)]

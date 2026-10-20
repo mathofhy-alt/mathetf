@@ -48,12 +48,15 @@ async function adminPass(admin: Admin): Promise<Record<string, any>> {
     const fresh = (rows || []).filter(r => !parse(r.description).admin_notified);
     if (!fresh.length) return { ok: true, sent: 0 };
 
-    // 첫 건만 '학교 학년-학기시험 과목'으로 줄여 적고 나머지는 '외 N건'. 연도·제보자는 관리자 화면에서 본다.
+    // 첫 건만 '학교 학년-학기시험 과목'으로 줄여 적고 나머지는 '외 N건'. 연도는 관리자 화면에서 본다.
+    // [10/19 대표] 제보자 닉네임도 붙인다 — 단문 90바이트를 넘으면 닉네임 말고 시험 이름 쪽을 줄인다(닉네임은 10자까지).
     const first = examLabel(fresh[0]);
     const tail = fresh.length > 1 ? ` 외 ${fresh.length - 1}건` : '';
+    const nick = [...String(fresh[0].uploader_name || '익명').trim()].slice(0, 10).join('');
+    const compose = (b: string) => `[수학ETF] 제보 ${b}${tail} (${nick})`;
     let body = first;
-    while (body && bytes(`[수학ETF] 제보 ${body}${tail}`) > 90) body = [...body].slice(0, -1).join('');
-    const text = `[수학ETF] 제보 ${body}${tail}`;
+    while (body && bytes(compose(body)) > 90) body = [...body].slice(0, -1).join('');
+    const text = compose(body);
 
     const { data: au } = await admin.auth.admin.getUserById(ADMIN_USER_ID);
     const phone = (au?.user?.user_metadata as any)?.phone || au?.user?.phone;

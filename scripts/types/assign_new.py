@@ -84,7 +84,7 @@ def main():
                 with open(os.path.join(D, tag + '.md'), 'w', encoding='utf-8') as f:
                     for q, r in zip(key, part): f.write(f'## {q}\n{P.text_of(r, 600)}\n\n')
                 jobs.append((unit, D, tag, key))
-        with ThreadPoolExecutor(min(8, max(1, len(jobs)))) as ex:
+        with ThreadPoolExecutor(min(3, max(1, len(jobs)))) as ex:   # 등록 배치 중 PC 부담 — 동시 3개까지(10/19)
             list(ex.map(lambda j: codex(j[1], PROMPT.format(UNIT=j[0], PART=j[2] + '.md', OUT=j[2] + '.json'), j[2]), jobs))
         out = []
         for unit, D, tag, key in jobs:
