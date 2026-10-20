@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'variant_pipeline'))
 import gs_all as G
 
 TOOLS = G.TOOLS
-SYSPY = r'C:\Users\matho\AppData\Local\Python\pythoncore-3.14-64\python.exe'
+SYSPY = r'C:\Users\matho\AppData\Local\Programs\Python\Python311\python.exe'   # solve_watch 와 같은 파이썬(한글 COM·fitz)
 if not os.path.exists(SYSPY): SYSPY = sys.executable
 FIX_TMPL = os.path.join(TOOLS, '_work', '경로고침지시.md')
 LOCK = threading.Lock()
