@@ -77,7 +77,7 @@ def slot_card(row, selected):
         return f'<article class="card held">{head}<ul class="why">{why}</ul></article>'
     parts = [head, '<div class="prob">', problem_html(g['problem']), '</div>',
              f'<div class="ans"><span>정답</span> {html.escape(str(g.get("answer", "")), quote=False)}</div>',
-             '<details open><summary>해설</summary><div class="sol">', rich(g.get('solution', '')), '</div></details>']
+             '<details><summary>풀이 요지(검산용 — 해설은 문제 확정 뒤 클로드가 씀)</summary><div class="sol">', rich(g.get('solution', '')), '</div></details>']
     meta = [('원본과 달라진 점', g.get('changes')), ('난도 추정', g.get('difficulty_note'))]
     parts.append('<dl class="meta">' + ''.join(f'<dt>{k}</dt><dd>{rich(v)}</dd>' for k, v in meta if v) + '</dl>')
     if not ok and reasons:
