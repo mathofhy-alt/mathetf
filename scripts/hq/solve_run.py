@@ -50,27 +50,40 @@ def fix_worker(key, log):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('keys'); ap.add_argument('--par', type=int, default=5)
-    ap.add_argument('--skip-type', action='store_true', help='원고는 이미 있다 — 굽기 줄부터')
+    ap.add_argument('--skip-type', action='store_true', help='원고는 이미 있다 — 경로검사부터')
     a = ap.parse_args()
     keys = G.expand(a.keys)
     log = os.path.join(G.GS, '_watch_logs', datetime.datetime.now().strftime('%m%d_%H%M') + '_run'); os.makedirs(log, exist_ok=True)
     work, bake = Q.Queue(), Q.Queue()
     left = [len(keys)]; fixes = {k: 0 for k in keys}; result = {}
     for k in keys:
-        (bake if a.skip_type else work).put(('type', k))
+        work.put(('gate' if a.skip_type else 'type', k))
+
+    def route_gate(k):
+        """[10/20 대표: 돌려보낸 건 뒤로 미루고 된 것부터 구우면 되지 않나] 경로검사는 한글을 안 쓰니 굽기 줄 밖(작업자 쪽)에서 돌린다.
+        통과한 장만 굽기 줄에 선다 — 걸린 장이 줄을 막지 않는다."""
+        while True:
+            r = subprocess.run([SYSPY, '-X', 'utf8', '경로검사.py', k], cwd=TOOLS, capture_output=True, text=True,
+                               encoding='utf-8', errors='replace', timeout=3600, stdin=subprocess.DEVNULL)
+            open(os.path.join(log, f'{k}_route{fixes[k]}.log'), 'w', encoding='utf-8').write((r.stdout or '') + (r.stderr or ''))
+            if r.returncode == 0 or fixes[k] >= 2:
+                if r.returncode: say(log, f'⚠ {k} 경로검사 두 번 고쳐도 걸림 — 굽기는 하되 하루 보고에 올림')
+                return
+            fixes[k] += 1
+            say(log, f'경로검사 걸림 {k} → 작업자에게 돌려보냄({fixes[k]}번째)')
+            rc = fix_worker(k, log); say(log, f'경로고침 {k} rc{rc}')
 
     def worker():
         while left[0] > 0:
             try: kind, k = work.get(timeout=5)
             except Q.Empty: continue
-            if kind == 'fix':
-                rc = fix_worker(k, log); say(log, f'경로고침 {k} rc{rc}'); bake.put(k); continue
-            for step in ('type', 'recheck'):
+            for step in (() if kind == 'gate' else ('type', 'recheck')):
                 for t in range(3):
                     rc, tok, mins, busy = G.run(step, k, log)
                     say(log, f'{step:7} {k} rc{rc} {tok}토큰 {mins:.0f}분{" (서버 혼잡)" if busy else ""}')
                     if rc == 0 and not busy: break
             if os.path.exists(os.path.join(TOOLS, f'content_{k}.py')):
+                route_gate(k)
                 bake.put(k); say(log, f'굽기 줄에 섬 {k} (대기 {bake.qsize()})')
             else:
                 result[k] = '원고 없음'; say(log, f'⚠ {k} 원고가 안 생김 — 보고서 확인'); left[0] -= 1
@@ -82,15 +95,11 @@ def main():
             while hwp_busy():
                 time.sleep(30)
             t = time.time()
-            r = subprocess.run([SYSPY, '-X', 'utf8', '굽기.py', k, '--force'], cwd=TOOLS, capture_output=True, text=True,
+            # 경로검사는 route_gate 에서 끝났다(--skip-route) — 굽기 줄은 한글 일만
+            r = subprocess.run([SYSPY, '-X', 'utf8', '굽기.py', k, '--force', '--skip-route'], cwd=TOOLS, capture_output=True, text=True,
                                encoding='utf-8', errors='replace', timeout=3 * 3600, stdin=subprocess.DEVNULL)
             out = r.stdout or ''
             open(os.path.join(log, f'{k}_bake.log'), 'w', encoding='utf-8').write(out + (r.stderr or ''))
-            if '경로검사 걸림' in out and fixes[k] < 2:
-                fixes[k] += 1; work.put(('fix', k))
-                m = re.search(r'경로검사 %s: (.*)' % k, out)
-                say(log, f'경로검사 걸림 {k} → 작업자에게 돌려보냄({fixes[k]}번째) {m.group(1) if m else ""}')
-                continue
             ok = '자동검사' in out and '빌드 실패' not in out
             result[k] = '구움' if ok else '실패(굽기 로그 확인)'
             say(log, f'{"✅ 구움" if ok else "⚠ 굽기 실패"} {k} {time.time() - t:.0f}초')
