@@ -169,6 +169,10 @@ def main():
         print('다른 실행 중'); return
     open(LOCKF, 'w').write(str(os.getpid()))
     try:
+        # [10/20] 카드 「단원 옮기기」 뒤처리 — 다른 과목 이동(회차 개인DB 확인 후)과 새 단원 유형 붙이기
+        mv = subprocess.run([SYSPY, '-X', 'utf8', os.path.join(ROOT, 'scripts', 'types', 'apply_unit_moves.py')], cwd=ROOT, env=ENV,
+                            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=4 * 3600, stdin=subprocess.DEVNULL)
+        for l in (mv.stdout or '').strip().splitlines(): say('단원 옮기기', l)
         st = load(STATE, {})
         pdfs = [p for p in sorted(glob.glob(os.path.join(NAME, '*_원본제보.pdf'))) if '확인필요' not in os.path.basename(p)]
         say(f'네임 폴더 원본제보 {len(pdfs)}개')
