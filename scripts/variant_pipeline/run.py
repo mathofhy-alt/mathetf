@@ -258,17 +258,28 @@ def judge(D, slot, ticket=None):
 
 def review(D, slot, ticket=None):
     inputs = ['original_problem.txt', f'{slot}_problem.txt', f'{slot}_solve.json',
-              f'{slot}_judge.json', f'{slot}.json', *optional_policy(D), *optional_routes(D)]
+              f'{slot}_judge.json', f'{slot}.json', *optional_policy(D), *optional_routes(D), *solve_refs(D)]
     if (Path(D) / 'real_errors.md').is_file(): inputs.append('real_errors.md')
     inputs += [f'{slot}{suffix}' for suffix in ('_check.py', '_solve.py') if (Path(D) / f'{slot}{suffix}').is_file()]
     return isolated_call(D, 'review', inputs, f'{slot}_review.json', slot=slot, ticket=ticket, SLOT=slot)
+
+
+def latex_plain(text):
+    # [10/20] 문제·선지를 LaTeX($…$)로 쓰게 바꿨다 — 값 비교 전에 평문 식으로 되돌린다.
+    t = text.replace('$', '').replace(r'\left', '').replace(r'\right', '').replace(r'\,', '').replace(r'\;', '').replace(r'\!', '')
+    t = t.replace(r'\cdot', '*').replace(r'\times', '*').replace(r'\pi', 'pi')
+    for _ in range(4):
+        t = re.sub(r'\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}', r'((\1)/(\2))', t)
+        t = re.sub(r'\\sqrt\s*\{([^{}]*)\}', r'sqrt(\1)', t)
+        t = re.sub(r'\^\s*\{([^{}]*)\}', r'^(\1)', t)
+    return t
 
 
 def numeric_value(raw):
     """외부 문자열 eval/sympify 금지: 허용 AST만 정확한 기호식으로 변환."""
     import sympy as sp
     if not isinstance(raw, str) or not raw.strip() or len(raw) > 256: return None
-    text = raw.strip().replace('−', '-').replace('×', '*').replace('÷', '/').replace('π', 'pi').replace('√', 'sqrt').replace('^', '**')
+    text = latex_plain(raw).strip().replace('−', '-').replace('×', '*').replace('÷', '/').replace('π', 'pi').replace('√', 'sqrt').replace('^', '**')
     text = re.sub(r'sqrt\s*(\d+(?:\.\d+)?)', r'sqrt(\1)', text)
     text = re.sub(r'(\d|\))\s*(sqrt|pi|\()', r'\1*\2', text)
     text = re.sub(r'(pi)\s*(\()', r'\1*\2', text)
@@ -370,7 +381,7 @@ def make_policy(original, requested, max_attempts, unit=''):
     parts = [part.strip() for part in re.split('[·|]', source)]
     unit_match = re.search(r'(?:단원명|단원)\s*[:：|]\s*([^\n|·]+)', source)
     source_unit = unit_match[1].strip() if unit_match else (parts[1] if len(parts) > 1 and not parts[1].startswith('난이도') else '')
-    return {'schema_version': 2, 'purpose': '비수치 시험 변형', 'requested_counts': requested,
+    return {'schema_version': 2, 'purpose': '시험 변형 — 쉬움·유지 숫자변형, 어려움 심한 변형(10/20 대표)', 'requested_counts': requested,
         'no_original_answer': True, 'no_duplicate_answers': True, 'max_attempts': max_attempts,
         'layout_required': True, 'allow_alternative_delivery': False,
         'course': course.group().strip() if course else '', 'unit': unit or source_unit,   # 명령줄 --unit 이 있으면 우선(출처 줄 해석이 '회차 미확인)' 처럼 틀린 적 있음)
@@ -378,6 +389,51 @@ def make_policy(original, requested, max_attempts, unit=''):
         'prior_courses': PRIOR.get(course_key(course.group() if course else ''), []),
         'curriculum_note': ('출처 범위를 우선한다. 중학교 전 과정, prior_courses 의 과목, 같은 과목의 앞 단원은 학생이 이미 배운 내용이므로 허용한다. '
                             '그 밖(뒤 과목·교육과정 밖)의 내용·방법은 허용을 추정하지 않는다. ' + GRAPH_NOTE)}
+
+
+# [10/20] 솔브부 기준을 변형에도 — 대표: "풀이가 병신이라서 변형도 병신같이 나온 거였으니까".
+# 쎈 6권 전수 정석경로표(그 단원 파일)와 해설규칙의 「그래프로 푼다」·「유형별 방침」 절을 작업 폴더에 둔다.
+SOLVE_TOOLS = Path(r'C:\gpt_solve\tools')
+ROUTE_FOLDERS = {'공통수학1': ['공통수학1'], '공통수학2': ['공통수학2'], '수학(상)': ['공통수학1', '공통수학2'],
+                 '수학(하)': ['공통수학2', '공통수학1'], '수학': ['공통수학1', '공통수학2'], '대수': ['대수'], '수학I': ['대수'],
+                 '미적분I': ['미적분I'], '수학II': ['미적분I'], '미적분': ['미적분I'], '확률과통계': ['확률과통계'], '기하': ['기하']}
+
+
+def _norm_unit(text):
+    return re.sub(r'[\s·,()（）\[\]의과와]', '', text or '')
+
+
+def standard_route_file(course, unit):
+    folders = ROUTE_FOLDERS.get(course_key(course).replace(' ', ''), []) or [d.name for d in (SOLVE_TOOLS / '정석경로').iterdir() if d.is_dir() and not d.name.startswith('_')]
+    want = _norm_unit(unit)
+    if not want: return None
+    files = [f for d in folders for f in sorted((SOLVE_TOOLS / '정석경로' / d).glob('*.md'))]
+    for f in files:
+        if _norm_unit(f.stem) == want: return f
+    for f in files:
+        if want in _norm_unit(f.stem) or _norm_unit(f.stem) in want: return f
+    return None
+
+
+def solve_rules_text():
+    text = (SOLVE_TOOLS / '해설규칙.md').read_text(encoding='utf-8-sig')
+    a = text.find('## 원칙 - 함수로 읽히면 그래프로 푼다')
+    b = text.find('### 적는 형식', a)
+    return text[a:b] if a >= 0 else ''
+
+
+def write_solve_refs(D, policy):
+    f = standard_route_file(policy.get('course', ''), policy.get('unit', ''))
+    head = ('# 정석 경로표 — 쎈 6권 전수조사(2026-10-20)\n'
+            '문항의 유형을 아래에서 찾아 「그래프·기하로 푸는 신호」에 걸리면 그 경로가 정석이다. 쎈 해설도 정석 보장은 없다(「쎈도 대수로 푼 예외」). '
+            'solve_rules.md 의 유형별 방침(대표 확정)이 이 표보다 앞선다.\n\n')
+    write_text(Path(D) / 'standard_routes.md', head + (f.read_text(encoding='utf-8-sig') if f else f'이 단원({policy.get("unit", "")})의 정석 경로표 없음.'))
+    write_text(Path(D) / 'solve_rules.md', '# 솔브부 해설규칙 — 풀이 경로 원칙(대표 확정, 발췌)\n\n' + solve_rules_text())
+    return f
+
+
+def solve_refs(D):
+    return [n for n in ('standard_routes.md', 'solve_rules.md', 'similar.md') if (Path(D) / n).is_file()]
 
 
 REAL_ERRORS = 'C:/selfmade/오답조사/real_errors.json'
@@ -600,7 +656,7 @@ def adoption_errors(g, s, j, r, level, original_value, executions):
         for key, value in expected.items():
             if key not in obj or obj[key] != value: errors.append(f'{name}.{key}: {obj.get(key)!r}, 필요 {value!r}')
     allowed = ('충족', '해당 없음') if level == '쉬움' else ('충족',)
-    if j.get('non_numeric_status') not in allowed: errors.append('비수치 시험 변형 조건 미충족')
+    if j.get('non_numeric_status') not in allowed: errors.append('변형 종류 기준(숫자변형/심한 변형) 미충족')
     if isinstance(r.get('solution_checks'), list) and any(not isinstance(x, dict) or x.get('status') != '확인' for x in r['solution_checks']):
         errors.append('해설에 미확인/오류 줄이 남음')
     if isinstance(r.get('evidence_checks'), list) and any(isinstance(x, dict) and x.get('status') == '오류'
@@ -702,7 +758,7 @@ def slot_pipeline(D, slot, level, maxtry=2, original_value=None):
             if attempt > 1: archive_slot(D, slot, f'try{attempt-1}')
             result = held_result(slot, level, '검토 미완료', attempt)
             fb = '\n## 이전 반려 이유\n' + '\n'.join(history[-2:]) if history else ''
-            g = isolated_call(D, 'generate', ['original.md', 'plan.json', 'real_errors.md', *optional_routes(D)],
+            g = isolated_call(D, 'generate', ['original.md', 'plan.json', 'real_errors.md', *optional_routes(D), *solve_refs(D)],
                 f'{slot}.json', outputs=(f'{slot}_check.py',), slot=slot, ticket=ticket,
                 SLOT=slot, LEVEL=level, FEEDBACK=fb)
             write_json(D / f'{slot}.generated.json', g)
@@ -951,6 +1007,7 @@ def main(argv=None):
     ap.add_argument('--hard', type=int, default=2); ap.add_argument('--only')
     ap.add_argument('--max-attempts', '--maxtry', type=int, choices=(1, 2), default=2)
     ap.add_argument('--workers', type=int, default=3)
+    ap.add_argument('--similar', default='', help='원본의 실제 학교 변형 사례(mine/similar_ctx.py 로 만든 md)')
     ap.add_argument('--unit', default=''); ap.add_argument('--src', default=''); ap.add_argument('--no', default='')
     ap.add_argument('--max-calls', type=int, default=0, help='0: 무제한. 깨짐 재호출도 포함')
     ap.add_argument('--token-budget', type=int, default=0, help='호출 전 추정 예약 + 종료 후 측정. 엄격한 상한 아님')
@@ -996,6 +1053,10 @@ def main(argv=None):
         write_real_errors(str(D), a.unit, a.src, a.no)
         policy = make_policy(original, requested, a.max_attempts, a.unit)
         write_json(D / 'delivery_policy.json', policy)
+        route_file = write_solve_refs(D, policy)
+        if a.similar: write_text(D / 'similar.md', Path(a.similar).read_text(encoding='utf-8-sig'))
+        elif (D / 'similar.md').is_file(): (D / 'similar.md').unlink()
+        print(f"정석 경로표: {route_file.relative_to(SOLVE_TOOLS) if route_file else '없음'}", flush=True)
         identity_inputs = ['original.md', 'menu.md', 'real_errors.md', 'delivery_policy.json']
         specification = {'schema_version': 2, 'requested_counts': requested,
             'input_hashes': {name: digest(D / name) for name in identity_inputs},
@@ -1008,13 +1069,13 @@ def main(argv=None):
         bundle_ticket = BUDGET.reserve(2)
         routes_ticket = BUDGET.reserve(2)
         try:
-            routes = validate_routes(isolated_call(D, 'routes', ['original_problem.txt', 'delivery_policy.json'], 'routes.json',
+            routes = validate_routes(isolated_call(D, 'routes', ['original_problem.txt', 'delivery_policy.json', *[n for n in solve_refs(D) if n != 'similar.md']], 'routes.json',   # 경로 판단은 문제만(유사 사례의 해설은 주지 않는다)
                 ticket=routes_ticket))
             print(f"출제 의도 경로: {routes['intended']} (확신도 {routes['confidence']})", flush=True)
         finally: BUDGET.release(routes_ticket)
         analyze_ticket = BUDGET.reserve(2)
         try:
-            candidate_plan = isolated_call(D, 'analyze', ['original.md', 'menu.md', 'real_errors.md', 'routes.json'], 'plan.json',
+            candidate_plan = isolated_call(D, 'analyze', ['original.md', 'menu.md', 'real_errors.md', 'routes.json', *solve_refs(D)], 'plan.json',
                 ticket=analyze_ticket, EASY=a.easy, KEEP=a.keep, HARD=a.hard)
         finally: BUDGET.release(analyze_ticket)
         slots = validate_plan(candidate_plan, requested)
