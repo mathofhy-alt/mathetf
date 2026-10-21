@@ -32,6 +32,11 @@ say('경로검사', last[-1] if last else '?', '— 걸림' if r.returncode else
 if r.returncode:
     open(os.path.join(log, f'{key}_route.txt'), 'w', encoding='utf-8').write(r.stdout or '')
     sys.exit(2)                       # 걸린 장은 굽지 않는다 — 본 세션이 클로드 직원에게 돌려보낸다
+# [10/21 대표 승인] 해설 그림 눈 검토 — 검사기는 그림 이름만 봐서 라벨이 엉뚱한 곳에 뜬 그림(효성고3 14번)을 못 잡았다
+import sfig_review
+if sfig_review.run(key, log=os.path.join(log, 'finish.log')):
+    say('⚠ 해설 그림 검토에서 고친 뒤에도 걸림이 남음 — 굽지 않음(_work/sfig_review)')
+    sys.exit(3)
 while True:                           # 굽기 잠금(한글은 한 번에 하나)
     try:
         os.mkdir(LOCK); break
