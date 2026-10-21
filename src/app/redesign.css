@@ -2167,3 +2167,8 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-rpop-foot button { flex: 1; border: 0; background: none; padding: 13px 0; font: inherit; font-size: 14px; font-weight: 600; color: #6B7684; cursor: pointer; }
 .rd .rd-rpop-foot button + button { border-left: 1px solid var(--rd-line); }
 .rd .rd-rpop-foot button:hover { background: var(--rd-panel); }
+
+/* [10/21] 마이페이지 구매 내역 — 줄 전체를 눌러 받기 */
+.rd-my-item.is-clickable{cursor:pointer}
+.rd-my-item.is-clickable:hover{background:rgba(73,122,183,.05)}
+.rd-my-item.is-clickable:focus-visible{outline:2px solid #497AB7;outline-offset:2px}

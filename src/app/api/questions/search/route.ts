@@ -153,7 +153,14 @@ export async function POST(req: NextRequest) {
 
         // 고급 필터
         if (advancedFilters) {
-            if (advancedFilters.units && advancedFilters.units.length > 0) {
+            const unitKeys: string[] = Array.isArray(advancedFilters.unitKeys) ? advancedFilters.unitKeys.filter((k: unknown) => typeof k === 'string' && k.includes('::')) : [];
+            if (unitKeys.length > 0) {
+                // [10/21] 같은 이름 단원(도함수의활용·정적분의활용 — 미적분I·미적분II·수학II)이 다른 과목에서 섞이지 않게 과목까지 맞춘다
+                const q = (v: string) => `"${v.replace(/["\\]/g, '')}"`;
+                const bySubject = new Map<string, string[]>();
+                for (const k of unitKeys) { const [s, u] = k.split('::'); bySubject.set(s, [...(bySubject.get(s) || []), u]); }
+                query = query.or(Array.from(bySubject, ([s, us]) => `and(subject.eq.${q(s)},unit.in.(${us.map(q).join(',')}))`).join(','));
+            } else if (advancedFilters.units && advancedFilters.units.length > 0) {
                 // 시험지출제는 facets(DB 실제 단원명)로 드롭다운을 만들므로 exact 매칭이 맞다.
                 query = query.in('unit', advancedFilters.units);
             }

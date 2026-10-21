@@ -75,12 +75,19 @@ def pick(units, per):
     for u in units:
         rows = get('questions', select='id,difficulty,year', school='in.' + MOCK, unit='eq.' + u, work_status='eq.sorted',
                    order='year.desc', limit='200')
-        rows = sorted(rows, key=lambda r: (-float(r['difficulty'] or 0), r['year']), reverse=False)
+        # [10/20] 단원마다 중간 난도(5~6) 하나 + 고난도(7 이상) 나머지 — 숫자변형·심한 변형 사례가 고루 나오게
+        d = lambda r: float(r['difficulty'] or 0)
+        want = [('mid', 1), ('high', per - 1)] if per > 1 else [('high', 1)]
         got = 0
-        for r in rows:
-            if got >= per: break
-            if len(ranked(r['id'], 'statement', 10)) >= 8:
-                ids.append(r['id']); got += 1
+        for band, n in want:
+            pool = [r for r in rows if (5 <= d(r) < 7 if band == 'mid' else d(r) >= 7)]
+            pool.sort(key=lambda r: (-d(r), r['year']) if band == 'high' else (-d(r), r['year']))
+            k = 0
+            for r in pool:
+                if k >= n: break
+                if r['id'] in ids: continue
+                if len(ranked(r['id'], 'statement', 10, light=True)) >= 8:
+                    ids.append(r['id']); k += 1; got += 1
         print(f'{u}: {got}개', flush=True)
     return ids
 

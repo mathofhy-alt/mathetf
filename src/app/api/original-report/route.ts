@@ -32,7 +32,6 @@ export const dynamic = 'force-dynamic';
 const BUCKET = 'exam-materials';
 const MAX_FILES = 30;
 const MAX_FILES_BULK = 100;   // [10/13] '여러 회차 한꺼번에' — 강사의 학교 기출 묶음
-const BULK_LABEL = '여러 회차';
 const MAX_BYTES = 20 * 1024 * 1024;
 const OK_TYPES: Record<string, string> = {
     'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif', 'application/pdf': 'pdf',
@@ -153,25 +152,10 @@ export async function POST(req: NextRequest) {
             return paths.every(p => have.has(p));
         };
         const displayName = user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown';
-        // [10/13] 여러 회차 묶음 — 회차는 운영자가 관리자 화면에서 나눈다(raw-uploads PATCH split). 묶음째로는 보상이 안 나간다(approveSubmission)
-        if (m.bulk) {
-            const note = String(m.note || '').trim().slice(0, 300);
-            if (paths.length < 1 || paths.length > MAX_FILES_BULK || paths.some(p => !p.startsWith(`${user.id}/report_`)))
-                return NextResponse.json({ error: '올린 파일 정보를 확인할 수 없습니다. 다시 시도해주세요.' }, { status: 400 });
-            if (!(await listedOk())) return NextResponse.json({ error: '파일 업로드가 끝나지 않았어요. 다시 시도해주세요.' }, { status: 400 });
-            const { data: row, error } = await admin.from('exam_materials').insert({
-                uploader_id: user.id, uploader_name: displayName,
-                school, region, district: picked.district,
-                exam_year: new Date().getFullYear(), grade: 1, semester: 1, exam_type: BULK_LABEL, subject: BULK_LABEL,
-                title: `${school} ${BULK_LABEL} [원본제보 묶음 ${paths.length}개]`,
-                file_type: paths[0].endsWith('.pdf') ? 'PDF' : 'IMAGE',
-                content_type: '원본제보', file_path: paths[0],
-                description: JSON.stringify({ files: paths, note, bulk: true, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind }, ...(notify ? { notify } : {}) }),
-                price: 0, sales_count: 0,
-            }).select('id').single();
-            if (error) { console.error('[original-report] bulk insert', error); return NextResponse.json({ error: '제보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 }); }
-            return NextResponse.json({ ok: true, id: row.id });
-        }
+        // [10/21] 여러 회차 묶음(10/13~14)은 회차 정보가 없어 이미 있는 회차를 못 거른다(10/14 수원 8개교 고1 2학기 중간이 그대로 들어옴).
+        //   이미 들어온 묶음은 관리자 화면에서 나눈다(raw-uploads PATCH split). 묶음은 회차 정보가 없어 이미 있는 회차를 못 거른다(10/14 수원 8개교 고1 2학기 중간이 그대로 들어옴).
+        //   화면은 10/15 '여러 시험지 한꺼번에'(회차마다 submit → 아래 중복 검사)로 바꿨고, 서버도 새 묶음을 받지 않는다.
+        if (m.bulk) return NextResponse.json({ error: '여러 회차는 「여러 시험지 한꺼번에」로 회차마다 보내 주세요. 이미 있는 시험은 거기서 미리 걸러 드려요.' }, { status: 410 });
         const year = Number(m.year), grade = Number(m.grade), semester = Number(m.semester);
         const examType = ['중간고사', '기말고사'].includes(m.examType) ? m.examType : '';
         // [10/15] 교육과정 짝 맞추기 — 2023 고1 인데 '공통수학1'을 골라도 '수학(상)'으로(느티님 42건이 2022 개정 이름으로 들어옴)

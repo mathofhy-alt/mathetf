@@ -272,6 +272,7 @@ def latex_plain(text):
         t = re.sub(r'\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}', r'((\1)/(\2))', t)
         t = re.sub(r'\\sqrt\s*\{([^{}]*)\}', r'sqrt(\1)', t)
         t = re.sub(r'\^\s*\{([^{}]*)\}', r'^(\1)', t)
+    t = t.replace('\\sqrt', 'sqrt')   # [10/21] 괄호 없는 \sqrt3 — 13번 심한 변형이 이 표기로 정답 확인에서 떨어졌다(뒤 단계가 sqrt3 → sqrt(3))
     return t
 
 
@@ -743,6 +744,9 @@ def held_result(slot, level, reason, attempt=0):
             'eligible': False, 'problems': [reason], 'generated': {}, 'solve': {}, 'judge': {}, 'review': {}}
 
 
+FAST = [False]   # [10/21] --fast: 생성 + 독립 풀이만
+
+
 def slot_pipeline(D, slot, level, maxtry=2, original_value=None):
     D = Path(D)
     if not 1 <= maxtry <= 2: raise ValueError('총 생성 시도 1~2회만 허용')
@@ -785,19 +789,28 @@ def slot_pipeline(D, slot, level, maxtry=2, original_value=None):
             # 모델의 script_output 주장을 실행 증거로 쓰지 않는다. runner 결과를 고정 입력에 포함.
             s['runner_execution'] = solve_run
             write_json(D / f'{slot}_solve.json', s)
-            j = judge(D, slot, ticket)
-            r = review(D, slot, ticket)
-            issues = adoption_errors(g, s, j, r, level, original_value, {'check': check_run, 'solve': solve_run})
+            if FAST[0]:
+                # [10/21 대표: "문제 몇 개 만드는데 50분~1시간이 말이 돼요?"] 빠른 모드 — 원본 비교·검토를 건너뛰고
+                #   생성 검산 + 독립 풀이 답 일치·결함 없음·원본 답과 다름만 본다(품질 판단은 대표가 문제를 보고 한다)
+                issues = []
+                if same_value(s.get('answer_value', ''), g['answer_value']) is not True: issues.append(f"독립 풀이 답 불일치: {s.get('answer_value')} vs {g['answer_value']}")
+                if s.get('defects'): issues.append('독립 풀이 결함: ' + '; '.join(map(str, s['defects']))[:300])
+                if original_value is not None and same_value(g['answer_value'], original_value) is True: issues.append('원본과 같은 답')
+                j, r = {}, {}
+            else:
+                j = judge(D, slot, ticket)
+                r = review(D, slot, ticket)
+                issues = adoption_errors(g, s, j, r, level, original_value, {'check': check_run, 'solve': solve_run})
             result.update(solve=s, judge=j, review=r, runner_executions={'check': check_run, 'solve': solve_run},
                           problems=issues, eligible=not issues,
-                          status='내부 채택' if not issues else r.get('adoption', '보류'))
+                          status='내부 채택' if not issues else (r.get('adoption', '보류') if r else '보류'))
             combined = {**g, 'attempt': attempt, 'solve': s, 'judge': j, 'review': r, 'problems': issues,
                         'internal_adopted': not issues, 'runner_executions': {'check': check_run, 'solve': solve_run}}
             write_json(D / f'{slot}.json', combined)
             if not issues: break
             history.append(' | '.join(issues))
             # 확인 불가를 난도 불일치로 재생성하지 않는다.
-            if j.get('verdict') == '판정불가' or r.get('adoption') == '보류': break
+            if not FAST[0] and (j.get('verdict') == '판정불가' or r.get('adoption') == '보류'): break
         except BudgetError as exc:
             result['problems'].append('예산/시간 보류: ' + str(exc))
             break
@@ -1009,15 +1022,19 @@ def main(argv=None):
     ap.add_argument('--workers', type=int, default=3)
     ap.add_argument('--similar', default='', help='원본의 실제 학교 변형 사례(mine/similar_ctx.py 로 만든 md)')
     ap.add_argument('--unit', default=''); ap.add_argument('--src', default=''); ap.add_argument('--no', default='')
+    ap.add_argument('--reuse-plan', default='', help='[10/21] 이전 실행 폴더의 routes.json·plan.json 을 그대로 써서 경로 판단·설계를 건너뜀')
+    ap.add_argument('--fast', action='store_true', help='[10/21] 생성+독립 풀이만(원본 비교·검토·묶음 생략) — 대표가 문제를 직접 볼 때')
+    ap.add_argument('--plan-only', action='store_true', help='[10/21] 설계(plan.json)까지만 — 변형 후보를 싸게 많이 비교할 때')
     ap.add_argument('--max-calls', type=int, default=0, help='0: 무제한. 깨짐 재호출도 포함')
     ap.add_argument('--token-budget', type=int, default=0, help='호출 전 추정 예약 + 종료 후 측정. 엄격한 상한 아님')
     ap.add_argument('--estimated-call-tokens', type=int, default=20000)
     ap.add_argument('--total-seconds', type=float, default=0)
     ap.add_argument('--call-timeout', type=float, default=3600)
     a = ap.parse_args(argv)
+    FAST[0] = bool(getattr(a, 'fast', False))
     requested = {'쉬움': a.easy, '유지': a.keep, '어려움': a.hard}
-    if any(v < 0 for v in requested.values()) or sum(requested.values()) > 6:
-        ap.error('수량은 0 이상, 원본당 총 6칸 이하')
+    if any(v < 0 for v in requested.values()) or sum(requested.values()) > 12:
+        ap.error('수량은 0 이상, 원본당 총 12칸 이하')   # [10/21] 대표: 많이 뽑을 때 문제로 보여 달라 — 12칸까지
     if a.workers < 1 or a.call_timeout <= 0 or a.estimated_call_tokens < 1 or any(v < 0 for v in (a.max_calls, a.token_budget, a.total_seconds)):
         ap.error('병렬도·시간·예산 값 오류')
     expected = {f'{prefix}{i}': lv for prefix, lv in LEVELS.items() for i in range(1, requested[lv]+1)}
@@ -1068,18 +1085,22 @@ def main(argv=None):
         # 묶음 검사 예산을 먼저 보호한다. 최초 분석도 JSON 깨짐 재호출을 예약.
         bundle_ticket = BUDGET.reserve(2)
         routes_ticket = BUDGET.reserve(2)
+        if a.reuse_plan:
+            for n in ('routes.json', 'plan.json'): shutil.copy(Path(a.reuse_plan) / n, D / n)
         try:
-            routes = validate_routes(isolated_call(D, 'routes', ['original_problem.txt', 'delivery_policy.json', *[n for n in solve_refs(D) if n != 'similar.md']], 'routes.json',   # 경로 판단은 문제만(유사 사례의 해설은 주지 않는다)
+            routes = validate_routes(load(D / 'routes.json')) if a.reuse_plan else validate_routes(isolated_call(D, 'routes', ['original_problem.txt', 'delivery_policy.json', *[n for n in solve_refs(D) if n != 'similar.md']], 'routes.json',   # 경로 판단은 문제만(유사 사례의 해설은 주지 않는다)
                 ticket=routes_ticket))
             print(f"출제 의도 경로: {routes['intended']} (확신도 {routes['confidence']})", flush=True)
         finally: BUDGET.release(routes_ticket)
         analyze_ticket = BUDGET.reserve(2)
         try:
-            candidate_plan = isolated_call(D, 'analyze', ['original.md', 'menu.md', 'real_errors.md', 'routes.json', *solve_refs(D)], 'plan.json',
+            candidate_plan = load(D / 'plan.json') if a.reuse_plan else isolated_call(D, 'analyze', ['original.md', 'menu.md', 'real_errors.md', 'routes.json', *solve_refs(D)], 'plan.json',
                 ticket=analyze_ticket, EASY=a.easy, KEEP=a.keep, HARD=a.hard)
         finally: BUDGET.release(analyze_ticket)
         slots = validate_plan(candidate_plan, requested)
         plan = candidate_plan
+        if a.plan_only:
+            print(f'설계만: {len(slots)}칸 → plan.json', flush=True); return 0
         designs = {s['id']: s for s in slots}
         rows = [held_result(sid, lv, '--only 미선택: 이전 검토 미재사용' if sid not in only else
             designs[sid]['hold_reason'] or '설계 용도가 시험용 아님') for sid, lv in expected.items()]
@@ -1090,7 +1111,11 @@ def main(argv=None):
             by_id = {r['slot']: r for r in completed}
             rows = [by_id.get(r['slot'], r) for r in rows]
         # --only를 포함해 어떤 칸을 바꿔도 원본 단위 비교를 새로 한다.
-        selection = bundle(D, rows, requested, bundle_ticket)
+        if FAST[0]:
+            sel = [r['slot'] for r in rows if r.get('eligible')]
+            selection = {'complete': True, 'errors': [], 'selected_slots': sel, 'excluded_slots': [r['slot'] for r in rows if r['slot'] not in sel]}
+        else:
+            selection = bundle(D, rows, requested, bundle_ticket)
     except (OSError, ValueError, RuntimeError, TypeError, KeyError) as exc:
         fatal = str(exc)
     finally:

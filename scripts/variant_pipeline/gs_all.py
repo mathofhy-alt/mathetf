@@ -96,6 +96,8 @@ def prompt_vtype(key):
             '수학I': '수학Ⅰ = STAGE 3', '수학Ⅰ': '수학Ⅰ = STAGE 3', '공통수학1': '공통수학1 = STAGE 1'}.get(it['subject'], it['subject'])
     p = open(os.path.join(HERE, 'prompts', 'typeset.md'), encoding='utf-8').read()
     p = p.replace('{KEY}', key).replace('{NAME}', it['outname']).replace('{SRC}', it['src']).replace('{SUBJECT_NOTE}', note + f" — 단원 {it.get('range', '')}. 본풀이는 이 과목 범위 안에서만.")
+    import re as _re   # [10/21] 문항 수를 원본 md 의 '## N번' 개수로(6 고정 → 14문항 중 6개만 옮긴 사고)
+    p = p.replace('{N}', str(len(_re.findall(r'(?m)^## \d+번', open(it['src'], encoding='utf-8').read())) or 6))
     put_style(key, it['subject'])
     return p + STYLE.replace('{KEY}', key)
 
@@ -136,13 +138,18 @@ def prompt_qonly(key):
     return prompt_type(key) + QONLY.replace('{KEY}', key)
 
 
+def prompt_vqonly(key):
+    # [10/21] 변형 원고 분담 — 코덱스는 변형 문제 쪽(발문·선지·정답·chk·문제 그림)만, 해설은 클로드
+    return prompt_vtype(key) + QONLY.replace('{KEY}', key).replace('(원본 대조까지)', '(변형원본 md 의 문제 그대로)')
+
+
 def prompt_finish(key):
     return FINISH.replace('{KEY}', key)
 
 
 def run(kind, key, log):
     p = {'type': prompt_type, 'recheck': prompt_recheck, 'vtype': prompt_vtype, 'figfix': prompt_figfix, 'figaudit': prompt_figaudit,
-         'qonly': prompt_qonly, 'finish': prompt_finish}[kind](key)
+         'qonly': prompt_qonly, 'vqonly': prompt_vqonly, 'finish': prompt_finish}[kind](key)
     t = time.time()
     try:
         r = subprocess.run(CODEX + ['exec', '--skip-git-repo-check', '-c', 'notify=[]', '-c', 'mcp_servers={}', '--sandbox', 'workspace-write',
@@ -171,7 +178,7 @@ START = __import__('datetime').datetime.now()
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--type'); ap.add_argument('--recheck'); ap.add_argument('--vtype'); ap.add_argument('--figfix'); ap.add_argument('--figaudit'); ap.add_argument('--qonly'); ap.add_argument('--finish'); ap.add_argument('--fixnote', default='{}')
+    ap = argparse.ArgumentParser(); ap.add_argument('--type'); ap.add_argument('--recheck'); ap.add_argument('--vtype'); ap.add_argument('--figfix'); ap.add_argument('--figaudit'); ap.add_argument('--qonly'); ap.add_argument('--vqonly'); ap.add_argument('--finish'); ap.add_argument('--fixnote', default='{}')
     ap.add_argument('--log', required=True); ap.add_argument('--par', type=int, default=20); a = ap.parse_args()
     os.makedirs(a.log, exist_ok=True)
     jobs = Q.Queue()
@@ -182,6 +189,7 @@ def main():
     for k in expand(a.figfix): jobs.put(('figfix', k, 0))
     for k in expand(a.figaudit): jobs.put(('figaudit', k, 0))
     for k in expand(a.qonly): jobs.put(('qonly', k, 0))
+    for k in expand(a.vqonly): jobs.put(('vqonly', k, 0))
     for k in expand(a.finish): jobs.put(('finish', k, 0))
     lock = threading.Lock(); pending = [jobs.qsize()]
 

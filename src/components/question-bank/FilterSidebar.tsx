@@ -10,6 +10,7 @@ export interface FilterState {
     curriculum?: string;
     mockSlug?: string;
     units: string[];
+    unitKeys?: string[];   // [10/21] '과목::단원' — 있으면 검색은 이것으로 과목까지 맞춰 거른다
     concepts: string[];
     difficulty: string[];
     // questionType removed
@@ -71,7 +72,10 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
 
     // Filter States
     const [selectedSubjects,setSelectedSubjects]=useState<string[]>(initialFilters?.subjects||[]);
-    const [selectedUnits, setSelectedUnits] = useState<string[]>(initialFilters?.units || []);
+    // [10/21] 단원은 '과목::단원' 으로 고른다 — 미적분I·미적분II·수학II 에 '도함수의활용'·'정적분의활용'이 같이 있어
+    //   이름만으로 고르면 미적분I 을 눌러도 미적분II 가 반쯤 켜지고 검색에도 섞였다(대표 지적).
+    //   옛 저장본(initialFilters.units)은 이름뿐이라 그대로 두고 모든 과목에 걸린다(isUnitOn 의 두 번째 조건).
+    const [selectedUnits, setSelectedUnits] = useState<string[]>(initialFilters?.unitKeys || initialFilters?.units || []);
     const [selectedConcepts, setSelectedConcepts] = useState<string[]>(initialFilters?.concepts || []);
     const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>(initialFilters?.difficulty || []); // Strings "1".."10"
     const [keywordInput, setKeywordInput] = useState('');
@@ -244,7 +248,8 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
     // Emit changes
     useEffect(() => {
         onFilterChange({
-            units: selectedUnits,
+            units: Array.from(new Set(selectedUnits.map(k => k.includes('::') ? k.split('::')[1] : k))),
+            unitKeys: selectedUnits.every(k => k.includes('::')) ? selectedUnits : undefined,
             concepts: selectedConcepts.map(c => c.startsWith('#') ? c : `#${c}`), // DB는 #태그 형식으로 저장
             difficulty: selectedDifficulty,
             subjects: selectedSubjects,
@@ -252,6 +257,13 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
             includeOffCurriculum, curriculum, ...(initialFilters?.mockSlug?{mockSlug:initialFilters.mockSlug}:{}),
         });
     }, [selectedSubjects, selectedUnits, selectedConcepts, selectedDifficulty, activeKeywords, includeOffCurriculum, curriculum]);
+
+    const unitKey = (subject: string, unit: string) => `${subject}::${unit}`;
+    const isUnitOn = (subject: string, unit: string) => selectedUnits.includes(unitKey(subject, unit)) || selectedUnits.includes(unit);
+    const toggleUnit = (subject: string, unit: string) => {
+        const k = unitKey(subject, unit);
+        setSelectedUnits(isUnitOn(subject, unit) ? selectedUnits.filter(x => x !== k && x !== unit) : [...selectedUnits.filter(x => x !== unit), k]);
+    };
 
     const toggleSelection = (list: string[], item: string, setList: (L: string[]) => void) => {
         if (list.includes(item)) {
@@ -358,8 +370,9 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                         {curSubjects.map((subj) => treeData.find((n) => n.subject === subj)).filter((node): node is TreeNode => !!node).map((node) => {
                             // Subject selection logic
                             const allUnitsInNode = node.unitNodes.map(un => un.name);
-                            const allUnitsSelected = allUnitsInNode.length > 0 && allUnitsInNode.every(u => selectedUnits.includes(u));
-                            const someUnitsSelected = allUnitsInNode.some(u => selectedUnits.includes(u));
+                            const nodeKeys = allUnitsInNode.map(u => unitKey(node.subject, u));
+                            const allUnitsSelected = allUnitsInNode.length > 0 && allUnitsInNode.every(u => isUnitOn(node.subject, u));
+                            const someUnitsSelected = allUnitsInNode.some(u => isUnitOn(node.subject, u));
 
                             return (
                                 <div key={node.subject} className="space-y-1">
@@ -370,10 +383,10 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     if (allUnitsSelected) {
-                                                        setSelectedUnits(prev => prev.filter(u => !allUnitsInNode.includes(u)));
+                                                        setSelectedUnits(prev => prev.filter(u => !nodeKeys.includes(u) && !allUnitsInNode.includes(u)));
                                                     } else {
-                                                        const newUnits = new Set(selectedUnits);
-                                                        allUnitsInNode.forEach(u => newUnits.add(u));
+                                                        const newUnits = new Set(selectedUnits.filter(u => !allUnitsInNode.includes(u)));
+                                                        nodeKeys.forEach(k => newUnits.add(k));
                                                         setSelectedUnits(Array.from(newUnits));
                                                     }
                                                 }}
@@ -409,7 +422,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                     {node.isExpanded && (
                                         <div className="pl-4 space-y-1 border-l border-slate-100 ml-2 mt-1">
                                             {node.unitNodes.map(uNode => {
-                                                const isUnitSelected = selectedUnits.includes(uNode.name);
+                                                const isUnitSelected = isUnitOn(node.subject, uNode.name);
                                                 const allConceptsSelected = uNode.concepts.length > 0 && uNode.concepts.every(c => selectedConcepts.includes(c));
                                                 const someConceptsSelected = uNode.concepts.some(c => selectedConcepts.includes(c));
 
@@ -419,7 +432,7 @@ export default function FilterSidebar({ dbFilter, selectedDbIds, purchasedDbs, o
                                                             <div className="flex items-center gap-2">
                                                                 <button
                                                                     onClick={() => {
-                                                                        toggleSelection(selectedUnits, uNode.name, setSelectedUnits);
+                                                                        toggleUnit(node.subject, uNode.name);
                                                                     }}
                                                                     className={`w-5 h-5 md:w-3.5 md:h-3.5 border rounded flex items-center justify-center transition-colors ${isUnitSelected ? 'bg-[#3AADA9] border-[#3AADA9]' : 'border-slate-300'}`}
                                                                 >
