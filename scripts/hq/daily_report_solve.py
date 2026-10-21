@@ -168,7 +168,9 @@ REAL_SIDE = ('.hwp', '.pdf', '.hml', 'ㅈㄷ.pdf', '_원본제보.pdf', '_원본
 
 def real_to_try(outs):
     """[10/22 대표] 원본제보 장과 함께, 리얼 폴더에 이미 놓여 있던 한글 파일도 real.py → 그림 검사 → 트라이로 같이 옮긴다."""
-    extra = sorted(os.path.splitext(f)[0] for f in os.listdir(REAL) if f.lower().endswith('.hwp') and os.path.splitext(f)[0] not in outs)
+    # 리얼 폴더 바로 아래 파일만 — 「파스칼이라서보류」 같은 하위 폴더 안의 한글은 건드리지 않는다(대표 10/22)
+    extra = sorted(os.path.splitext(f)[0] for f in os.listdir(REAL)
+                   if f.lower().endswith('.hwp') and os.path.isfile(os.path.join(REAL, f)) and os.path.splitext(f)[0] not in outs)
     if extra: say('리얼 폴더에 있던 한글도 같이', len(extra), '장 —', ', '.join(extra))
     outs = list(outs) + extra
     if not outs: return
