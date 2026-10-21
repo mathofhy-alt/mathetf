@@ -1065,6 +1065,14 @@ export function generateHmlFromTemplate(
         combinedContentXmlFull = '<P><TEXT>No Content</TEXT></P>';
     }
 
+    // [10/21] 미주 번호를 문항 순서대로 다시 매긴다. 10/18~21에 구운 시험지는 번호가 해설 상자 캡션 안에 있어
+    //   한글이 열 때 다시 매기지 않는다(저장된 원래 시험지 번호가 그대로 — 4번 자리에 '12)'). 저장값을 맞춰 두면 어느 구조든 맞다.
+    {
+        let endnoteNo = 0;
+        combinedContentXmlFull = combinedContentXmlFull.replace(/<AUTONUM\b[^>]*>/g, (tag) =>
+            /NumberType="Endnote"/i.test(tag) ? tag.replace(/Number="\d+"/, `Number="${++endnoteNo}"`) : tag);
+    }
+
     // [FIX V53] Robust Anchor Replacement (Greedy Regex to prevent nesting)
     // Matches the entire wrapping paragraph containing {{CONTENT_HERE}}
     const anchorRegex = /<P[^>]*>\s*<TEXT[^>]*>\s*(?:<CHAR>\s*)?{{CONTENT_HERE}}(?:\s*<\/CHAR>)?\s*<\/TEXT>\s*<\/P>/i;
