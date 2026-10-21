@@ -79,7 +79,7 @@ SOL_{NN} = [
 SFIG_PART = '''너는 수학 시험지 그림 직원이다(코덱스). 작업 폴더 `C:\\gpt_solve\\tools`. 열쇠 {KEY} 의 **{NO}번 해설 그림만** 그린다(다른 문항은 다른 직원이 동시에 그린다).
 읽을 것: `그림도구_현재.md`, `해설규칙.md` 의 「### 그림」 절과 매개변수 여러 장 관련 절(grep 으로 그 절만), `content_{KEY}.py` 의 `# ── {NO}번 ──` 부분(그림 지시 주석·SOL_{NN} 의 @fig 줄·문제).
 만들 파일은 `_parts/{KEY}/sfig_q{NN}.py` 하나: `import figures as F`, `def draw(out):` 안에서 SOL_{NN} 의 `@fig:` 이름(s{NN}a…)마다 `F.save_scene(scene, '이름', out=out)`. 모듈을 불러올 때 그리면 안 된다.
-그림은 `# 그림 지시:` 와 해설 문장에 정확히 맞게(식·점·점근선·라벨). content·figures_{KEY}.py·다른 조각은 고치지 마라. 한글 열기·굽기 금지 — 단 그림 도구가 수식 라벨을 재려고 한글을 스스로 띄우는 것은 괜찮다.
+그림은 `# 그림 지시:` 와 해설 문장에 정확히 맞게(식·점·점근선·라벨). **각 표시 호는 꼭짓점 가까이 반지름 3~5mm(`radius_mm=4`), 라벨은 그 각 안 호 바로 바깥. 축 물결(생략) 표시는 쓰지 마라**(대표 10/21). content·figures_{KEY}.py·다른 조각은 고치지 마라. 한글 열기·굽기 금지 — 단 그림 도구가 수식 라벨을 재려고 한글을 스스로 띄우는 것은 괜찮다.
 확인: `python -X utf8 _parts/check_part.py {KEY} {NN} --sfig` (모든 @fig 이름이 그려졌는지). 끝나면 「완료 {NO}번 그림 N장」 한 줄.'''
 
 CHECK_PART = r'''# -*- coding: utf-8 -*-
