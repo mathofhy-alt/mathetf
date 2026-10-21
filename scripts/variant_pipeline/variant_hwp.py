@@ -50,7 +50,12 @@ def build_sheet(work, numbers, kind, name, title):
             if not r['slot'].startswith(kind) or r['slot'] not in rep.get('selected_slots', []): continue
             g = r.get('generated') or {}; n += 1
             if pol.get('unit') and pol['unit'] not in units: units.append(pol['unit'])
-            lines += [f'## {n}번 (원본 {no}번 · {g.get("direction", "")})', '### 문제', g['problem'], '', '### 정답', str(g['answer']), '',
+            # [10/21 대표: 9번은 그림이 있으면 안 된다 — 개형을 유추하는 게 핵심] 원본에 그림이 있던 문항만 그림을 넣는다
+            org = (D / 'original.md').read_text(encoding='utf-8-sig') if (D / 'original.md').is_file() else ''
+            fm = re.search(r'(?ms)^## 그림\s*\n(.*?)(?=^## |\Z)', org); fdesc = (fm.group(1).strip() if fm else '')
+            has_fig = bool(fdesc) and not fdesc.startswith('원본에 그림 없음')
+            fig_line = ('넣음 — 원본에 그림이 있었다. 이 변형의 조건에 맞게 다시 그린다. 원본 그림: ' + fdesc) if has_fig else '넣지 않음 — 원본에 그림이 없다. 문제 그림을 절대 넣지 마라(그래프 개형을 학생이 유추하는 것이 핵심인 문항이 많다).'
+            lines += [f'## {n}번 (원본 {no}번 · {g.get("direction", "")})', '### 문제', g['problem'], '', '### 정답', str(g['answer']), '', '### 그림', fig_line, '',
                       '### 풀이 요지(검산용 — 해설 아님)', g.get('solution', ''), '']
     SRCDIR.mkdir(parents=True, exist_ok=True)
     path = SRCDIR / f'{name}.md'; path.write_text('\n'.join(lines), encoding='utf-8')

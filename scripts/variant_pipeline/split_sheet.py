@@ -40,7 +40,7 @@ CODEX_HEAD = '''너는 수학 시험지 원고 직원이다(코덱스). 작업 �
 **읽을 것은 둘뿐이다**: `_parts/문제쪽_요약.md`(원고 형식·발문 줄바꿈·수식 문법·그림 형식·금지 사항), 그리고 문제 그림이 필요할 때만 `그림도구_현재.md`.
 다른 규칙 문서(한시험지.md 전체·해설규칙.md·과정.py 등)는 읽지 마라 — 요약에 다 있다. 막히는 표기가 있으면 한시험지.md 에서 그 낱말만 grep 해 그 줄만 본다.
 표기 견본이 필요하면 `content_e974.py` 의 prob 호출 하나만 열어 본다.
-**표기(10/21 시험에서 빠뜨린 것)**: 수식 안 문자마다 앞에 `it` — `$it f( it x)$`, `$it g( it x)$`, `$2 left | it x right |$` 처럼 요약의 견본 그대로 쓴다(`it f(x)` 처럼 줄이지 마라). 원본 md 에 그림이 없으면 문제 그림을 덧붙이지 마라.
+**표기(10/21 시험에서 빠뜨린 것)**: 수식 안 문자마다 앞에 `it` — `$it f( it x)$`, `$it g( it x)$`, `$2 left | it x right |$` 처럼 요약의 견본 그대로 쓴다(`it f(x)` 처럼 줄이지 마라). **문제 그림은 원본 md 의 그 문항 「### 그림」이 「넣음」일 때만** 그린다. 「넣지 않음」이면 fig 를 절대 넣지 마라 — 곡선·함수가 나와도 마찬가지(대표 10/21: 개형을 유추하는 게 핵심인 문항에 그래프를 넣어 답을 알려 준 사고).
 공용 도구·검사기·queue.json·다른 직원의 조각은 읽기만. 한글(HWP) 열기·굽기 금지. 임시 파일은 `scratch\\{KEY}_*`, 다 쓰면 지운다.
 '''
 
@@ -189,6 +189,22 @@ def claude_part(key, no, log, logdir):
     return key, no, 'ok' if ok else 'fail'
 
 
+def fig_mismatch(key, nos):
+    """[10/21] 원본 md 「### 그림」(넣음/넣지 않음) ↔ 조각의 fig 유무 대조. 다르면 굽지 않는다."""
+    it = G.queue_item(key); src = Path(it['src'])
+    if not src.is_file(): src = Path(G.GS) / 'comp' / src.name
+    t = src.read_text(encoding='utf-8') if src.is_file() else ''
+    bad = []
+    for no in nos:
+        m = re.search(rf'(?ms)^## {no}번.*?^### 그림\s*\n(.*?)(?=^### |^## |\Z)', t)
+        if not m: continue
+        want = m.group(1).strip().startswith('넣음')
+        q = (TOOLS / '_parts' / key / f'q{no:02d}.py').read_text(encoding='utf-8')
+        got = bool(re.search(r"fig=['\"](?:@fig:)?q\d+", q))
+        if want != got: bad.append(f"{no}번 원본 {'있음' if want else '없음'}·원고 {'있음' if got else '없음'}")
+    return bad
+
+
 def merge(key, nos, log):
     it = G.queue_item(key); D = TOOLS / '_parts' / key
     out = [f'# -*- coding: utf-8 -*-\n"""{it["outname"]} — 변형 문제 {len(nos)}문항.\n\n원본: {it["src"]}\n'
@@ -262,6 +278,11 @@ def main():
     say(log, '문항 조각', len(jobs), '개 —', ', '.join(f'{k} {sum(1 for x in jobs if x[0] == k)}문항' for k in keys))
     with ThreadPoolExecutor(a.par) as ex: list(ex.map(lambda j: codex_part(j[0], j[1], log, logdir), jobs))
     with ThreadPoolExecutor(min(a.par, 14)) as ex: list(ex.map(lambda j: claude_part(j[0], j[1], log, logdir), jobs))
+    stop = set()
+    for k in keys:
+        bad = fig_mismatch(k, [n for kk, n in jobs if kk == k])
+        if bad: say(log, k, '⚠ 그림 유무가 원본과 다름 — 굽지 않음:', '; '.join(bad)); stop.add(k)
+    keys = [k for k in keys if k not in stop]
     for k in keys: merge(k, [n for kk, n in jobs if kk == k], log)
     # [10/21] 해설 그림도 문항마다 한 명씩 동시에 → 마무리 직원은 형식만(그림이 다 있으면 그리지 않는다)
     with ThreadPoolExecutor(a.par) as ex: list(ex.map(lambda j: sfig_part(j[0], j[1], log, logdir), jobs))
