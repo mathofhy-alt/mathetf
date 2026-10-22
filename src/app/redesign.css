@@ -1595,7 +1595,8 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-tl-note.is-gray { border-radius: 12px; background: var(--rd-zone); line-height: 1.6; color: var(--rd-sub); }
 .rd .rd-tl-pickhint { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--rd-nav); }
 .rd .rd-tl-cands { display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow: auto; padding-right: 2px; }
-.rd .rd-tl-cand { border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 1px var(--rd-line); overflow: hidden; }
+/* [10/22] flex-shrink:0 — 후보 묶음(최대 70vh, 세로 flex) 안에서 카드가 눌려 펼쳐도 두 줄만 보였다(느티 선생님 문의) */
+.rd .rd-tl-cand { flex-shrink: 0; border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 1px var(--rd-line); overflow: hidden; }
 .rd .rd-tl-cand.is-on { background: #F4FBFA; box-shadow: inset 0 0 0 2px var(--rd-ink); }
 .rd .rd-tl-cand-head { display: flex; align-items: center; gap: 4px; padding: 2px 6px 2px 2px; border-bottom: 1px solid var(--rd-line); }
 .rd .rd-tl-check { flex: none; width: 44px; height: 44px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }

@@ -10,6 +10,8 @@ import { Calendar, MessageSquare, Camera, Coins, Download } from 'lucide-react';
 export default function MyReports({ onOpenPurchases }: { onOpenPurchases?: () => void }) {
     const [rows, setRows] = useState<any[] | null>(null);
     const [error, setError] = useState('');
+    // [10/22] 신청이 수백 건인 회원(느티 선생님 300여 건)은 목록이 늦게 그려지며 아래 칸을 한참 밀어내, 휴대폰에서 화면이 휙 바뀌는 것처럼 보였다 — 처음엔 10건만
+    const [shown, setShown] = useState(10);
     useEffect(() => {
         fetch('/api/original-report?mine=1', { cache: 'no-store' })
             .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error || '불러오지 못했습니다.'); setRows(j.reports || []); })
@@ -26,7 +28,7 @@ export default function MyReports({ onOpenPurchases }: { onOpenPurchases?: () =>
     );
     return (
         <ul className="rd-my-list rd-my-reqs">
-            {rows.map(row => (
+            {rows.slice(0, shown).map(row => (
                 <li key={row.id} className="rd-my-req">
                     <div className="rd-my-req-head">
                         <div className="rd-my-req-main">
@@ -58,6 +60,7 @@ export default function MyReports({ onOpenPurchases }: { onOpenPurchases?: () =>
                     {row.typed?.status === 'working' && <p className="rd-my-req-wait">채택됐어요. 한글 파일로 타이핑하는 중이에요 — 완성되면 여기와 구매 내역에서 받을 수 있어요.</p>}
                 </li>
             ))}
+            {rows.length > shown && <li className="rd-my-more"><button type="button" className="rd-btn rd-btn-block" onClick={() => setShown(n => n + 20)}>더 보기 ({rows.length - shown}건 남음)</button></li>}
         </ul>
     );
 }

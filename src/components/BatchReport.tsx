@@ -30,7 +30,7 @@ async function pdfHeaderText(file: File): Promise<string> {
         const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.legacy.min.mjs';
         // 한글 CID 글꼴은 문자표(cMap)가 있어야 글자로 풀린다 — 한국어 문자표만 public/pdf-cmaps 에 복사해 뒀다(node_modules/pdfjs-dist/cmaps)
-        const doc = await pdfjs.getDocument({ data: await file.arrayBuffer(), cMapUrl: '/pdf-cmaps/', cMapPacked: true }).promise;
+        const doc = await pdfjs.getDocument({ data: await file.arrayBuffer(), cMapUrl: '/pdf-cmaps/', cMapPacked: true, wasmUrl: '/pdfjs-wasm/' }).promise;
         const page = await doc.getPage(1);
         const tc = await page.getTextContent();
         return tc.items.map((it: any) => it.str).join(' ').slice(0, 3000);   // 스캔 PDF 는 글자가 없다 → 파일 이름만 쓴다

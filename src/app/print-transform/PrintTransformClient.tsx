@@ -46,7 +46,9 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
             pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.legacy.min.mjs'; // public 정적 파일 (webpack 번들 회피)
             const buf = await file.arrayBuffer();
             const doc = await Promise.race([
-                pdfjs.getDocument({ data: buf }).promise,
+                // [10/22] wasmUrl — 캐논 복합기 스캔(CCITT 흑백 글자 이미지)·JBIG2·JPX 는 pdf.js 6 이 이 모듈로 푼다.
+                //   없으면 글자 이미지를 통째로 버려 배경만 남은 빈 쪽이 됐다(느티 선생님 학교 프린트 8쪽).
+                pdfjs.getDocument({ data: buf, wasmUrl: '/pdfjs-wasm/', cMapUrl: '/pdf-cmaps/', cMapPacked: true }).promise,
                 new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 30000)),
             ]) as any;
             pdfRef.current = doc;
