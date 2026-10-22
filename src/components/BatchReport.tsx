@@ -5,6 +5,7 @@ import { FileText, Trash2, CheckCircle2, AlertCircle, Merge, Upload } from 'luci
 import { CURRICULA } from '@/lib/curriculum';
 import { REPORT_MIN_YEAR, REPORT_REWARD_LABEL } from '@/lib/report-reward';
 import { guessReport, fitSubject, curriculumOf, type GuessSchool } from '@/lib/reportGuess';
+import { gaEvent } from '@/lib/analytics/ga';
 
 /**
  * 여러 시험지 한꺼번에 제보 (10/15) — 사용자: 강사가 수원 학교 14곳 70회차를 한 건씩 폼으로 올리느라 몇 시간 걸렸다.
@@ -162,6 +163,7 @@ export default function BatchReport({ schools, supabase, top, notify, notifySect
                 if (res.ok) ok++;
                 setRows(rs => rs.map(x => x.key === r.key ? { ...x, status: res.ok ? 'done' : 'error', msg: res.ok ? undefined : j.error || '접수하지 못했어요.' } : x));
             }
+            if (ok > 0) gaEvent('original_report_submit', { count: ok, bulk: 1 });
             if (ok === ready.length) onDone(ok);
             else setError(`${ok}개는 접수됐고 ${ready.length - ok}개는 접수하지 못했어요. 빨간 줄을 확인해 주세요.`);
         } catch (err: any) {

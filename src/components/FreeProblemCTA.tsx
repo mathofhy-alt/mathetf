@@ -8,6 +8,7 @@ import PersonaAsk from '@/components/PersonaAsk';
 import NotifyOptIn from '@/components/NotifyOptIn';
 import ExamPromoModal from '@/components/ExamPromoModal';
 import { logAnon } from '@/lib/anon-log';
+import { gaEvent } from '@/lib/analytics/ga';
 
 /**
  * 시험지 상세페이지의 '무료 문제 PDF' CTA.
@@ -69,6 +70,7 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school }: 
             a.click();
             a.remove();
             setResumeDownload(false);
+            gaEvent('free_pdf_download', { from: 'exam_page' });
             if (new URLSearchParams(window.location.search).get('download') === 'free') {
                 const nextUrl = new URL(window.location.href);
                 nextUrl.searchParams.delete('download');

@@ -9,6 +9,7 @@ import { QB_PASS } from '@/lib/qbPassConfig';
 import { NOTIFY_WHEN, type NotifyWhen } from '@/lib/reportDoneNotice';
 import BatchReport from '@/components/BatchReport';
 import { curriculumOf, fitSubject } from '@/lib/reportGuess';
+import { gaEvent } from '@/lib/analytics/ga';
 
 /**
  * 회원 원본 시험지 제보 창 (2026-10-05).
@@ -131,6 +132,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                 body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: { ...(bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note }), notify: { sms: notifySms, when: notifyWhen } } }) });
             const rj = await r.json(); if (!r.ok) throw new Error(rj.error || '제보를 저장하지 못했습니다.');
             setDone(true);
+            gaEvent('original_report_submit', { count: 1, bulk: bulk ? 1 : 0 });
         } catch (err: any) {
             setError(err?.message || '제보 중 문제가 생겼습니다. 잠시 후 다시 시도해주세요.');
         } finally { setBusy(''); }

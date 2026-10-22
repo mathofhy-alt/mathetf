@@ -62,15 +62,47 @@ def solve():
     items = json.load(open(qp, encoding='utf-8'))['items']
     comp = {os.path.splitext(f)[0] for f in os.listdir(os.path.join(GS, 'comp')) if f.endswith('.hwp')}
     status = collections.Counter(it.get('status') for it in items)
-    drafted_not_baked = [it['key'] for it in items if os.path.exists(os.path.join(GS, 'tools', f"content_{it['key']}.py")) and it['outname'] not in comp and it.get('status') not in ('대체됨', '삭제')]
+    # [10/22] 구운 한글은 comp 에 남지 않고 real → 트라이 → 등록으로 옮겨진다 — comp 만 보면 88장이 '미굽기'로 잘못 잡혔다.
+    #   굽기.py 가 남기는 _work/<이름>.hml 이 있으면 구운 것으로 본다. 변형·자체·시험용은 따로 센다.
+    work = os.path.join(GS, 'tools', '_work')
+    baked = lambda it: it['outname'] in comp or os.path.exists(os.path.join(work, it['outname'] + '.hml'))
+    side = lambda it: it['outname'].startswith(('변형', '자체', '솔브시험'))
+    drafted = [it for it in items if os.path.exists(os.path.join(GS, 'tools', f"content_{it['key']}.py")) and it.get('status') not in ('대체됨', '삭제')]
+    drafted_not_baked = [it['key'] for it in drafted if not baked(it) and not side(it)]
+    side_not_baked = [it['key'] for it in drafted if not baked(it) and side(it)]
     waiting = [it['key'] for it in items if not os.path.exists(os.path.join(GS, 'tools', f"content_{it['key']}.py")) and it.get('status') == '대기']
-    return {'상태': dict(status), '원고있음_미굽기': drafted_not_baked, '원고없음_대기': waiting, '한글완성': len(comp)}
+    return {'상태': dict(status), '원고있음_미굽기': drafted_not_baked, '변형·자체_미굽기': side_not_baked, '원고없음_대기': waiting,
+            '구운_장': sum(1 for it in drafted if baked(it)), 'comp_남은_한글': len(comp)}
+
+
+def google():
+    """[10/23 대표] 시험지 분석글 배포(10/23 02:07) 뒤 구글 색인 추적 — 매일 보고에 한 줄. 표본 20개만 검사(하루 한도 2,000)."""
+    try:
+        import random, sys
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'gsc'))
+        from gsc import service
+        s = service(interactive=False); site = 'https://mathetf.com/'
+        # 사이트맵 '읽은 날'은 보지 않는다 — 제출하면 바로 받아 가서 신호가 아니다(10/23 대표 정정)
+        idx = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'exam_long', 'index_cache.json'), encoding='utf-8'))
+        random.seed(20261023); sample = random.sample(sorted(idx), min(20, len(idx)))   # 매일 같은 표본 — 변화만 보이게
+        cov = collections.Counter()
+        for eid in sample:
+            r = s.urlInspection().index().inspect(body={'inspectionUrl': f'https://mathetf.com/exam/{eid}', 'siteUrl': site}).execute()
+            cov[r['inspectionResult']['indexStatusResult'].get('coverageState', '?')] += 1
+        end = D.datetime.now(KST).date() - D.timedelta(days=3)   # 검색 실적은 2~3일 늦게 잡힌다
+        rows = s.searchanalytics().query(siteUrl=site, body={'startDate': str(end - D.timedelta(days=6)), 'endDate': str(end),
+                                                              'dimensions': ['page'], 'rowLimit': 1000}).execute().get('rows', [])
+        ex = [r for r in rows if '/exam/' in r['keys'][0]]
+        return {'분석글_시험지_표본20_색인상태': dict(cov),
+                f'최근7일({end - D.timedelta(days=6)}~{end})_시험지페이지': {'노출된_페이지': len(ex), '노출': int(sum(r['impressions'] for r in ex)), '클릭': int(sum(r['clicks'] for r in ex))}}
+    except Exception as e:
+        return {'오류': str(e)[:150] + ' (토큰 만료면 대표 재로그인: python scripts/gsc/gsc.py)'}
 
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--day'); ap.add_argument('--json'); a = ap.parse_args()
     day = D.date.fromisoformat(a.day) if a.day else D.datetime.now(KST).date()
-    out = {'날짜': str(day), '홈페이지': homepage(day), '솔브': solve()}
+    out = {'날짜': str(day), '홈페이지': homepage(day), '솔브': solve(), '구글_색인': google()}
     s = json.dumps(out, ensure_ascii=False, indent=1)
     if a.json: open(a.json, 'w', encoding='utf-8').write(s)
     print(s)
