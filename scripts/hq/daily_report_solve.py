@@ -63,9 +63,22 @@ VERIFY = '''첨부한 그림은 학교 수학 시험지 PDF 의 첫 쪽(과 둘�
 JSON 한 줄만 답하라: {"match": true|false|null, "read": "머리말에서 읽은 그대로", "reason": "한 줄"}  (null = 확인 불가)'''
 
 
+AUTO_LOG = os.path.join(TRY, '_report_auto.log')
+
+
+def user_confirmed(name):
+    """[10/22 대표] 네임 폴더에 「_확인필요」 로 들어왔다가 대표가 이름을 고쳐 표시를 지운 파일 — 대표가 확인한 것이니 표지 대조 없이 작업.
+    원본제보 자동 처리 로그(try/_report_auto.log)에 그 이름 + '_확인필요.pdf' 로 들어온 기록이 있으면 그렇다고 본다."""
+    if not os.path.exists(AUTO_LOG): return False
+    flagged = name[:-4] + '_확인필요.pdf'
+    return flagged in open(AUTO_LOG, encoding='utf-8', errors='replace').read()
+
+
 def verify(pdf):
     import fitz
     name = os.path.basename(pdf); d = os.path.join(LOGD, 'verify'); os.makedirs(d, exist_ok=True)
+    if user_confirmed(name):
+        return {'match': True, 'read': '대표가 이름을 고쳐 「확인필요」를 지움', 'reason': '대표 확인 — 표지 대조 생략'}
     doc = fitz.open(pdf); imgs = []
     for i in range(min(2, doc.page_count)):
         p = os.path.join(d, f'{abs(hash(name)) % 10**8}_{i}.png'); doc[i].get_pixmap(dpi=110).save(p); imgs.append(p)
