@@ -111,3 +111,16 @@ tests/output/
 
 # 타이포 작업 폴더 (자료 원본 — 저장소에 올리지 않음)
 /타이포/
+.secrets/
+.mcp.json
+# 시험지 장문 분석글 작업물(코드만 올린다)
+scripts/exam_long/data/
+scripts/exam_long/data_sim/
+scripts/exam_long/out/
+scripts/exam_long/out_claude/
+scripts/exam_long/out_codex/
+scripts/exam_long/logs/
+scripts/exam_long/cache/
+scripts/exam_long/index_cache.json
+scripts/exam_long/compare.html
+scripts/exam_long/targets_new_*.json

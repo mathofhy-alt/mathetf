@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import { HUB_SUBJECTS } from '@/lib/subject-hub';
 import { buildRegionTree } from '@/lib/region-hub';
 import { INSIGHT_REPORTS } from '@/lib/seo-insights';
+import { examEditorials } from '@/lib/exam-editorials';
 
 export const revalidate = 3600; // 1시간마다 갱신
 
@@ -120,19 +121,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // 미리보기 준비 전 회차는 페이지 접근은 유지하되 색인 제출에서 제외한다.
         const examRows = await fetchAll<any>((from, to) => supabase
             .from('exam_materials')
-            .select('id, created_at, ai_analysis_at, preview_urls')
+            .select('id, created_at, preview_urls')
             .eq('file_type', 'PDF')
             .eq('content_type', '해설')
             .neq('school', 'DELETED')
             .range(from, to));
 
+        // [10/22] 시험지 lastmod = 공개 본문이 실제로 바뀐 마지막 날.
+        //   예전엔 9/24 바닥값에 묶여 1,370회차가 9/24 로 나갔다 — 9/28 에 분석글이 붙은 휘문고도 9/24.
+        //   ai_analysis 는 9/25 부터 화면에 안 나오므로 뺀다. 교체(id 유지 재등록)는 created_at 이
+        //   그대로라 미리보기 주소의 ?v=<교체 시각(초)> 로 읽는다(home-catalog.ts 와 같은 규약).
+        const replacedMs = (urls: unknown) => {
+            let latest = 0;
+            for (const u of Array.isArray(urls) ? urls : []) {
+                const m = typeof u === 'string' ? u.match(/[?&]v=(\d{10})(?!\d)/) : null;
+                if (m) latest = Math.max(latest, Number(m[1]) * 1000);
+            }
+            return latest;
+        };
         const examPages: MetadataRoute.Sitemap = examRows
             .filter((r: any) => Array.isArray(r.preview_urls) && r.preview_urls.length > 0)
             .map((r: any) => ({
                 url: `${BASE}/exam/${r.id}`,
                 lastModified: new Date(Math.max(
                     new Date(r.created_at).getTime(),
-                    r.ai_analysis_at ? new Date(r.ai_analysis_at).getTime() : 0,
+                    replacedMs(r.preview_urls),
+                    examEditorials[r.id] ? new Date(examEditorials[r.id].reviewedAt).getTime() : 0,
                     new Date('2026-09-24').getTime(), // 관련 회차·보고서 링크와 이용 범위 설명 변경
                 )),
                 changeFrequency: 'monthly' as const,

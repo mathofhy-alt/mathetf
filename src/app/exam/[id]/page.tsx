@@ -5,6 +5,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import ExamDetailV2 from '@/components/ExamDetailV2';
+import { loadLongEditorial } from '@/lib/exam-long';
 import { ExamOpinion } from '@/components/ExamOpinions';
 import { buildSourceDbId } from '@/lib/examKey';
 import { proxiedOgImage } from '@/lib/og-image';
@@ -302,6 +303,8 @@ export default async function ExamDetailPage({ params }: Props) {
         opinions = data || [];
     }
 
+    const longEditorial = await loadLongEditorial(row.id);
+
     return <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <ExamDetailV2 row={row} previews={previews} questionCount={composition?.total || null}
@@ -309,7 +312,7 @@ export default async function ExamDetailPage({ params }: Props) {
             canStartWithQuestions={canStartWithQuestions} createHref={createHref}
             otherYears={otherYears} paidPdfId={paidPdfId} paidMaterials={paidMaterials} opinionExamId={opinionExamId}
             opinions={opinions} narrative={narrative} concepts={concepts} composition={composition}
-            relatedExams={relatedExams} nearbyExams={nearbyExams} relatedReport={relatedReport} />
+            relatedExams={relatedExams} nearbyExams={nearbyExams} relatedReport={relatedReport} longEditorial={longEditorial} />
     </>;
 
 }
