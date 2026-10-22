@@ -34,9 +34,12 @@ if r.returncode:
     sys.exit(2)                       # 걸린 장은 굽지 않는다 — 본 세션이 클로드 직원에게 돌려보낸다
 # [10/21 대표 승인] 해설 그림 눈 검토 — 검사기는 그림 이름만 봐서 라벨이 엉뚱한 곳에 뜬 그림(효성고3 14번)을 못 잡았다
 import sfig_review
+fig_warn = ''
 if sfig_review.run(key, log=os.path.join(log, 'finish.log')):
-    say('⚠ 해설 그림 검토에서 고친 뒤에도 걸림이 남음 — 굽지 않음(_work/sfig_review)')
-    sys.exit(3)
+    # [10/22 대표 "언제 문제가 됐는데 이제야 하는거야"] 예전엔 여기서 멈춰 한 장이 두 시간 넘게 real 앞에 서 있었다.
+    #   그림 지적은 굽기를 막지 않는다 — 굽고 트라이까지 보내되 보고 줄에 남겨 사장이 바로 고친다(트라이는 파싱 전 대표 확인 단계).
+    fig_warn = ' | ⚠ 해설 그림 지적 남음(_work/sfig_review/%s_after2.json) — 사장 확인' % key
+    say('⚠ 해설 그림 검토 지적 남음 — 굽기는 계속')
 while True:                           # 굽기 잠금(한글은 한 번에 하나)
     try:
         os.mkdir(LOCK); break
@@ -48,6 +51,6 @@ try:
                        encoding='utf-8', errors='replace', timeout=3 * 3600)
     open(os.path.join(log, f'{key}_bake.log'), 'w', encoding='utf-8').write((b.stdout or '') + (b.stderr or ''))
     ok = [l for l in (b.stdout or '').splitlines() if '자동검사' in l]
-    say('✅ 구움' if ok else '⚠ 굽기 실패', ok[0] if ok else (b.stdout or '')[-300:])
+    say('✅ 구움' if ok else '⚠ 굽기 실패', (ok[0] + fig_warn) if ok else (b.stdout or '')[-300:])
 finally:
     os.rmdir(LOCK)

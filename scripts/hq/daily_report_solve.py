@@ -63,9 +63,22 @@ VERIFY = '''첨부한 그림은 학교 수학 시험지 PDF 의 첫 쪽(과 둘�
 JSON 한 줄만 답하라: {"match": true|false|null, "read": "머리말에서 읽은 그대로", "reason": "한 줄"}  (null = 확인 불가)'''
 
 
+AUTO_LOG = os.path.join(TRY, '_report_auto.log')
+
+
+def user_confirmed(name):
+    """[10/22 대표] 네임 폴더에 「_확인필요」 로 들어왔다가 대표가 이름을 고쳐 표시를 지운 파일 — 대표가 확인한 것이니 표지 대조 없이 작업.
+    원본제보 자동 처리 로그(try/_report_auto.log)에 그 이름 + '_확인필요.pdf' 로 들어온 기록이 있으면 그렇다고 본다."""
+    if not os.path.exists(AUTO_LOG): return False
+    flagged = name[:-4] + '_확인필요.pdf'
+    return flagged in open(AUTO_LOG, encoding='utf-8', errors='replace').read()
+
+
 def verify(pdf):
     import fitz
     name = os.path.basename(pdf); d = os.path.join(LOGD, 'verify'); os.makedirs(d, exist_ok=True)
+    if user_confirmed(name):
+        return {'match': True, 'read': '대표가 이름을 고쳐 「확인필요」를 지움', 'reason': '대표 확인 — 표지 대조 생략'}
     doc = fitz.open(pdf); imgs = []
     for i in range(min(2, doc.page_count)):
         p = os.path.join(d, f'{abs(hash(name)) % 10**8}_{i}.png'); doc[i].get_pixmap(dpi=110).save(p); imgs.append(p)
@@ -163,6 +176,32 @@ def save_notice(it, text):
     return '저장함 ' + r['id'][:8]
 
 
+REAL_SIDE = ('.hwp', '.pdf', '.hml', 'ㅈㄷ.pdf', '_원본제보.pdf', '_원본.pdf', '_해설.pdf')
+
+
+def real_to_try(outs):
+    """[10/22 대표] 원본제보 장과 함께, 리얼 폴더에 이미 놓여 있던 한글 파일도 real.py → 그림 검사 → 트라이로 같이 옮긴다."""
+    # 리얼 폴더 바로 아래 파일만 — 「파스칼이라서보류」 같은 하위 폴더 안의 한글은 건드리지 않는다(대표 10/22)
+    extra = sorted(os.path.splitext(f)[0] for f in os.listdir(REAL)
+                   if f.lower().endswith('.hwp') and os.path.isfile(os.path.join(REAL, f)) and os.path.splitext(f)[0] not in outs)
+    if extra: say('리얼 폴더에 있던 한글도 같이', len(extra), '장 —', ', '.join(extra))
+    outs = list(outs) + extra
+    if not outs: return
+    r = subprocess.run([SYSPY, '-X', 'utf8', 'real.py'] + outs, cwd=REAL_TOOLS, env=ENV, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=6 * 3600, stdin=subprocess.DEVNULL)
+    open(os.path.join(LOGD, 'real.log'), 'w', encoding='utf-8').write((r.stdout or '') + (r.stderr or ''))
+    c = subprocess.run([SYSPY, '-X', 'utf8', 'check_real_pics.py'], cwd=REAL_TOOLS, env=ENV, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=1800)
+    bad = [l for l in (c.stdout or '').splitlines() if any(o in l for o in outs) and not l.startswith('OK')]
+    say('real.py rc', r.returncode, '| 그림 검사 문제', len(bad), *(bad[:5]))
+    for o in outs:
+        if any(o in l for l in bad): say('⚠ 그림 문제로 real 에 남김 — 사장이 원인 확인·해결 후 트라이로', o); continue
+        if not os.path.exists(os.path.join(REAL, o + '.pdf')): say('⚠ real.py 결과 없음 — real 에 남김', o); continue
+        for f in os.listdir(REAL):
+            if f in [o + s for s in REAL_SIDE]:
+                s = os.path.join(REAL, f)
+                if not os.path.exists(os.path.join(TRY, f)): shutil.move(s, os.path.join(TRY, f))
+        say('트라이 폴더로', o)
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--dry-run', action='store_true'); a = ap.parse_args()
     if os.path.exists(LOCKF) and time.time() - os.path.getmtime(LOCKF) < 20 * 3600:
@@ -183,7 +222,9 @@ def main():
             st[n] = {'verify': v, 'at': STAMP}
             if v.get('match') is True: ok.append(p)
         json.dump(st, open(STATE, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-        if a.dry_run or not ok: return
+        if a.dry_run: return
+        if not ok:
+            real_to_try([]); return          # 원본제보가 없는 날도 리얼 폴더에 놓인 한글은 처리한다
         before = {i['key'] for i in json.load(open(os.path.join(TOOLS, 'queue.json'), encoding='utf-8'))['items']}
         for p in ok:
             dst = os.path.join(GS, os.path.basename(p))
@@ -211,18 +252,7 @@ def main():
             for f in (o + '.hwp', o + '_원본제보.pdf'):
                 if os.path.exists(os.path.join(COMP, f)) and not os.path.exists(os.path.join(REAL, f)): shutil.move(os.path.join(COMP, f), os.path.join(REAL, f))
             outs.append(o)
-        if outs:
-            r = subprocess.run([SYSPY, '-X', 'utf8', 'real.py'] + outs, cwd=REAL_TOOLS, env=ENV, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=4 * 3600, stdin=subprocess.DEVNULL)
-            open(os.path.join(LOGD, 'real.log'), 'w', encoding='utf-8').write((r.stdout or '') + (r.stderr or ''))
-            c = subprocess.run([SYSPY, '-X', 'utf8', 'check_real_pics.py'], cwd=REAL_TOOLS, env=ENV, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=1800)
-            bad = [l for l in (c.stdout or '').splitlines() if any(o in l for o in outs) and not l.startswith('OK')]
-            say('real.py rc', r.returncode, '| 그림 검사 문제', len(bad), *(bad[:5]))
-            for o in outs:
-                if any(o in l for l in bad): say('그림 문제로 real 에 남김', o); continue
-                for f in (o + '.hwp', o + '.pdf', o + '.hml', o + 'ㅈㄷ.pdf', o + '_원본제보.pdf'):
-                    s = os.path.join(REAL, f)
-                    if os.path.exists(s) and not os.path.exists(os.path.join(TRY, f)): shutil.move(s, os.path.join(TRY, f))
-                say('트라이 폴더로', o)
+        real_to_try(outs)
         for k, s in done:
             if s != '구움': say('못 끝냄', k, s)
     finally:

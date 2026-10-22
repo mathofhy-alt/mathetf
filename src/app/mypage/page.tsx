@@ -290,8 +290,9 @@ export default function MyPage() {
                 <div className="rd-my-panel">
                     {/* [10/7] 내 요청 = 원본 제보 + 개인DB 요청 — 둘 다 운영자 안내가 붙는다 */}
                     {activeTab === 'requests' && <div className="rd-my-stack">
-                        <section className="rd-my-reqsec" aria-labelledby="my-reports-h"><h2 id="my-reports-h" className="rd-my-sec-title">무료 타이핑</h2><MyReports onOpenPurchases={() => { setReloadKey(k => k + 1); setActiveTab('purchases'); setPurchaseTab('material'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></section>
+                        {/* [10/22] 개인DB 요청(대개 몇 건)을 위로 — 아래에 두면 무료 타이핑 목록이 늦게 그려지며 밀어내 휴대폰에서 읽기 어려웠다(느티 선생님 문의) */}
                         <section className="rd-my-reqsec" aria-labelledby="my-dbreq-h"><h2 id="my-dbreq-h" className="rd-my-sec-title">개인DB 요청</h2><MyDbRequests /></section>
+                        <section className="rd-my-reqsec" aria-labelledby="my-reports-h"><h2 id="my-reports-h" className="rd-my-sec-title">무료 타이핑</h2><MyReports onOpenPurchases={() => { setReloadKey(k => k + 1); setActiveTab('purchases'); setPurchaseTab('material'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></section>
                     </div>}
 
                     {activeTab === 'settings' && (
