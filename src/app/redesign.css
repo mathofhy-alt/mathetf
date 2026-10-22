@@ -2238,3 +2238,37 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd-my-item.is-clickable{cursor:pointer}
 .rd-my-item.is-clickable:hover{background:rgba(73,122,183,.05)}
 .rd-my-item.is-clickable:focus-visible{outline:2px solid #497AB7;outline-offset:2px}
+
+/* 시험지 장문 분석 (10/22, 페이지 맨 끝) */
+.rd .rd-se { padding-top: 72px; padding-bottom: 96px; border-top: 1px solid var(--rd-line, #e5e8eb); }
+.rd .rd-se .rd-x-h2 { margin-top: 8px; }
+.rd .rd-se-h3 { margin: 48px 0 0; font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
+.rd .rd-se-p { margin: 14px 0 0; font-size: 16px; line-height: 1.85; color: #333d4b; }
+.rd .rd-se-tablewrap { margin-top: 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.rd .rd-se-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px; line-height: 1.55; }
+.rd .rd-se-table th, .rd .rd-se-table td { padding: 10px 12px; border-bottom: 1px solid #e5e8eb; text-align: left; vertical-align: top; }
+.rd .rd-se-table thead th { background: #f2f4f6; font-weight: 600; color: #4e5968; white-space: nowrap; }
+.rd .rd-se-table tbody th { font-weight: 600; color: #191f28; }
+.rd .rd-se-items { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+.rd .rd-se-item { padding: 18px 20px; border-radius: 16px; background: #f9fafb; }
+.rd .rd-se-item h4 { margin: 0; font-size: 15px; font-weight: 700; color: #1f7f7b; }
+.rd .rd-se-item p { margin: 8px 0 0; font-size: 15.5px; line-height: 1.8; color: #333d4b; }
+.rd .rd-se-list { margin: 16px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; line-height: 1.8; color: #333d4b; }
+.rd .rd-se-faq { margin: 16px 0 0; display: flex; flex-direction: column; gap: 18px; }
+.rd .rd-se-faq dt { font-weight: 700; font-size: 16px; }
+.rd .rd-se-faq dd { margin: 6px 0 0; font-size: 15.5px; line-height: 1.8; color: #4e5968; }
+.rd .rd-se .rd-x-note { margin-top: 40px; }
+@media (max-width: 640px) {
+  .rd .rd-se { padding-top: 48px; padding-bottom: 64px; }
+  .rd .rd-se-h3 { margin-top: 36px; font-size: 19px; }
+  .rd .rd-se-p, .rd .rd-se-list { font-size: 15.5px; }
+}
+
+/* 비슷한 문제가 나온 다른 학교 시험지 (10/23, 분석글 위) */
+.rd .rd-sx { border-top: 1px solid #e5e8eb; }
+.rd .rd-sx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+.rd .rd-sx-h3 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.rd .rd-sx-sub { margin: 6px 0 12px; font-size: 14.5px; color: #6b7684; line-height: 1.6; }
+@media (max-width: 860px) { .rd .rd-sx-grid { grid-template-columns: 1fr; gap: 28px; } }
+.rd .rd-sx .rd-x-rows { grid-template-columns: 1fr; gap: 10px; margin-top: 0; }
+.rd .rd-sx .rd-x-row { padding: 16px 20px; min-height: 0; }

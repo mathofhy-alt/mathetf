@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { examEditorials } from '@/lib/exam-editorials';
+import LongEditorialArticle, { type LongEditorial } from '@/components/LongEditorial';
+import SimilarExams from '@/components/SimilarExams';
 import ExamEditorialArticle from '@/components/ExamEditorial';
 import Header from '@/components/Header';
 import ExamPreview from '@/components/exam/ExamPreview';
@@ -32,6 +34,7 @@ type Props = {
   relatedExams: { id: string; school: string; exam_year: number; grade: number; semester: number; exam_type: string; subject: string | null }[];
   nearbyExams?: { id: string; school: string; district: string | null; exam_year: number }[];
   relatedReport: { slug: string; title: string } | null;
+  longEditorial?: LongEditorial | null;
 };
 
 // 단원 막대 위 큰 제목 — 숫자로 확인되는 사실만 말한다(동률이면 '가장 많고'라고 하지 않는다)
@@ -44,7 +47,7 @@ function unitHeadline(units: { unit: string; count: number }[]) {
   return <>{units[0].unit} 단원이 가장 많고,<br />{next} 순입니다</>;
 }
 
-export default function ExamDetailV2({ row, previews, questionCount, sourceKey, hasDb, hasSolutionMaterial, canStartWithQuestions, createHref, otherYears, paidMaterials, opinionExamId, opinions, narrative, concepts, composition, relatedExams, nearbyExams = [], relatedReport }: Props) {
+export default function ExamDetailV2({ row, previews, questionCount, sourceKey, hasDb, hasSolutionMaterial, canStartWithQuestions, createHref, otherYears, paidMaterials, opinionExamId, opinions, narrative, concepts, composition, relatedExams, nearbyExams = [], relatedReport, longEditorial = null }: Props) {
   const editorial = examEditorials[row.id];
   const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
   const period = isMock ? `${row.semester}월` : `${row.semester}학기`;
@@ -174,6 +177,9 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
             </div>
           </div>
         </section>
+
+        {longEditorial?.similar_exams && <SimilarExams sets={longEditorial.similar_exams} />}
+        {longEditorial && <LongEditorialArticle editorial={longEditorial} />}
       </div>
     </div>
   );

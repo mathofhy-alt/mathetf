@@ -1,0 +1,6626 @@
+[
+{
+"id": "3189cc57-d947-42ea-9feb-5bbaed4a0260",
+"school": "감일고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d7e6129a-3d8f-41d8-9e20-bc64b898e988",
+"school": "경북고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "0d609c0c-f7ed-4e07-8631-5d1226302f09",
+"school": "경북고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분II"
+},
+{
+"id": "263726e7-083b-45c8-9a51-522d2a9574aa",
+"school": "경북여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ba47b10e-0e7a-4154-b12c-956468773860",
+"school": "계남고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "823d1a5b-3efc-4d80-bb96-626aa9b3f083",
+"school": "계산여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2532c429-1419-4857-9df8-d4514b3a2a24",
+"school": "과천고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "9c34e6ab-4f47-4695-b6f9-74d29c5e2ea6",
+"school": "과천고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7bf3424b-7bc7-460e-a5db-5a337489b77d",
+"school": "광문고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "5b982613-7f95-47cf-a776-6364e33bc415",
+"school": "광영고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "71871d77-cbd8-43b1-8b9d-0c527804cd43",
+"school": "광영여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "bed013ed-2245-4a73-ad14-3cbd3eea8d44",
+"school": "광영여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "104a5300-e45a-4fc0-b0fe-b10c21e68205",
+"school": "광주광남고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "b5bf95c4-2243-4761-9bc8-aef2e076543f",
+"school": "구미고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "1a905d2d-48ac-4d10-afdc-4d1c09b9b55e",
+"school": "구미여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "f7b9ad37-6301-4126-b493-c5379b455bf8",
+"school": "구미여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "2a2bdf9b-68b0-4040-8920-5b106a2176a5",
+"school": "구미여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "c40a6825-7fc9-4a36-bd30-f0256fc9ebd6",
+"school": "금옥여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "3fcb6c0a-01bb-4220-a37b-def744a77d11",
+"school": "김포고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "e0b534b5-83fd-4d92-b215-7b87a982dc01",
+"school": "노원고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학1"
+},
+{
+"id": "39e5acaa-7d54-4e42-8540-c239e1bd5a88",
+"school": "노원고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "5bb50607-a1bd-4a81-8026-a6d0c8861df4",
+"school": "노원고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "86e21d84-deb3-47ad-ad6f-0bdd6707b612",
+"school": "단원고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "5d664808-ef69-492c-84ce-fc9481627095",
+"school": "달성고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분II"
+},
+{
+"id": "c8132678-47ba-46b0-b9fb-295b2487ceb7",
+"school": "달성고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "f9d3b4b3-40e1-4809-a8e3-7faf1f9b15ea",
+"school": "대건고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "debf6b2a-ce76-4e60-9e79-6b987f33e9c0",
+"school": "대구계성고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9bc2e9f8-50db-4eed-8a84-16265610fada",
+"school": "대구남산고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a8de0b22-07f4-430a-b231-5fcdef0912b8",
+"school": "대구상원고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f5c3cf15-f421-400c-bbb7-707808c2edec",
+"school": "대구중앙고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "10a0e7f3-41d6-4dd2-bad9-e2a13eacadd6",
+"school": "대구혜화여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "48de8ad9-cdfe-4b50-a6d5-18487b542b78",
+"school": "대구혜화여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "b7fd8a93-4b4b-4f13-b44a-9825b428347f",
+"school": "대륜고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "8f23af3f-5654-486b-b536-6fb194e55956",
+"school": "대일고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8f27e10e-0124-4466-92bb-0dab4b230f4d",
+"school": "대전노은고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "305c5bb7-a109-49a4-b296-67f5b0dd8dea",
+"school": "대전노은고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0ca5c226-a345-4b69-bfd4-8f1b86d6c586",
+"school": "대전대성고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5f4a52cd-18d2-44ce-9770-86a5b22a2096",
+"school": "대전둔원고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "3ad2efb0-04b7-49f9-88b5-d919cc5a300e",
+"school": "대전전민고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "c3b5ea40-1e09-4d9b-9235-e6f32e68afa4",
+"school": "대전전민고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f0627474-b580-4346-8462-a259df6d3c6d",
+"school": "대진고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "18823e9d-76a9-4a05-9404-d26c5e85c1f2",
+"school": "대진여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "2e25878f-8b2f-47f7-91f5-7479990485c7",
+"school": "대진여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7edb8109-0de1-4834-bc06-588adac14b69",
+"school": "덕원고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "5d7b2058-8d3d-43fe-a2ce-c8fdb0884d05",
+"school": "덕원여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "e04a55fa-efdd-4ea1-940c-f718c35b95be",
+"school": "덕원여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5acba921-f9cc-431c-916a-aa2db5d87f80",
+"school": "도림고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "2c38acde-c011-4535-9b6c-563845ece481",
+"school": "도림고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "e9441480-aab2-49ef-ad09-b28399547f46",
+"school": "동광고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a13d6c71-1386-4a26-8618-9bba6bbf825e",
+"school": "동국대학교사범대학부속가람고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f5af14b3-d578-4a57-a01c-7ab89ce5f126",
+"school": "동문고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c5fc0a19-f8a9-44f7-8319-3995a2f30951",
+"school": "동북고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "da7c2953-2cda-4142-9da2-6fb1ddc44309",
+"school": "둔촌고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "c06ef2aa-d6ef-444a-a663-ca5cc9a896ba",
+"school": "둔촌고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "e879628d-0230-4d51-ace0-30565d999ba5",
+"school": "마포고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "8fbd35ef-47a7-4e20-87bf-9d5b1bc57257",
+"school": "명덕고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "9d44f377-6a50-4666-91c0-0d56c9d5368c",
+"school": "명덕고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "ccc4697a-694a-417f-a7f0-d12c44ca9ee0",
+"school": "명지고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "db84c114-584c-4da8-9b61-e18fe946f356",
+"school": "목포혜인여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2386a04e-1bc7-40ae-9dd5-5639e422b8d6",
+"school": "문일여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "ac379e35-ab64-44a8-87e2-57acb117ba98",
+"school": "물금고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7b22b6f3-b548-4d47-abb1-d16eb90849db",
+"school": "물금고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "3e05041b-5483-4ce9-8964-f15af41626df",
+"school": "물금고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "8f980541-ee68-485d-b561-7a02eabe53c2",
+"school": "반송고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "674923c7-9041-451f-ba8e-29944700302d",
+"school": "반여고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1bd0d00d-9e85-4a25-8e46-a1c33a6922ae",
+"school": "백석고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "45074072-0713-4913-8572-529a447b8fca",
+"school": "병점고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "0ead2edb-cd3d-4147-bc75-49cffbf76f9a",
+"school": "병점고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "대수"
+},
+{
+"id": "e9a29338-500f-4ea7-af58-d727cc7fe8d9",
+"school": "복정고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9346f150-b3b3-48e1-8307-d99665c7f37d",
+"school": "복정고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "ef6fe86b-dda5-437c-8040-4be8e20591fe",
+"school": "부천고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "92febafe-4c06-41da-a617-3f186788afd4",
+"school": "불암고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "0f84ed20-837c-4082-adb0-bf28e3541751",
+"school": "불암고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a333dd71-9a62-4e4d-acd1-35006d7c1406",
+"school": "사송고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8a0a0d11-8bf0-47d3-8cfe-898829a70a33",
+"school": "사우고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "83b2bac0-b452-4e3a-b9c4-df23f67fd251",
+"school": "상산고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "fec69bf8-eb9b-4d3b-8ffd-2aa4efd34acd",
+"school": "서라벌고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a0e695c3-4857-4af5-b37d-ea9166372bfd",
+"school": "서울국제고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c70e6441-3d7d-4f5f-9926-aa9affca9b11",
+"school": "서원고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "114b251e-bf1f-4a04-8e21-cf786165435c",
+"school": "서원고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "b0bb6a4b-dc97-435c-804c-c8e75f57e571",
+"school": "서원고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "68782982-7060-4ea4-b659-a047bc901074",
+"school": "선덕고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2cdb9d7a-6ee7-44a7-81b8-69cf89464a10",
+"school": "선일여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "3404a3a8-7b65-4fb9-a329-d4739a6bde9a",
+"school": "선일여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0adfc555-c730-4bd5-bf8e-32cc6097299a",
+"school": "성남성남고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "100e63b0-9445-4730-b5dc-6861c9445f59",
+"school": "송현여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b5f9f8c2-f93e-4d07-a5af-f285bdf5f11f",
+"school": "송호고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "304ad0b1-b8d5-46e7-a8b2-f83f0f4252ac",
+"school": "수리고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "523f165a-ceb5-4c29-917f-5d66083fe2c2",
+"school": "숙지고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "대수"
+},
+{
+"id": "e0c52056-c3b1-490a-87e3-07475a3f8830",
+"school": "신명고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4030bc84-d2b1-4bbe-aefb-3c9375e56943",
+"school": "신송고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "e9a35fe2-17be-4887-acc5-76b440b0bfea",
+"school": "신일고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c2164c10-f413-41a6-b296-57952edcd6ac",
+"school": "양곡고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "5b0feb84-635f-4713-9954-459209abe4ce",
+"school": "양산여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0f859480-3020-4413-ba6f-e757615048c0",
+"school": "양산여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "fe7c7c08-9aa6-43ce-be2a-7a140c3f2674",
+"school": "영남고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분II"
+},
+{
+"id": "f2452575-47d2-488f-a11e-b3b2a8fae5cd",
+"school": "영신여자고등학교",
+"exam_year": 2026,
+"grade": 3,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분"
+},
+{
+"id": "d9893d27-eb14-4688-8eaa-9e16b2997db9",
+"school": "영신여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ddce7e0c-d034-40da-8a40-33086d82eb3b",
+"school": "오성고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분II"
+},
+{
+"id": "d8d9184b-2df0-40e3-8774-d9b324b7cab6",
+"school": "오성고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "1032d71f-73a0-43b4-a734-177f5982e786",
+"school": "오성고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "3c7594ae-74f8-4911-a3c1-4243d4619520",
+"school": "용문고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "e827873c-3cb3-4905-a6bf-3a6834700350",
+"school": "용인고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "3e665fd6-37df-4f69-b825-a3be198f7dc9",
+"school": "용인고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2d8ffbac-bb64-432d-a0b0-9cfec32830f7",
+"school": "용인홍천고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "81dbd29b-d90b-4877-8ead-733ea377175f",
+"school": "용화여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "fae5f9ea-9e22-422c-8c2e-da711d3d76f3",
+"school": "용화여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f52c44d2-a41f-4a3e-b9c3-0b31953deb2e",
+"school": "용화여자고등학교",
+"exam_year": 2026,
+"grade": 3,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "047f46d2-12a6-4395-8408-260de17df370",
+"school": "용화여자고등학교",
+"exam_year": 2026,
+"grade": 3,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분"
+},
+{
+"id": "a5cb6096-b88d-48be-bf06-5b628016342d",
+"school": "용화여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "5e73f2d9-5ec8-4e02-a888-905eb2dacbab",
+"school": "우신고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "8b001871-853c-4e53-9304-2b6bb6218157",
+"school": "운암고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4f1ef496-55ac-41c2-bff4-c6972627e7cf",
+"school": "운양고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "ac96d3de-e3ee-4fa0-9e59-b7f45b58caa5",
+"school": "울산여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분II"
+},
+{
+"id": "df8dcb92-bd4b-4016-a522-c08669f6c46c",
+"school": "울산외국어고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "7a955a76-e0d2-4f50-abcc-750885ff0225",
+"school": "울산중앙고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "f98950a0-b828-4f92-afff-96b03143acef",
+"school": "원화여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "312e5194-8cbe-4e01-810e-4b4b43d5a966",
+"school": "위례고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "ccbfa279-da77-4cf9-8d9e-78f3f33dd134",
+"school": "위례고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9640b7e9-760a-40b2-bf6d-b1367fb4942a",
+"school": "위례한빛고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "739eb30e-d788-4646-8ec1-ca9a51b8e942",
+"school": "은행고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d09537d4-c876-4a4b-aec9-b7a27e6d6e73",
+"school": "은행고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "fd9be433-ab8f-4491-b5be-36a5e6f2008d",
+"school": "이솔고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "940215cf-71ec-4ef7-a1f2-e1f02a5f5dda",
+"school": "인천부흥고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "332a6295-74be-48ed-9b80-6ee124fb10ef",
+"school": "인천청라고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "eaffc8f7-9d1c-4155-987f-cad04d6ddbdc",
+"school": "일산대진고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "55352374-5017-4742-a90b-8ad77cd65ff4",
+"school": "작전고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "f6a63016-bf63-4487-8336-7a5aacf9daaa",
+"school": "작전여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "63099cc3-cf1f-4868-a218-86470af29bc6",
+"school": "작전여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "15c58880-0c95-4da5-aab3-1144761b523a",
+"school": "장기고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1a767e5b-031d-4a6d-96cf-7febea3a7dee",
+"school": "재현고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "40c5aae2-a705-49c8-8cfc-3413c40853ce",
+"school": "재현고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "87211e7e-5541-4795-914c-c2472cd01b63",
+"school": "재현고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "dc4d1022-c653-450f-bffc-3dac62db538e",
+"school": "전주솔내고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "38838ec2-f196-4147-94ac-cf0f00c7cea1",
+"school": "정의여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "638a95c8-a9fe-489f-bdcd-f0f5a270f3d0",
+"school": "정의여자고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "69094c92-f3b0-4ec4-8974-245f51e2afc3",
+"school": "정화여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6676c3c6-a15a-4c72-b4ad-d5854231ce89",
+"school": "죽전고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "79e618e7-2287-48e3-b75d-7fb29b5f32a2",
+"school": "증산고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "588d0b7a-c7fa-4dd5-aa8a-f4c8f30f8943",
+"school": "창동고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "e68438fe-96ec-4048-a11f-520f53482762",
+"school": "창현고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학1"
+},
+{
+"id": "f3e0a89a-ac25-4698-a54a-9061519163de",
+"school": "청구고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "a250412d-8108-465f-96b2-feb43c5efd4b",
+"school": "청원고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "b16feb51-8591-443f-be24-bfe8fdfc7c4e",
+"school": "청원고등학교",
+"exam_year": 2026,
+"grade": 3,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분"
+},
+{
+"id": "b12b097f-6ae2-42aa-af42-3951cb045889",
+"school": "청원고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "de15d223-4415-4e0a-bee2-ac12bf5c2319",
+"school": "태성고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "3faed0b1-5372-4673-8511-fab4134e45d6",
+"school": "포곡고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "1aeae5e2-f126-4ca1-a6a2-417f66db9cf9",
+"school": "포곡고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "8f0db5ca-debf-48ae-9500-e34f4a19fc03",
+"school": "학성여자고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "e61181c8-cfd4-4e41-bfd2-6a3b48b62995",
+"school": "한영고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "기하"
+},
+{
+"id": "eff7eed7-5132-49e3-bb8c-54bc0c320ac2",
+"school": "현일고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "dbad22d2-741e-4330-982b-65ea24e23759",
+"school": "효성고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a949f241-6f78-48fa-a89c-f59b35a609d4",
+"school": "흥진고등학교",
+"exam_year": 2026,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "미적분I"
+},
+{
+"id": "ce0a03f6-b6aa-4e13-8a93-77d7e65c26cc",
+"school": "흥진고등학교",
+"exam_year": 2026,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9bdcfd36-04f4-4826-80f3-e3bd99655b95",
+"school": "가운고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "65dd0505-bd02-4a88-8145-218cdc76209e",
+"school": "가재울고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "5af23e73-4f3e-4334-9c07-b7b27e7acf9b",
+"school": "가좌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f17824ff-31f7-493c-996d-063833de1f3b",
+"school": "갈매고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2c6d3aa5-c70c-4344-a523-9874e71ec7cf",
+"school": "강동고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c8339f59-5343-4104-b5c1-be865099261c",
+"school": "강일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "75b2675d-0240-4762-867b-331f777ff1ae",
+"school": "건국대학교사범대학부속고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "441275b4-badb-47e7-a5b8-a45699eb4671",
+"school": "경문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "5c28900f-c717-4d92-88db-067a890650fe",
+"school": "경복여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "ab11a515-a465-4842-a4f0-2851d8844bf6",
+"school": "경북고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "67b7ccc5-7c3f-4bc8-a54a-2a49f7d2acbb",
+"school": "경북고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "2dc80c18-91aa-4a14-a2a2-64ab125741aa",
+"school": "경북고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "329c3b5b-c9fa-4b5c-9626-01cc1077ab5d",
+"school": "경북고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ec910315-e39f-4391-b4fc-d210d0ffd24d",
+"school": "경북고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "f6a7be8a-8b7c-469c-8276-e7d72613cab3",
+"school": "경신고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "8767f292-bb6d-42de-9351-3f3b10ca74f5",
+"school": "경신고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "1941bf60-cfc8-4cda-9cde-99cd102da8e7",
+"school": "경신고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "67ed8154-7cd5-4e16-a9ee-f665d8858aae",
+"school": "경신고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1e319aba-9ba2-4667-8602-1b720edfe0e1",
+"school": "경신고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "5bd9a93c-da9f-4596-8a01-e5abbd2258de",
+"school": "경인고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c853b6bf-ed1c-4456-9ba3-7214bcea61ef",
+"school": "경화여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "fabe1eb2-a665-4d3d-8c11-afa1f0c646f9",
+"school": "경희고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "f9f39a03-376a-4060-bb0b-f1c1464c2db6",
+"school": "경희여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "c0448da6-86b3-4a4b-b82d-3986dc50e527",
+"school": "경희여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "f460ab9b-dcda-4b55-8c9b-c9d91afc76b8",
+"school": "경희여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "dee1dfa9-d2dd-45f9-b7bf-a58fc1db7ce9",
+"school": "계남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f5f64125-e7cf-4a21-ae0e-5cfd7117a161",
+"school": "계성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c38bcf51-0474-4872-b882-75d51148b3d0",
+"school": "고려대학교사범대학부속고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "1c3d43b8-77c1-4a14-8543-acd3e0835bc9",
+"school": "고양국제고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8e8a0c3b-7221-4e1b-8f15-124b191e9057",
+"school": "고양동산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "83db8c7b-f866-47e1-995b-14a0a449c75a",
+"school": "고양외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "828806d0-70c1-405e-bad3-0220f27c7ea3",
+"school": "고양일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5ee4303e-866a-47e0-b5bb-eb46047f104e",
+"school": "고양중산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "cc2cf38c-ddcf-4276-8f66-5dba40c0f0cd",
+"school": "고촌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "fe6fc296-a1f3-4142-8ccb-6651a65511d4",
+"school": "과천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1b1e1443-a419-46c1-b2fb-e3afe75a4fbc",
+"school": "과천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c7a349fc-6996-4d41-8371-2cba43cbfc5e",
+"school": "과천여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2370207e-7588-472a-9872-771dd1955658",
+"school": "과천외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "e3773c80-69ab-4ce7-b3f2-a9e659d8eccf",
+"school": "과천외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "177dd9dc-170c-4eee-af9e-d4e190521576",
+"school": "과천중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "73f80402-1378-41f7-837c-61a33d867193",
+"school": "과천중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "a4c1cd75-df1e-4d4d-b698-75b0dab941ac",
+"school": "관악고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "abfc2b4d-1dc9-4640-baf8-6004c3df14c0",
+"school": "광교고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "422c855f-0bbe-4867-bdf0-71dc93fe6e29",
+"school": "광명고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d090f21c-6ace-4fa5-89d1-1172f7cef055",
+"school": "광명광문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d5d12dfd-3a97-4cfc-8666-7895f1e8f4e6",
+"school": "광명북고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ac495173-c48a-4203-a95b-ae2ef821f970",
+"school": "광문고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "cfe2d7af-605f-4585-a08f-c3a8b116a539",
+"school": "광문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "179b6dda-d46d-4dd3-a473-ba0e54b765a1",
+"school": "광문고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "9c4dcc35-bcef-4532-a75e-95d6c2e101cf",
+"school": "광문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6b0a1238-0ad4-4f29-a3a7-add4289da547",
+"school": "광문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "7697886f-3323-44b7-8cf8-3c67249017f8",
+"school": "광양제철고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "7f83c9fe-518a-4df2-8006-0052cd15e798",
+"school": "광영여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "02153993-9089-4fa8-91ab-57fc30e8a0f6",
+"school": "광휘고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "22c93e11-041e-424d-9424-e144d7175835",
+"school": "구로고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "4e99f573-f08f-4679-b639-99a88e0618a6",
+"school": "구리고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4346568d-c956-4dce-a5e3-054d17308fba",
+"school": "구리여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8b9072bd-b1f9-4e60-9cf4-db134fa02483",
+"school": "군서고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c6612785-2fbc-4bae-acfc-5b69cd6b8bcf",
+"school": "군포고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "07538dd6-3f22-451c-adc1-91885599bd4e",
+"school": "군포중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "12b57a4e-492e-47a3-abc8-f0559729b185",
+"school": "금옥여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "bf4f1e07-e278-4301-b524-24f7c9d7c266",
+"school": "금옥여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "ee4e8277-d087-4f51-8aa3-1b2a3ba2a68c",
+"school": "금옥여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d56a99ef-9811-4e41-b44f-875919f8743f",
+"school": "금호고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "fb2702b8-de6a-4bde-86fb-e14edd3b197b",
+"school": "김포고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "be297243-29f5-46df-a621-5598f45ccd47",
+"school": "김포외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "bf0310ce-1229-406f-8849-d5b314196daa",
+"school": "김포제일고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "10bdab33-fa75-4300-9714-ac8fa51dd6a2",
+"school": "김포제일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "eca842c0-466e-4fe3-92fd-ef97ec9b4e86",
+"school": "김포제일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c1cd48ca-5bcf-4330-851a-24de98f1796a",
+"school": "김포호수고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4ff34722-b9c2-48b3-8ec1-7031e0669989",
+"school": "남양주다산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "cc2ee98d-f2e6-4583-b12f-02188e8815ab",
+"school": "능곡고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b8aea5ca-a938-4b8f-8383-c0755a564adc",
+"school": "단국대학교부속소프트웨어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "39ca9144-468a-4264-a377-5266f5d2c78c",
+"school": "대구남산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "652f8751-ad79-49d4-912e-d7533f0d01cf",
+"school": "대구남산고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "f929cc0a-cdd5-4c1f-bf2a-046d05ac9674",
+"school": "대구남산고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "1ecb40ea-1d66-4ccf-a648-add0474b1b69",
+"school": "대구남산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "244ddd72-08e6-449e-9dc3-6fab68be0023",
+"school": "대구여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "7a6f173e-aa56-4b97-a33b-40f31226e74e",
+"school": "대구여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "979427c5-a462-4307-b0ff-9c210f37df33",
+"school": "대구여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "b2f0645a-b0f8-4730-8670-afd2dbdf63bf",
+"school": "대구여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "21126cf9-af18-4fb1-bd07-8834420ac617",
+"school": "대구혜화여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b01fd399-4ade-4049-bf83-630de2f85ac8",
+"school": "대륜고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "02bc6520-9fa3-48aa-8592-58d21950c404",
+"school": "대륜고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "92371eb5-be1f-4abb-a92c-1fb17555c86c",
+"school": "대륜고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "0af9494f-b6ab-40df-9739-599369b6fc8d",
+"school": "대륜고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d67380a5-a254-416b-b8b2-d13366901465",
+"school": "대성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "0b6ce934-a298-461e-bf9d-9b7bc403ae41",
+"school": "대성고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "0bbeee79-a837-4bf3-bed3-df8a221ad2e8",
+"school": "대성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "e1b54885-5d8d-40a3-aa04-f12fe6fb9d88",
+"school": "대성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8d89aef2-aba4-42bb-a5f6-d47f51b12283",
+"school": "대원외국어고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "fd345f9f-a183-4ad0-bfe1-0d42c63cf924",
+"school": "대원외국어고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "4cc8a3c4-3228-41bb-83a1-7ef46c7dcd25",
+"school": "대원외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "da95165d-5335-46a3-96d9-99ac2cd37892",
+"school": "대원외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8578f132-9050-4812-a193-5eb053d46007",
+"school": "대원외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "b8429a11-e454-41a3-a13c-3678ad9517f2",
+"school": "대일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "e159a41c-bab1-4006-98f3-36c84ed42235",
+"school": "대일외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "afea6519-ba25-4d58-b5d6-dfc7aaa9bddc",
+"school": "대일외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "f4a3cda9-9827-41ad-acc5-57bd664107c1",
+"school": "대전고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "46eca227-4a79-42f8-903d-0458d0e3532b",
+"school": "대전고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "e73ce076-001d-4aa6-be4a-fe795d7cdb62",
+"school": "대전고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "241c86cc-c019-4599-a3d5-33007812d1fc",
+"school": "대전고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "163c5e6c-5571-429f-8eac-af87dfa8b642",
+"school": "대전노은고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "39f84422-7d0f-4333-91e8-8febd42df250",
+"school": "대전노은고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "0a8299da-3053-46e2-a10a-308ee92b4a43",
+"school": "대전노은고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "c41aff75-f52c-4277-9149-04bb1a7175d4",
+"school": "대전노은고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "91ee9380-de6b-4226-b58a-316f70926c02",
+"school": "대전대성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "aaf10f4e-e365-4e3d-a9b3-5618b9d1e0a3",
+"school": "대전대성고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "4a36c84e-a488-4c3c-9a90-df6850f8b9b4",
+"school": "대전대성고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "0730d8e1-384b-409c-8313-93d4fc12dc09",
+"school": "대전대성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "3dcb6acc-4c56-413e-bbc8-6ed7507ccfb1",
+"school": "대전여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "fa8deb98-e921-43bd-b768-9a4c03483820",
+"school": "대전여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4544d2ed-5d03-415d-8c23-8b9c80b630ba",
+"school": "대전외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "9227ebb1-68cb-4ba6-b893-ea9644378ce1",
+"school": "대전외국어고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "3195ae4c-a825-49ba-a501-2386f4aa1239",
+"school": "대전외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "18fafcfb-4cdc-4358-98fc-ba86fbe64aeb",
+"school": "대전외국어고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "b10f1723-df8e-4471-ad04-58298f632f7c",
+"school": "대진고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "7be8b33b-2a4e-46ce-9eed-824a1008853f",
+"school": "대진고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "236d7a39-2d24-40ae-8891-e4bb5462c3e3",
+"school": "대진고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1c048318-9c2f-444d-bad8-cfde5485744b",
+"school": "대평고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f4c5588a-8831-4ec9-9590-88cecfc38ada",
+"school": "대화고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0cbaf11b-83a1-4536-acbe-65d85a66c2f0",
+"school": "덕산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "317b1757-1d9e-4bd8-bdb0-efc323a3c887",
+"school": "덕성여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "b4eed8f0-e40b-4eab-884c-a52ca74c6c1e",
+"school": "덕소고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6df397ef-f35c-4c5b-9a0f-c5b97d0fa07f",
+"school": "덕이고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c42dfee2-340f-44a7-b1e7-f197685aacd1",
+"school": "도농고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4d34cdcf-f7ae-44a1-a53c-e0a0fb6a0857",
+"school": "도당고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "47f9b1e2-5771-49b8-9180-409843fe2639",
+"school": "도래울고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "bde879f3-57b7-4191-9dc7-9669c22905b5",
+"school": "동광고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "02923772-416e-4e13-8921-db10c2f9aa4f",
+"school": "동국대학교사범대학부속가람고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "6dcbd573-7b72-40d8-a6ed-2f67849e8972",
+"school": "동국대학교사범대학부속가람고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학1"
+},
+{
+"id": "2d5b531f-2301-48aa-b3ca-44791e105418",
+"school": "동국대학교사범대학부속고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "확률과통계"
+},
+{
+"id": "2f6dd4a1-e1bd-46cc-9a23-69cd9e6b5efa",
+"school": "동국대학교사범대학부속고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "205804bf-d382-482e-a8ea-81d28d21050c",
+"school": "동국대학교사범대학부속고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "5b573900-1d2a-44a7-a06b-645274b6328c",
+"school": "동국대학교사범대학부속고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "77a19b8a-719a-4195-8638-1e3f8cb36e50",
+"school": "동두천외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7b916eb9-bc92-42e0-b00a-3fb84d4b0f67",
+"school": "동문고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "미적분"
+},
+{
+"id": "85e6b126-8cb3-4dbf-a1e6-bb6fe1b165fc",
+"school": "동문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c57e72e0-3d38-4521-b762-8693812d69ec",
+"school": "동북고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "169f14d9-8e7e-4eaf-9e2d-754d3f3638c9",
+"school": "동성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5b860e58-423e-4943-b94b-61392a3b680f",
+"school": "동성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "5356bcf7-1cea-41e3-b4f4-7bd2624ef352",
+"school": "동안고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8f94e1aa-1e01-4278-88ac-75a87f3bd78d",
+"school": "동양고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "ea473ee4-2846-4f2f-8a77-05f178824490",
+"school": "동원동우고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "5150299d-f734-41e1-8083-01dbebea173b",
+"school": "동원동우고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "d176218c-49bb-4f34-b08a-3a110118ab4c",
+"school": "동원동우고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "90b8250b-a163-4da2-82c1-ed2c60d8ca2f",
+"school": "동원동우고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "581ab96e-9b22-4719-bf35-c70d6c7f89b2",
+"school": "동작고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "cbbe70e2-6fba-424b-9266-5f3a647f304f",
+"school": "동탄고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "43536596-9d83-4bc4-a96c-ee346e312174",
+"school": "동탄고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "ed858212-c699-4f40-83e6-9ab22da2f009",
+"school": "동탄국제고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "54eb5bf9-f283-46b5-a7f6-bbd711be4d17",
+"school": "동탄중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "e56ec872-10a4-4cab-aa98-2842e88d0250",
+"school": "동탄중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "a9467e5e-fc37-44cd-ba99-d6e2d4b81d77",
+"school": "동화고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8bdb6828-04ac-443f-8252-d848de7be6f4",
+"school": "둔촌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "27aca037-05c5-4122-8134-8520bfc07efb",
+"school": "마산중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b1aa63ac-a3ab-4406-9066-a5850d34e7a4",
+"school": "마석고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4d881a1e-785e-42c3-98fe-24cb85a7225d",
+"school": "마포고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "defa8d66-e2aa-4114-b47d-427d58ac2790",
+"school": "망포고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "31e55567-8d81-4f43-a29e-00e8648719bf",
+"school": "면목고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "b9881810-6906-49ec-a358-b1c8c58e7f08",
+"school": "명덕여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "f3ce9c52-e724-480c-8092-50bb52a63f1a",
+"school": "명덕외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "39dc8b2e-98e5-46c7-acb2-bc559dbdce63",
+"school": "명문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "550bd254-2fc2-49c0-a0a8-adaeba97e038",
+"school": "명일여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "869dcd1f-5717-4ed7-8a0f-edd3c32dd0c8",
+"school": "명지고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "592f76fc-4e1c-405b-87d7-bc527737752f",
+"school": "무원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d624fe0a-f18a-4d36-9621-006a75c19f5c",
+"school": "미사고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "40c29776-8689-464a-8d85-32b810b36727",
+"school": "미사고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "1643397b-4046-4763-b78c-2e7e56e0cf97",
+"school": "미사고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "e7a995db-d19d-44b2-b37d-6eef09a5b9d0",
+"school": "미사고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "12acb8bc-9809-4a81-b672-d16cc6628a03",
+"school": "배곧고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "67891365-4a4e-4f8b-b84c-e44c0ff70433",
+"school": "배화여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2aa5d56b-b77a-4fe0-8c08-cdd139533799",
+"school": "배화여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "dd623c7e-7e85-43b8-90b5-8663aaf1ab13",
+"school": "백마고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2e834a3d-92bb-4676-b390-64771d027e0e",
+"school": "백석고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "504dbc04-bf82-46a1-8bba-11edf6e88c6f",
+"school": "백신고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f823d130-e85c-4b87-afb4-742e06c214ae",
+"school": "백양고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2d9601cd-e049-4add-9e7a-0c3e6fbdc88d",
+"school": "범박고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2dae5e98-c340-49ae-8760-a91a6ca78c4b",
+"school": "보성여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "600824bd-28ac-4a78-b39c-02d729ec389a",
+"school": "보정고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "43e1843a-e522-4c01-a321-a6e5dd090f90",
+"school": "부명고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b99672ca-8ccf-43da-b26a-4920895eed13",
+"school": "부천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c4b25241-79e8-4b37-bc95-03f49ed4d5e4",
+"school": "부천북고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5074d837-eb85-4e10-bc2f-63c497d3e227",
+"school": "부천여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b585141a-cf07-492e-aadd-4d68a3b86f2e",
+"school": "부흥고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "80766bd5-7628-4a05-8f5d-3c1ebb9ada9a",
+"school": "북일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "7a50d51c-2b7f-4b42-b288-93089afceadd",
+"school": "북일고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "d256bd35-d9f2-4bc0-880f-d1211de3ecee",
+"school": "북일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ea9ef35a-2f3b-4542-bb24-ca16e47bf815",
+"school": "불암고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "019ec746-0a94-4dd8-9d89-06d290fcaab2",
+"school": "불암고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "f7dfaba8-d09f-44ab-a179-7363f091b918",
+"school": "불암고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "444df452-641d-40aa-9d88-f3eafe49ce81",
+"school": "비전고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "2eed257e-14e2-492e-b275-2bd10b42eaab",
+"school": "사우고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f7ea4d11-b52e-4139-b8a2-04b2d5c8fbe3",
+"school": "산본고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c192da26-923e-45e9-8274-595f73845b8b",
+"school": "삼각산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "1815fde0-2981-4698-bbd7-ea93569ea1c2",
+"school": "상동고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "15da48a7-4187-48da-b4b2-d65f080eacb9",
+"school": "상명대학교사범대학부속여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c50e5f80-117d-4cbe-9576-dac93cdef844",
+"school": "상산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "0a80d45a-a99c-45b0-9a42-215b3324daed",
+"school": "상산고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "00575a18-efeb-49b1-901c-2c47cc9a6c03",
+"school": "상산고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "9837ff75-65ac-4a02-b817-91fef20ba64c",
+"school": "상산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "70ba8ddf-64aa-46d3-aa68-814bf00b417e",
+"school": "상원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "18c739f7-aa7b-40fa-a421-a28266ef465b",
+"school": "상일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a7bbbb2d-0c46-4cb5-b521-7c8bafd1e2e9",
+"school": "상일여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "db9e50e7-0c35-4774-ab05-7a31841e9f15",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "0663e01b-a6d4-43b8-84ec-3db0a98d0544",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "23453d61-1b8c-4837-ae7a-00fd1009e9ac",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "9e4b8ddf-5513-4940-9791-3a00aba6707a",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "b1d1b43b-6f22-4f99-9e78-47676f72ab31",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "50aa9bdc-6a22-4b9b-b7d2-f5766bf50c9a",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학1"
+},
+{
+"id": "e1ef41a1-28e3-4797-a68a-d323902e3f76",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1685cc4f-875d-478e-aff7-52fb797ad77f",
+"school": "서라벌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "29f75795-38bf-4b80-9e26-82dfc3bc33b9",
+"school": "서울경신고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "1803f5f2-d630-488c-9e41-5ca7ee2d9427",
+"school": "서울경신고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "057dd292-68c2-4bd2-b058-d4f652052604",
+"school": "서울국제고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "dccf18d3-0ea9-49d3-a631-0b0826cf35b4",
+"school": "서울대학교사범대학부설고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "64a4f5f1-16aa-46b6-8dad-d499857f0d5c",
+"school": "서울삼육고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "932abf1f-a0e7-4ce1-96bd-4931f97a94ef",
+"school": "서울여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "724dd3a0-81e1-4170-b235-829649ef31bc",
+"school": "서울여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "5132db48-405e-4d47-bc2b-818c44cdadc8",
+"school": "서울여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "fc50d718-4d33-460d-bfa8-10260821c119",
+"school": "서울예술고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "eaacd8f5-6cd2-4c9e-a301-b6bd913f011c",
+"school": "서울외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "581b31a1-b703-4450-98ec-eb21a87f4152",
+"school": "서울인창고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "75da7db1-e409-4538-a212-c32019cf07df",
+"school": "서인천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "466ab163-d046-4ac4-9c90-5e93e45b8e22",
+"school": "서인천고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "54b1c60f-3aac-4c54-8fb6-ed133c83e7dd",
+"school": "서인천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "3515e310-4f03-424a-91e5-c5a5d171ab87",
+"school": "서인천고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "d6960b4f-717d-4a4b-bffd-f48c51c6c67c",
+"school": "서정고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f68ba564-cc89-4886-b1d7-a3038e6739ea",
+"school": "서해고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "64315df3-65ff-43f5-96ca-e6a768a41b6c",
+"school": "선덕고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "16f61990-5c12-479d-bfc6-a1ea6ff7f610",
+"school": "선덕고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "10a6b0ca-5c2d-4f54-9baf-bd66082f71e0",
+"school": "선덕고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "0025f4ed-a2bc-4d98-936e-4b20feae70f5",
+"school": "선덕고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "020e30e9-368d-413c-b82f-81138a236a15",
+"school": "선덕고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "dbf7bb08-da10-4a14-b3db-eab7e99fff7f",
+"school": "선사고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "8c8ca494-cc05-4f28-ac45-68060cc70865",
+"school": "선일여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "998d8528-62b9-446e-be73-96f5de471cd6",
+"school": "선정고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c3206145-3586-450f-a979-0b5ee20df69b",
+"school": "성남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "39c29d34-fada-409e-8c6a-c9bfad4a18b3",
+"school": "성남성남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d368ae6f-fe5b-44f8-afb2-10a01ef9dccb",
+"school": "성남여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "78186010-a053-48f0-bd38-905fd350854f",
+"school": "성남외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ab4404a7-ba96-4f0b-9c2d-fdfa41717abf",
+"school": "성남외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "e5c4a7d6-abeb-4f59-956d-19ce87a9b5bc",
+"school": "성덕고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "7250bd8e-d74d-41ec-a577-ff26c64e4f96",
+"school": "성동고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "b3a5c710-a338-4ec5-8717-2661f0e9f724",
+"school": "성문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0f1e310e-53c9-4b15-9616-b7a64d6be1ab",
+"school": "성복고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "486ea55c-9135-4bab-b6c1-0bd8c501abbd",
+"school": "성사고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b4670ad7-4cfd-442d-8b14-b61469dee383",
+"school": "성수고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "48fe9baf-b048-4c7e-b1e7-4a7c11d81039",
+"school": "성신여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "f4a38cc4-c52f-409a-b79c-adcb60ded8b2",
+"school": "성일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b254b6c7-0e94-48f9-a523-af791d756c87",
+"school": "세마고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "6356768c-7e53-44c8-a703-de5e587212ad",
+"school": "세마고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "d3034527-4e33-4d57-80ab-7189fb88fbbb",
+"school": "세마고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "b37b1398-e58b-4bae-b565-f6f938adefad",
+"school": "세마고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5ab6d7ba-e4df-4a8f-8e89-47e93ac6d9b9",
+"school": "세마고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "bb0384e6-bb38-410c-b79a-a7d4459d406a",
+"school": "세원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "42274b98-e503-40aa-9cc0-218e0150aa37",
+"school": "소명여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6813add5-6ee3-46a8-9657-4364db79a3ff",
+"school": "소사고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c73c40af-52cd-4a0a-90bc-20fc26de8915",
+"school": "소하고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5f6de707-a9c1-4403-b22f-e30e45228b7e",
+"school": "솔터고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "44f097f3-1bdb-4d28-a32d-d3501aec292a",
+"school": "송내고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "cf79dbbf-2cd7-47d0-8827-520884bf63b4",
+"school": "수도여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "3f947418-2e62-4f40-b64f-06b8c9107cca",
+"school": "수리고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f10240eb-2d0a-48fc-bdf0-0351adf7bf83",
+"school": "수성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1035e20d-4577-4b0f-bf32-930731675f94",
+"school": "수원외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d63916a9-9c86-42ac-b1ac-d56ae78b741f",
+"school": "수원외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "4bf334d2-71db-474e-9522-1dde7d6fd7c5",
+"school": "수원칠보고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6fdb05d4-7b3f-4e0e-b070-44636e7f5fad",
+"school": "수일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "3e11b305-31a0-4783-89db-16774b62eab5",
+"school": "수주고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d378f637-a77a-42f7-85d1-1aa3b612996d",
+"school": "수지고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9f4210f1-e38c-48c0-b896-7d3638b83a1c",
+"school": "수지고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "5ab2b0ef-8e62-407f-b79c-83e572243f3d",
+"school": "수택고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d787c21e-fc3b-4249-bc2f-6e84d0958f53",
+"school": "숙지고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c7864503-bdb8-4ff1-a5e6-a4ad773a13e4",
+"school": "숭문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "61dd7089-707e-4f1c-a1b0-de7470c9773f",
+"school": "숭문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "ce3b52ea-94c0-46a5-b59d-b971c5ef1bdf",
+"school": "숭신고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "41ce1062-8cc8-425b-a7bb-7e563d03f009",
+"school": "숭실고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "47c9015b-46b2-468f-b8b5-fe2e16000d60",
+"school": "숭의여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "7e8996f7-85f1-4365-ad01-6b572a505639",
+"school": "숭의여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "9b9d6765-34f1-44ea-9204-6ef17efcf315",
+"school": "시온고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a027c8c0-1c0b-4c1e-bb21-335f7a642314",
+"school": "시흥고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "749e9b7f-9b47-449a-9efb-972ef63bc04b",
+"school": "시흥능곡고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d6452692-d42b-4584-8ec7-67ca9aee49e9",
+"school": "시흥매화고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "649fa1d4-9324-4136-ba09-6cbb5b979f4b",
+"school": "신도고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "66b0610d-02a8-4821-9e06-5f6349db2fbc",
+"school": "신서고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "8ffd9f79-e35b-4a81-823d-14c6246d011f",
+"school": "신서고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "cd920980-1517-4668-9fa8-018997fd97a9",
+"school": "신성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "770f1145-915e-4c09-9111-d7bba7ae935c",
+"school": "신원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1f05d485-6969-4de8-b8a2-da0b604aa330",
+"school": "신일고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "2095f801-dd8f-40d1-ba69-8919ae8601f6",
+"school": "신일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "5756c557-42be-492d-817f-118bc0bb6aa7",
+"school": "신일고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "a0ad61d0-512a-4861-9c54-d00749c6cb8c",
+"school": "신일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6e2ecebf-609b-45a5-bab0-5f7e22e5b4de",
+"school": "신일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "d3364830-d8f2-4991-b539-a4b672b09b17",
+"school": "심석고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "173fda23-ef74-44f6-9181-2946a329832e",
+"school": "심원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0b3742e4-1eb6-4ab5-b33f-ff8d926ea998",
+"school": "안곡고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1a3bfb08-0524-434d-bfbb-e34aeceb800a",
+"school": "안산강서고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7fa649f0-032c-46d3-aac4-ddfe4ac90d68",
+"school": "안산동산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "9ae37e63-3d1c-484b-8823-dd230e3beb82",
+"school": "안산동산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d7281f4a-6f98-4100-8968-b72acc310e75",
+"school": "안산동산고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "213d052c-7fac-4034-9454-621e903315fa",
+"school": "안산동산고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "85276bc1-08a8-45a5-a0be-33354b582699",
+"school": "안산동산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "대수"
+},
+{
+"id": "3812e49f-ccd7-416a-828f-f2932241039e",
+"school": "안양고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b3dd7769-0b09-4009-9338-cc9fe02fce25",
+"school": "안양외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ee1c54f0-d20e-43b9-8ba3-cb26dbf713ab",
+"school": "안화고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "d13fc8fa-9c29-47a4-9d64-8416868bed74",
+"school": "안화고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "9fa4be88-24b3-42d5-ba3c-240ee4d80cec",
+"school": "안화고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학1"
+},
+{
+"id": "a95400dd-fbe6-4220-b14e-3c441cd6fd8a",
+"school": "양곡고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "103b7b99-9435-480a-ad51-bceb281570ad",
+"school": "양지고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "14e04c6b-d9b9-449d-a856-7c44be489fe3",
+"school": "여의도고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "457a2e57-d1e3-465b-b3d1-7744ce052e05",
+"school": "역곡고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a578c724-5198-400f-9e28-3791a451769a",
+"school": "영덕고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "04632db9-f67e-4a9b-9d02-bd0707e4f70d",
+"school": "영등포고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "9dec6c69-ac41-4d6d-9f5c-52ec40de5099",
+"school": "영복여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "26f66afa-d132-46ee-b6a7-ab71e50c675d",
+"school": "영생고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b5d18c2b-ed29-49e2-b119-18f7a80673da",
+"school": "영신여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "a69f9880-1408-4794-9daf-863e4748c2e9",
+"school": "영신여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "8bf83ba4-21fa-4dec-850c-a4d66f9ecaee",
+"school": "영신여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "8301b730-df19-46c6-a113-ca6b079320df",
+"school": "영신여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6b2accc1-e854-4ae3-841c-7cf2e214c4d6",
+"school": "영훈고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "590d333e-93d0-4ce5-9966-a6874139df3d",
+"school": "예일여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "10a2d4f6-ae45-4e06-ace5-a4ac6c5b2c0a",
+"school": "와부고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6cc95ea7-5fb0-429d-b787-e51078a16df5",
+"school": "용문고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "fb8ea997-de99-40c6-b6e7-3967d632bd1f",
+"school": "용산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "6ec45b08-0236-4614-ab61-52e028957544",
+"school": "용인백현고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f9c14f57-770c-4644-afc1-37a8ec59033a",
+"school": "용인한국외국어대학교부설고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "0f170729-9fef-46b6-8a09-bb0f091c5173",
+"school": "용인한국외국어대학교부설고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "7a5c2463-a64a-4139-923a-28ec3ea66579",
+"school": "용인한국외국어대학교부설고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "504c77c0-7f4c-4889-bd7f-a50e45f6a0ca",
+"school": "용인한국외국어대학교부설고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ef972578-90b9-43e6-bdf1-16e0422dbac1",
+"school": "용인한국외국어대학교부설고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "e9a3e265-3594-4442-8aaf-71dd29d1442e",
+"school": "용호고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d613d389-de9d-4048-8bbd-5ed1e1903fbf",
+"school": "용화여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "c1142f51-323c-486e-903c-21038ffd2e9f",
+"school": "운산고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6a242dea-80e0-43b6-89ce-8f136676a29d",
+"school": "운양고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9bbe29a2-68bd-4db7-b6c7-40bb29d1e52f",
+"school": "운유고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0bfc8dce-440b-4908-aa8c-aa42af16df77",
+"school": "운정고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "2a73f8ef-1560-47d5-8d6b-49042be5fbb4",
+"school": "운정고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "9260d856-1c52-480e-82ea-182c375930f3",
+"school": "운정고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "78fe8cb2-71b0-44f7-ae70-c5199bf0aacb",
+"school": "운정고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "bc3adc90-4560-4d57-8e2f-6e8f70e5667a",
+"school": "원미고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "347091c0-fda0-4f7c-934a-a56d57266b03",
+"school": "원종고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "fc0e2845-eee4-44c8-acf5-910e6ea354dd",
+"school": "위례한빛고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4190e15e-45c1-48cf-a78f-8719b64fc36e",
+"school": "위례한빛고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "536b9c9a-aa9d-4bf7-aad1-e10c7906146e",
+"school": "율천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "45d21c4f-161c-44d8-b4e0-82bd4c54543d",
+"school": "의정부고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0c63f7ac-09c8-4af1-a1af-5ae0980209c1",
+"school": "이의고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9107c421-3ee6-4ff9-8c95-5fe5f9429509",
+"school": "이화여자대학교사범대학부속이화금란고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "d197a376-fa37-478e-bb2a-db06b5790e7b",
+"school": "이화여자외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "f3309ec4-1307-433c-b6e7-b2fb017279a0",
+"school": "인덕원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "0dbae910-1cf4-4980-a1e8-deb84f77846c",
+"school": "인창고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "975dab35-550d-4e08-9f21-1507e150bf7b",
+"school": "인천고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "92877d65-04ed-469f-be37-5129f3d01879",
+"school": "인천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "d5634a5b-7865-42ac-973e-99edfe79ff0d",
+"school": "인천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "63de78f2-20fa-4d87-9876-3d2445c09c04",
+"school": "인천고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "5bd9d08f-cc18-401c-a61a-8b5d74789513",
+"school": "인천국제고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "4c597738-fed8-4803-8e9e-471bef87a056",
+"school": "인천국제고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9c1702c9-77d3-4a6f-bf02-f953fb137e5d",
+"school": "인천국제고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "06bfa370-b014-4312-b25d-c582b917fa5c",
+"school": "인천국제고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "2fb17d20-7243-4807-b713-8bb64a39dc54",
+"school": "인천대건고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "f6797a34-4041-435f-9e78-2e683be62c54",
+"school": "인천대건고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "32aa5c86-21e8-4047-adfb-ee0d06b02e3b",
+"school": "인천대건고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "7c456098-ac32-4e89-8dfa-9c4cef4c4d78",
+"school": "인천대건고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "d1f04567-ad70-427f-a116-95d42b74ab52",
+"school": "인천세원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "0b5bfbd8-89a3-4943-b93d-e62aa9eec2d8",
+"school": "인천예일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "d149566c-3150-402d-bfd5-c7ad875de976",
+"school": "인천포스코고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "fa7f4a8f-0322-4fb6-9745-bd4dd2836bda",
+"school": "인천포스코고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "7545c836-1599-452b-bb0f-90f6e268d2ff",
+"school": "인천포스코고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4c5a1133-b817-4d9c-8a87-17e31cb83deb",
+"school": "인천포스코고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "0629702c-d3a9-496b-bf05-929571caf9c0",
+"school": "인천하늘고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "4572cae1-d1c7-4656-a873-9967d0f1696a",
+"school": "인천하늘고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2be2dc1a-570a-4b9c-a38d-c82eebbd745c",
+"school": "인천하늘고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "beb0e1f2-2fb1-4081-966b-886a267665c2",
+"school": "일산대진고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "fe4d5d89-4d82-4a5a-9f7d-7d537f3ba82e",
+"school": "일산동고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "74af6024-8da4-48db-b213-196aa738f6af",
+"school": "자양고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "996a43d2-d376-42f5-b081-96ad260c65e7",
+"school": "자양고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "36cfe200-828e-4ab9-a219-c0296c691c02",
+"school": "자양고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "d1d9efbd-50a8-4533-8e02-dd5f45e1fe2b",
+"school": "작전여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "e6a1db13-dae9-4a28-878f-9556ad89c04f",
+"school": "장기고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "38112459-dee8-4a97-9e8e-4b713d1178cb",
+"school": "장안고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "e5af87a3-3c1f-4679-93af-8bdfc1878ccd",
+"school": "장훈고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "9e13992f-0445-4660-9148-a74fb182f5c5",
+"school": "재현고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "97f4da4e-769d-4791-9965-68fd56f6dbde",
+"school": "재현고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "35d10220-f8b6-4f52-a261-280a47a11597",
+"school": "재현고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7437dd00-631a-46be-8500-69215ca9e4ce",
+"school": "저동고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a090be10-e9fb-4a65-83c0-ed9e2279c20c",
+"school": "저현고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9910cf75-8218-4a02-82a9-f155830216a6",
+"school": "전주한일고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "446a030a-f175-4568-9fe9-7d90f52b32b6",
+"school": "전주한일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "68e7d22c-b216-4905-be8d-a4ef400c23c5",
+"school": "전주한일고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "09ffb5d8-9f57-41f3-94aa-bc6ecf2f4fa1",
+"school": "전주한일고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "db09f2e2-0a60-45c2-90b3-2a854f080a2e",
+"school": "정명고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "664959f5-392f-4165-9ad4-5fd92e442dd7",
+"school": "정발고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "fc93b9a9-587a-4a80-9f04-411f656e01f3",
+"school": "정의여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "19fe4527-bedf-4a54-b2fc-5d7cfe928142",
+"school": "조원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "83c6e03e-4f96-4e13-bdf0-07c07b71cec6",
+"school": "주엽고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7cbbad47-5833-42ac-bdc0-820edf3e8c94",
+"school": "죽전고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "062c351a-aa88-4f50-9051-f18840741c09",
+"school": "중앙고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "79c3a595-69b1-4f60-b619-743f0362c2bd",
+"school": "중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "e04c244e-ea80-419f-bac8-94a6587b0688",
+"school": "중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "16e896db-f8fb-476f-8fe7-9806faa7634c",
+"school": "중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "8ed729c0-862b-4d61-9512-4b037a9c168d",
+"school": "중앙여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "9182fc21-e0bd-4a43-b31a-40c9203fe3a3",
+"school": "중앙여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "e38ef5d2-bca3-42ec-9e96-64a385b952c2",
+"school": "중앙여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "29c1a9c4-7ee2-4801-8703-7b7715feedeb",
+"school": "중원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2ca44aac-712e-4b2d-bc48-7cb514250f9d",
+"school": "중흥고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2f37bf2c-dcb2-416d-8806-c9a21952ed87",
+"school": "진관고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "68468cd9-910d-457e-b19f-2a199c924012",
+"school": "진성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "e7a9d8c5-c7bd-406d-b99d-b70d44e8b691",
+"school": "창문여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "35316eee-2684-4433-98fa-81d0cb83a287",
+"school": "창원중앙고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6df0f6a0-2130-48a9-9742-e47e6a456cae",
+"school": "창현고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4326517e-7ad3-468c-8bd9-28a8cf305384",
+"school": "천안고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "4670a4d4-e499-4d07-bbca-0a7771152f86",
+"school": "천안고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "0a53b024-4c3c-4b61-84ed-83e01febea5b",
+"school": "천안고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "ee039dc6-dcea-4c37-ae5a-98ebd1233d98",
+"school": "천안고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "a2224949-1816-4c1a-9e09-4d5918726573",
+"school": "천천고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "475a65a9-ae60-4cb7-be52-a8c341203429",
+"school": "청량고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "f42f71f8-bd6c-4e75-ad5d-350f81a314ad",
+"school": "청명고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "9657ea3e-59a1-4d34-beae-824d4a8cdd8a",
+"school": "청명고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "a4e08c35-9fcc-418e-a8a7-3acdf3c93ed6",
+"school": "청명고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "2fee489f-030b-4bf6-91d0-71e062dd2118",
+"school": "청명고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0c2d9a00-cbdf-4acb-be3d-8d49bf971e79",
+"school": "청심국제고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "737d6e8c-0a96-480e-ac74-e6190c61973e",
+"school": "청원고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "f8e8d848-b04f-4014-bfa0-1183ccd59c1f",
+"school": "청원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "5a5eff55-e56f-4681-b5d9-7894a38f044a",
+"school": "청원고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "cda94164-61d5-4e4e-b849-dab539919cdd",
+"school": "청원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "deee3a06-655a-44cc-a24d-20af35334c8b",
+"school": "청원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "8f2d8a45-15ae-40ce-a362-eceac4fad0cc",
+"school": "충남고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "a9523474-e26b-49b3-b1fb-a2a04e0c521e",
+"school": "충남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "9bb77ecc-cbcc-42ec-9939-889d55575ef2",
+"school": "충남고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "9c9a53f6-9258-4b24-a0f1-c69613b3e973",
+"school": "충남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "1c6bea7d-e597-4249-b17d-7d4076647883",
+"school": "충남삼성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "b304b5df-9946-4e87-9b6e-42b7ed63601f",
+"school": "충남삼성고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "94d49da9-70ee-453c-ab76-41e79b192620",
+"school": "충남삼성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2bdece1b-4090-4db2-8ba9-105f051dcda2",
+"school": "충남삼성고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "2f734af6-1b03-4a9f-8314-fc91165bb0bd",
+"school": "충남여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "23bbb6dc-e2a0-4605-8b38-7cd7bd3413d3",
+"school": "충남여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "897bfd70-fac9-4e29-bc51-468073fbc926",
+"school": "충남여자고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "d7df5e48-dd74-4aae-be50-da7d7241cb22",
+"school": "충남여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "89e02c67-f5e0-4aa5-b5ce-c210dae27e94",
+"school": "충암고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "a68ef02f-6ed2-467c-bfb6-d4e9e426a835",
+"school": "충암고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "be1e2ca1-d988-43a7-9545-ee4cd29b048f",
+"school": "충암고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "c779c1a3-7855-4598-b62a-66e3122eeb5d",
+"school": "충현고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "82660bed-43d8-4aff-9910-ba7c5b009878",
+"school": "태장고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7120e9aa-07a3-477f-be0f-5608dc10d7f1",
+"school": "태전고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c2cb6257-094e-4b27-a9ea-9c18d30a053d",
+"school": "토평고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "4811b834-7452-4a45-b8a1-6ec19ce81100",
+"school": "통진고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "2f322e72-c245-4fe9-bea3-a4e7937197b9",
+"school": "퇴계원고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "856c9aa4-d519-4709-b396-bb017ce4826e",
+"school": "판곡고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "acf8e73e-c68d-4adb-9c92-449ae46e92dd",
+"school": "판교고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "f0040105-efc9-418d-8d9c-b66c346ed206",
+"school": "평내고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "19fd3459-5b90-4bb1-884a-1cfb2554fe2b",
+"school": "평촌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "255d8f13-7445-443a-a696-16f86693a305",
+"school": "평촌고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "5c3bdb55-5f2f-4d25-a406-75ea0c738413",
+"school": "풍동고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0b4b3c89-8df9-45f0-8698-9801ac337e98",
+"school": "풍무고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "37a601a0-beed-4f29-a14f-648a134e0a5f",
+"school": "풍생고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a8976f14-dd78-4059-897f-16d6d7074cd5",
+"school": "하나고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "c74cfb3e-ac0f-4422-bb76-4a081cea524d",
+"school": "하나고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "대수"
+},
+{
+"id": "55ad372c-47e5-49cb-89c3-67dd26ea9057",
+"school": "하나고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "b6389299-f823-45df-be74-6ad5843e9ee7",
+"school": "하나고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "fea36ad6-c40c-4b67-aa58-b07aa6192194",
+"school": "하남고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "bc1caf46-8f4c-4f78-a3a6-f8781ba79de6",
+"school": "하남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "2e92401a-d092-4120-a191-80ee7ed62469",
+"school": "하남고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "9bd622b1-2bbe-4fb0-9801-ee7f272c7478",
+"school": "하남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "b9d3cb40-1af5-48a2-9ef3-c237410abbb0",
+"school": "하남고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "9e6186e9-dc53-4673-90ff-3c9785d88945",
+"school": "한빛누리고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "41d380fa-0d94-4b50-82bd-8b3c2627f8a6",
+"school": "한성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "a66309db-f52f-4c6c-a1b1-aee7cccd6f63",
+"school": "한성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "041188e8-e4b3-4e30-859f-6e8d5ab76077",
+"school": "한성여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "358bdfb4-5f87-4055-91eb-2729fdbf89a2",
+"school": "한영고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "6bbbf0c6-88ef-4b17-bca2-5a4d01765656",
+"school": "한영고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "65cfda55-95e7-466c-bd61-9e10de18ca52",
+"school": "한영고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "0df26ec0-16a1-4b0b-a7a4-b12f670e54be",
+"school": "한영고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "10ca8425-4660-4798-affb-6e3f71a63b3b",
+"school": "한영고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "36b73ac0-5ef4-4725-8df7-9f8fddd0f37f",
+"school": "한영외국어고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "b6126bfe-ba49-4875-9dae-8a2bbb0a0779",
+"school": "해운대고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "7f2733f8-6171-4fe1-9a17-abacccb808e9",
+"school": "행신고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "3636ddae-38e9-41ea-80b3-f2b2f2e81911",
+"school": "향동고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "280a42ac-ade3-4fc0-b23a-e9bd7b709c5e",
+"school": "현대청운고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "7a65b073-4ac1-4110-829d-0bbf9387cdf6",
+"school": "현대청운고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "b751951d-2c95-4305-9186-8db71e923575",
+"school": "혜성여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "8ada319e-837c-4ab3-9f1c-aeede2e3e71d",
+"school": "혜성여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "1d05eb96-3ff4-427e-95a3-467654fb42b2",
+"school": "혜성여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "c7df1eaf-3ccc-4799-9e8d-cf66f8e75793",
+"school": "혜화여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "7991d959-7df7-47d1-89e7-ff6b13fd4b28",
+"school": "호매실고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "8231cd65-e93f-4a65-823c-195e573bfead",
+"school": "호평고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "432ec527-1b4c-40b3-9e7b-cf424455d3e6",
+"school": "홍익대학교사범대학부속여자고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "e59aaf7d-eac0-415f-b5f5-15a1c2c9cf6a",
+"school": "화성고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "59eae008-8a77-46bf-8974-f2c2674ad81c",
+"school": "화성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "공통수학1"
+},
+{
+"id": "1548e695-e5ef-470f-9719-3df5c41ac207",
+"school": "화성고등학교",
+"exam_year": 2025,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "853cc89d-6675-4e4b-9ffc-b4a68ed3941e",
+"school": "화성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "bbddc5ee-4e0a-4c52-a353-865aa653dbe8",
+"school": "화성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "3d931423-4a08-4e1d-9964-7ef219a92f95",
+"school": "화수고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "0c55d339-b538-4c1e-b25a-6313e71a5ccb",
+"school": "화정고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "6f1bf514-8083-4874-b145-2dd50327d599",
+"school": "효성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "공통수학2"
+},
+{
+"id": "8f18f3e4-954d-41cb-9ed0-ebaf2a8b513d",
+"school": "효성고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "9edc863e-86d6-451f-94c4-dcf32bea732a",
+"school": "흥진고등학교",
+"exam_year": 2025,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "공통수학2"
+},
+{
+"id": "5f2ee98a-31c6-4def-ac19-849cd865234c",
+"school": "가재울고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "0683de3b-58a4-4772-885d-944a9fc564d0",
+"school": "가재울고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "기하"
+},
+{
+"id": "bde80518-ce88-4fb4-9827-f3afe079fc4a",
+"school": "감일고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "abc6eef7-11cd-4f1b-a27e-4b6122b5765b",
+"school": "건국대학교사범대학부속고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "f4c80e81-5c6c-425a-9fb7-47cb30e83bcf",
+"school": "경복고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "dcb9ae9c-d19a-4d98-8136-5f57bf773aa1",
+"school": "경희고등학교",
+"exam_year": 2024,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "e2726e34-16e3-4f4b-a631-ff0945de7ddc",
+"school": "과천고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "b0d9e0f2-002a-4914-9a54-915320c1fd86",
+"school": "광양고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "31363588-4589-4cd8-a77e-309d747d960b",
+"school": "동북고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "b9f13177-6478-4b7e-9be2-b322456c51ab",
+"school": "동화고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "9a54a0c1-f9ae-4151-93aa-d50dd251f816",
+"school": "둔촌고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "2d613fbe-e701-4279-a942-64a9d11d131a",
+"school": "무학여자고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "712e4fa3-faba-4c53-a2b7-aeeb9da65379",
+"school": "무학여자고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "d2001cae-60bc-4ed4-8e2b-475e12a5f646",
+"school": "상명대학교사범대학부속여자고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "8eb9a9d7-577e-4ff7-8713-3ee3d8f0f27c",
+"school": "서울삼육고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "1814f636-fc55-48df-8e64-6e158d544f02",
+"school": "위례고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "48c089f0-b134-44cd-83bd-da8a478f289c",
+"school": "위례고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "f98d78b5-43d5-4b1f-91ff-5e6183dd7cc3",
+"school": "작전고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "49843c69-2278-4d2a-bdc0-af59449c849d",
+"school": "작전고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "9976d4b1-84c5-4a89-a6d5-79c935e3ef60",
+"school": "작전여자고등학교",
+"exam_year": 2024,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학(하)"
+},
+{
+"id": "ce38583f-5e7b-48de-969e-0ec670f1e89e",
+"school": "작전여자고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "a02d3975-d707-45d1-9337-fbccb4b2e02f",
+"school": "작전여자고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "1fe4b5ce-d2d6-4914-b27d-8b3ec0efe41e",
+"school": "청원고등학교",
+"exam_year": 2024,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "bcc1875f-8c64-41e1-ad85-ee7da448969c",
+"school": "한영고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "0a932965-5369-4973-b446-79963185feb8",
+"school": "한영외국어고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "44d799e8-691a-4158-8155-09cfe4224cf2",
+"school": "한영외국어고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "729ec609-206f-4f32-8f6c-0debca974c3a",
+"school": "효성고등학교",
+"exam_year": 2024,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "확률과통계"
+},
+{
+"id": "2147a915-bdc2-4d7a-8f77-fed032770b68",
+"school": "효성고등학교",
+"exam_year": 2024,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "a3dd594c-78d3-4f93-8809-f35e747f81f5",
+"school": "경일고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "6b26e58b-7c29-4d9f-b9bc-d1552bfe6f37",
+"school": "경일고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "c391e436-2da3-488c-9b00-9f18cb1fc503",
+"school": "단국대학교부속소프트웨어고등학교",
+"exam_year": 2023,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학(하)"
+},
+{
+"id": "b3097213-9cd9-4780-bbb3-71af33457845",
+"school": "대원외국어고등학교",
+"exam_year": 2023,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "0b5a9fae-c570-4696-b63b-e683ec51cb7f",
+"school": "상명대학교사범대학부속여자고등학교",
+"exam_year": 2023,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학(하)"
+},
+{
+"id": "39f6e898-4a31-4114-8b8d-7811dc89b585",
+"school": "서울문영여자고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "0e855251-752c-4273-b597-708fce260bd4",
+"school": "서울문영여자고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "2355891c-6b68-43ae-9688-bb52f90223fd",
+"school": "서울삼육고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "51ae16e1-b096-4ded-bb5b-15c7f14e0851",
+"school": "숭의여자고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "9e3dd547-05b3-478b-857f-3bfcf951c0d5",
+"school": "중앙고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "294f1600-66a2-4277-a9c1-537317af08cc",
+"school": "중앙고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "확률과통계"
+},
+{
+"id": "c401f6ed-9b2e-46cb-9b69-733ab9d496b4",
+"school": "창현고등학교",
+"exam_year": 2023,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "57c25060-3d48-491d-bd0b-cd8b25ce212a",
+"school": "창현고등학교",
+"exam_year": 2023,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "ac490266-e2a1-49ef-b8ae-31740fef16fd",
+"school": "포항제철고등학교",
+"exam_year": 2023,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "4b2810a8-4e68-474c-aee4-d2edc2d56637",
+"school": "한영외국어고등학교",
+"exam_year": 2023,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학(상)"
+},
+{
+"id": "998a961f-d38e-4d60-95db-9bdf78ca4b2e",
+"school": "가운고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학(상)"
+},
+{
+"id": "e70f44b7-629c-4957-bf5a-84054fdd429e",
+"school": "감일고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "df7b8b77-8080-441a-9368-11555762b395",
+"school": "감일고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "d345730e-ec4c-43fd-9247-60f4ba7e0d60",
+"school": "강동고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "2c521db9-1d0d-42ae-af1d-7905a278f92c",
+"school": "건국대학교사범대학부속고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "6f5fddba-4afb-4ac8-9f41-ea165c105f27",
+"school": "건국대학교사범대학부속고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "cb12363c-a843-457b-bfd2-50dce9f1de95",
+"school": "경일고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "be905343-2520-45af-a8d7-4a82db5dda3c",
+"school": "경일고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "cc34fc0c-c178-43cb-9cb4-faa3157e07dd",
+"school": "경희여자고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "702ed5d8-7f4b-4bab-b53b-3d7548503ef0",
+"school": "광문고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "0360c6a9-6a66-4887-a6ed-a47f60974a43",
+"school": "대광고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "12bc266c-d648-4579-9131-5093deebd120",
+"school": "대광고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학(하)"
+},
+{
+"id": "a9e4dc68-ea89-4f30-beb6-447c861f1095",
+"school": "대원고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "5e650eaf-e822-424f-a7d3-1d03fa5c24c9",
+"school": "대원고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "d467240e-f125-407a-96ab-0c815552ff45",
+"school": "대원여자고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "a9f9fedb-5331-49f4-976b-b3950eaed8d0",
+"school": "대원외국어고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학(하)"
+},
+{
+"id": "2bcf2433-e637-4944-86fc-812e3109fb0c",
+"school": "대원외국어고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "6d69f78d-a293-4e92-885f-49c4ffb20b5d",
+"school": "대원외국어고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학(하)"
+},
+{
+"id": "525057d8-13e7-4281-a8fc-4a17a2b67cb2",
+"school": "동국대학교사범대학부속가람고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "5b2a2e52-77ba-4daa-8dae-db51ac3ab94c",
+"school": "동국대학교사범대학부속고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "d75a6f45-1bb1-4cef-92c5-18a9f621d5d5",
+"school": "동북고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "678b98eb-ea96-45c2-baad-d81387aa906b",
+"school": "둔촌고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "60323d0d-c895-4c0c-bad7-573932c2132b",
+"school": "무학여자고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "f8d493d9-28f7-4fb0-99a3-0032e1baef15",
+"school": "미림여자고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학II"
+},
+{
+"id": "df771c7c-8dd5-41ef-a837-c28e8273d727",
+"school": "미림여자고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "99e57cff-8a55-4679-8e8b-e7c2067c849f",
+"school": "미림여자고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학I"
+},
+{
+"id": "92973f30-d719-463c-8cc4-1172c38c1a52",
+"school": "미림여자고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "8855836f-8f0e-45ec-b051-c168b7533fa8",
+"school": "상명대학교사범대학부속여자고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "b70ad257-7e01-4e65-8fea-dadf1baf47b6",
+"school": "상명대학교사범대학부속여자고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학(상)"
+},
+{
+"id": "bbda9c14-7639-43b1-a2c1-82542869095d",
+"school": "상일여자고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "1c54be60-ddb0-4bfd-bf24-3c6a8ce08754",
+"school": "성덕고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "738e1f31-2368-4ffa-8639-d309b8eb9141",
+"school": "성덕고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "기말고사",
+"subject": "수학(상)"
+},
+{
+"id": "72e679b7-deec-4eb3-ad00-9aee207d1fab",
+"school": "수택고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "1516ac24-38b2-4e72-902b-ba258ffe9369",
+"school": "용인한국외국어대학교부설고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학(하)"
+},
+{
+"id": "9429757b-ed3a-4461-89ab-8154d6ee8e2c",
+"school": "용인한국외국어대학교부설고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학(하)"
+},
+{
+"id": "091848ea-effa-4fe3-9c75-4e74ab83ec4a",
+"school": "위례고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "17937f40-bd32-4cdf-96a0-2ce432440625",
+"school": "자양고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "efe350b2-71ae-4a81-9e19-639f6ba0f32a",
+"school": "중앙고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "cec5b929-ebb8-4c6b-828c-4e989de0d81f",
+"school": "창현고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학(하)"
+},
+{
+"id": "a9ee072c-5c0c-424f-bd08-8dc7a097153b",
+"school": "창현고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "5d8fc41c-1bba-49c9-9c94-66734c01a92b",
+"school": "창현고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 2,
+"exam_type": "중간고사",
+"subject": "수학II"
+},
+{
+"id": "714c9c89-ecda-450d-881c-53bac44446f7",
+"school": "창현고등학교",
+"exam_year": 2022,
+"grade": 2,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학I"
+},
+{
+"id": "9ae60539-1234-48da-a3f6-aac0a238e9e0",
+"school": "한영고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 1,
+"exam_type": "중간고사",
+"subject": "수학(상)"
+},
+{
+"id": "78a0ade1-a5c2-40df-a564-92c9b49d8ed9",
+"school": "한영외국어고등학교",
+"exam_year": 2022,
+"grade": 1,
+"semester": 2,
+"exam_type": "기말고사",
+"subject": "수학(하)"
+}
+]
