@@ -47,6 +47,11 @@ export async function GET() {
         'Allow: /api/og-image',
         `Allow: /${encodeURIComponent('모의고사')}`,        // 사관·경찰대 등 — 우리만 가진 자료
         'Allow: /insights',
+        // [10/23] 입구 페이지 — 10/22 허용 목록에서 빠져 /schools·/지역·과목 허브가 구글봇에 막혀 있었다
+        //   (/schools 는 '크롤링됨-색인 안 됨', /지역 은 '알 수 없는 URL'). 학교 페이지는 여전히 막는다.
+        'Allow: /schools$',
+        `Allow: /${encodeURIComponent('지역')}`,
+        'Allow: /subject/',
         // ⚠ 사이트맵 파일도 허용해야 한다 — 구글은 사이트맵을 가져올 때도 robots 를 지킨다.
         //   10/23 배포 직후 /sitemap-exam-analysis.xml 이 서치콘솔에서 '가져올 수 없음'(Disallow: / 에 막힘).
         'Allow: /sitemap',             // sitemap.xml · sitemap-neis.xml · sitemap-exam-analysis.xml

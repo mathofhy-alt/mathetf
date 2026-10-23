@@ -420,6 +420,9 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 .rd .rd-x-row b { display: block; font-size: 19px; font-weight: 700; }
 .rd .rd-x-row small { display: block; margin-top: 6px; font-size: 16px; color: var(--rd-sub); }
 .rd .rd-x-row svg { flex: none; color: var(--rd-icon); }
+/* [10/23] 긴 학교명(중앙대학교사범대학부속여자고등학교 등)이 폰에서 화살표를 밀어내 가로로 넘쳤다 */
+.rd .rd-x-row > span, .rd .rd-x-row > div { min-width: 0; }
+.rd .rd-x-row b { overflow-wrap: anywhere; }
 .rd .rd-x-more .rd-lead { margin-top: 16px; }
 .rd .rd-x-report { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding: 32px 36px; border-radius: 28px; background: var(--rd-tint); }
 .rd .rd-x-report h3 { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.4; }
