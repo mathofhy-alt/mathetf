@@ -1017,7 +1017,8 @@ def main(argv=None):
     global BUDGET
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('dir'); ap.add_argument('original')
-    ap.add_argument('--easy', type=int, default=0)   # [10/24 대표] 쉬움 변형은 만들지 않는다 — 숫자변형은 유지에 있다; ap.add_argument('--keep', type=int, default=2)
+    # [10/24 대표] 쉬움 변형은 만들지 않는다 — 숫자변형은 유지에 있다
+    ap.add_argument('--easy', type=int, default=0); ap.add_argument('--keep', type=int, default=2)
     ap.add_argument('--hard', type=int, default=2); ap.add_argument('--only')
     ap.add_argument('--max-attempts', '--maxtry', type=int, choices=(1, 2), default=2)
     ap.add_argument('--workers', type=int, default=3)
