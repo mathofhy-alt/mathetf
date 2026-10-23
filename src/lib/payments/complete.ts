@@ -42,7 +42,7 @@ export async function completeOrder(req: NextRequest, kind?: 'cart' | 'topup') {
         const { data, error } = await sb.rpc('complete_payment_order', { p_payment_id: paymentId, p_user_id: user.id });
         if (error) { console.error('[Order completion]', error.code); throw new Error('ORDER_RETRY'); }
         await removePurchasedCartItems(sb, order);
-        return NextResponse.json({ success: true, ...data, kind: order.kind, points: order.points });
+        return NextResponse.json({ success: true, ...data, kind: order.kind, points: order.points, amount: order.amount });   // amount: GA purchase 값(10/23)
     } catch (error: any) {
         const unpaid = error.message === 'PAYMENT_NOT_PAID';
         const pending = error.message === 'PAYMENT_PENDING';

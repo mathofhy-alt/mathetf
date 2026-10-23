@@ -27,6 +27,7 @@ import TeacherExamCTA from '@/components/TeacherExamCTA';
 import ExamPromoModal from '@/components/ExamPromoModal';
 import { buildSourceDbId } from '@/lib/examKey';
 import dynamic from 'next/dynamic';
+import { gaEvent } from '@/lib/analytics/ga';
 
 const UploadModal = dynamic(() => import('@/components/UploadModal'), { ssr: false });
 const ReportModal = dynamic(() => import('@/components/ReportModal'), { ssr: false });
@@ -627,6 +628,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
             document.body.appendChild(link);
             link.click();
             link.remove();
+            gaEvent('free_pdf_download', { from: 'home' });
             // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
             setTimeout(() => window.URL.revokeObjectURL(objUrl), 40_000);
             setDlState(prev => ({ ...prev, [stateKey]: 'done' }));

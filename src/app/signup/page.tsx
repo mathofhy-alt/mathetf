@@ -16,6 +16,7 @@ import { getStoredRole, ROLE_STORAGE_KEY, type UserRole } from '@/components/Rol
 import { getStoredSignupAttribution } from '@/lib/analytics/signup-attribution';
 import { queueKakaoRegistration } from '@/components/KakaoPixel';
 import { checkEmail } from '@/lib/email-check';
+import { gaEvent } from '@/lib/analytics/ga';
 
 export default function SignupPage() {
     const [step, setStep] = useState(1);
@@ -222,6 +223,7 @@ export default function SignupPage() {
             }
 
             queueKakaoRegistration();
+            gaEvent('sign_up', { method: 'phone', persona: persona || undefined });
 
             // 가입 직후 자동 로그인 (UX)
             const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });

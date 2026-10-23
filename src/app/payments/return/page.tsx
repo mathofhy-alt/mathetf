@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
+import { gaEvent } from '@/lib/analytics/ga';
 // 결제 결과(10/7 새 디자인) — 계정 화면과 같은 가운데 카드(rd-auth). 확인 로직은 그대로, 겉모습만 바꿨다.
 export default function PaymentReturn() {
     const [message,setMessage] = useState('결제 결과를 확인하고 있습니다.');
@@ -37,6 +38,7 @@ export default function PaymentReturn() {
             if (!res.ok || !data.success) throw new Error(data.message);
             const {data:{user}} = await createClient().auth.getUser();
             if(user) localStorage.removeItem(`mathetf_pending_payment_${user.id}_${data.kind}`);
+            if (!data.alreadyProcessed) gaEvent('purchase', { transaction_id: paymentId, value: data.amount, currency: 'KRW', kind: data.kind });
             setDone(true); setMessage(data.kind==='topup' ? `${data.points.toLocaleString()} 포인트 충전이 완료되었습니다.` : '결제가 완료되었습니다. 이용권은 시험지 만들기에 바로 적용되고, 자료는 마이페이지 구매 내역에서 받을 수 있습니다.');
         } catch (e:any) { setMessage(e.message || '같은 주문의 결과를 다시 확인해주세요.'); }
         finally { setBusy(false); }

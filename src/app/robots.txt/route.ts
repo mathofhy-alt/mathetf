@@ -47,6 +47,12 @@ export async function GET() {
         'Allow: /api/og-image',
         `Allow: /${encodeURIComponent('모의고사')}`,        // 사관·경찰대 등 — 우리만 가진 자료
         'Allow: /insights',
+        // ⚠ 사이트맵 파일도 허용해야 한다 — 구글은 사이트맵을 가져올 때도 robots 를 지킨다.
+        //   10/23 배포 직후 /sitemap-exam-analysis.xml 이 서치콘솔에서 '가져올 수 없음'(Disallow: / 에 막힘).
+        'Allow: /sitemap',             // sitemap.xml · sitemap-neis.xml · sitemap-exam-analysis.xml
+        'Allow: /image-sitemap.xml',
+        'Allow: /rss.xml',
+        'Allow: /robots.txt',
         ...Object.keys(index).sort().map(id => `Allow: /exam/${id}$`),
         'Disallow: /',
     ];

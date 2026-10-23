@@ -177,6 +177,26 @@ def save_notice(it, text):
 
 
 REAL_SIDE = ('.hwp', '.pdf', '.hml', 'ㅈㄷ.pdf', '_원본제보.pdf', '_원본.pdf', '_해설.pdf')
+DUP = os.path.join(GS, '_중복_이미등록')
+
+
+def already_done(pdf):
+    """[10/23 대표: "이미 내가 했다고 하지 말라고 하지 않았냐"] 대표가 직접 타이핑해 리얼·트라이로 넣었거나 이미 등록된 회차의
+    원본제보가 네임 폴더에 남아 있으면 11시 작업이 또 풀었다(양서고 3장). 등록됐거나 한글이 리얼·트라이에 있으면 건너뛴다."""
+    n = os.path.basename(pdf)[:-len('_원본제보.pdf')]
+    for d in (REAL, TRY):
+        if os.path.exists(os.path.join(d, n + '.hwp')): return f'{os.path.basename(d)} 폴더에 한글 있음'
+    m = re.match(r'(.+?)_(.+?)_(\d{4})년_(\d)(중간|기말)_(.+?)(\d)_(.+)$', n)
+    if not m: return None
+    try:
+        sys.path.insert(0, os.path.join(ROOT, 'scripts', 'variant_pipeline', 'mine'))
+        from db import get
+        rows = get('exam_materials', select='id', content_type='eq.해설', file_type='eq.PDF', school='eq.' + m.group(6),
+                   exam_year='eq.' + m.group(3), semester='eq.' + m.group(4), exam_type='eq.' + m.group(5) + '고사',
+                   subject='eq.' + m.group(8), limit='1')
+        return '사이트에 이미 등록됨' if rows else None
+    except Exception:
+        return None
 
 
 def real_to_try(outs):
@@ -215,6 +235,14 @@ def main():
         st = load(STATE, {})
         pdfs = [p for p in sorted(glob.glob(os.path.join(NAME, '*_원본제보.pdf'))) if '확인필요' not in os.path.basename(p)]
         say(f'네임 폴더 원본제보 {len(pdfs)}개')
+        keep = []
+        for p in pdfs:
+            why = already_done(p)
+            if why:
+                os.makedirs(DUP, exist_ok=True); shutil.move(p, os.path.join(DUP, os.path.basename(p)))
+                say('이미 한 회차 — 건너뛰고 _중복_이미등록 으로', os.path.basename(p), '|', why)
+            else: keep.append(p)
+        pdfs = keep
         with ThreadPoolExecutor(6) as ex: res = list(ex.map(verify, pdfs))
         ok = []
         for p, v in zip(pdfs, res):
