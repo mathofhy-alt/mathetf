@@ -434,7 +434,8 @@ def write_solve_refs(D, policy):
 
 
 def solve_refs(D):
-    return [n for n in ('standard_routes.md', 'solve_rules.md', 'similar.md') if (Path(D) / n).is_file()]
+    # lessons.md: 자기 연습 순환(practice/practice.py)이 쌓은 '변형 비법 노트'(10/23 대표: "지 스스로 만들고 분석하고 개선하고")
+    return [n for n in ('standard_routes.md', 'solve_rules.md', 'similar.md', 'lessons.md') if (Path(D) / n).is_file()]
 
 
 REAL_ERRORS = 'C:/selfmade/오답조사/real_errors.json'
@@ -1016,11 +1017,12 @@ def main(argv=None):
     global BUDGET
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('dir'); ap.add_argument('original')
-    ap.add_argument('--easy', type=int, default=2); ap.add_argument('--keep', type=int, default=2)
+    ap.add_argument('--easy', type=int, default=0)   # [10/24 대표] 쉬움 변형은 만들지 않는다 — 숫자변형은 유지에 있다; ap.add_argument('--keep', type=int, default=2)
     ap.add_argument('--hard', type=int, default=2); ap.add_argument('--only')
     ap.add_argument('--max-attempts', '--maxtry', type=int, choices=(1, 2), default=2)
     ap.add_argument('--workers', type=int, default=3)
     ap.add_argument('--similar', default='', help='원본의 실제 학교 변형 사례(mine/similar_ctx.py 로 만든 md)')
+    ap.add_argument('--lessons', default='', help='[10/23] 자기 연습 순환이 쌓은 변형 비법 노트(md) — 설계·생성 단계가 읽는다')
     ap.add_argument('--unit', default=''); ap.add_argument('--src', default=''); ap.add_argument('--no', default='')
     ap.add_argument('--reuse-plan', default='', help='[10/21] 이전 실행 폴더의 routes.json·plan.json 을 그대로 써서 경로 판단·설계를 건너뜀')
     ap.add_argument('--fast', action='store_true', help='[10/21] 생성+독립 풀이만(원본 비교·검토·묶음 생략) — 대표가 문제를 직접 볼 때')
@@ -1068,6 +1070,8 @@ def main(argv=None):
         write_text(D / 'original_problem.txt', problem)
         write_text(D / 'menu.md', (HERE / 'menu.md').read_text(encoding='utf-8-sig'))
         write_real_errors(str(D), a.unit, a.src, a.no)
+        if a.lessons and Path(a.lessons).is_file():
+            write_text(D / 'lessons.md', Path(a.lessons).read_text(encoding='utf-8-sig'))
         policy = make_policy(original, requested, a.max_attempts, a.unit)
         write_json(D / 'delivery_policy.json', policy)
         route_file = write_solve_refs(D, policy)

@@ -214,7 +214,7 @@ def run(a):
         def one(p):
             D = R / p['id']
             cmd = [PY, '-X', 'utf8', str(VP / 'run.py'), str(D), str(W / 'orig' / p['id'] / 'original.md'),
-                   '--easy', '1', '--keep', '1', '--hard', '1', '--workers', '3', '--unit', p.get('unit', ''), '--lessons', str(R / 'lessons_used.md')]
+                   '--easy', '0', '--keep', '1', '--hard', '1', '--workers', '3', '--unit', p.get('unit', ''), '--lessons', str(R / 'lessons_used.md')]
             sim = W / 'orig' / p['id'] / 'similar.md'
             if sim.is_file(): cmd += ['--similar', str(sim)]   # 실제 강사 변형 사례(숫자변형 손잡이·심한 변형 수법) — 모범 답안
             subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL, timeout=4 * 3600)
