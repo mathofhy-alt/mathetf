@@ -24,6 +24,10 @@ const COMMON = [
     // [2026-09-03] 시험지출제(question-bank)의 쿼리 URL — 본문·title 이 /question-bank 와 같아 중복 문서가 된다.
     // 네이버는 canonical 로 중복 판정을 풀지 않는다. ?src= ?school= ?tour=1 모두 사용자 동선용이라 막아도 지장 없다.
     'Disallow: /question-bank?',
+    // [10/24] 로그인·가입의 ?next= 주소 — 시험지마다 하나씩 생겨 아레프스 감사 5,000쪽 중 889쪽(18%)이 이것이었다.
+    //   전부 noindex 라 색인엔 해가 없지만 크롤 예산만 먹는다(네이버 Yeti 도 같은 링크를 따라간다).
+    'Disallow: /login?',
+    'Disallow: /signup?',
 ];
 
 const TAIL = [
