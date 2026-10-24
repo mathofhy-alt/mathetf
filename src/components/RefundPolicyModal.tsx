@@ -56,6 +56,16 @@ export default function RefundPolicyModal({ isOpen, onClose }: RefundPolicyModal
                             </ul>
                         </section>
 
+                        {/* [10/24] 회원 전용 개인DB — 대표 결정: 환불 불가. 결제 창에서 동의를 받는다(MyDbRequests). */}
+                        <section>
+                            <h3 className="font-bold text-base mb-2">제2조의3 (회원 전용 개인DB)</h3>
+                            <ul className="list-disc pl-5 space-y-2">
+                                <li>회원 전용 개인DB는 회원의 요청에 따라 그 회원만 이용할 수 있도록 만든 디지털 콘텐츠로, 결제가 완료되는 즉시 시험지 만들기에서 이용할 수 있습니다.</li>
+                                <li><span className="text-rose-600 font-bold">개인DB는 결제 즉시 제공이 시작되므로, 이용 여부와 관계없이 결제 후에는 청약철회(환불)가 제한됩니다</span>(전자상거래법 제17조 제2항 제5호). 회원은 결제 화면에서 이 내용에 동의한 후 결제합니다.</li>
+                                <li>다만 회사의 귀책 사유(중복 결제, 시스템 오류로 개인DB가 열리지 않는 경우 등)로 이용하지 못한 경우에는 확인 후 환불합니다.</li>
+                            </ul>
+                        </section>
+
                         <section>
                             <h3 className="font-bold text-base mb-2">제3조 (환불 절차 및 방법)</h3>
                             <ul className="list-disc pl-5 space-y-2">

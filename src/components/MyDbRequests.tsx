@@ -6,6 +6,7 @@ import { Calendar, MessageSquare, Database, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { payOrder } from '@/lib/payments/client';
 import PointsPicker from '@/components/PointsPicker';
+import RefundPolicyModal from '@/components/RefundPolicyModal';
 
 /**
  * 마이페이지 '내 요청' 탭 (2026-10-06) — 개인DB 요청의 처리 상태와 운영자 안내를 보여준다.
@@ -35,12 +36,15 @@ export default function MyDbRequests() {
     const [pointsPick, setPointsPick] = useState(0);   // [10/24 대표] 쓸 포인트는 회원이 1,000P 단위로 고른다
     const [phone, setPhone] = useState('');
     const [payErr, setPayErr] = useState('');
+    // [10/24 대표] 환불 불가 동의 — 이용권 창과 같다. 동의해야 결제 버튼이 눌린다
+    const [agree, setAgree] = useState(false);
+    const [showRefund, setShowRefund] = useState(false);
     const open = async (product: any) => {
         const sb = createClient();
         const { data: { user } } = await sb.auth.getUser();
         if (!user) { alert('로그인이 필요합니다.'); return; }
         const { data } = await sb.from('profiles').select('earned_points').eq('id', user.id).single();
-        setPointsPick(0); setPhone(''); setPayErr('');
+        setPointsPick(0); setPhone(''); setAgree(false); setPayErr('');
         setCheckout({ product, user, points: Number(data?.earned_points) || 0 });
     };
     const price = Number(checkout?.product.price) || 0;
@@ -49,7 +53,7 @@ export default function MyDbRequests() {
     const needPhone = !!checkout && due > 0 && !(checkout.user.user_metadata?.phone || checkout.user.phone);
     const phoneOk = !needPhone || /^01[016789]\d{7,8}$/.test(phone.replace(/[^0-9]/g, ''));
     const pay = async () => {
-        if (!checkout || paying || !phoneOk) return;
+        if (!checkout || paying || !phoneOk || !agree) return;
         const { product, user } = checkout;
         setPaying(product.id); setPayErr('');
         try {
@@ -137,14 +141,19 @@ export default function MyDbRequests() {
                         <span>결제에 쓸 휴대폰 번호 <small>카드 결제에 꼭 필요해요</small></span>
                         <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="01012345678" value={phone} onChange={e => setPhone(e.target.value)} className="rd-input" />
                     </label>}
+                    <label className="rd-pass-agree">
+                        <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} />
+                        <span>개인DB는 결제 즉시 이용이 시작되어, <b>결제 후에는 사용하지 않았더라도 환불되지 않는다</b>는 데 동의합니다. <button type="button" onClick={() => setShowRefund(true)}>환불 정책 보기</button></span>
+                    </label>
                     {payErr && <p className="rd-pass-err" role="alert">{payErr}</p>}
                     <div className="rd-modal-actions">
-                        <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={pay} disabled={!!paying || !phoneOk}>
+                        <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={pay} disabled={!!paying || !phoneOk || !agree}>
                             {paying ? '결제 진행 중…' : due === 0 ? `포인트 ${usedPoints.toLocaleString()}P로 결제하기` : `${due.toLocaleString()}원 결제하기`}
                         </button>
                         <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={() => setCheckout(null)} disabled={!!paying}>닫기</button>
                     </div>
                 </div>
+                {showRefund && <div style={{ position: 'relative', zIndex: 310 }}><RefundPolicyModal isOpen onClose={() => setShowRefund(false)} /></div>}
             </div>
         )}
         </>
