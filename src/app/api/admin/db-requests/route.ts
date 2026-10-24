@@ -1,15 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/utils/admin-auth';
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { subPattern } from '@/lib/questions/privateDb';
+import { subPattern, PATH_SEP } from '@/lib/questions/privateDb';
 
 export const dynamic = 'force-dynamic';
 
 /** 개인DB 요청 목록·상태 변경·삭제 (관리자). db_requests 는 서버만 읽고 쓴다(20261006_db_requests.sql). */
-export async function GET() {
+export async function GET(req: Request) {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
     const sb = createAdminClient();
+    // [10/24] 연결 칸 드롭다운 — 파싱해 둔 시중 교재 이름(source_db_id 맨 앞)과 문항 수
+    if (new URL(req.url).searchParams.get('books')) {
+        const count = new Map<string, number>();
+        for (let from = 0; from < 100_000; from += 1000) {
+            const { data, error } = await sb.from('questions').select('id, source_db_id').in('work_status', ['private', 'pending'])
+                .like('source_db_id', `%${PATH_SEP}%`).order('id').range(from, from + 999);
+            if (error) return NextResponse.json({ error: '교재 목록을 불러오지 못했습니다.' }, { status: 500 });
+            for (const r of data || []) { const b = r.source_db_id.split(PATH_SEP)[0]; count.set(b, (count.get(b) || 0) + 1); }
+            if ((data || []).length < 1000) break;
+        }
+        return NextResponse.json({ books: [...count].map(([name, n]) => ({ name, n })).sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true })) });
+    }
     const { data, error } = await sb.from('db_requests').select('*').order('created_at', { ascending: false }).limit(500);
     if (error) return NextResponse.json({ error: '요청 목록을 불러오지 못했습니다.' }, { status: 500 });
     // 연결된 전용 개인DB 상품과 결제 여부 (10/6)

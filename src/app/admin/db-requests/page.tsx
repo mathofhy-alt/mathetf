@@ -32,6 +32,8 @@ export default function DbRequestsAdmin() {
     const [dForm, setDForm] = useState({ source: '', title: '', email: '', price: '0' });
     const [dSaving, setDSaving] = useState(false);
     const [progress, setProgress] = useState('');
+    // [10/24] 연결 칸 드롭다운용 — 파싱해 둔 시중 교재(이름·문항 수)
+    const [books, setBooks] = useState<{ name: string; n: number }[]>([]);
     // [10/7] 처리 끝난 요청(완료·반려)은 '완료' 탭으로 — 할 일만 먼저 보이게(사용자 요청)
     const [tab, setTab] = useState<'open' | 'done'>('open');
     const isDone = (r: any) => r.status === '완료' || r.status === '반려';
@@ -47,6 +49,17 @@ export default function DbRequestsAdmin() {
         setLoading(false);
     };
     useEffect(() => { void load(); }, []);
+    useEffect(() => {
+        fetch('/api/admin/db-requests?books=1', { cache: 'no-store' }).then(r => r.json()).then(j => setBooks(j.books || [])).catch(() => {});
+    }, []);
+    // 교재 고르기 — 목록에 없는 예전 값(단원 묶음 등)도 그대로 보이게 옵션으로 붙인다
+    const bookSelect = (value: string, onPick: (name: string) => void, cls: string) => (
+        <select value={value} onChange={e => onPick(e.target.value)} className={cls + ' bg-white'}>
+            <option value="">교재 고르기{books.length ? ` (${books.length}권)` : ''}</option>
+            {value && !books.some(b => b.name === value) && <option value={value}>{value}</option>}
+            {books.map(b => <option key={b.name} value={b.name}>{b.name} · {b.n.toLocaleString()}문항</option>)}
+        </select>
+    );
 
     const download = async (path: string, name: string) => {
         const { data, error: e } = await supabase.storage.from('exam-materials').download(path);
@@ -138,7 +151,7 @@ export default function DbRequestsAdmin() {
                 <h2 className="text-base font-black text-slate-800">회원에게 교재 바로 연결</h2>
                 <p className="text-xs text-slate-500 mt-1">요청 없이, 고른 회원에게만 교재(전용 개인DB)를 엽니다. 교재 이름(예: 쎈 공통수학1)을 넣으면 그 아래 단원·스텝이 전부 들어갑니다. 가격 0원이면 결제 없이 바로 보입니다.</p>
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-[1.2fr_1.2fr_1.4fr_0.6fr_auto] gap-2">
-                    <input value={dForm.source} onChange={e => setDForm(p => ({ ...p, source: e.target.value, title: p.title === p.source ? e.target.value : p.title }))} placeholder="교재 이름 (source_db_id 맨 앞)" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                    {bookSelect(dForm.source, v => setDForm(p => ({ ...p, source: v, title: p.title === p.source ? v : p.title })), 'text-sm border border-slate-200 rounded-lg px-3 py-2')}
                     <input value={dForm.title} onChange={e => setDForm(p => ({ ...p, title: e.target.value }))} placeholder="회원에게 보일 이름" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
                     <input value={dForm.email} onChange={e => setDForm(p => ({ ...p, email: e.target.value }))} placeholder="회원 이메일" type="email" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
                     <input value={dForm.price} onChange={e => setDForm(p => ({ ...p, price: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="가격" inputMode="numeric" className="text-sm border border-slate-200 rounded-lg px-3 py-2" />
@@ -208,7 +221,7 @@ export default function DbRequestsAdmin() {
                                             : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">결제 대기 · {Number(row.private_db.price).toLocaleString()}원</span>)}
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1.4fr_0.8fr_auto] gap-2">
-                                        <input value={formOf(row).source} onChange={e => setLinkForm(p => ({ ...p, [row.id]: { ...formOf(row), source: e.target.value } }))} placeholder="문항 묶음 (source_db_id)" className="text-xs border border-slate-200 rounded-lg px-2 py-2" />
+                                        {bookSelect(formOf(row).source, v => setLinkForm(p => { const f = formOf(row); return { ...p, [row.id]: { ...f, source: v, title: !f.title || f.title === f.source ? v : f.title } }; }), 'text-xs border border-slate-200 rounded-lg px-2 py-2')}
                                         <input value={formOf(row).title} onChange={e => setLinkForm(p => ({ ...p, [row.id]: { ...formOf(row), title: e.target.value } }))} placeholder="회원에게 보일 이름 (예: 쎈 공통수학1)" className="text-xs border border-slate-200 rounded-lg px-2 py-2" />
                                         <input value={formOf(row).price} onChange={e => setLinkForm(p => ({ ...p, [row.id]: { ...formOf(row), price: e.target.value.replace(/[^0-9]/g, '') } }))} placeholder="가격(원)" inputMode="numeric" className="text-xs border border-slate-200 rounded-lg px-2 py-2" />
                                         <button onClick={() => link(row)} disabled={savingId === row.id || !formOf(row).source || !formOf(row).title || formOf(row).price === ''} className="text-xs font-bold px-3 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-40">{row.private_db ? '수정' : '연결'}</button>
