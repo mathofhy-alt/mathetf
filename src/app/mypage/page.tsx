@@ -14,6 +14,7 @@ import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import { deletePurchase } from './actions';
 import MyDbRequests from '@/components/MyDbRequests';
 import MyReports from '@/components/MyReports';
+import MySuggestions from '@/components/MySuggestions';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 import { paywallOn } from '@/lib/qbPassConfig';
 
@@ -293,6 +294,7 @@ export default function MyPage() {
                         {/* [10/22] 개인DB 요청(대개 몇 건)을 위로 — 아래에 두면 무료 타이핑 목록이 늦게 그려지며 밀어내 휴대폰에서 읽기 어려웠다(느티 선생님 문의) */}
                         <section className="rd-my-reqsec" aria-labelledby="my-dbreq-h"><h2 id="my-dbreq-h" className="rd-my-sec-title">개인DB 요청</h2><MyDbRequests /></section>
                         <section className="rd-my-reqsec" aria-labelledby="my-reports-h"><h2 id="my-reports-h" className="rd-my-sec-title">무료 타이핑</h2><MyReports onOpenPurchases={() => { setReloadKey(k => k + 1); setActiveTab('purchases'); setPurchaseTab('material'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></section>
+                        <section className="rd-my-reqsec" aria-labelledby="my-sugg-h"><h2 id="my-sugg-h" className="rd-my-sec-title">건의·의견</h2><MySuggestions /></section>
                     </div>}
 
                     {activeTab === 'settings' && (
