@@ -74,10 +74,10 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                             <h3 className="font-bold text-base mb-2">제4조 (자료 제보 및 품질 관리)</h3>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>
-                                    <span className="font-bold">저작권 보증:</span> 자료를 제보하는 회원은 제보하는 시험지를 정당하게 보유하고 있음(본인 응시·출제·수업 자료 등)을 확인하며, 업로드하는 자료가 제3자의 저작권을 침해하지 않음을 보증해야 합니다. 이와 관련한 모든 법적 분쟁의 책임은 업로더 본인에게 있으며, 회사는 플랫폼 제공자로서 이에 대해 책임을 지지 않습니다.
+                                    <span className="font-bold">저작권 보증:</span> 자료를 제보하는 회원은 제보하는 시험지가 본인이 응시·출제했거나 수업하는 학생에게서 받은 것임을 확인하며, 업로드하는 자료가 제3자의 저작권을 침해하지 않음을 보증해야 합니다. 이와 관련한 모든 법적 분쟁의 책임은 업로더 본인에게 있으며, 회사는 플랫폼 제공자로서 이에 대해 책임을 지지 않습니다.
                                 </li>
                                 <li>
-                                    <span className="font-bold">침해 시 삭제:</span> 제보 자료가 제3자의 권리를 침해하는 것으로 확인되면, 회사는 제보 자료와 그것을 바탕으로 만든 자료를 삭제하거나 제공을 중단할 수 있습니다. 회원은 제보할 때 이에 동의합니다.
+                                    <span className="font-bold">권리자 요청 시 내림:</span> 출제자·학교 등 권리자의 요청이 있거나 제3자의 권리를 침해하는 것으로 확인되면, 회사는 제보 자료와 그것을 바탕으로 만든 자료를 내리거나 제공을 중단할 수 있습니다. 회원은 제보할 때 이에 동의합니다.
                                 </li>
                                 <li>
                                     <span className="font-bold">제보 참여 보상:</span> 제보에 지급하는 포인트는 시험지 원본을 사는 대가가 아니라, 제보와 검수에 참여한 데 대한 보상입니다.
@@ -123,7 +123,7 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                     <div className="mt-8 text-right text-sm text-foreground/60 border-t pt-4">
                         <p>최초 시행일자: 2025-12-31</p>
                         <p>개정일자: 2026-10-15 (당시 제4조 포인트 신설)</p>
-                        <p>개정일자: 2026-__-__ (제1조 서비스의 성격·권리자 삭제 요청 신설 및 조 번호 정리, 제2조 자동 수집 금지, 제4조 제보 확인·침해 시 삭제·참여 보상 명시)</p>
+                        <p>개정일자: 2026-__-__ (제1조 서비스의 성격·권리자 삭제 요청 신설 및 조 번호 정리, 제2조 자동 수집 금지, 제4조 제보 확인·권리자 요청 시 내림·참여 보상 명시)</p>
                     </div>
                 </div>
 
