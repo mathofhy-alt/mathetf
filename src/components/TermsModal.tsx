@@ -123,7 +123,7 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                     <div className="mt-8 text-right text-sm text-foreground/60 border-t pt-4">
                         <p>최초 시행일자: 2025-12-31</p>
                         <p>개정일자: 2026-10-15 (당시 제4조 포인트 신설)</p>
-                        <p>개정일자: 2026-__-__ (제1조 서비스의 성격·권리자 삭제 요청 신설 및 조 번호 정리, 제2조 자동 수집 금지, 제4조 제보 확인·권리자 요청 시 내림·참여 보상 명시)</p>
+                        <p>개정일자: 2026-10-24 (제1조 서비스의 성격·권리자 삭제 요청 신설 및 조 번호 정리, 제2조 자동 수집 금지, 제4조 제보 확인·권리자 요청 시 내림·참여 보상 명시)</p>
                     </div>
                 </div>
 
