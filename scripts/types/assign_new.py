@@ -23,6 +23,8 @@ import similar_rerank_prepare as P          # get()(60초 제한·재시도), te
 from assign_types import UNITS
 
 PENDING = os.path.join(BASE, '_pending_new.json')
+# [10/25] 교재 한 번에 돌릴 때(대표 「작업자 50명」) — 기본은 등록 배치용 그대로(동시 3명·한 명 200문항)
+WORKERS = int(os.environ.get('TYPES_WORKERS', '3')); CHUNK = int(os.environ.get('TYPES_CHUNK', '200'))
 UORD = {u: i + 1 for i, u in enumerate(json.load(open(os.path.join(HERE, 'unit_order.json'), encoding='utf-8')))}   # 교과서 순 (10/19)
 NPM = subprocess.run('npm root -g', shell=True, capture_output=True, text=True).stdout.strip()
 CODEX = [shutil.which('node'), os.path.join(NPM, '@openai', 'codex', 'bin', 'codex.js')]
@@ -78,13 +80,13 @@ def main():
         for unit, rs in by.items():
             D = unit_dir(unit)
             if not D: left += [r['id'] for r in rs]; print('  유형 안 없는 단원', unit or '(빈 단원)', len(rs), flush=True); continue
-            for k in range(0, len(rs), 200):
-                part = rs[k:k + 200]; tag = f'new_{int(time.time())}_{k // 200}'
+            for k in range(0, len(rs), CHUNK):
+                part = rs[k:k + CHUNK]; tag = f'new_{int(time.time())}_{k // CHUNK}'
                 key = {f'Q{n + 1}': r['id'] for n, r in enumerate(part)}
                 with open(os.path.join(D, tag + '.md'), 'w', encoding='utf-8') as f:
                     for q, r in zip(key, part): f.write(f'## {q}\n{P.text_of(r, 600)}\n\n')
                 jobs.append((unit, D, tag, key))
-        with ThreadPoolExecutor(min(3, max(1, len(jobs)))) as ex:   # 등록 배치 중 PC 부담 — 동시 3개까지(10/19)
+        with ThreadPoolExecutor(min(WORKERS, max(1, len(jobs)))) as ex:   # 등록 배치 중 PC 부담 — 기본 동시 3개(10/19)
             list(ex.map(lambda j: codex(j[1], PROMPT.format(UNIT=j[0], PART=j[2] + '.md', OUT=j[2] + '.json'), j[2]), jobs))
         out = []
         for unit, D, tag, key in jobs:
