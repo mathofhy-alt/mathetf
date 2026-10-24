@@ -42,6 +42,9 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
     const [examType, setExamType] = useState(new Date().getMonth() % 6 < 4 ? '중간고사' : '기말고사');
     const [subject, setSubject] = useState('');
     const [note, setNote] = useState('');
+    // [10/24] 권리 확인 2개(내신판 업로드 화면과 같은 방식) — 둘 다 체크해야 제보된다. 서버도 다시 확인하고 기록한다.
+    const [rightsSource, setRightsSource] = useState(false);
+    const [rightsTakedown, setRightsTakedown] = useState(false);
     // [10/15] 한글 파일 완성 문자 — 받을지, 받는다면 언제(사용자 요청)
     const [notifySms, setNotifySms] = useState(true);
     const [notifyWhen, setNotifyWhen] = useState<NotifyWhen>('asap');
@@ -116,6 +119,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
         if (!bulk && !subject) return setError('과목을 골라주세요.');
         if (files.length > maxFiles) return setError(`파일은 ${maxFiles}개까지 올릴 수 있어요.`);
         if (!files.length) return setError('시험지 사진이나 PDF를 올려주세요.');
+        if (!rightsSource || !rightsTakedown) return setError('아래 확인 두 가지에 체크해 주세요.');
         try {
             setBusy('업로드 준비 중…');
             const s = await fetch('/api/original-report', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -129,7 +133,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
             }
             setBusy('제보 접수 중…');
             const r = await fetch('/api/original-report', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: { ...(bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note }), notify: { sms: notifySms, when: notifyWhen } } }) });
+                body: JSON.stringify({ action: 'submit', paths: sj.uploads.map((u: any) => u.path), meta: { ...(bulk ? { code: school.code, bulk: true, note } : { code: school.code, year, grade, semester, examType, subject, note }), notify: { sms: notifySms, when: notifyWhen }, rights: { source: rightsSource, takedown: rightsTakedown } } }) });
             const rj = await r.json(); if (!r.ok) throw new Error(rj.error || '제보를 저장하지 못했습니다.');
             setDone(true);
             gaEvent('original_report_submit', { count: 1, bulk: bulk ? 1 : 0 });
@@ -146,7 +150,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                             <div className="flex gap-3 rounded-[20px] bg-[#E8F6F5] px-4 py-[14px]">
                                 <Gift size={20} className="text-[#1B7E7A] shrink-0 mt-0.5" />
                                 <p className="m-0 text-[15px] leading-[1.6] text-[#17202C]">
-                                    학교에서 받은 수학 시험지를 <b>스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-[#1B7E7A]">수식·그림까지 타이핑한 한글 파일과 {REPORT_REWARD_LABEL}</b>를 드려요.
+                                    학교에서 받은 수학 시험지를 <b>스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-[#1B7E7A]">수식·그림까지 타이핑한 한글 파일</b>과 <b className="text-[#1B7E7A]">제보 참여 보상 {REPORT_REWARD_LABEL}</b>를 드려요.
                                     <span className="block text-[14px] text-[#5F6B78] mt-1">시험지 {REPORTS_PER_PASS}회차면 {REPORT_REWARD_LABEL} × {REPORTS_PER_PASS}로 <b className="text-[#17202C]">시험지 만들기 이용권 한 달</b>이에요. 완성 파일은 마이페이지 › 내 요청에서 받아요. 올린 파일은 운영자만 봅니다.</span>
                                 </p>
                             </div>
@@ -300,7 +304,18 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
 
                             {notifyNode}
 
-                            {error && <div role="alert" className="flex items-start gap-2 rounded-[14px] bg-[#FDECEC] px-[14px] py-3 text-[15px] text-[#C0392B]"><AlertCircle size={16} className="shrink-0 mt-[3px]" />{error}</div>}
+                            <section className="space-y-2" aria-label="제보 전 확인">
+                                <label className="flex items-start gap-2 text-[14px] leading-[1.6] text-[#17202C] cursor-pointer">
+                                    <input type="checkbox" id="report-rights-source" checked={rightsSource} onChange={e => setRightsSource(e.target.checked)} className="w-5 h-5 mt-0.5 shrink-0 accent-[#1B7E7A]" />
+                                    <span>정당하게 갖고 있는 시험지입니다. <span className="text-[#5F6B78]">(본인이 응시했거나, 출제했거나, 수업 자료로 받은 시험지)</span> <span className="text-[#C0392B]">*</span></span>
+                                </label>
+                                <label className="flex items-start gap-2 text-[14px] leading-[1.6] text-[#17202C] cursor-pointer">
+                                    <input type="checkbox" id="report-rights-takedown" checked={rightsTakedown} onChange={e => setRightsTakedown(e.target.checked)} className="w-5 h-5 mt-0.5 shrink-0 accent-[#1B7E7A]" />
+                                    <span>다른 사람의 권리를 침해하는 것으로 확인되면 제보 자료와 그로 만든 자료가 삭제되는 데 동의합니다. <span className="text-[#C0392B]">*</span></span>
+                                </label>
+                            </section>
+
+                            {error &&<div role="alert" className="flex items-start gap-2 rounded-[14px] bg-[#FDECEC] px-[14px] py-3 text-[15px] text-[#C0392B]"><AlertCircle size={16} className="shrink-0 mt-[3px]" />{error}</div>}
                         </div>
 
                         <div className="rd-modal-foot">

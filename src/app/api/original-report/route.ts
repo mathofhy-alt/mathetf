@@ -142,6 +142,10 @@ export async function POST(req: NextRequest) {
         const m = body.meta || {};
         // [10/15] 완성 문자 선택 — 안 받으면 아예 적지 않는다(크론은 notify 가 있는 행만 본다)
         const notify = parseNotify(m.notify);
+        // [10/24] 권리 확인 2개(정당하게 보유 · 침해 시 삭제 동의) — 화면에서 체크한 것을 서버에서도 확인하고 기록한다
+        if (!(m.rights?.source === true && m.rights?.takedown === true))
+            return NextResponse.json({ error: '제보 전 확인 두 가지에 체크해 주세요.' }, { status: 400 });
+        const rights = { source: true, takedown: true, at: new Date().toISOString(), v: '2026-10-24' };
         const picked = BY_CODE.get(String(m.code || ''));
         if (!picked) return NextResponse.json({ error: '학교는 목록에서 골라주세요.' }, { status: 400 });
         const school = picked.name, region = picked.region;
@@ -188,7 +192,7 @@ export async function POST(req: NextRequest) {
             file_type: first.endsWith('.pdf') ? 'PDF' : 'IMAGE',
             content_type: '원본제보',
             file_path: first,
-            description: JSON.stringify({ files: paths, note, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind }, ...(notify ? { notify } : {}) }),
+            description: JSON.stringify({ files: paths, note, neis: { code: picked.code, region: picked.region, district: picked.district, kind: picked.kind }, rights, ...(notify ? { notify } : {}) }),
             price: 0, sales_count: 0,
         }).select('id').single();
         if (error) {
