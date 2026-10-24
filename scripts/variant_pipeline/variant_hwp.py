@@ -39,8 +39,8 @@ def claude_exe():
 def load(p): return json.loads(Path(p).read_text(encoding='utf-8-sig'))
 
 
-def build_sheet(work, numbers, kind, name, title):
-    lines = [f'# {name}', f'{title} 변형 — {"숫자변형" if kind == "k" else "심한 변형"} · 과목 미적분Ⅰ', '']
+def build_sheet(work, numbers, kind, name, title, subject='미적분Ⅰ'):
+    lines = [f'# {name}', f'{title} 변형 — {"숫자변형" if kind == "k" else "심한 변형"} · 과목 {subject}', '']
     units, n = [], 0
     for no in numbers:
         D = Path(work) / f'v{no:02d}'
@@ -53,6 +53,8 @@ def build_sheet(work, numbers, kind, name, title):
             # [10/21 대표: 9번은 그림이 있으면 안 된다 — 개형을 유추하는 게 핵심] 원본에 그림이 있던 문항만 그림을 넣는다
             org = (D / 'original.md').read_text(encoding='utf-8-sig') if (D / 'original.md').is_file() else ''
             fm = re.search(r'(?ms)^## 그림\s*\n(.*?)(?=^## |\Z)', org); fdesc = (fm.group(1).strip() if fm else '')
+            if not fdesc:   # [10/24] prep_school.py 는 그림 설명을 문제 절 안 「[그림] …」 으로 넣는다
+                fm2 = re.search(r'(?ms)^\[그림\]\s*(.*?)(?=^## |\Z)', org); fdesc = (fm2.group(1).strip() if fm2 else '')
             has_fig = bool(fdesc) and not fdesc.startswith('원본에 그림 없음')
             fig_line = ('넣음 — 원본에 그림이 있었다. 이 변형의 조건에 맞게 다시 그린다. 원본 그림: ' + fdesc) if has_fig else '넣지 않음 — 원본에 그림이 없다. 문제 그림을 절대 넣지 마라(그래프 개형을 학생이 유추하는 것이 핵심인 문항이 많다).'
             lines += [f'## {n}번 (원본 {no}번 · {g.get("direction", "")})', '### 문제', g['problem'], '', '### 정답', str(g['answer']), '', '### 그림', fig_line, '',
@@ -67,11 +69,11 @@ def next_key():
     return max(int(i['key'][1:]) for i in q['items'] if re.fullmatch(r'e\d+', i['key'])) + 1
 
 
-def add_queue(key, name, path, units, title):
+def add_queue(key, name, path, units, title, subject='미적분Ⅰ'):
     qp = os.path.join(G.TOOLS, 'queue.json'); q = json.load(open(qp, encoding='utf-8'))
     q['items'] = [it for it in q['items'] if it['key'] != key]
     q['items'].append({'key': key, 'src': str(path), 'status': '대기', 'outname': name, 'region': '변형', 'school': title,
-                       'year': '2026년', 'grade': '', 'term': '', 'exam': '변형문제', 'subject': '미적분Ⅰ',
+                       'year': '2026년', 'grade': '', 'term': '', 'exam': '변형문제', 'subject': subject,
                        'mod': f'content_{key}', 'figmodule': f'figures_{key}', 'figdir': f'figs_{key}', 'filler': f'filler_{key}.json',
                        'range': ', '.join(units), 'note': '변형 파이프라인 10/21 — 원본 PDF 없음, 발문대조 제외, 해설은 클로드'})
     json.dump(q, open(qp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
@@ -114,18 +116,20 @@ def sheet(key, src, logdir):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('work'); ap.add_argument('--nos', required=True); ap.add_argument('--name', required=True)
-    ap.add_argument('--title', required=True); ap.add_argument('--keys', default=''); a = ap.parse_args()
-    a_, _, b_ = a.nos.partition('-'); numbers = list(range(int(a_), int(b_ or a_) + 1))
+    ap.add_argument('--title', required=True); ap.add_argument('--keys', default='')
+    ap.add_argument('--subject', default='미적분Ⅰ'); ap.add_argument('--list', default='', help='[10/24] 띄엄띄엄 번호: 9,10,12')
+    a = ap.parse_args()
+    a_, _, b_ = a.nos.partition('-'); numbers = [int(x) for x in a.list.split(',') if x] or list(range(int(a_), int(b_ or a_) + 1))
     logdir = os.path.join(G.GS, '_watch_logs', time.strftime('%m%d_%H%M') + '_variant'); os.makedirs(logdir, exist_ok=True)
     jobs, key = [], next_key()
     fixed = [k for k in a.keys.split(',') if k]
     for kind, label in (('k', '숫자변형'), ('h', '심한변형')):
         name = f'{a.name}_{label}'
-        path, n, units = build_sheet(a.work, numbers, kind, name, a.title)
+        path, n, units = build_sheet(a.work, numbers, kind, name, a.title, a.subject)
         if not n: continue
         k = fixed.pop(0) if fixed else f'e{key}'
         if not a.keys: key += 1
-        add_queue(k, name, path, units, a.title); jobs.append((k, path))
+        add_queue(k, name, path, units, a.title, a.subject); jobs.append((k, path))
         say(os.path.join(logdir, 'run.log'), k, name, f'{n}문항', path)
     with ThreadPoolExecutor(len(jobs)) as ex:
         for k, st in ex.map(lambda j: sheet(j[0], j[1], logdir), jobs):
