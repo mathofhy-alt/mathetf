@@ -2001,7 +2001,10 @@ export default function QuestionBankPage() {
                                                     </span>
                                                 )}
                                                 <span className="text-[11px] font-bold text-gray-500">
-                                                    {q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.school === '수능' ? '대학수학능력시험' : q.semester}{examFormLabel(q.source_db_id)} 원본 {q.question_number}번
+                                                    {/* [10/25 대표] 교재는 '고1 원본 1번'이 무슨 말인지 모름 → '단원 › 묶음 N번' (교재 이름은 카드 아래에 있다) */}
+                                                    {String(q.source_db_id || '').includes(' > ')
+                                                        ? `${String(q.source_db_id).split(' > ').slice(1).join(' › ')} ${q.question_number}번`
+                                                        : <>{q.year && `${q.year}년 `}{q.grade && `${q.grade} `}{q.school === '수능' ? '대학수학능력시험' : q.semester}{examFormLabel(q.source_db_id)} 원본 {q.question_number}번</>}
                                                 </span>
                                             </div>
                                             <div className={`flex items-center gap-2 ${viewMode === 'review' ? 'flex-wrap max-w-full ml-auto' : ''}`}>
