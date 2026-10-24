@@ -10,7 +10,6 @@ import { ArrowLeft, Lock } from 'lucide-react';
 export default function SuggestionWritePage() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [password, setPassword] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     const router = useRouter();
@@ -29,8 +28,8 @@ export default function SuggestionWritePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim() || !content.trim() || !password.trim()) {
-            return alert('제목, 내용, 비밀번호를 모두 입력해주세요.');
+        if (!title.trim() || !content.trim()) {
+            return alert('제목과 내용을 입력해주세요.');
         }
 
         setSubmitting(true);
@@ -39,7 +38,7 @@ export default function SuggestionWritePage() {
             const res = await fetch('/api/suggestions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content, password }),
+                body: JSON.stringify({ title, content }),
             });
             const j = await res.json();
             if (res.status === 401) {
@@ -49,8 +48,8 @@ export default function SuggestionWritePage() {
             }
             if (!res.ok) throw new Error(j.error || '등록 실패');
 
-            alert('건의사항이 등록되었습니다.');
-            router.push('/suggestion');
+            alert('의견이 접수되었습니다. 답변은 마이페이지 › 내 요청에서 확인할 수 있어요.');
+            router.push('/mypage?tab=requests');
         } catch (error: any) {
             console.error(error);
             alert('등록 실패: ' + error.message);
@@ -69,7 +68,7 @@ export default function SuggestionWritePage() {
                 <form onSubmit={handleSubmit} className="rd-bd-form">
                     <div className="rd-bd-note">
                         <Lock size={16} aria-hidden />
-                        <span><b>비밀글로 등록됩니다.</b> 제목은 목록에 공개됩니다. 본문은 글 비밀번호로 확인하며, 관리자도 확인할 수 있습니다.</span>
+                        <span><b>운영자에게만 보입니다.</b> 다른 회원에게는 제목도 보이지 않으며, 답변은 마이페이지 › 내 요청에서 확인할 수 있어요.</span>
                     </div>
 
                     <div className="rd-bd-field">
@@ -82,20 +81,6 @@ export default function SuggestionWritePage() {
                             className="rd-input"
                             placeholder="제목을 입력하세요"
                         />
-                    </div>
-
-                    <div className="rd-bd-field">
-                        <label htmlFor="suggestion-password" className="rd-bd-label">비밀번호 설정</label>
-                        <input
-                            id="suggestion-password"
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            className="rd-input"
-                            placeholder="글 확인용 비밀번호 입력"
-                            aria-describedby="suggestion-password-hint"
-                        />
-                        <p id="suggestion-password-hint" className="rd-bd-hint">게시글을 확인할 때 필요하니 꼭 기억해 주세요.</p>
                     </div>
 
                     <div className="rd-bd-field">
