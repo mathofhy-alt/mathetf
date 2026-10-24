@@ -22,7 +22,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const node = findDistrict(await buildRegionTree(), sido, gu);
     if (!node) return { title: '지역별 수학 기출 | 수학ETF' };
     const names = node.schools.slice(0, 3).map((s) => s.name.replace('등학교', '')).join('·');
-    const title = `${gu} 고등학교 수학 기출문제 (${node.schools.length}개교) | 수학ETF`;
+    // [10/24] 셈러시 감사 '중복된 제목' — 대전 중구·서울 중구가 같은 제목이었다. 시·도를 앞에 붙인다.
+    const title = `${sido} ${gu} 고등학교 수학 기출문제 (${node.schools.length}개교) | 수학ETF`;
     const description = `${sido} ${gu} ${names} 등 ${node.schools.length}개 고등학교의 수학 내신 기출 ${node.examCount}회차. 중간고사·기말고사 문제와 해설을 학교별로 확인하고 시험지를 만들어 보세요.`;
     return {
         title, description,

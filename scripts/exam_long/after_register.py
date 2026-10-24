@@ -65,4 +65,11 @@ if good:
         print('서치콘솔 사이트맵 제출: 완료')
     except Exception as e:
         print('⚠ 서치콘솔 제출 실패(토큰 만료면 scripts/gsc/gsc.py 로 재로그인):', str(e)[:120])
+    # [10/23] 네이버·빙에 내용 바뀜 알림 — 배치의 IndexNow 는 분석글이 붙기 전에 나가서 이 페이지는 다시 알린다
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'scripts'))
+        import indexnow_ping as I
+        print('IndexNow:', I.ping([f'https://mathetf.com/exam/{i}' for i in good], I.load_key()), '개')
+    except Exception as e:
+        print('⚠ IndexNow 실패:', str(e)[:120])
 print(f'EXAM_LONG_DONE ok={len(good)} fail={len(ids) - len(good)}')

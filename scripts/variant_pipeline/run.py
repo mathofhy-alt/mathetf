@@ -71,7 +71,14 @@ def prompt(name, **kw):
     keys = set(re.findall(r'\{([A-Z][A-Z_0-9]*)\}', text))
     if keys != set(kw): raise ValueError(f'{name} 치환 키 불일치: {keys} / {set(kw)}')
     for key, value in kw.items(): text = text.replace('{' + key + '}', str(value))
+    # [10/24] 유지 한 세트·어려움 한 세트로 묶으면 칸마다 고정된 정답 번호(k1 ①, h1 ③)가 세트 전체에서 같아졌다
+    #   (분당중앙고 심한 변형 장 정답이 전부 ③). --answer-map 으로 원본마다 다른 번호를 준다.
+    if ANSWER_MAP:
+        text = text.replace('e1 ②, e2 ④, k1 ①, k2 ⑤, h1 ③, h2 ②', ANSWER_MAP + ' (이 원본에 정해 준 번호)')
     return text
+
+
+ANSWER_MAP = ''   # 예: 'k1 ④, h1 ②' — main 에서 --answer-map 으로 채운다
 
 
 class BudgetError(RuntimeError):
@@ -434,7 +441,8 @@ def write_solve_refs(D, policy):
 
 
 def solve_refs(D):
-    return [n for n in ('standard_routes.md', 'solve_rules.md', 'similar.md') if (Path(D) / n).is_file()]
+    # lessons.md: 자기 연습 순환(practice/practice.py)이 쌓은 '변형 비법 노트'(10/23 대표: "지 스스로 만들고 분석하고 개선하고")
+    return [n for n in ('standard_routes.md', 'solve_rules.md', 'similar.md', 'lessons.md') if (Path(D) / n).is_file()]
 
 
 REAL_ERRORS = 'C:/selfmade/오답조사/real_errors.json'
@@ -1016,11 +1024,13 @@ def main(argv=None):
     global BUDGET
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('dir'); ap.add_argument('original')
-    ap.add_argument('--easy', type=int, default=2); ap.add_argument('--keep', type=int, default=2)
+    # [10/24 대표] 쉬움 변형은 만들지 않는다 — 숫자변형은 유지에 있다
+    ap.add_argument('--easy', type=int, default=0); ap.add_argument('--keep', type=int, default=2)
     ap.add_argument('--hard', type=int, default=2); ap.add_argument('--only')
     ap.add_argument('--max-attempts', '--maxtry', type=int, choices=(1, 2), default=2)
     ap.add_argument('--workers', type=int, default=3)
     ap.add_argument('--similar', default='', help='원본의 실제 학교 변형 사례(mine/similar_ctx.py 로 만든 md)')
+    ap.add_argument('--lessons', default='', help='[10/23] 자기 연습 순환이 쌓은 변형 비법 노트(md) — 설계·생성 단계가 읽는다')
     ap.add_argument('--unit', default=''); ap.add_argument('--src', default=''); ap.add_argument('--no', default='')
     ap.add_argument('--reuse-plan', default='', help='[10/21] 이전 실행 폴더의 routes.json·plan.json 을 그대로 써서 경로 판단·설계를 건너뜀')
     ap.add_argument('--fast', action='store_true', help='[10/21] 생성+독립 풀이만(원본 비교·검토·묶음 생략) — 대표가 문제를 직접 볼 때')
@@ -1030,8 +1040,11 @@ def main(argv=None):
     ap.add_argument('--estimated-call-tokens', type=int, default=20000)
     ap.add_argument('--total-seconds', type=float, default=0)
     ap.add_argument('--call-timeout', type=float, default=3600)
+    ap.add_argument('--answer-map', default='', help="[10/24] 칸별 정답 번호를 원본마다 다르게: 'k1 ④, h1 ②'")
     a = ap.parse_args(argv)
     FAST[0] = bool(getattr(a, 'fast', False))
+    global ANSWER_MAP
+    ANSWER_MAP = a.answer_map.strip()
     requested = {'쉬움': a.easy, '유지': a.keep, '어려움': a.hard}
     if any(v < 0 for v in requested.values()) or sum(requested.values()) > 12:
         ap.error('수량은 0 이상, 원본당 총 12칸 이하')   # [10/21] 대표: 많이 뽑을 때 문제로 보여 달라 — 12칸까지
@@ -1068,6 +1081,8 @@ def main(argv=None):
         write_text(D / 'original_problem.txt', problem)
         write_text(D / 'menu.md', (HERE / 'menu.md').read_text(encoding='utf-8-sig'))
         write_real_errors(str(D), a.unit, a.src, a.no)
+        if a.lessons and Path(a.lessons).is_file():
+            write_text(D / 'lessons.md', Path(a.lessons).read_text(encoding='utf-8-sig'))
         policy = make_policy(original, requested, a.max_attempts, a.unit)
         write_json(D / 'delivery_policy.json', policy)
         route_file = write_solve_refs(D, policy)

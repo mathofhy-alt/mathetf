@@ -29,14 +29,36 @@ def eq(text):
     return text
 
 
+def heavy_pool(src_id, src, n=10):
+    """같은 대표 유형(question_types unit·code)의 학교 내신 문항 중 원본 연도 이후 것 — 발문 유사도가 낮은(겉모습이 다른) 순.
+    심한 변형은 뼈대(유형)는 같고 겉모습이 달라 유사도 목록 상위에 안 뜬다(10/23 대표 지적)."""
+    t = get('question_types', select='unit,code', question_id='eq.' + src_id)
+    if not t or t[0].get('code') is None: return []
+    same = [r['question_id'] for r in get('question_types', select='question_id', unit='eq.' + t[0]['unit'], code='eq.' + str(t[0]['code']), limit='400')]
+    same = [q for q in same if q != src_id]
+    if not same: return []
+    near = {p[0]: float(p[1]) for r in get('question_similar', select='basis,neighbors', question_id='eq.' + src_id) if r['basis'] == 'statement' for p in r['neighbors']}
+    F = 'id,school,grade,year,semester,subject,unit,question_number,key_concepts,difficulty,plain_text,equation_scripts,content_xml'
+    out = []
+    for i in range(0, len(same), 40):
+        for r in get('questions', select=F, id='in.(' + ','.join(same[i:i + 40]) + ')', work_status='eq.sorted'):
+            if r['school'] in ('전국연합', '수능', '평가원', '사관학교', '경찰대'): continue
+            if src.get('year') and r.get('year') and int(r['year']) < int(src['year']): continue
+            out.append((near.get(r['id'], 0.0), False, r))
+    out.sort(key=lambda x: x[0])        # 발문이 가장 다른 것부터
+    return [(0.0, False, r) for _, _, r in out[:n]]
+
+
 def packet(src_id, mode='statement', n=10):
     src = get('questions', select='id,school,year,semester,grade,subject,unit,question_number,difficulty,content_xml', id='eq.' + src_id)[0]
     stem, sol = split(src['content_xml'] or '')
     lines = [f"# 원본: {src['school']} {src['year']} {src['semester']} {src['grade']} {src['subject']} {src['question_number']}번 · 단원 {src['unit']} · 난이도 {src['difficulty']}",
              '', '## 원본 문제', eq(stem), '', '## 원본 DB 해설(정석 보장 없음 — 참고만)', eq(sol[:2500]), '']
     # 「추천」과 「풀이 유사」 두 목록을 합친다 — 심한 변형은 풀이 유사 쪽에만 뜨기도 한다(정육각형: 수지고·현대고).
+    # [10/23 대표] 발문 유사 상위는 숫자변형이 몰려 심한 변형이 밀린다 → 발문 유사는 5개만, 풀이 유사 10개,
+    #   그리고 같은 대표 유형(유형 코드) 중 원본 이후 학교 시험 문항을 발문이 가장 다른 순으로 보탠다(heavy_pool).
     rows, seen = [], set()
-    for x in ranked(src_id, 'statement', n) + ranked(src_id, 'solution', n):
+    for x in ranked(src_id, 'statement', 5) + ranked(src_id, 'solution', n) + heavy_pool(src_id, src, n):
         if x[2]['id'] not in seen: seen.add(x[2]['id']); rows.append(x)
     for i, (score, iv, r) in enumerate(rows, 1):
         s, so = split(r['content_xml'] or '')
@@ -55,7 +77,10 @@ def run_one(src_id, out, cmd):
     D = out / src_id; D.mkdir(parents=True, exist_ok=True)
     if (D / 'mine.json').is_file():
         return src_id, 'skip', 0, 0
-    src, rows, text = packet(src_id)
+    try:
+        src, rows, text = packet(src_id)
+    except Exception as e:   # [10/23] 한 원본의 DB 오류가 배치 전체를 멈추지 않게
+        return src_id, f'자료 오류 {str(e)[:80]}', 0, 0
     (D / 'packet.md').write_text(text, encoding='utf-8')
     (D / 'meta.json').write_text(json.dumps({'src': {k: v for k, v in src.items() if k != 'content_xml'},
         'candidates': [{k: r[k] for k in ('id', 'school', 'year', 'semester', 'grade', 'subject', 'question_number', 'difficulty')} for _, _, r in rows]},
@@ -99,6 +124,9 @@ def main():
     ids = [x for x in a.ids.split(',') if x]
     if a.pick: ids += pick([u.strip() for u in a.pick.split(',') if u.strip()], a.per)
     out = Path(a.out).resolve(); out.mkdir(parents=True, exist_ok=True)
+    # [10/24] 이미 캔 원본은 건너뛴다 — 같은 폴더에 --per 를 늘려 다시 돌리면 새 원본만 캔다
+    ids = [i for i in dict.fromkeys(ids) if not (out / i / 'mine.json').is_file()]
+    print('새로 캘 원본', len(ids), flush=True)
     cmd = codex_cmd(); total = 0
     with ThreadPoolExecutor(a.par) as ex:
         for sid, st, tok, sec in ex.map(lambda i: run_one(i, out, cmd), ids):

@@ -420,6 +420,9 @@ a.rd-exam-school:hover { color: var(--rd-ink); }
 .rd .rd-x-row b { display: block; font-size: 19px; font-weight: 700; }
 .rd .rd-x-row small { display: block; margin-top: 6px; font-size: 16px; color: var(--rd-sub); }
 .rd .rd-x-row svg { flex: none; color: var(--rd-icon); }
+/* [10/23] 긴 학교명(중앙대학교사범대학부속여자고등학교 등)이 폰에서 화살표를 밀어내 가로로 넘쳤다 */
+.rd .rd-x-row > span, .rd .rd-x-row > div { min-width: 0; }
+.rd .rd-x-row b { overflow-wrap: anywhere; }
 .rd .rd-x-more .rd-lead { margin-top: 16px; }
 .rd .rd-x-report { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding: 32px 36px; border-radius: 28px; background: var(--rd-tint); }
 .rd .rd-x-report h3 { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.4; }
@@ -943,6 +946,38 @@ footer.rd.rd-footer .rd-footer-brand p { font-size: 15px; }
 .rd .rd-s-list .rd-sd-rows .rd-x-row, .rd .rd-sd .rd-x-row { background: var(--rd-zone); padding: 20px 24px; }
 .rd .rd-sd .rd-x-row:hover, .rd .rd-s-list .rd-sd-rows .rd-x-row:hover { background: var(--rd-panel); }
 .rd .rd-s-list .rd-x-h2 + .rd-sd-rows { margin-top: 28px; }
+/* [10/23] /schools 입구 — 시도별 접기·최근 등록·대비법 3단계 */
+.rd .rd-si-pills { gap: 10px; }
+.rd .rd-si-find { padding-top: 8px; }
+.rd .rd-si-find .rd-cat-search { min-height: 60px; font-size: 17px; }
+.rd .rd-si-find .rd-mk-filter .rd-cat-search { flex: 1 1 320px; }
+.rd .rd-sd-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; align-items: start; }
+.rd .rd-sd-group { border-radius: 20px; background: var(--rd-zone); }
+.rd .rd-sd-group[open] { grid-column: 1 / -1; }
+.rd .rd-sd-group summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 20px 24px; cursor: pointer; }
+.rd .rd-sd-group summary::-webkit-details-marker { display: none; }
+.rd .rd-sd-group summary b { font-size: 19px; font-weight: 800; }
+.rd .rd-sd-group summary span { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-sd-group summary svg { flex: none; color: var(--rd-icon); transition: transform .15s; }
+.rd .rd-sd-group[open] summary svg { transform: rotate(90deg); }
+.rd .rd-sd-group .rd-sd-rows { padding: 0 10px 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.rd .rd-sd-group .rd-x-row { background: #fff; }
+.rd .rd-si-latest { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.rd .rd-si-latest a { display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 18px; background: var(--rd-zone); text-decoration: none; color: var(--rd-text); }
+.rd .rd-si-latest a:hover { background: var(--rd-panel); }
+.rd .rd-si-latest b { font-size: 17px; font-weight: 800; }
+.rd .rd-si-latest span { font-size: 15px; color: var(--rd-nav); }
+.rd .rd-si-latest small { font-size: 13px; font-weight: 700; color: var(--rd-ink); }
+.rd .rd-si-steps { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.rd .rd-si-steps li { background: #fff; border-radius: 24px; padding: 28px; }
+.rd .rd-si-steps b { font-size: 20px; font-weight: 800; }
+.rd .rd-si-steps p { margin: 10px 0 0; font-size: 16px; line-height: 1.7; color: var(--rd-nav); }
+.rd .rd-si-chips { margin-top: 18px; }
+@media (max-width: 640px) {
+  .rd .rd-sd-groups, .rd .rd-sd-group .rd-sd-rows, .rd .rd-si-latest { grid-template-columns: 1fr; }
+  .rd .rd-sd-group summary { padding: 18px 20px; }
+  .rd .rd-si-steps li { padding: 22px; }
+}
 .rd .rd-rg-sido { padding: 28px 0; border-bottom: 1px solid var(--rd-line); }
 .rd .rd-rg-sido:first-child { padding-top: 0; }
 .rd .rd-rg-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
