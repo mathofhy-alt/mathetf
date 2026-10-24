@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, MessageSquare, Database, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { payOrder } from '@/lib/payments/client';
+import PointsPicker from '@/components/PointsPicker';
 
 /**
  * 마이페이지 '내 요청' 탭 (2026-10-06) — 개인DB 요청의 처리 상태와 운영자 안내를 보여준다.
@@ -31,7 +32,7 @@ export default function MyDbRequests() {
     // [10/24 대표] 결제하기를 누르면 카드 창이 바로 떴다(포인트를 쓸지 안 물음) → 먼저 확인 창: 가격·포인트 사용·결제 금액.
     //   전액 포인트면 카드 창 없이 끝난다(payOrder). 휴대폰 번호 없는 옛 계정은 이용권 창처럼 여기서 받는다.
     const [checkout, setCheckout] = useState<{ product: any; user: any; points: number } | null>(null);
-    const [usePoints, setUsePoints] = useState(true);
+    const [pointsPick, setPointsPick] = useState(0);   // [10/24 대표] 쓸 포인트는 회원이 1,000P 단위로 고른다
     const [phone, setPhone] = useState('');
     const [payErr, setPayErr] = useState('');
     const open = async (product: any) => {
@@ -39,11 +40,11 @@ export default function MyDbRequests() {
         const { data: { user } } = await sb.auth.getUser();
         if (!user) { alert('로그인이 필요합니다.'); return; }
         const { data } = await sb.from('profiles').select('earned_points').eq('id', user.id).single();
-        setUsePoints(true); setPhone(''); setPayErr('');
+        setPointsPick(0); setPhone(''); setPayErr('');
         setCheckout({ product, user, points: Number(data?.earned_points) || 0 });
     };
     const price = Number(checkout?.product.price) || 0;
-    const usedPoints = checkout && usePoints ? Math.min(checkout.points, price) : 0;
+    const usedPoints = checkout ? Math.min(pointsPick, checkout.points, price) : 0;
     const due = price - usedPoints;
     const needPhone = !!checkout && due > 0 && !(checkout.user.user_metadata?.phone || checkout.user.phone);
     const phoneOk = !needPhone || /^01[016789]\d{7,8}$/.test(phone.replace(/[^0-9]/g, ''));
@@ -130,11 +131,8 @@ export default function MyDbRequests() {
                         <p className="rd-pass-price"><b>{price.toLocaleString()}</b>원</p>
                         <p className="rd-my-product-sub">회원님 전용 · 결제하면 시험지 만들기 › 출제 자료 › 내 개인DB에서 바로 쓸 수 있어요.</p>
                     </div>
-                    <label className="rd-pass-points">
-                        <input type="checkbox" checked={usePoints && checkout.points > 0} disabled={checkout.points <= 0} onChange={e => setUsePoints(e.target.checked)} />
-                        <span>포인트 사용 <small>보유 {checkout.points.toLocaleString()}P</small></span>
-                        {usedPoints > 0 && <b>-{usedPoints.toLocaleString()}원</b>}
-                    </label>
+                    <PointsPicker points={checkout.points} total={price} value={usedPoints} onChange={setPointsPick} />
+                    {usedPoints > 0 && <p className="rd-pass-fine">포인트 -{usedPoints.toLocaleString()}원 · 결제 금액 {due.toLocaleString()}원</p>}
                     {needPhone && <label className="rd-pass-phone">
                         <span>결제에 쓸 휴대폰 번호 <small>카드 결제에 꼭 필요해요</small></span>
                         <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="01012345678" value={phone} onChange={e => setPhone(e.target.value)} className="rd-input" />
