@@ -42,7 +42,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
     const [examType, setExamType] = useState(new Date().getMonth() % 6 < 4 ? '중간고사' : '기말고사');
     const [subject, setSubject] = useState('');
     const [note, setNote] = useState('');
-    // [10/24] 권리 확인 2개(내신판 업로드 화면과 같은 방식) — 둘 다 체크해야 제보된다. 서버도 다시 확인하고 기록한다.
+    // [10/24] 권리 확인 2개(입수 경위 · 권리자 요청 시 내림) — 둘 다 체크해야 제보된다. 서버도 다시 확인하고 기록한다.
     const [rightsSource, setRightsSource] = useState(false);
     const [rightsTakedown, setRightsTakedown] = useState(false);
     // [10/15] 한글 파일 완성 문자 — 받을지, 받는다면 언제(사용자 요청)
@@ -307,11 +307,11 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                             <section className="space-y-2" aria-label="제보 전 확인">
                                 <label className="flex items-start gap-2 text-[14px] leading-[1.6] text-[#17202C] cursor-pointer">
                                     <input type="checkbox" id="report-rights-source" checked={rightsSource} onChange={e => setRightsSource(e.target.checked)} className="w-5 h-5 mt-0.5 shrink-0 accent-[#1B7E7A]" />
-                                    <span>정당하게 갖고 있는 시험지입니다. <span className="text-[#5F6B78]">(본인이 응시했거나, 출제했거나, 수업 자료로 받은 시험지)</span> <span className="text-[#C0392B]">*</span></span>
+                                    <span>제가 직접 응시했거나 출제했거나, 수업하는 학생에게서 받은 시험지입니다. <span className="text-[#C0392B]">*</span></span>
                                 </label>
                                 <label className="flex items-start gap-2 text-[14px] leading-[1.6] text-[#17202C] cursor-pointer">
                                     <input type="checkbox" id="report-rights-takedown" checked={rightsTakedown} onChange={e => setRightsTakedown(e.target.checked)} className="w-5 h-5 mt-0.5 shrink-0 accent-[#1B7E7A]" />
-                                    <span>다른 사람의 권리를 침해하는 것으로 확인되면 제보 자료와 그로 만든 자료가 삭제되는 데 동의합니다. <span className="text-[#C0392B]">*</span></span>
+                                    <span>출제한 선생님이나 학교 등 권리자가 요청하면, 이 시험지와 이걸로 만든 자료가 내려가는 데 동의합니다. <span className="text-[#C0392B]">*</span></span>
                                 </label>
                             </section>
 
