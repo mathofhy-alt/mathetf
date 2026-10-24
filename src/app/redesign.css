@@ -2068,6 +2068,14 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-pass-points span { flex: 1; font-size: 14px; font-weight: 700; color: var(--rd-text); }
 .rd .rd-pass-points small { margin-left: 6px; font-weight: 500; color: var(--rd-sub); }
 .rd .rd-pass-points b { font-size: 15px; color: var(--rd-ink); }
+/* 10/24 포인트 1,000P 단위 고르기(PointsPicker) */
+.rd .rd-pts { flex-wrap: wrap; cursor: default; }
+.rd .rd-pts-none { margin-left: auto; }
+.rd .rd-pts > span small { white-space: nowrap; }
+.rd .rd-pts-ctl { display: flex; align-items: center; gap: 6px; }
+.rd .rd-pts-ctl button { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid var(--rd-line, #dfe3e8); border-radius: 10px; background: #fff; color: var(--rd-text); font-size: 13px; font-weight: 700; cursor: pointer; }
+.rd .rd-pts-ctl button:disabled { opacity: .35; cursor: default; }
+.rd .rd-pass-points .rd-pts-ctl input { width: 84px; height: 34px; padding: 0 8px; border: 1px solid var(--rd-line, #dfe3e8); border-radius: 10px; background: #fff; text-align: right; font-size: 15px; font-weight: 700; color: var(--rd-ink); accent-color: initial; }
 /* 10/8 고정 공지 본문 */
 .rd .rd-nt h2 { margin: 28px 0 10px; font-size: 19px; font-weight: 800; color: var(--rd-text); }
 .rd .rd-nt h2 small { margin-left: 8px; font-size: 13px; font-weight: 700; color: var(--rd-ink); }

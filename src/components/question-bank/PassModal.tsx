@@ -5,6 +5,7 @@ import { Check, X } from 'lucide-react';
 import { payOrder } from '@/lib/payments/client';
 import { QB_PASS, QB_PASS_TERMS, QB_LIMITS, termPrice } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
+import PointsPicker from '@/components/PointsPicker';
 import { createClient } from '@/utils/supabase/client';
 import { REPORT_REWARD_LABEL, REPORT_REWARD_POINTS } from '@/lib/report-reward';
 
@@ -41,12 +42,12 @@ export default function PassModal({ user, info, onClose, onPaid, from = 'button'
     // [10/8] 포인트로도 이용권을 산다(사용자: 무료 타이핑 채택 5,000P × 6건 = 1개월). 전액 포인트면 카드 결제창 없이 끝난다.
     const [points, setPoints] = useState(0);
     useEffect(() => { logPass('qb_paywall_view', `${from}|무료${info ? (info.unlimited ? '무제한' : `${info.freeLeft}남음`) : '?'}`); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-    const [usePoints, setUsePoints] = useState(true);
+    const [pointsPick, setPointsPick] = useState(0);   // [10/24 대표] 체크하면 전부 들어가던 것 → 쓸 만큼 1,000P 단위로
     useEffect(() => {
         if (!user?.id) return;
         createClient().from('profiles').select('earned_points').eq('id', user.id).single().then(({ data }) => setPoints(Number(data?.earned_points) || 0), () => {});
     }, [user?.id]);
-    const usedPoints = usePoints ? Math.min(points, total) : 0;
+    const usedPoints = Math.min(pointsPick, points, total);   // 기간을 바꿔 금액이 줄면 그 안으로
     const pay = total - usedPoints;
     // [10/8] 휴대폰 번호가 없는 계정(회원 1,319명 중 6명, 예전 가입) — 포트원 카드 결제가 전화번호를 필수로 요구한다
     const needPhone = pay > 0 && !(user?.user_metadata?.phone || user?.phone);   // 카드 결제가 있을 때만 번호가 필요
@@ -101,11 +102,8 @@ export default function PassModal({ user, info, onClose, onPaid, from = 'button'
                         onClose(); window.dispatchEvent(new CustomEvent('open-original-report', { detail: { bulk: true } }));
                     }}>원본 시험지 보내기</button>
                 </div>
-                {points > 0 && <label className="rd-pass-points">
-                    <input type="checkbox" checked={usePoints} onChange={e => setUsePoints(e.target.checked)} />
-                    <span>포인트 사용 <small>보유 {points.toLocaleString()}P</small></span>
-                    {usedPoints > 0 && <b>-{usedPoints.toLocaleString()}원</b>}
-                </label>}
+                {points > 0 && <PointsPicker points={points} total={total} value={usedPoints} onChange={setPointsPick} />}
+                {usedPoints > 0 && <p className="rd-pass-fine">포인트 -{usedPoints.toLocaleString()}원 · 결제 금액 {pay.toLocaleString()}원</p>}
                 {needPhone && <label className="rd-pass-phone">
                     <span>결제에 쓸 휴대폰 번호 <small>카드 결제에 꼭 필요해요</small></span>
                     <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="01012345678" value={phone} onChange={e => setPhone(e.target.value)} className="rd-input" />
