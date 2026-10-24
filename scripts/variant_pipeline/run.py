@@ -71,7 +71,14 @@ def prompt(name, **kw):
     keys = set(re.findall(r'\{([A-Z][A-Z_0-9]*)\}', text))
     if keys != set(kw): raise ValueError(f'{name} 치환 키 불일치: {keys} / {set(kw)}')
     for key, value in kw.items(): text = text.replace('{' + key + '}', str(value))
+    # [10/24] 유지 한 세트·어려움 한 세트로 묶으면 칸마다 고정된 정답 번호(k1 ①, h1 ③)가 세트 전체에서 같아졌다
+    #   (분당중앙고 심한 변형 장 정답이 전부 ③). --answer-map 으로 원본마다 다른 번호를 준다.
+    if ANSWER_MAP:
+        text = text.replace('e1 ②, e2 ④, k1 ①, k2 ⑤, h1 ③, h2 ②', ANSWER_MAP + ' (이 원본에 정해 준 번호)')
     return text
+
+
+ANSWER_MAP = ''   # 예: 'k1 ④, h1 ②' — main 에서 --answer-map 으로 채운다
 
 
 class BudgetError(RuntimeError):
@@ -1033,8 +1040,11 @@ def main(argv=None):
     ap.add_argument('--estimated-call-tokens', type=int, default=20000)
     ap.add_argument('--total-seconds', type=float, default=0)
     ap.add_argument('--call-timeout', type=float, default=3600)
+    ap.add_argument('--answer-map', default='', help="[10/24] 칸별 정답 번호를 원본마다 다르게: 'k1 ④, h1 ②'")
     a = ap.parse_args(argv)
     FAST[0] = bool(getattr(a, 'fast', False))
+    global ANSWER_MAP
+    ANSWER_MAP = a.answer_map.strip()
     requested = {'쉬움': a.easy, '유지': a.keep, '어려움': a.hard}
     if any(v < 0 for v in requested.values()) or sum(requested.values()) > 12:
         ap.error('수량은 0 이상, 원본당 총 12칸 이하')   # [10/21] 대표: 많이 뽑을 때 문제로 보여 달라 — 12칸까지
