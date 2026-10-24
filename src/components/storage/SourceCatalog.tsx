@@ -45,6 +45,8 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
     const [month, setMonth] = useState('');
     const [subject, setSubject] = useState('');
     const [open, setOpen] = useState<Set<string>>(new Set());
+    // [10/25 대표] 내 개인DB — 교재가 다 펼쳐져 있고 칩이 커서 스크롤이 길었다 → 교재는 접어 두고(한 권이면 펼침), 단원은 한 줄에 작은 칩
+    const [openBooks, setOpenBooks] = useState<Set<string>>(new Set());
     const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
 
     const byCat = useMemo(() => Object.fromEntries(sourceCategories.map(c =>
@@ -280,7 +282,44 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
                     ? <button type="button" onClick={() => onGroupSelect(visible, false)}>{rangeMode ? '이 범위 모두 빼기' : '보이는 자료 모두 빼기'}</button>
                     : <button type="button" onClick={() => onGroupSelect(visible.filter(i => !selected.has(i.id)), true)}>{rangeMode ? `이 범위 ${visible.length}개 모두 담기` : `보이는 자료 ${visible.length}개 모두 담기`}</button>)}
             </div>
-            <div className="rd-cat-list">
+            {category === 'mine' && groups.length > 0 ? <div className="rd-cat-list rd-mine">
+                {Array.from(new Set(groups.map(g => g.sub || g.title))).map(book => {
+                    const units = groups.filter(g => (g.sub || g.title) === book);
+                    const list = units.flatMap(g => g.items);
+                    const picked = list.filter(i => selected.has(i.id)).length;
+                    const isOpenBook = words.length > 0 || openBooks.has(book) || units.length && new Set(groups.map(g => g.sub || g.title)).size === 1;
+                    const toggleBook = () => setOpenBooks(prev => { const n = new Set(prev); n.has(book) ? n.delete(book) : n.add(book); return n; });
+                    return <div key={book} className={`rd-mine-book ${picked ? 'has-pick' : ''}`}>
+                        <div className="rd-mine-head">
+                            <button type="button" className="rd-mine-name" aria-expanded={!!isOpenBook} onClick={toggleBook}>
+                                {isOpenBook ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
+                                <span className="rd-mine-txt"><b>{book}</b>
+                                    <small>{units.length}단원 · {list.reduce((n, i) => n + (i.details?.question_count || 0), 0).toLocaleString()}문항{picked > 0 ? ` · ${picked}개 고름` : ''}</small></span>
+                            </button>
+                            <button type="button" className={`rd-cat-all ${picked === list.length ? 'is-on' : ''}`} onClick={() => onGroupSelect(picked === list.length ? list : list.filter(i => !selected.has(i.id)), picked !== list.length)}>
+                                {picked === list.length ? '교재 모두 빼기' : '교재 전체 담기'}
+                            </button>
+                        </div>
+                        {isOpenBook && <div className="rd-mine-units">{units.map(g => {
+                            const n = g.items.filter(i => selected.has(i.id)).length, all = n === g.items.length;
+                            return <div key={g.key} className="rd-mine-unit">
+                                <span className="rd-mine-uname">{g.title === book ? '전체' : g.title}</span>
+                                <div className="rd-mine-chips">
+                                    {g.items.map(i => {
+                                        const on = selected.has(i.id);
+                                        const [label] = chipLabel(i);
+                                        return <button key={i.id} type="button" role="checkbox" aria-checked={on} className={`rd-mine-chip ${on ? 'is-on' : ''}`} onClick={() => onItemSelect(i)}>
+                                            {on && <Check size={12} strokeWidth={3} aria-hidden="true" />}{label}{i.details?.question_count ? <small>{i.details.question_count}</small> : null}
+                                        </button>;
+                                    })}
+                                    {g.items.length > 1 && <button type="button" className={`rd-mine-chip is-all ${all ? 'is-on' : ''}`} onClick={() => onGroupSelect(all ? g.items : g.items.filter(i => !selected.has(i.id)), !all)}>{all ? '모두 빼기' : '모두'}</button>}
+                                </div>
+                            </div>;
+                        })}</div>}
+                    </div>;
+                })}
+            </div>
+            : <div className="rd-cat-list">
                 {groups.length === 0 ? <p className="rd-cat-empty">조건에 맞는 자료가 없습니다. 검색어나 거르기 조건을 바꿔 보세요.</p>
                     : groups.map((g, gi) => {
                         const book = category === 'mine' && g.sub && books.has(g.sub) && g.sub !== groups[gi - 1]?.sub ? g.sub : '';
@@ -318,7 +357,7 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
                             </div>}
                         </div></div>;
                     })}
-            </div>
+            </div>}
         </>}
     </section>;
 }
