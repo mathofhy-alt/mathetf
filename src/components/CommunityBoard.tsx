@@ -5,7 +5,7 @@ import type {User} from '@supabase/supabase-js';
 import {Search,X,ChevronRight,FileText,Lock,PenLine} from 'lucide-react';
 import {createClient} from '@/utils/supabase/client';
 import Header from './Header';
-type Entry={id:string;title:string;created_at:string;views:number;author_nickname?:string};
+type Entry={id:string;title:string;created_at:string;views:number;author_nickname?:string;answered?:boolean};
 export default function CommunityBoard({kind}:{kind:'notice'|'suggestion'}){
  const notice=kind==='notice';const localPreview=process.env.NEXT_PUBLIC_LOCAL_PREVIEW==='1';const supabase=useMemo(()=>createClient(),[]);
  const [items,setItems]=useState<Entry[]>([]);const [user,setUser]=useState<User|null>(null);const [query,setQuery]=useState('');
@@ -49,6 +49,7 @@ export default function CommunityBoard({kind}:{kind:'notice'|'suggestion'}){
    :<ul className="rd-bd-list">{notice&&!query&&<li><Link href="/notice/change-2026-10" className="rd-bd-row is-pinned"><div className="rd-bd-row-txt"><span className="rd-bd-tag is-accent">고정</span><h3>10월 12일(월)부터 시험지 만들기 이용 방식이 바뀝니다</h3><p className="rd-bd-meta"><span>2026. 10. 8.</span></p></div><ChevronRight size={20} aria-hidden/></Link></li>}{visible.map(item=><li key={item.id}><Link href={`/${kind}/${item.id}`} className="rd-bd-row">
      <div className="rd-bd-row-txt">
       <span className={notice?'rd-bd-tag is-accent':'rd-bd-tag'}>{notice?'공지':<><Lock size={12} aria-hidden/>비밀글</>}</span>
+      {!notice&&item.answered&&<span className="rd-bd-tag is-accent" style={{marginLeft:6}}>답변 완료</span>}
       <h3>{item.title}</h3>
       <p className="rd-bd-meta"><span>{date(item.created_at)}</span><span>조회 {item.views||0}</span>{!notice&&<span>{item.author_nickname||'익명'}</span>}</p>
      </div>

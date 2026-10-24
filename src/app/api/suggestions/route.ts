@@ -14,10 +14,11 @@ export async function GET() {
         const admin = createAdminClient();
         const { data, error } = await admin
             .from('suggestions')
-            .select('id, title, created_at, views, author_id, author_nickname')
+            .select('id, title, created_at, views, author_id, author_nickname, admin_replied_at')
             .order('created_at', { ascending: false });
         if (error) throw error;
-        return NextResponse.json({ items: data || [] });
+        // [10/24 대표] 답변을 달아도 목록에서는 표시가 없었다 — 답변 내용은 비밀글이라 빼고 '답변 완료' 여부만 준다
+        return NextResponse.json({ items: (data || []).map(({ admin_replied_at, ...r }: any) => ({ ...r, answered: !!admin_replied_at })) });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
