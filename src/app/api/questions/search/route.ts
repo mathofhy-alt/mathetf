@@ -142,6 +142,8 @@ export async function POST(req: NextRequest) {
         if (withTypes) {
             query = query.order('type_sort', { ascending: true, nullsFirst: false });
         }
+        // [10/25 대표] 시험별 = 자료(시험지·교재 단원)마다 묶어 그 안에서 번호순. 예전엔 번호만 봐서 두 단원을 고르면 1번,1번,2번,2번… 섞였다
+        if (advancedFilters?.sortBy === 'exam') query = query.order('source_db_id', { ascending: true });
         query = query.order('question_number', { ascending: true }).order('id', { ascending: true }).range(from, to);
 
         // [교과외] 옛 회차의 폐지 단원(부등식의 영역·이중근호·이항연산 등)은 기본 제외.

@@ -151,6 +151,16 @@ export default function QuestionBankPage() {
     const [typeDefs, setTypeDefs] = useState<TypeDefinitions>({});
     const [collapsedTypeGroups, setCollapsedTypeGroups] = useState<Set<string>>(new Set());
     const typeGroups = useMemo(() => indexQuestionTypeGroups(questions), [questions]);
+    // [10/25] 시험별 보기 머리줄 — 자료(source_db_id)가 바뀌는 자리에 '어느 시험지·교재 단원인지'와 문항 수
+    const examGroups = useMemo(() => {
+        const out: { start: number; count: number; label: string }[] = []; let cur: { start: number; count: number; label: string; src: string } | null = null;
+        questions.forEach((q: any, i: number) => {
+            const src = q.source_db_id || '';
+            if (!cur || cur.src !== src) { cur = { start: i, count: 0, src, label: src.includes(' > ') ? src.split(' > ').join(' › ') : src.replace(/_/g, ' ') || `${q.school || ''} ${q.year || ''}`.trim() }; }
+            cur.count++; out.push(cur);
+        });
+        return out;
+    }, [questions]);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMoreTypes, setHasMoreTypes] = useState(false);
     useEffect(() => {
@@ -1845,6 +1855,12 @@ export default function QuestionBankPage() {
                                                 {/* 불러온 개수다 — 마지막 묶음이고 더 불러올 문항이 남았으면 '+' (전체 개수로 오해하지 않게) */}
                                                 <span className="shrink-0 text-xs text-[#278581]">· {typeGroup.count}문항{typeGroup.start + typeGroup.count >= questions.length && questions.length < totalQuestions ? '+' : ''}</span>
                                             </button>
+                                        </h3>
+                                    )}
+                                    {viewMode === 'search' && searchSortBy === 'exam' && examGroups[idx]?.start === idx && (
+                                        <h3 className="col-span-full flex min-w-0 items-center gap-2 rounded-xl border border-[#497AB7]/20 bg-[#F4F7FB] px-3 py-3 text-sm font-bold text-[#365E8D] sm:px-4">
+                                            <span className="min-w-0 flex-1 break-words">{examGroups[idx].label}</span>
+                                            <span className="shrink-0 text-xs text-[#5F6B78]">· {examGroups[idx].count}문항{examGroups[idx].start + examGroups[idx].count >= questions.length && questions.length < totalQuestions ? '+' : ''}</span>
                                         </h3>
                                     )}
                                     {!collapsed && (
