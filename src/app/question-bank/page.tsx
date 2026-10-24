@@ -495,7 +495,20 @@ export default function QuestionBankPage() {
         } catch { update([], true); }
     };
 
-    const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1, sortBy = searchSortRef.current) => {
+    // [10/25 대표] 교재(내 개인DB)만 고른 검색은 기본이 시험별(교재 번호순) — 유형별은 학교 기출용 기본값.
+    //   보기 선택은 교재/기출 따로 기억한다(교재에서 유형별을 고른 사람은 교재에서만 유형별).
+    const isTextbookScope = (ids: string[] | undefined) => !!ids?.length && ids.every(id => purchasedDbs.find((d: any) => d.id === id)?.private);
+    const sortKeyFor = (ids: string[] | undefined) => isTextbookScope(ids) ? 'qb_search_sort_by_textbook' : 'qb_search_sort_by';
+    const preferredSort = (ids: string[] | undefined): 'type' | 'exam' => {
+        let v: string | null = null; try { v = localStorage.getItem(sortKeyFor(ids)); } catch { }
+        return v === 'type' || v === 'exam' ? v : isTextbookScope(ids) ? 'exam' : 'type';
+    };
+    const fetchQuestions = async (dbFilter?: any, advancedFilters?: any, targetPage: number = 1, explicitSort?: 'type' | 'exam') => {
+        let sortBy = explicitSort ?? searchSortRef.current;
+        if (!explicitSort && targetPage === 1 && Array.isArray(dbFilter) && dbFilter.length) {
+            sortBy = preferredSort(dbFilter);
+            if (sortBy !== searchSortRef.current) { searchSortRef.current = sortBy; setSearchSortBy(sortBy); }
+        }
         const requestToken = ++searchRequestToken.current;
         const append = sortBy === 'type' && targetPage > 1;
         if (!append) ++imageLoadToken.current;
@@ -626,13 +639,20 @@ export default function QuestionBankPage() {
         if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
     };
 
+    // 자료를 고르는 즉시 보기 단추도 맞춰 둔다(검색 전부터 '시험별'이 눌려 보이게)
+    useEffect(() => {
+        if (!selectedDbIds.length || !purchasedDbs.length) return;
+        const v = preferredSort(selectedDbIds);
+        if (v !== searchSortRef.current) { searchSortRef.current = v; setSearchSortBy(v); }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDbIds, purchasedDbs]);
     const changeSearchSortBy = (sortBy: 'type' | 'exam') => {
         if (searchSortRef.current === sortBy) return;
         searchSortRef.current = sortBy;
         setSearchSortBy(sortBy);
         setCollapsedTypeGroups(new Set());
         setCurrentPage(1);
-        try { localStorage.setItem('qb_search_sort_by', sortBy); } catch { }
+        try { localStorage.setItem(sortKeyFor(lastSearchDbIds.current.length ? lastSearchDbIds.current : selectedDbIds), sortBy); } catch { }
         if (hasSearched || lastSearchDbIds.current.length > 0) {
             fetchQuestions(lastSearchDbIds.current.length ? lastSearchDbIds.current : selectedDbIds,
                 lastSearchFilters.current, 1, sortBy);
