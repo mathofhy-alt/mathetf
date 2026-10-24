@@ -1948,6 +1948,29 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-cat-book b { display: block; font-size: 17px; font-weight: 800; color: var(--rd-text); }
 .rd .rd-cat-book small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--rd-sub); }
 .rd .rd-cat-book .rd-cat-all { background: #fff; }
+/* 10/25 내 개인DB: 교재 접기 + 단원 한 줄에 작은 칩 (SourceCatalog) */
+.rd .rd-mine-book { border-radius: 14px; background: #fff; }
+.rd .rd-mine-book + .rd-mine-book { margin-top: 6px; }
+.rd .rd-mine-book.has-pick { box-shadow: inset 0 0 0 1px var(--rd-ink); }
+.rd .rd-mine-book.has-pick .rd-mine-name small { color: var(--rd-ink); }
+.rd .rd-mine-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 4px; }
+.rd .rd-mine-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 8px 6px; font: inherit; text-align: left; color: var(--rd-text); cursor: pointer; }
+.rd .rd-mine-name svg { flex: none; }
+.rd .rd-mine-txt { min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+.rd .rd-mine-name b { font-size: 16px; font-weight: 800; }
+.rd .rd-mine-name small { font-size: 13px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-mine-units { padding: 0 12px 10px; }
+.rd .rd-mine-unit { display: grid; grid-template-columns: minmax(120px, 210px) minmax(0, 1fr); gap: 4px 12px; align-items: start; padding: 7px 0; border-top: 1px solid var(--rd-line, #eef0f3); }
+.rd .rd-mine-uname { padding-top: 5px; font-size: 13px; font-weight: 700; color: var(--rd-text); line-height: 1.35; }
+.rd .rd-mine-chips { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.rd .rd-mine-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--rd-zone); font: inherit; font-size: 13px; font-weight: 600; color: var(--rd-text); cursor: pointer; white-space: nowrap; }
+.rd .rd-mine-chip small { font-size: 11px; font-weight: 600; color: var(--rd-sub); }
+.rd .rd-mine-chip:hover { background: var(--rd-panel); }
+.rd .rd-mine-chip.is-on { background: var(--rd-ink); color: #fff; }
+.rd .rd-mine-chip.is-on small { color: rgba(255,255,255,.8); }
+.rd .rd-mine-chip.is-all { background: none; box-shadow: inset 0 0 0 1px var(--rd-line, #dfe3e8); color: var(--rd-sub); }
+.rd .rd-mine-chip.is-all.is-on { background: var(--rd-tint); color: var(--rd-ink); box-shadow: none; }
+@media (max-width: 640px) { .rd .rd-mine-unit { grid-template-columns: minmax(0, 1fr); } .rd .rd-mine-uname { padding-top: 0; } }
 
 /* 10/7 시험지 만들기 이용권 */
 .rd .rd-pass-card { margin-top: 18px; padding: 20px; border-radius: 20px; background: var(--rd-zone); }
