@@ -37,7 +37,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
             admin_reply?: string | null; admin_replied_at?: string | null;
         };
         return NextResponse.json({
-            post: unlocked ? { ...meta, content, admin_reply, admin_replied_at } : meta,
+            // [10/24 대표] 잠긴 사람에겐 제목도 가린다(목록과 같게)
+            post: unlocked ? { ...meta, content, admin_reply, admin_replied_at } : { ...meta, title: '비밀글입니다' },
             unlocked,
             isOwner: unlocked,
             isAdmin: !!user && user.email === ADMIN_EMAIL,
