@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, MessageSquare, Database } from 'lucide-react';
+import { Calendar, MessageSquare, Database, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { payOrder } from '@/lib/payments/client';
 
@@ -28,15 +28,37 @@ export default function MyDbRequests() {
     useEffect(() => { void load(); }, []);
 
     // [10/6] 회원 전용 개인DB 결제 — 기존 장바구니 결제(PortOne)와 같은 주문 경로. 주인 확인은 서버(orders)가 한다.
-    const pay = async (product: any) => {
-        const { data: { user } } = await createClient().auth.getUser();
+    // [10/24 대표] 결제하기를 누르면 카드 창이 바로 떴다(포인트를 쓸지 안 물음) → 먼저 확인 창: 가격·포인트 사용·결제 금액.
+    //   전액 포인트면 카드 창 없이 끝난다(payOrder). 휴대폰 번호 없는 옛 계정은 이용권 창처럼 여기서 받는다.
+    const [checkout, setCheckout] = useState<{ product: any; user: any; points: number } | null>(null);
+    const [usePoints, setUsePoints] = useState(true);
+    const [phone, setPhone] = useState('');
+    const [payErr, setPayErr] = useState('');
+    const open = async (product: any) => {
+        const sb = createClient();
+        const { data: { user } } = await sb.auth.getUser();
         if (!user) { alert('로그인이 필요합니다.'); return; }
-        setPaying(product.id);
+        const { data } = await sb.from('profiles').select('earned_points').eq('id', user.id).single();
+        setUsePoints(true); setPhone(''); setPayErr('');
+        setCheckout({ product, user, points: Number(data?.earned_points) || 0 });
+    };
+    const price = Number(checkout?.product.price) || 0;
+    const usedPoints = checkout && usePoints ? Math.min(checkout.points, price) : 0;
+    const due = price - usedPoints;
+    const needPhone = !!checkout && due > 0 && !(checkout.user.user_metadata?.phone || checkout.user.phone);
+    const phoneOk = !needPhone || /^01[016789]\d{7,8}$/.test(phone.replace(/[^0-9]/g, ''));
+    const pay = async () => {
+        if (!checkout || paying || !phoneOk) return;
+        const { product, user } = checkout;
+        setPaying(product.id); setPayErr('');
         try {
-            await payOrder(user, { kind: 'cart', items: [{ item_id: product.id }], usedPoints: 0 });
+            const digits = phone.replace(/[^0-9]/g, '');
+            if (needPhone) await createClient().auth.updateUser({ data: { phone: digits } }).catch(() => null);   // 다음 결제부터는 묻지 않게
+            await payOrder(user, { kind: 'cart', items: [{ item_id: product.id }], usedPoints }, needPhone ? digits : undefined);
+            setCheckout(null);
             alert('결제가 완료되었습니다. 시험지 만들기의 출제 자료에서 ‘내 개인DB’로 이용하실 수 있어요.');
             await load();
-        } catch (e: any) { alert(e?.message || '결제를 완료하지 못했습니다.'); }
+        } catch (e: any) { setPayErr(e?.message || '결제를 완료하지 못했습니다.'); }
         finally { setPaying(null); }
     };
 
@@ -51,6 +73,7 @@ export default function MyDbRequests() {
     );
 
     return (
+        <>
         <ul className="rd-my-list rd-my-reqs">
             {rows.map(row => (
                 <li key={row.id} className="rd-my-req">
@@ -85,7 +108,7 @@ export default function MyDbRequests() {
                             {row.product.paid ? (
                                 <Link href="/question-bank" className="rd-btn rd-btn-primary rd-my-product-btn">시험지 만들기</Link>
                             ) : (
-                                <button type="button" onClick={() => pay(row.product)} disabled={paying === row.product.id} className="rd-btn rd-btn-primary rd-my-product-btn">
+                                <button type="button" onClick={() => open(row.product)} disabled={paying === row.product.id} className="rd-btn rd-btn-primary rd-my-product-btn">
                                     {paying === row.product.id ? '결제 진행 중…' : '결제하기'}
                                 </button>
                             )}
@@ -94,5 +117,38 @@ export default function MyDbRequests() {
                 </li>
             ))}
         </ul>
+        {checkout && (
+            <div className="rd rd-overlay" style={{ zIndex: 300 }} onClick={e => { if (e.target === e.currentTarget && !paying) setCheckout(null); }}>
+                <div className="rd-modal rd-modal-sm rd-pass" role="dialog" aria-modal="true" aria-labelledby="privdb-pay-title">
+                    <div className="rd-sheet-handle" aria-hidden="true" />
+                    <div className="rd-modal-head">
+                        <h2 id="privdb-pay-title" className="rd-modal-title">개인DB 결제</h2>
+                        <button type="button" className="rd-modal-x" aria-label="닫기" onClick={() => !paying && setCheckout(null)}><X size={20} /></button>
+                    </div>
+                    <div className="rd-pass-card">
+                        <p className="rd-pass-name">{checkout.product.title}</p>
+                        <p className="rd-pass-price"><b>{price.toLocaleString()}</b>원</p>
+                        <p className="rd-my-product-sub">회원님 전용 · 결제하면 시험지 만들기 › 출제 자료 › 내 개인DB에서 바로 쓸 수 있어요.</p>
+                    </div>
+                    <label className="rd-pass-points">
+                        <input type="checkbox" checked={usePoints && checkout.points > 0} disabled={checkout.points <= 0} onChange={e => setUsePoints(e.target.checked)} />
+                        <span>포인트 사용 <small>보유 {checkout.points.toLocaleString()}P</small></span>
+                        {usedPoints > 0 && <b>-{usedPoints.toLocaleString()}원</b>}
+                    </label>
+                    {needPhone && <label className="rd-pass-phone">
+                        <span>결제에 쓸 휴대폰 번호 <small>카드 결제에 꼭 필요해요</small></span>
+                        <input type="tel" inputMode="numeric" autoComplete="tel" placeholder="01012345678" value={phone} onChange={e => setPhone(e.target.value)} className="rd-input" />
+                    </label>}
+                    {payErr && <p className="rd-pass-err" role="alert">{payErr}</p>}
+                    <div className="rd-modal-actions">
+                        <button type="button" className="rd-btn rd-btn-primary rd-btn-block" onClick={pay} disabled={!!paying || !phoneOk}>
+                            {paying ? '결제 진행 중…' : due === 0 ? `포인트 ${usedPoints.toLocaleString()}P로 결제하기` : `${due.toLocaleString()}원 결제하기`}
+                        </button>
+                        <button type="button" className="rd-btn rd-btn-gray rd-btn-block" onClick={() => setCheckout(null)} disabled={!!paying}>닫기</button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }
