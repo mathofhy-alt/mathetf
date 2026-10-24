@@ -2124,7 +2124,10 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-cat-search { min-height: 44px; }
 .rd .rd-cat-search input { font-size: 15px; }
 .rd .rd-cat-filters select { min-height: 36px; }
-.rd .rd-cat-chosen { flex-wrap: wrap; padding: 8px 12px; gap: 8px 12px; }
+.rd .rd-cat-chosen { flex-wrap: wrap; padding: 8px 12px; gap: 8px 12px; min-height: 40px; box-sizing: border-box; }
+.rd .rd-cat-chosen.is-empty { background: var(--rd-zone); }
+.rd .rd-cat-chosen.is-empty > span { color: var(--rd-sub); }
+.rd .rd-cat-chosen.is-empty > p { color: var(--rd-sub); }
 .rd .rd-cat-chosen > p { flex: 1; min-width: 0; margin: 0; font-size: 13px; font-weight: 600; color: var(--rd-nav); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd .rd-cat-chosen.is-open > div { flex: 1 1 100%; flex-wrap: wrap; max-height: 132px; overflow-y: auto; }
 .rd .rd-mg { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }

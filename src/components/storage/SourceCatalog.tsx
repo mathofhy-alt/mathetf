@@ -235,15 +235,18 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
             {extraFiltered && <button type="button" className="rd-cat-reset" onClick={() => { setGrade(''); setYear(''); setTerm(''); setMonth(''); setSubject(''); }}>조건 지우기</button>}
         </div>}
 
-        {chosen.length > 0 && <div className={`rd-cat-chosen ${showChosen ? 'is-open' : ''}`} aria-label="검색 범위로 고른 자료">
+        {/* [10/25 대표] 처음 하나를 고르는 순간 이 줄이 생기며 목록이 아래로 밀렸다("사용자들은 극혐") → 늘 자리를 잡아 두고 내용만 바꾼다 */}
+        <div className={`rd-cat-chosen ${showChosen && chosen.length ? 'is-open' : ''} ${chosen.length ? '' : 'is-empty'}`} aria-label="검색 범위로 고른 자료" aria-live="polite">
             <span>검색 범위 {chosen.length}개</span>
-            <p>{chosenByCat.map(x => `${TAB_LABEL[x.c.id] || x.c.label} ${x.n.length}`).join(' · ')}</p>
-            <button type="button" className="rd-cat-clear" onClick={() => setShowChosen(v => !v)} aria-expanded={showChosen}>{showChosen ? '접기' : '펼쳐 보기'}</button>
-            <button type="button" className="rd-cat-clear" onClick={() => onGroupSelect(chosen, false)}>모두 빼기</button>
-            {showChosen && <div>{chosen.slice(0, 60).map(i => <button key={i.id} type="button" onClick={() => onItemSelect(i)} title="빼기">
+            <p>{chosen.length ? chosenByCat.map(x => `${TAB_LABEL[x.c.id] || x.c.label} ${x.n.length}`).join(' · ') : '아래에서 자료를 고르면 여기에 모입니다'}</p>
+            {chosen.length > 0 && <>
+                <button type="button" className="rd-cat-clear" onClick={() => setShowChosen(v => !v)} aria-expanded={showChosen}>{showChosen ? '접기' : '펼쳐 보기'}</button>
+                <button type="button" className="rd-cat-clear" onClick={() => onGroupSelect(chosen, false)}>모두 빼기</button>
+            </>}
+            {showChosen && chosen.length > 0 && <div>{chosen.slice(0, 60).map(i => <button key={i.id} type="button" onClick={() => onItemSelect(i)} title="빼기">
                 {chosenLabel(i)}<X size={13} aria-hidden="true" />
             </button>)}{chosen.length > 60 && <em>외 {chosen.length - 60}개</em>}</div>}
-        </div>}
+        </div>
 
         {gridMode && <MockGrid key={`${category}|${pendingQuery}`} kind={category as 'national' | 'special'} pool={pool}
             selectedIds={selected} onGroupSelect={onGroupSelect}
