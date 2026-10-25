@@ -176,9 +176,11 @@ export async function POST(req: NextRequest) {
                 query = query.in('subject', advancedFilters.subjects);
             }
             if (advancedFilters.keywords && advancedFilters.keywords.length > 0) {
+                // [10/26 대표] 발문에서만 찾는다 — plain_text 는 해설까지 담아서 해설에만 있는 단어로도 걸렸다.
+                //   stmt_text = question_statement(발문) 우선, 아직 없으면 plain_text (20261026_question_statement.sql)
                 advancedFilters.keywords.forEach((keyword: string) => {
                     const term = (keyword || '').trim();
-                    if (term) query = query.ilike('plain_text', `%${term}%`);
+                    if (term) query = query.ilike('stmt_text', `%${term}%`);
                 });
             }
         }
