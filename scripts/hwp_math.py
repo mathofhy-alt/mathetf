@@ -395,6 +395,9 @@ class _Parser:
 
         if low in ('left', 'right'):
             nk, ntok = self.take()
+            # [10/25] 'RIGHT `|`' — 한글은 괄호 앞 띄어쓰기 기호(` ~)를 허용한다(2026 고2 10월 20번 해설)
+            while ntok in ('`', '~') and self.peek():
+                nk, ntok = self.take()
             key = ntok.lower() if nk == 'word' else ntok
             if key not in DELIM:
                 raise MathConvertError(f'모르는 괄호: {ntok!r}')
