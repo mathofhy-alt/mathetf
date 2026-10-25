@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Wand2, Lock, Loader2, Download, FileText } from 'lucide-react';
 import { downloadPdf } from '@/lib/pdfDownload';
+import { hwpPassOnly } from '@/lib/hwpPolicy';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 import { CURRICULA, subjectFor, SUBJECT_UNITS, unitVariants } from '@/lib/curriculum';
@@ -143,7 +144,7 @@ export default function PredictClient({ richSchools }: Props) {
     const [hasPass, setHasPass] = useState(false);
     useEffect(() => {
         if (!isLoggedIn) return;
-        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin))).catch(() => {});
+        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin) || !hwpPassOnly())).catch(() => {});   // 자정(10/26 0시) 전에는 모두 한글
     }, [isLoggedIn]);
     const getPdf = async () => {
         if (!results || results.length === 0 || pdfStatus) return;

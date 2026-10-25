@@ -5,6 +5,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Loader2, Upload, Wand2, Check, Download, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { downloadPdf } from '@/lib/pdfDownload';
+import { hwpPassOnly } from '@/lib/hwpPolicy';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 
@@ -185,7 +186,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
     const [hasPass, setHasPass] = useState(false);
     useEffect(() => {
         if (!isLoggedIn) return;
-        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin))).catch(() => {});
+        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin) || !hwpPassOnly())).catch(() => {});   // 자정(10/26 0시) 전에는 모두 한글
     }, [isLoggedIn]);
     const makePdf = async () => {
         const ids = crops.flatMap((c) => c.selected);
