@@ -102,7 +102,9 @@ def sheet(key, src, logdir):
         f = subprocess.run([VPY, '-X', 'utf8', str(ROOT / 'scripts' / 'hq' / 'solve_finish.py'), key], cwd=str(ROOT), env=ENV,
                            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5 * 3600, stdin=subprocess.DEVNULL)
         last = ((f.stdout or '').strip().splitlines() or [''])[-1]; say(log, key, f'마무리·경로검사·굽기 rc{f.returncode} {last[:200]}')
-        if f.returncode == 0: return key, '구움'
+        # [10/25] 굽기 검사에 걸려도 rc0 이라 '구움'으로 찍혔다(고2 10월, 파일 없음) — 성공 표시가 있어야 구운 것
+        if f.returncode == 0 and '✅ 구움' in (f.stdout or ''): return key, '구움'
+        if f.returncode == 0: return key, '굽기 실패(검사에 걸림) — ' + last[:200]
         if f.returncode == 2 and attempt == 1:
             fix = (f'열쇠 {key} (`C:\\gpt_solve\\tools\\content_{key}.py`) 의 해설이 경로검사에 걸렸다. `tools/_work/경로검사/{key}.md` 를 읽어 걸린 문항만 '
                    '출제 의도 경로로 plan·sol 을 다시 써라. 문제 쪽은 바꾸지 마라. 한글·굽기 금지.')
