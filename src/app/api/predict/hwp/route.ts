@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { buildPredictHml } from '@/lib/predict-hml';
+import { passStatus } from '@/lib/qbPass';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -12,12 +13,18 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /**
  * POST /api/predict/hwp  { ids: string[], title?: string }
  * 예상문제 세트를 HWP(.hml)로 즉석 생성해 바로 다운로드(저장 목록에 쌓지 않음).
- * 가입회원 전용(무료). 문항 조립은 기존 generateHmlFromTemplate 재사용.
+ * 이용권 회원·운영자 전용(10/25부터 — 무료 회원은 PDF). 문항 조립은 기존 generateHmlFromTemplate 재사용.
  */
 export async function POST(req: NextRequest) {
     const sb = createClient();
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return new NextResponse('로그인이 필요합니다.', { status: 401 });
+    // [10/25 대표] 예상문제·프린트변형의 한글(HWP)은 이용권 회원만 — 무료 회원은 로고가 찍힌 PDF(/api/pdf).
+    //   한글을 주면 로고를 지우고 자기 자료로 만든다. 강사는 고쳐 쓰려면 이용권, 학생·학부모는 PDF 로 충분.
+    try {
+        const ps = await passStatus(user);
+        if (!ps.passUntil && !ps.admin) return NextResponse.json({ error: '한글(HWP) 파일은 이용권 회원만 받을 수 있어요. 무료로는 PDF로 받을 수 있어요.', needPass: true }, { status: 402 });
+    } catch { return NextResponse.json({ error: '이용권 확인에 실패했어요. 잠시 후 다시 시도해 주세요.' }, { status: 503 }); }
 
     try {
         const body = await req.json().catch(() => ({}));

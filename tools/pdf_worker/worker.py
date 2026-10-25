@@ -69,8 +69,29 @@ def convert(src, dst):
     return pages
 
 
+BRAND = (0x49 / 255, 0x7A / 255, 0xB7 / 255)   # 브랜드 파랑 #497AB7
+
+
+def stamp(path):
+    """[10/25 대표] 무료 회원 PDF 에 로고 — 오른쪽 위 맨 끝 여백에 '수학ETF', 맨 아래 가운데(쪽 번호 아래)에 'mathetf.com'.
+    한글 시험지 머리(제목·날짜·쪽 번호)는 위에서 44pt 아래부터, 쪽 번호는 아래에서 40pt 위라 그 바깥 여백에 찍는다."""
+    import fitz
+    doc = fitz.open(path)
+    for pg in doc:
+        w, h = pg.rect.width, pg.rect.height
+        s1 = 14   # '수학'은 한글 글꼴, 'ETF'는 영문 굵은 글꼴 — 한글 글꼴로 영문을 쓰면 'E T F' 로 벌어진다
+        w_ko, w_en = fitz.get_text_length('수학', fontname='korea', fontsize=s1), fitz.get_text_length('ETF', fontname='hebo', fontsize=s1)
+        x = w - 48 - w_ko - w_en
+        pg.insert_text((x, 32), '수학', fontname='korea', fontsize=s1, color=BRAND)
+        pg.insert_text((x + w_ko + 1, 32), 'ETF', fontname='hebo', fontsize=s1, color=BRAND)
+        t2, s2 = 'mathetf.com', 9
+        pg.insert_text(((w - fitz.get_text_length(t2, fontname='helv', fontsize=s2)) / 2, h - 16), t2, fontname='helv', fontsize=s2, color=(0.45, 0.45, 0.45))
+    doc.saveIncr() if doc.can_save_incrementally() else None
+    doc.close()
+
+
 def one():
-    rows = http('GET', '/rest/v1/pdf_jobs?select=id&status=eq.pending&order=created_at&limit=1')
+    rows = http('GET', '/rest/v1/pdf_jobs?select=id,stamp&status=eq.pending&order=created_at&limit=1')
     if not rows: return False
     jid = rows[0]['id']
     got = patch(jid, {'status': 'working', 'started_at': 'now', 'worker': NAME}, '&status=eq.pending')   # 먼저 잡은 쪽만
@@ -81,6 +102,7 @@ def one():
         try: pages = convert(src, dst)
         except Exception:
             reset_hwp(); pages = convert(src, dst)            # 한글이 죽었으면 한 번 다시
+        if rows[0].get('stamp', True): stamp(dst)
         http('POST', f'/storage/v1/object/pdf-jobs/{jid}.pdf', open(dst, 'rb').read(),
              {'Content-Type': 'application/pdf', 'x-upsert': 'true'}, timeout=120)
         sec = round(time.time() - t0, 1)

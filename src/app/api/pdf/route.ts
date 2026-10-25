@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { buildPredictHml } from '@/lib/predict-hml';
+import { passStatus } from '@/lib/qbPass';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -35,7 +36,10 @@ export async function POST(req: NextRequest) {
         const id = crypto.randomUUID();
         const up = await admin.storage.from('pdf-jobs').upload(`${id}.hml`, Buffer.from(hml, 'utf8'), { contentType: 'application/octet-stream', upsert: true });
         if (up.error) throw new Error('파일을 올리지 못했습니다.');
-        const { error } = await admin.from('pdf_jobs').insert({ id, user_id: user.id, kind: source, title });
+        // [10/25 대표] 무료 회원 PDF 에는 로고(오른쪽 위 수학ETF · 아래 가운데 mathetf.com) — 서버 일꾼이 찍는다
+        let stamp = true;
+        try { const ps = await passStatus(user); stamp = !ps.passUntil && !ps.admin; } catch { /* 확인 실패면 찍는다 */ }
+        const { error } = await admin.from('pdf_jobs').insert({ id, user_id: user.id, kind: source, title, stamp });
         if (error) throw new Error('PDF 작업을 만들지 못했습니다.');
 
         try {
