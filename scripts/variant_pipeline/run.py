@@ -324,8 +324,22 @@ def numeric_value(raw):
     return None
 
 
+BOGI = 'ㄱㄴㄷㄹㅁ'
+
+
+def bogi_value(raw):
+    """[10/25] 〈보기〉 조합 답(예: 'ㄱ, ㄷ') → 고른 보기 집합. 고2 10월 17번처럼 ㄱㄴㄷ 고르기 문항은 답이 수가 아니라 이것뿐이었다."""
+    if not isinstance(raw, str) or not raw.strip() or len(raw) > 64: return None
+    t = latex_plain(raw)
+    letters = re.findall('[' + BOGI + ']', t)
+    if not letters or re.sub(r'[' + BOGI + r',，、.\s]|및|와|과', '', t): return None
+    return frozenset(letters)
+
+
 def same_value(a, b):
     import sympy as sp
+    ba, bb = bogi_value(a), bogi_value(b)
+    if ba and bb: return ba == bb
     x, y = numeric_value(a), numeric_value(b)
     if x is None or y is None: return None
     delta = sp.simplify(x - y)
@@ -345,7 +359,8 @@ def choices(problem):
     if [m.group() for m in marks] != list('①②③④⑤'): return None
     options = [problem[m.end():marks[i+1].start() if i < 4 else len(problem)].strip()
                for i, m in enumerate(marks)]
-    return options if all(numeric_value(option) is not None for option in options) else None
+    if all(numeric_value(option) is not None for option in options) or all(bogi_value(option) for option in options): return options
+    return None
 
 
 def answer_parts(answer):
@@ -362,7 +377,7 @@ def original_answer(original, problem):
         opts = choices(problem)
         if opts is None: raise ValueError('원본 정답 번호의 선지 값 확인 불가')
         value = opts[index]
-    if numeric_value(value) is None: raise ValueError('원본 정답 값을 정확한 수 하나로 확인 불가')
+    if numeric_value(value) is None and not bogi_value(value): raise ValueError('원본 정답 값을 정확한 수 하나로 확인 불가')
     return {'raw': raw, 'answer_value': value, 'validated': True}
 
 
@@ -385,12 +400,15 @@ def course_key(course):
 
 def make_policy(original, requested, max_attempts, unit=''):
     source = section(original, '출처')
-    course = re.search(r'(?:공통수학[12]?|수학(?:III|II|I|Ⅰ|Ⅱ|Ⅲ|[12상하])?|미적분|확률과\s*통계|기하)(?=[_\s·|,번]|$)', source)
+    # [10/25] 2022 개정 '대수'·'미적분I' 을 못 읽어 고2 원본의 course 가 빈 값이었다(선수 과목도 빈 목록)
+    course = re.search(r'(?:공통수학[12]?|대수|미적분(?:II|I|Ⅱ|Ⅰ)?|수학(?:III|II|I|Ⅰ|Ⅱ|Ⅲ|[12상하])?|확률과\s*통계|기하)(?=[_\s·|,번]|$)', source)
+    # [10/25] 〈보기〉 ㄱㄴㄷ 원본은 보기 내용이 바뀌므로 같은 조합 답을 허용한다(고2 10월 17번이 '원본과 같은 답'으로 막혔다)
+    bogi_orig = bool(bogi_value(answer_parts(section(original, '정답'))[1]) or (lambda o, i: o is not None and i is not None and bogi_value(o[i]))(choices(section(original, '문제')), answer_parts(section(original, '정답'))[0]))
     parts = [part.strip() for part in re.split('[·|]', source)]
     unit_match = re.search(r'(?:단원명|단원)\s*[:：|]\s*([^\n|·]+)', source)
     source_unit = unit_match[1].strip() if unit_match else (parts[1] if len(parts) > 1 and not parts[1].startswith('난이도') else '')
     return {'schema_version': 2, 'purpose': '시험 변형 — 쉬움·유지 숫자변형, 어려움 심한 변형(10/20 대표)', 'requested_counts': requested,
-        'no_original_answer': True, 'no_duplicate_answers': True, 'max_attempts': max_attempts,
+        'no_original_answer': not bogi_orig, 'no_duplicate_answers': True, 'max_attempts': max_attempts,
         'layout_required': True, 'allow_alternative_delivery': False,
         'course': course.group().strip() if course else '', 'unit': unit or source_unit,   # 명령줄 --unit 이 있으면 우선(출처 줄 해석이 '회차 미확인)' 처럼 틀린 적 있음)
         'source_metadata': source, 'unit_cli': unit,
@@ -545,7 +563,7 @@ def generation_errors(g, slot, level):
     evidence = ('core_relation', 'reuse_break', 'condition_effect', 'wrong_route', 'evidence_ref', 'shortest_route')
     errors += require_shape(g['design_evidence'], dict.fromkeys(evidence, str), 'design_evidence')
     if any(not str(g['design_evidence'].get(k, '')).strip() for k in evidence): errors.append('설계 근거 빈 값')
-    if numeric_value(g['answer_value']) is None: errors.append('answer_value 수 하나 판정 불가')
+    if numeric_value(g['answer_value']) is None and not bogi_value(g['answer_value']): errors.append('answer_value 수 하나 판정 불가')
     try:
         options = choices(g['problem'])
         index, display = answer_parts(g['answer'])
@@ -642,7 +660,7 @@ def adoption_errors(g, s, j, r, level, original_value, executions):
     if not s.get('method') or not s.get('script_output'): errors.append('독립 풀이 필수 근거 누락')
     if same_value(s.get('answer_value'), g.get('answer_value')) is not True:
         errors.append('생성·독립 풀이 답 불일치/미확인')
-    if same_value(g.get('answer_value'), original_value) is not False:
+    if not bogi_value(original_value) and same_value(g.get('answer_value'), original_value) is not False:   # 〈보기〉형은 보기 내용이 바뀌므로 같은 조합 허용
         errors.append('원본 답과 같음 또는 정확한 비교 미확인')
     for name in ('check', 'solve'):
         run = executions.get(name, {})
@@ -803,7 +821,7 @@ def slot_pipeline(D, slot, level, maxtry=2, original_value=None):
                 issues = []
                 if same_value(s.get('answer_value', ''), g['answer_value']) is not True: issues.append(f"독립 풀이 답 불일치: {s.get('answer_value')} vs {g['answer_value']}")
                 if s.get('defects'): issues.append('독립 풀이 결함: ' + '; '.join(map(str, s['defects']))[:300])
-                if original_value is not None and same_value(g['answer_value'], original_value) is True: issues.append('원본과 같은 답')
+                if original_value is not None and not bogi_value(original_value) and same_value(g['answer_value'], original_value) is True: issues.append('원본과 같은 답')
                 j, r = {}, {}
             else:
                 j = judge(D, slot, ticket)
@@ -883,7 +901,7 @@ def bundle(D, rows, requested, ticket=None):
         candidates.append({'id': sid, 'requested_level': row['level'], 'judged_level': j.get('verdict'),
             'status': row['status'], 'eligible': row['eligible'], 'problems': row['problems'],
             'problem': g.get('problem', ''), 'answer_value': g.get('answer_value'),
-            'normalized_answer': str(value) if value is not None else None, 'usage_target': '시험용',
+            'normalized_answer': str(value) if value is not None else (', '.join(sorted(bogi_value(g.get('answer_value')) or [])) or None), 'usage_target': '시험용',
             'checks_complete': {'judge': j.get('checks_complete'), 'review': r.get('checks_complete')},
             'adoption': r.get('adoption'), 'judge': {k: j.get(k) for k in ('fingerprint', 'reuse_test', 'shortest_route', 'findings')},
             'review': {k: r.get(k) for k in ('reason', 'findings')}})
