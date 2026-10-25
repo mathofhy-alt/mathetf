@@ -3,7 +3,8 @@ import {sendToExamCart} from '@/lib/questions/handoff';
 import FeatureExplanation from '@/components/FeatureExplanation';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Wand2, Lock, Loader2, Download } from 'lucide-react';
+import { Wand2, Lock, Loader2, Download, FileText } from 'lucide-react';
+import { downloadPdf } from '@/lib/pdfDownload';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 import { CURRICULA, subjectFor, SUBJECT_UNITS, unitVariants } from '@/lib/curriculum';
@@ -135,6 +136,16 @@ export default function PredictClient({ richSchools }: Props) {
             if (!isExamPromoHidden()) setShowPromo(true);
         } catch { alert('다운로드 중 오류가 발생했습니다.'); }
         setHwpLoading(false);
+    };
+
+    // [10/25] PDF 받기 — 한글 없는 학생·학부모용. 서버(아이윈브 한글)가 만들어 40초 안팎
+    const [pdfStatus, setPdfStatus] = useState('');
+    const getPdf = async () => {
+        if (!results || results.length === 0 || pdfStatus) return;
+        setPdfStatus('PDF 만드는 중…');
+        try { await downloadPdf(results.map((q) => q.id), `${school} ${grade} ${semesterStr} 예상문제`, 'predict', setPdfStatus); if (!isExamPromoHidden()) setShowPromo(true); }
+        catch (e: any) { alert(e?.message || 'PDF를 만들지 못했습니다.'); }
+        setPdfStatus('');
     };
 
     const canGen = !!school && selectedLabels.length > 0 && !genLoading;
@@ -321,8 +332,12 @@ export default function PredictClient({ richSchools }: Props) {
                                             className="rd-btn rd-btn-primary rd-tl-cta-btn">
                                             {hwpLoading ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글(HWP) 다운로드</>}
                                         </button>
+                                        <button onClick={getPdf} disabled={!!pdfStatus}
+                                            className="rd-btn rd-btn-gray rd-tl-cta-btn">
+                                            {pdfStatus ? <><Loader2 size={16} className="animate-spin" /> {pdfStatus}</> : <><FileText size={16} /> PDF 다운로드</>}
+                                        </button>
                                         <p className="rd-tl-cta-note">문제+해설 포함, 회원 무료</p>
-                                        <p className="rd-tl-cta-note">한글(HWP) 파일이라 한글 프로그램이 설치된 PC에서 열려요</p>
+                                        <p className="rd-tl-cta-note">한글 프로그램이 없으면 PDF로 받으세요 — 휴대폰에서도 바로 열려요(만드는 데 30초 안팎)</p>
                                     </>
                                 ) : (
                                     <>

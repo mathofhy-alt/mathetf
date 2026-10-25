@@ -3,7 +3,8 @@ import FeatureExplanation from '@/components/FeatureExplanation';
 import {sendToExamCart} from '@/lib/questions/handoff';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Loader2, Upload, Wand2, Check, Download, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Upload, Wand2, Check, Download, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { downloadPdf } from '@/lib/pdfDownload';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 
@@ -179,6 +180,17 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
         setMaking(false);
     };
 
+    // [10/25] 채택한 변형문제 → PDF (서버 한글로 변환)
+    const [pdfStatus, setPdfStatus] = useState('');
+    const makePdf = async () => {
+        const ids = crops.flatMap((c) => c.selected);
+        if (ids.length === 0 || pdfStatus) return;
+        setPdfStatus('PDF 만드는 중…');
+        try { await downloadPdf(ids, '학교프린트 변형문제', 'print', setPdfStatus); if (!isExamPromoHidden()) setShowPromo(true); }
+        catch (e: any) { alert(e?.message || 'PDF를 만들지 못했습니다.'); }
+        setPdfStatus('');
+    };
+
     if (!isLoggedIn) {
         return (
             <main className="rd-tl-main">
@@ -347,6 +359,9 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                             <p><b>{totalSelected}개</b> 골랐어요{notYet.length ? <span> · {notYet.join(', ')}번은 아직</span> : null}</p>
                             <button onClick={makeHwp} disabled={making || totalSelected === 0} className="rd-btn rd-btn-primary rd-pt-hwp">
                                 {making ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 변형문제 한글파일 받기 ({totalSelected})</>}
+                            </button>
+                            <button onClick={makePdf} disabled={!!pdfStatus || totalSelected === 0} className="rd-btn rd-btn-gray rd-pt-hwp">
+                                {pdfStatus ? <><Loader2 size={16} className="animate-spin" /> {pdfStatus}</> : <><FileText size={16} /> PDF로 받기</>}
                             </button>
                         </div>
                     </div>
