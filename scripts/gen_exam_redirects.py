@@ -115,6 +115,15 @@ if problems:
     sys.exit(1)
 print('  무결성: 자기지시·체인·루프·회차불일치·타깃오류 모두 0건 ✅')
 
+# [10/25] 합쳐서 지운 중복 회차의 자료 id → 남긴 대표 id (scratch_merge_dup_subject.py 가 쓴다).
+#   지운 행은 DB 에 없으니 위 build 가 못 만든다. 남긴 쪽이 대표(PDF·해설)로 살아 있는 것만 싣는다.
+_MERGED = os.path.join(ROOT, 'scripts', 'exam_redirects_merged.json')
+if os.path.exists(_MERGED):
+    _byid = {x['id']: x for x in rows}
+    for s, t in json.load(open(_MERGED, encoding='utf-8')).items():
+        t = mapping.get(t, t)
+        if s not in _byid and t in _byid and _byid[t]['file_type'] == 'PDF' and _byid[t]['content_type'] == '해설':
+            mapping[s] = t
 new = json.dumps(mapping, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
 old = open(OUT, encoding='utf-8').read() if os.path.exists(OUT) else ''
 
