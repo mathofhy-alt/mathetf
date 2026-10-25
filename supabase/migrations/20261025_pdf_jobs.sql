@@ -20,3 +20,6 @@ create index if not exists pdf_jobs_pending on public.pdf_jobs (created_at) wher
 create index if not exists pdf_jobs_user on public.pdf_jobs (user_id, created_at desc);
 alter table public.pdf_jobs enable row level security;   -- 정책 없음 = service_role 만
 revoke all on public.pdf_jobs from anon, authenticated;
+
+-- [10/25 대표] 무료 회원 PDF 에만 로고(오른쪽 위 수학ETF · 아래 가운데 mathetf.com). 이용권·운영자는 false
+alter table public.pdf_jobs add column if not exists stamp boolean not null default true;

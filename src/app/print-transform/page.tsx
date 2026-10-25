@@ -87,7 +87,7 @@ export default async function PrintTransformPage() {
                             <p className="rd-tl-step-t">3. 같은 유형 기출을 받습니다</p>
                             <p>
                                 잘라낸 문제의 단원과 유형을 읽어, 전국 학교 기출에서 같은 유형의 문제를 찾아 보여 줍니다.
-                                마음에 드는 것을 골라 담으면 문제와 해설이 함께 담긴 한글(HWP) 파일로 받을 수 있습니다.
+                                마음에 드는 것을 골라 담으면 문제와 해설이 함께 담긴 PDF로 받을 수 있습니다(이용권 회원은 한글 파일도).
                             </p>
                         </li>
                     </ol>

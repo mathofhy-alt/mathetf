@@ -138,8 +138,13 @@ export default function PredictClient({ richSchools }: Props) {
         setHwpLoading(false);
     };
 
-    // [10/25] PDF 받기 — 한글 없는 학생·학부모용. 서버(아이윈브 한글)가 만들어 40초 안팎
+    // [10/25] PDF 받기 — 서버(아이윈브 한글)가 만들어 30~40초. 대표: 무료 회원은 PDF(로고)만, 이용권 회원은 한글·PDF 중 골라 받기
     const [pdfStatus, setPdfStatus] = useState('');
+    const [hasPass, setHasPass] = useState(false);
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin))).catch(() => {});
+    }, [isLoggedIn]);
     const getPdf = async () => {
         if (!results || results.length === 0 || pdfStatus) return;
         setPdfStatus('PDF 만드는 중…');
@@ -300,7 +305,7 @@ export default function PredictClient({ richSchools }: Props) {
                                                 {locked ? (
                                                     <div className="rd-tl-locked">
                                                         <Lock size={20} />
-                                                        <p>가입하면 전체 문제와 한글(HWP) 파일을 무료로 받아요</p>
+                                                        <p>가입하면 전체 문제와 해설을 PDF로 무료로 받아요</p>
                                                     </div>
                                                 ) : !ready ? (
                                                     /* 문제 모양 스켈레톤 — 지문·수식·보기 자리 (스피너보다 체감 빠름) */
@@ -327,22 +332,22 @@ export default function PredictClient({ richSchools }: Props) {
                                 {isLoggedIn ? (
                                     <>
                                         <p className="rd-tl-cta-title">예상문제 세트 다운로드</p>
-                                        <p className="rd-tl-cta-text"><strong>문제 + 해설</strong> 한글파일 회원 무료</p>
-                                        <button onClick={downloadHwp} disabled={hwpLoading}
-                                            className="rd-btn rd-btn-primary rd-tl-cta-btn">
-                                            {hwpLoading ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글(HWP) 다운로드</>}
-                                        </button>
+                                        <p className="rd-tl-cta-text"><strong>문제 + 해설</strong> {hasPass ? '한글·PDF 중 골라 받기' : 'PDF 회원 무료'}</p>
                                         <button onClick={getPdf} disabled={!!pdfStatus}
-                                            className="rd-btn rd-btn-gray rd-tl-cta-btn">
+                                            className={`rd-btn ${hasPass ? 'rd-btn-gray' : 'rd-btn-primary'} rd-tl-cta-btn`}>
                                             {pdfStatus ? <><Loader2 size={16} className="animate-spin" /> {pdfStatus}</> : <><FileText size={16} /> PDF 다운로드</>}
                                         </button>
-                                        <p className="rd-tl-cta-note">문제+해설 포함, 회원 무료</p>
-                                        <p className="rd-tl-cta-note">한글 프로그램이 없으면 PDF로 받으세요 — 휴대폰에서도 바로 열려요(만드는 데 30초 안팎)</p>
+                                        {hasPass && <button onClick={downloadHwp} disabled={hwpLoading}
+                                            className="rd-btn rd-btn-primary rd-tl-cta-btn">
+                                            {hwpLoading ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글(HWP) 다운로드</>}
+                                        </button>}
+                                        <p className="rd-tl-cta-note">문제+해설 포함 · PDF는 휴대폰에서도 바로 열려요(만드는 데 30초 안팎)</p>
+                                        {!hasPass && <p className="rd-tl-cta-note">고쳐 쓸 수 있는 한글(HWP) 파일은 <Link href="/mypage?pass=1">이용권 회원</Link> 전용이에요</p>}
                                     </>
                                 ) : (
                                     <>
-                                        <p className="rd-tl-cta-title">가입하면 <span className="rd-tl-u">문제 + 해설</span> 한글파일 무료</p>
-                                        <p className="rd-tl-cta-text">회원가입만 하면 예상문제 전체(나머지 {Math.max(0, results.length - freeCount)}문항 포함)를 문제·해설까지 한글파일로 받아요.</p>
+                                        <p className="rd-tl-cta-title">가입하면 <span className="rd-tl-u">문제 + 해설</span> PDF 무료</p>
+                                        <p className="rd-tl-cta-text">회원가입만 하면 예상문제 전체(나머지 {Math.max(0, results.length - freeCount)}문항 포함)를 문제·해설까지 PDF로 받아요.</p>
                                         <Link href="/signup" className="rd-btn rd-btn-primary rd-tl-cta-btn">무료로 가입하고 전체 받기</Link>
                                     </>
                                 )}

@@ -180,8 +180,13 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
         setMaking(false);
     };
 
-    // [10/25] 채택한 변형문제 → PDF (서버 한글로 변환)
+    // [10/25] 채택한 변형문제 → PDF (서버 한글로 변환). 대표: 무료 회원은 PDF(로고)만, 이용권 회원은 한글·PDF 중 골라 받기
     const [pdfStatus, setPdfStatus] = useState('');
+    const [hasPass, setHasPass] = useState(false);
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin))).catch(() => {});
+    }, [isLoggedIn]);
     const makePdf = async () => {
         const ids = crops.flatMap((c) => c.selected);
         if (ids.length === 0 || pdfStatus) return;
@@ -357,11 +362,11 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
 
                         <div className="rd-pt-bar">
                             <p><b>{totalSelected}개</b> 골랐어요{notYet.length ? <span> · {notYet.join(', ')}번은 아직</span> : null}</p>
-                            <button onClick={makeHwp} disabled={making || totalSelected === 0} className="rd-btn rd-btn-primary rd-pt-hwp">
-                                {making ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 변형문제 한글파일 받기 ({totalSelected})</>}
-                            </button>
-                            <button onClick={makePdf} disabled={!!pdfStatus || totalSelected === 0} className="rd-btn rd-btn-gray rd-pt-hwp">
-                                {pdfStatus ? <><Loader2 size={16} className="animate-spin" /> {pdfStatus}</> : <><FileText size={16} /> PDF로 받기</>}
+                            {hasPass && <button onClick={makeHwp} disabled={making || totalSelected === 0} className="rd-btn rd-btn-gray rd-pt-hwp">
+                                {making ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글파일 ({totalSelected})</>}
+                            </button>}
+                            <button onClick={makePdf} disabled={!!pdfStatus || totalSelected === 0} className="rd-btn rd-btn-primary rd-pt-hwp">
+                                {pdfStatus ? <><Loader2 size={16} className="animate-spin" /> {pdfStatus}</> : <><FileText size={16} /> 변형문제 PDF 받기 ({totalSelected})</>}
                             </button>
                         </div>
                     </div>
