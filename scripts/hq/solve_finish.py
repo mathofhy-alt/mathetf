@@ -54,3 +54,4 @@ try:
     say('✅ 구움' if ok else '⚠ 굽기 실패', (ok[0] + fig_warn) if ok else (b.stdout or '')[-300:])
 finally:
     os.rmdir(LOCK)
+if not ok: sys.exit(3)   # [10/25] 굽기 실패를 rc0 으로 끝내 부르는 쪽이 성공으로 알았다
