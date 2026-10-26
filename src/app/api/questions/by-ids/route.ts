@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { memberOnly } from '@/lib/requireMember';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { canSeeSolutions, trimQuestionImages } from '@/lib/questions/imageAccess';
 import { stripPrivate } from '@/lib/questions/privateDb';
@@ -37,6 +38,7 @@ function rateLimited(ip: string): boolean {
 const SELECT_COLS = 'id, question_number, subject, grade, school, year, semester, difficulty, key_concepts, unit, work_status, source_db_id, question_type, question_images(question_id, data, id, original_bin_id, format)';
 
 export async function POST(req: NextRequest) {
+    const denied = await memberOnly(); if (denied) return denied;   // [10/26] 비로그인 차단
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
     if (rateLimited(ip)) {
         return NextResponse.json({ success: false, error: '잠시 후 다시 시도해주세요. (요청이 너무 많습니다)' }, { status: 429 });

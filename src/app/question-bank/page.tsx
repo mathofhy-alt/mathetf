@@ -73,8 +73,9 @@ export default function QuestionBankPage() {
     const [loading, setLoading] = useState(true);
     const [runTeacherTour, setRunTeacherTour] = useState(false);
 
-    // 로그인 전후의 같은 브라우저 세션을 연결한다.
-    useEffect(() => { logQb('qb_enter'); }, []);
+    // [10/26 대표] 비로그인은 시험지 만들기를 아예 못 쓴다 — 10/25 로봇이 하루 600번 들어와 문제 그림을 받아 갔다.
+    //   진입(qb_enter)은 로그인한 사람만 센다(로봇이 지표를 부풀리던 것). 비로그인은 qb_login_wall 로 따로.
+    const [authChecked, setAuthChecked] = useState(false);
 
     // ?tour=1 강제 진입 또는 이 페이지 첫 방문이면 투어 시작 (1회)
     useEffect(() => {
@@ -391,6 +392,8 @@ export default function QuestionBankPage() {
         // Check auth
         supabase.auth.getUser().then(({ data }) => {
             setUser(data.user);
+            setAuthChecked(true);
+            logQb(data.user ? 'qb_enter' : 'qb_login_wall');
             if (data.user) void loadPass();
             if (data.user) {
                 // [10/7] 예전엔 여기서 /api/storage/sync 로 전체 자료(약 2,200개)를 회원마다 user_items 에 복사했다.
@@ -1311,6 +1314,21 @@ export default function QuestionBankPage() {
         const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
         setMousePos({ x, y });
     }, []);
+
+    if (authChecked && !user) {
+        return (
+            <main className="rd rd-tl-main">
+                <div className="rd-wrap">
+                    <div className="rd-tl-gate">
+                        <h2>시험지 만들기는 회원 전용이에요</h2>
+                        <p>로그인하면 기출 문항을 골라 나만의 시험지를 만들 수 있어요. 회원가입은 무료입니다.</p>
+                        <a href={questionBankLoginUrl()} className="rd-btn rd-btn-primary">로그인하고 시작하기</a>
+                        <a href="/signup" className="rd-btn rd-btn-gray">무료로 가입하기</a>
+                    </div>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <>

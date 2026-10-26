@@ -21,7 +21,9 @@ export async function POST(req: NextRequest) {
     let isLoggedIn = false;
     try { const { data: { user } } = await sb.auth.getUser(); isLoggedIn = !!user; } catch { }
 
-    ids = isLoggedIn ? ids.slice(0, 40) : ids.slice(0, 3);
+    // [10/26 대표] 비로그인 맛보기(3문항) 폐지 — 비로그인은 아무것도 못 받는다
+    if (!isLoggedIn) return NextResponse.json({ error: '로그인이 필요합니다.', content: {}, locked: true }, { status: 401 });
+    ids = ids.slice(0, 40);
     if (ids.length === 0) return NextResponse.json({ content: {}, locked: !isLoggedIn });
 
     try {
