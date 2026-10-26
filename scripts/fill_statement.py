@@ -25,6 +25,17 @@ SCRIPT_RE = re.compile(r'<SCRIPT>.*?</SCRIPT>', re.S | re.I)
 PAGE = 200
 
 
+NUM_RE = re.compile(r'\d+(?:\.\d+)?')
+
+
+def stem_nums(xml):
+    """[10/26] 발문(해설 뺀) 글+수식의 숫자들 — 프린트변형 원본 찾기에서 글이 거의 없는 계산 문제를 대조한다"""
+    x = ENDNOTE_RE.sub('', xml or '')
+    x = re.sub(r'<SCRIPT>(.*?)</SCRIPT>', lambda m: ' ' + html.unescape(m.group(1)) + ' ', x, flags=re.S | re.I)
+    x = html.unescape(re.sub(r'<[^>]+>', ' ', x))
+    return ' '.join(NUM_RE.findall(x))
+
+
 def statement(xml):
     x = SCRIPT_RE.sub(' ', ENDNOTE_RE.sub('', xml or ''))
     return re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', ' ', x))).strip()
@@ -42,9 +53,16 @@ def call(method, path, **kw):
 
 
 def save(rows):
-    out = [{'question_id': q['id'], 'text': statement(q['content_xml']) or (q.get('plain_text') or '')} for q in rows]
+    out = [{'question_id': q['id'], 'text': statement(q['content_xml']) or (q.get('plain_text') or ''), 'nums': stem_nums(q['content_xml'])} for q in rows]
     r = call('POST', '/rest/v1/question_statement?on_conflict=question_id', json=out,
              headers={'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'})
+    if r.status_code >= 300 and '23505' in r.text:
+        # [10/26] 덮어쓰기인데도 중복 키가 한 번 났다(35,016개째) — 그 묶음만 한 줄씩 넣는다
+        for o in out:
+            call('DELETE', '/rest/v1/question_statement', params={'question_id': f'eq.{o["question_id"]}'})
+            rr = call('POST', '/rest/v1/question_statement', json=o, headers={'Content-Type': 'application/json', 'Prefer': 'return=minimal'})
+            if rr.status_code >= 300: raise RuntimeError(rr.text[:300])
+        return len(out)
     if r.status_code >= 300: raise RuntimeError(r.text[:300])
     return len(out)
 
@@ -76,7 +94,8 @@ elif '--src' in sys.argv:
         n += by_ids(ids)
     print(f'완료: 성공 {n} / 실패 0')
 else:
-    have = have_ids(); print('이미 있음', len(have))
+    # --all: 이미 있는 것도 다시(칸을 새로 더했을 때, 10/26 nums)
+    have = set() if '--all' in sys.argv else have_ids(); print('이미 있음', len(have))
     last, n, t0 = '00000000-0000-0000-0000-000000000000', 0, time.time()
     while True:
         # id 만 먼저 훑고, 빠진 것만 content_xml 을 읽는다
