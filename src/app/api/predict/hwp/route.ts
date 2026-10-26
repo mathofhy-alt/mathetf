@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { stampMemberId } from '@/lib/hml-v2/member-stamp';
 import crypto from 'crypto';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest) {
         const source = body?.source === 'print' ? 'print' : 'predict';
         if (ids.length === 0) return NextResponse.json({ error: '문항이 없습니다.' }, { status: 400 });
 
-        const hmlContent = await buildPredictHml(ids, title);
+        // [10/26 대표] 시험지 만들기처럼 받은 회원 아이디를 파일 안(그림 설명·문서 정보)에 안 보이게 넣는다 — 유출되면 누가 받았는지 안다
+        const hmlContent = stampMemberId(await buildPredictHml(ids, title), user.email ?? undefined);
 
         // 사용 로그 (실패해도 다운로드엔 영향 없음)
         // set_hash: 같은 문항 세트를 반복 다운로드하는지 판별용 (반복 다운로드 조사)
