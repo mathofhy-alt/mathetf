@@ -51,7 +51,7 @@ export default function CommunityBoard({kind}:{kind:'notice'|'suggestion'}){
       <span className={notice?'rd-bd-tag is-accent':'rd-bd-tag'}>{notice?'공지':<><Lock size={12} aria-hidden/>비밀글</>}</span>
       {!notice&&item.answered&&<span className="rd-bd-tag is-accent" style={{marginLeft:6}}>답변 완료</span>}
       <h3>{item.title}</h3>
-      <p className="rd-bd-meta"><span>{date(item.created_at)}</span><span>조회 {item.views||0}</span>{!notice&&<span>{item.author_nickname||'익명'}</span>}</p>
+      <p className="rd-bd-meta"><span>{date(item.created_at)}</span>{!notice&&<span>조회 {item.views||0}</span>}{!notice&&<span>{item.author_nickname||'익명'}</span>}</p>
      </div>
      <ChevronRight size={20} aria-hidden/>
     </Link></li>)}</ul>}

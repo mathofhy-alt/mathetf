@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { ArrowLeft, Clock, Eye } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { ArrowLeft, Clock } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { User } from '@supabase/supabase-js';
 
@@ -22,7 +22,17 @@ export default function NoticeDetailPage() {
 
     const [notice, setNotice] = useState<Notice | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const router = useRouter();
     const supabase = createClient();
+
+    // [10/27 대표] 관리자만 수정·삭제
+    const remove = async () => {
+        if (!confirm('이 공지를 삭제할까요? 되돌릴 수 없습니다.')) return;
+        const { error } = await supabase.from('notices').delete().eq('id', id);
+        if (error) { alert('삭제하지 못했습니다: ' + error.message); return; }
+        router.push('/notice');
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -35,14 +45,10 @@ export default function NoticeDetailPage() {
                 .eq('id', id)
                 .single();
 
-            if (data) {
-                setNotice(data);
-
-                // 2. Increment Views (Simple implementation)
-                await supabase.from('notices')
-                    .update({ views: (data.views || 0) + 1 })
-                    .eq('id', id);
-            }
+            if (data) setNotice(data);
+            // [10/27 대표] 조회수는 안 보이게 — 올리지도 않는다
+            const { data: { user } } = await supabase.auth.getUser();
+            setIsAdmin(user?.email === 'mathofhy@naver.com');
             setLoading(false);
         };
 
@@ -67,7 +73,6 @@ export default function NoticeDetailPage() {
                 <h1 className="rd-bd-title">{notice.title}</h1>
                 <p className="rd-bd-meta">
                     <span><Clock size={15} aria-hidden />{new Date(notice.created_at).toLocaleDateString()}</span>
-                    <span><Eye size={15} aria-hidden />조회 {notice.views + 1}</span>
                 </p>
 
                 <div className="rd-bd-body">
@@ -78,6 +83,10 @@ export default function NoticeDetailPage() {
                     <Link href="/notice" className="rd-btn rd-btn-gray">
                         목록으로
                     </Link>
+                    {isAdmin && <>
+                        <Link href={`/notice/write?edit=${notice.id}`} className="rd-btn rd-btn-tint">수정</Link>
+                        <button type="button" onClick={remove} className="rd-btn rd-btn-gray">삭제</button>
+                    </>}
                 </div>
             </article>
         </div>
