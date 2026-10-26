@@ -7,6 +7,13 @@
 export async function downloadPdf(ids: string[], title: string, source: 'predict' | 'print', onStatus?: (text: string) => void): Promise<void> {
     const r = await fetch('/api/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, title, source }) });
     const j = await r.json().catch(() => ({}));
+    // [10/26] 무료 회원 하루 한도(5번·100문항)를 넘으면 안내하고 이용권 화면으로 보낼지 묻는다
+    if (j.needPass) {
+        if (window.confirm(`${j.error}
+
+이용권 안내를 볼까요?`)) window.location.href = '/mypage?pass=1';
+        return;
+    }
     if (!r.ok && !(r.status === 429 && j.id)) throw new Error(j.error || 'PDF 요청 실패');
     const id: string = j.id;
     const started = Date.now();
