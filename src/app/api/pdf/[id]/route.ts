@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { stampPdfMember } from '@/lib/pdfMemberStamp';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,23 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     if (!job || job.user_id !== user.id) return NextResponse.json({ error: '찾을 수 없습니다.' }, { status: 404 });
     if (job.status === 'done') {
         const name = `${(job.title || '문제').replace(/[\\/<>:"|?*]/g, '_').trim() || '문제'}.pdf`;
+        // [10/26 대표] 받은 회원 아이디를 넣은 사본(<id>.m.pdf)을 처음 받을 때 한 번 만들고, 그다음부터는 그 사본을 준다
+        const marked = `${job.id}.m.pdf`;
+        const has = await admin.storage.from('pdf-jobs').createSignedUrl(marked, 120, { download: name });
+        if (has.data?.signedUrl) return NextResponse.json({ status: 'done', url: has.data.signedUrl });
+        try {
+            const { data: raw } = await admin.storage.from('pdf-jobs').download(`${job.id}.pdf`);
+            if (raw && user.email) {
+                const out = await stampPdfMember(new Uint8Array(await raw.arrayBuffer()), user.email);
+                const up = await admin.storage.from('pdf-jobs').upload(marked, Buffer.from(out), { contentType: 'application/pdf', upsert: true });
+                if (!up.error) {
+                    const s2 = await admin.storage.from('pdf-jobs').createSignedUrl(marked, 120, { download: name });
+                    if (s2.data?.signedUrl) return NextResponse.json({ status: 'done', url: s2.data.signedUrl });
+                }
+            }
+        } catch (e) {
+            console.error('[pdf] 회원 표시 실패(원본으로 줌):', String(e).slice(0, 120));
+        }
         const { data, error } = await admin.storage.from('pdf-jobs').createSignedUrl(`${job.id}.pdf`, 120, { download: name });
         if (error || !data) return NextResponse.json({ status: 'error', error: 'PDF 파일을 찾지 못했습니다.' });
         return NextResponse.json({ status: 'done', url: data.signedUrl });
