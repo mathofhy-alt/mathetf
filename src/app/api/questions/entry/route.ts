@@ -1,4 +1,5 @@
 import mockLinks from '@/lib/questions/verified-mock-links.json';
+import { memberOnly } from '@/lib/requireMember';
 import {NextRequest,NextResponse} from 'next/server';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
@@ -9,6 +10,7 @@ import {fetchMockExamBySlug} from '@/lib/mock-exams';
 import {buildBlueprintExam} from '@/lib/questions/blueprint';
 export const dynamic='force-dynamic';
 export async function GET(req:NextRequest){
+    const denied = await memberOnly(); if (denied) return denied;   // [10/26] 비로그인 차단
  try{
  const p=req.nextUrl.searchParams,sb=createAdminClient();
  const catalog=await availableCatalog();let selected=catalog.filter(d=>!d.availability) as any[];

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { memberOnly } from '@/lib/requireMember';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,7 @@ const ALTERNATES = 8;
 const COLS = 'id, unit, difficulty, key_concepts, subject, source_db_id';
 
 export async function POST(req: NextRequest) {
+    const denied = await memberOnly(); if (denied) return denied;   // [10/26] 비로그인 차단
     let body: any;
     try { body = await req.json(); } catch { return NextResponse.json({ success: false, error: 'Invalid body' }, { status: 400 }); }
     const id = typeof body?.id === 'string' ? body.id : '';

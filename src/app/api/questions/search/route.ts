@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { memberOnly } from '@/lib/requireMember';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { isWholeCatalog, resolveRequestScope, wholeCatalogIneligible } from '@/lib/questions/fastScope';
 import { typeDefinitionKey, type TypeDefinitions } from '@/lib/questions/type-groups';
@@ -72,6 +73,7 @@ function rateLimited(ip: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+    const denied = await memberOnly(); if (denied) return denied;   // [10/26] 비로그인 차단
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
     if (rateLimited(ip)) {
         return NextResponse.json(

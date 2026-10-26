@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { memberOnly } from '@/lib/requireMember';
 import { stripPrivate } from '@/lib/questions/privateDb';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { canSeeSolutions, trimQuestionImages } from '@/lib/questions/imageAccess';
@@ -33,6 +34,7 @@ function rateLimited(ip: string): boolean {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: NextRequest) {
+    const denied = await memberOnly(); if (denied) return denied;   // [10/26] 비로그인 차단
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
     if (rateLimited(ip)) {
         return NextResponse.json(

@@ -22,8 +22,9 @@ export default function PredictClient({ richSchools }: Props) {
     // [PERF] 로그인 여부는 클라이언트에서 확인 (서버가 쿠키를 안 읽어야 페이지가 ISR 캐시됨)
     // 생성 버튼 클릭 시점에만 쓰이므로 마운트 직후 비동기 확인으로 충분
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [authChecked, setAuthChecked] = useState(false);   // [10/26] 비로그인은 아예 못 쓴다(맛보기 폐지)
     useEffect(() => {
-        createClient().auth.getUser().then(({ data: { user } }) => setIsLoggedIn(!!user)).catch(() => { });
+        createClient().auth.getUser().then(({ data: { user } }) => setIsLoggedIn(!!user)).catch(() => { }).finally(() => setAuthChecked(true));
     }, []);
     const [school, setSchool] = useState('');
     const [showSug, setShowSug] = useState(false);
@@ -156,6 +157,21 @@ export default function PredictClient({ richSchools }: Props) {
 
     const canGen = !!school && selectedLabels.length > 0 && !genLoading;
 
+    // [10/26 대표] 비로그인은 예상문제를 아예 못 쓴다 — 10/25 로봇이 문제를 받아 간 뒤 "비로그인은 아무것도 못 하게"
+    if (authChecked && !isLoggedIn) {
+        return (
+            <main className="rd-tl-main">
+                <div className="rd-wrap">
+                    <div className="rd-tl-gate">
+                        <h2>학교별 예상문제 만들기</h2>
+                        <p>회원가입 후 무료로 이용할 수 있어요.</p>
+                        <Link href="/login?next=%2Fpredict" className="rd-btn rd-btn-primary">로그인하고 시작하기</Link>
+                        <Link href="/signup" className="rd-btn rd-btn-gray">무료로 가입하기</Link>
+                    </div>
+                </div>
+            </main>
+        );
+    }
     return (
         <main className="rd-tl-main">
             <section className="rd-wrap rd-tl-intro">

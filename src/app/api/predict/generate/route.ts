@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { memberOnly } from '@/lib/requireMember';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
 /**
@@ -18,6 +19,7 @@ function parseEmb(e: any): number[] | null {
 }
 
 export async function POST(req: NextRequest) {
+    const denied = await memberOnly(); if (denied) return denied;   // [10/26] 비로그인 차단
     try {
         const { school, grade, semester, units, minDifficulty, maxDifficulty, count } = await req.json();
         if (!Array.isArray(units) || units.length === 0) {
