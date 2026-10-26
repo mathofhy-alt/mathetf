@@ -281,8 +281,10 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                 const active = crops.find((c) => c.id === activeId) || crops[0];
                 const aIdx = active ? crops.indexOf(active) : -1;
                 const diff = (q: any) => Number(q.difficulty) || 0;
-                const cands = active?.candidates ? [...active.candidates].sort((a: any, b: any) =>
-                    sortBy === 'easy' ? diff(a) - diff(b) : sortBy === 'hard' ? diff(b) - diff(a) : (b.similarity || 0) - (a.similarity || 0)) : [];
+                // [10/26] 원본 문항·같은 틀 기출(숫자 변형)은 어떤 정렬에서도 맨 앞 — 학교 프린트의 학력평가 문제는 원본부터(회원 건의)
+                const pin = (q: any) => q.match === 'original' ? 0 : q.match === 'sameFrame' ? 1 : 2;
+                const cands = active?.candidates ? [...active.candidates].sort((a: any, b: any) => pin(a) - pin(b) ||
+                    (sortBy === 'easy' ? diff(a) - diff(b) : sortBy === 'hard' ? diff(b) - diff(a) : (b.similarity || 0) - (a.similarity || 0))) : [];
                 const notYet = crops.map((c, i) => c.selected.length === 0 ? i + 1 : 0).filter(Boolean);
                 return (
                     <div className="rd-pt-pick" id="pt-pick">
@@ -345,6 +347,8 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                                                                 <span>{on && <Check size={14} />}</span>
                                                             </button>
                                                             {on && <span className="rd-pt-card-on">고름</span>}
+                                                            {q.match === 'original' && <span className="rd-pt-match is-orig">원본 문항</span>}
+                                                            {q.match === 'sameFrame' && <span className="rd-pt-match">같은 틀 기출 · 숫자 변형</span>}
                                                             <span className="rd-pt-card-meta">{q.unit} · 난이도 {q.difficulty}{q.similarity ? ` · ${Math.round(q.similarity * 100)}%` : ''}</span>
                                                         </div>
                                                         <div className="rd-pt-card-body">

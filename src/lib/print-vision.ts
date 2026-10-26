@@ -5,6 +5,7 @@ const ALL_UNITS = Array.from(new Set(Object.values(SUBJECT_UNITS).flat()));
 
 export interface CropReading {
     text: string;        // 문제 전사/요약 (임베딩용)
+    verbatim: string;    // 문제 원문 그대로(숫자·선지 포함) — 원본 문항 찾기용 (10/26)
     unit: string | null; // canonical 단원
     concepts: string[];  // 개념 태그
     difficulty: number | null;  // 1~10. 유사문제를 같은 난이도대에서 찾기 위함
@@ -21,6 +22,7 @@ export async function readCrop(imageBase64: string, mimeType = 'image/png'): Pro
     const sys = `너는 한국 고등학교 수학 문제 이미지를 분석하는 전문가다. 주어진 이미지의 수학 문제를 보고 아래 JSON 형식으로만 답하라.
 {
   "text": "문제의 핵심 내용을 한 문단으로 전사/요약 (수식은 자연어로 풀어 써라. 예: x의 제곱 더하기 ...). 유사문제 검색에 쓰일 것이므로 어떤 개념·유형인지 잘 드러나게.",
+  "verbatim": "문제 원문을 빠짐없이 그대로. 숫자·문자·연산은 사진에 보이는 그대로(예: x^2+3x-4=0, f(x)=2^(x-1), 1/2). 선지 ①~⑤도 포함.",
   "unit": "아래 목록 중 가장 적합한 단원 하나",
   "concepts": ["핵심 개념/유형 2~4개"],
   "difficulty": 난이도 1~10 정수
@@ -63,6 +65,7 @@ unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
     if (diff !== null && diff > 1) diff -= 1;
     return {
         text: String(p.text || ''),
+        verbatim: String(p.verbatim || ''),
         unit: unit && ALL_UNITS.includes(unit) ? unit : (unit || null),
         concepts: Array.isArray(p.concepts) ? p.concepts.map((c: any) => String(c)) : [],
         difficulty: diff,

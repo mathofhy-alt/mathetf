@@ -4,11 +4,28 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import { readCrop } from '@/lib/print-vision';
 import { generateEmbedding } from '@/lib/embeddings';
 import { unitVariants, SUBJECT_UNITS } from '@/lib/curriculum';
+import { findOriginals, screen, stemOf, type OriginalHit } from '@/lib/print-original';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const ALL_VARIANTS = Array.from(new Set(Object.values(SUBJECT_UNITS).flat().flatMap((u) => unitVariants(u))));
+
+// 원본 찾기용 단원 발문 — 가장 큰 단원도 1MB·0.3초지만 같은 단원을 잇달아 자르므로 30분 담아 둔다(인스턴스 메모리)
+const STMT_TTL = 30 * 60 * 1000;
+const stmtCache: Map<string, { at: number; rows: [string, string, string?][] }> = (globalThis as any).__printStmt || new Map();
+(globalThis as any).__printStmt = stmtCache;
+async function stmtPool(admin: ReturnType<typeof createAdminClient>, units: string[]): Promise<[string, string, string?][]> {
+    const key = [...units].sort().join('|');
+    const hit = stmtCache.get(key);
+    if (hit && Date.now() - hit.at < STMT_TTL) return hit.rows;
+    const { data, error } = await admin.rpc('print_stmt_pool', { p_units: units });
+    if (error) throw error;
+    const rows = (Array.isArray(data) ? data : []) as [string, string, string?][];
+    if (stmtCache.size > 40) stmtCache.clear();
+    stmtCache.set(key, { at: Date.now(), rows });
+    return rows;
+}
 
 // 단원 → 과목 역인덱스. 크롭에서 읽은 단원으로 과목을 되짚어 쿼리 텍스트에 넣는다.
 const UNIT_TO_SUBJECT: Record<string, string> = {};
@@ -66,23 +83,51 @@ export async function POST(req: NextRequest) {
         const minDiff = d ? Math.max(1, d - 2) : 1;
         const maxDiff = d ? Math.min(10, d + 2) : 10;
 
-        const search = async (targetUnits: string[]) => {
+        const search = async (targetUnits: string[], lo = minDiff, hi = maxDiff, count = want * 3) => {
             const { data, error } = await admin.rpc('match_predict', {
                 query_embedding: vecLit,
                 target_units: targetUnits,
-                min_diff: minDiff,
-                max_diff: maxDiff,
+                min_diff: lo,
+                max_diff: hi,
                 exclude_school: null,
-                match_count: want * 3,
+                match_count: count,
             });
             if (error) throw error;
             return data || [];
         };
+        const units = reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS;
 
-        // ⚠ '전체 단원' 폴백은 넣었다가 걷어냈다(8/22).
-        //   결과가 부족할 때마다 전 단원에서 아무거나 끌어와 '변형문제라 할 수 없는 것들'을
-        //   채워 넣었다(사용자 제보). 시험지출제(잘 동작하는 쪽)도 unit 을 엄격히 맞춘다.
-        let data = await search(reading.unit ? unitVariants(reading.unit) : ALL_VARIANTS);
+        // [10/26 대표·회원 건의] 학교 프린트의 학력평가 문제가 DB 에 그대로 있으면 그 원본(풀이 포함)을 맨 앞에,
+        //   숫자만 바꾼 같은 틀 기출을 그다음에 준다. 유사문제 검색과 동시에 돌리고, 실패해도 유사문제는 그대로 간다.
+        //   ⚠ 처음엔 임베딩 가까운 40개만 대조했는데 원본이 그 안에 못 들어와 10개 중 3개만 찾았다(실측) →
+        //     단원 전체 발문(question_statement)을 글자로 먼저 거르고, 상위 10개만 해설 뺀 발문으로 숫자까지 대조한다.
+        const origTask = (async (): Promise<{ originals: OriginalHit[]; origRows: any[] }> => {
+            try {
+                if (!reading.verbatim) return { originals: [], origRows: [] };
+                const tryUnits = async (us: string[]) => {
+                    const top = screen(reading.verbatim, await stmtPool(admin, us), 10);
+                    if (!top.length) return { originals: [] as OriginalHit[], origRows: [] as any[] };
+                    const { data: xs } = await admin.from('questions')
+                        .select('id, unit, difficulty, subject, grade, school, year, semester, question_number, source_db_id, key_concepts, content_xml')
+                        .in('id', top).eq('work_status', 'sorted');
+                    const rows = (xs || []) as any[];
+                    return { originals: findOriginals(reading.verbatim, rows.map((x) => ({ id: x.id, stem: stemOf(x.content_xml || '') }))), origRows: rows.map(({ content_xml, ...r }) => r) };
+                };
+                const first = await tryUnits(units);
+                if (first.originals.some((o) => o.kind === 'original') || !reading.unit) return first;
+                // 크롭 단원을 잘못 읽으면(실측 10개 중 2개: 여러가지부등식→이차함수, 지수함수→로그) 원본을 못 찾는다 → 같은 과목 다른 단원
+                const subj = UNIT_TO_SUBJECT[reading.unit];
+                const sib = ((subj ? (SUBJECT_UNITS as Record<string, string[]>)[subj] : []) || []).flatMap((u) => unitVariants(u)).filter((u) => !units.includes(u));
+                if (!sib.length) return first;
+                const second = await tryUnits(sib);
+                return second.originals.some((o) => o.kind === 'original') ? second : first;
+            } catch (e) {
+                console.error('[print/match] 원본 찾기 실패(무시):', String(e).slice(0, 120));
+                return { originals: [], origRows: [] };
+            }
+        })();
+
+        let data = await search(units);
 
         // 결과가 0건이면 '같은 과목의 다른 단원'까지만 넓힌다 — 전 과목으로 넓히면
         // 결이 안 맞는 문제가 섞인다(그래서 전체 폴백을 걷어냈다).
@@ -103,14 +148,18 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 출처 편중 방지 → want 개
+        // 원본·같은 틀을 맨 앞에(출처 편중 제한 밖) → 그 뒤에 유사문제 want 개(출처 편중 방지)
+        const { originals, origRows } = await origTask;
+        const byId = new Map(origRows.map((r: any) => [r.id, r]));
+        const picked: any[] = originals.filter((o) => byId.has(o.id)).map((o) => ({ ...byId.get(o.id), match: o.kind }));
+        const pinned = new Set(picked.map((q) => q.id));
         const perSource: Record<string, number> = {};
-        const picked: any[] = [];
         for (const q of (data || [])) {
+            if (pinned.has(q.id)) continue;
             const s = q.source_db_id || '?';
             if ((perSource[s] || 0) >= 2) continue;
             picked.push(q); perSource[s] = (perSource[s] || 0) + 1;
-            if (picked.length >= want) break;
+            if (picked.length >= want + pinned.size) break;
         }
 
         return NextResponse.json({
