@@ -50,6 +50,9 @@ export default function BatchReport({ schools, supabase, top, notify, notifySect
     const [taken, setTaken] = useState<Record<string, Taken>>({});
     const [busy, setBusy] = useState('');
     const [error, setError] = useState('');
+    // [10/27] 제보 전 확인 2가지 — 10/24 서버에서 필수로 바꿀 때 여러 시험지 화면엔 안 넣어서 묶음 제보가 전부 막혔다(회원 문의)
+    const [rightsSource, setRightsSource] = useState(false);
+    const [rightsTakedown, setRightsTakedown] = useState(false);
     const pickRef = useRef<HTMLInputElement>(null);
     const REGION_ORDER = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
     const regions = useMemo(() => Array.from(new Set(schools.map(x => x.region))).sort((a, b) => (REGION_ORDER.indexOf(a) + 1 || 99) - (REGION_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b, 'ko')), [schools]);
@@ -139,6 +142,7 @@ export default function BatchReport({ schools, supabase, top, notify, notifySect
     const submit = async () => {
         setError('');
         if (!ready.length) return setError('보낼 수 있는 시험지가 없어요. 빨간 칸을 채워 주세요.');
+        if (!rightsSource || !rightsTakedown) return setError('아래 확인 두 가지에 체크해 주세요.');
         try {
             const files = ready.flatMap(r => r.files);
             setBusy('업로드 준비 중…');
@@ -158,7 +162,7 @@ export default function BatchReport({ schools, supabase, top, notify, notifySect
                 setBusy(`접수 중… ${i + 1} / ${ready.length}`);
                 setRows(rs => rs.map(x => x.key === r.key ? { ...x, status: 'sending' } : x));
                 const res = await fetch('/api/original-report', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'submit', paths: r.files.map(f => pathOf.get(f)), meta: { code: r.code, year: r.year, grade: r.grade, semester: r.semester, examType: r.examType, subject: r.subject, note: '', notify } }) });
+                    body: JSON.stringify({ action: 'submit', paths: r.files.map(f => pathOf.get(f)), meta: { code: r.code, year: r.year, grade: r.grade, semester: r.semester, examType: r.examType, subject: r.subject, note: '', notify, rights: { source: rightsSource, takedown: rightsTakedown } } }) });
                 const j = await res.json().catch(() => ({}));
                 if (res.ok) ok++;
                 setRows(rs => rs.map(x => x.key === r.key ? { ...x, status: res.ok ? 'done' : 'error', msg: res.ok ? undefined : j.error || '접수하지 못했어요.' } : x));
@@ -283,6 +287,17 @@ export default function BatchReport({ schools, supabase, top, notify, notifySect
             </section>
 
             {notifySection}
+
+            <section className="space-y-2" aria-label="제보 전 확인">
+                <label className="flex items-start gap-2 text-[14px] leading-[1.6] text-[#17202C] cursor-pointer">
+                    <input type="checkbox" checked={rightsSource} onChange={e => setRightsSource(e.target.checked)} className="w-5 h-5 mt-0.5 shrink-0 accent-[#1B7E7A]" />
+                    <span>제가 직접 응시했거나 출제했거나, 수업하는 학생에게서 받은 시험지입니다. <span className="text-[#C0392B]">*</span></span>
+                </label>
+                <label className="flex items-start gap-2 text-[14px] leading-[1.6] text-[#17202C] cursor-pointer">
+                    <input type="checkbox" checked={rightsTakedown} onChange={e => setRightsTakedown(e.target.checked)} className="w-5 h-5 mt-0.5 shrink-0 accent-[#1B7E7A]" />
+                    <span>출제한 선생님이나 학교 등 권리자가 요청하면, 이 시험지와 이걸로 만든 자료가 내려가는 데 동의합니다. <span className="text-[#C0392B]">*</span></span>
+                </label>
+            </section>
 
             {error && <div role="alert" className="flex items-start gap-2 rounded-[14px] bg-[#FDECEC] px-[14px] py-3 text-[15px] text-[#C0392B]"><AlertCircle size={16} className="shrink-0 mt-[3px]" />{error}</div>}
         </div>
