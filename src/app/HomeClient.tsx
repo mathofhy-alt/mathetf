@@ -176,7 +176,22 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
 
 
     const [catalogState,setCatalogState]=useState<'loading'|'ready'|'error'>('loading');
-    useEffect(()=>{const c=new AbortController();(async()=>{try{let page=0;const rows:any[]=[];for(;;){const r=await fetch(`/api/catalog/home?page=${page}`,{signal:c.signal});const d=await r.json();if(!r.ok||!Array.isArray(d.rows))throw Error();rows.push(...d.rows);if(!d.hasNext)break;if(++page>100)throw Error();}if(!c.signal.aborted){setGroupedFiles(buildGroupedFiles(rows));setCatalogState('ready');}}catch{if(!c.signal.aborted)setCatalogState('error');}})();return()=>c.abort();},[]);
+    // [10/27 대표] 전체 목록 — 예전엔 200개씩 차례로 받아 20페이지 × 1.2초(20초+)를 기다렸다. 첫 페이지가 알려 주는 total 로
+    //   나머지 페이지를 6개씩 동시에 받는다. total 이 없으면(옛 서버) 예전처럼 차례로.
+    useEffect(()=>{const c=new AbortController();(async()=>{try{
+        const get=async(page:number)=>{const r=await fetch(`/api/catalog/home?page=${page}`,{signal:c.signal});const d=await r.json();if(!r.ok||!Array.isArray(d.rows))throw Error();return d;};
+        // 한 번에(all=1) — 실패하면 페이지로 나눠 받는다
+        let rows:any[]|null=null;
+        try{const r=await fetch('/api/catalog/home?all=1',{signal:c.signal});const d=await r.json();if(r.ok&&Array.isArray(d.rows))rows=d.rows;}catch(e){if(c.signal.aborted)throw e;}
+        if(rows){if(!c.signal.aborted){setGroupedFiles(buildGroupedFiles(rows));setCatalogState('ready');}return;}
+        const first=await get(0);rows=[...first.rows];
+        if(first.hasNext&&Number.isInteger(first.total)){
+            const pages=Math.min(100,Math.ceil(first.total/200));const rest:any[][]=[];
+            for(let p=1;p<pages;p+=6){const chunk=await Promise.all(Array.from({length:Math.min(6,pages-p)},(_,k)=>get(p+k)));chunk.forEach((d,k)=>{rest[p+k]=d.rows;});}
+            for(let p=1;p<pages;p++)rows!.push(...(rest[p]||[]));
+        }else if(first.hasNext){for(let page=1;;page++){const d=await get(page);rows!.push(...d.rows);if(!d.hasNext)break;if(page>100)throw Error();}}
+        if(!c.signal.aborted){setGroupedFiles(buildGroupedFiles(rows));setCatalogState('ready');}
+    }catch{if(!c.signal.aborted)setCatalogState('error');}})();return()=>c.abort();},[]);
     const [searchedCatalog,setSearchedCatalog]=useState<{query:string;status:'loading'|'ready'|'error';groups:GroupedExam[]}|null>(null);
     const [searchKeyword, setSearchKeyword] = useState('');
     useEffect(()=>{
@@ -206,6 +221,17 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
         window.setTimeout(() => setFilterNudge(''), 2500);
     };
     const [selectedSchool, setSelectedSchool] = useState('');
+    // [10/27 대표] 전체 목록을 다 받기 전에 학교를 고르면 처음 받은 120개 안에서만 찾아 몇십 개만 보였다(본인 자료도 '없나?' 하고 기다림).
+    //   → 그 학교만 서버 검색으로 바로 받아 보여 준다. 전체 목록이 오면 그쪽을 쓴다.
+    const [schoolCatalog,setSchoolCatalog]=useState<{school:string;groups:GroupedExam[]}|null>(null);
+    useEffect(()=>{
+        if(!selectedSchool||catalogState==='ready'){setSchoolCatalog(null);return;}
+        const c=new AbortController();
+        fetch(`/api/catalog/home?q=${encodeURIComponent(selectedSchool)}`,{signal:c.signal}).then(r=>r.json()).then(d=>{
+            if(!c.signal.aborted&&Array.isArray(d.rows))setSchoolCatalog({school:selectedSchool,groups:buildGroupedFiles(d.rows)});
+        }).catch(()=>{});
+        return()=>c.abort();
+    },[selectedSchool,catalogState]);
     const [targetMaterialId, setTargetMaterialId] = useState<string | null>(null);
     // URL ?school= 파라미터 → 해당 학교로 필터 + 자료 목록으로 스크롤
     // (exam 상세의 '다운로드 하러 가기'가 홈 최상단이 아니라 실제 다운로드 목록에 착지하도록)
@@ -283,7 +309,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
     // useMemo: 필터 조건이나 groupedFiles가 바뀔 때만 재계산 (기존: 매 렌더마다 filter 실행)
     const activeSearch=searchKeyword.trim();
     const searchComplete=activeSearch.length>=2&&searchedCatalog?.query===activeSearch&&searchedCatalog.status==='ready';
-    const filteredFiles = useMemo(() => (searchComplete?searchedCatalog!.groups:groupedFiles).filter(group => {
+    const filteredFiles = useMemo(() => (searchComplete?searchedCatalog!.groups:schoolCatalog&&schoolCatalog.school===selectedSchool&&catalogState!=='ready'?schoolCatalog.groups:groupedFiles).filter(group => {
         if (targetMaterialId && !Object.values(group.files).some(file => file?.id === targetMaterialId)) return false;
         if (freePdfOnly && !group.files.pdfSol?.hasFreePdf) return false;
         // 0. Keyword Search
@@ -322,7 +348,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
         if (selectedSubject && group.subject !== selectedSubject) return false;
 
         return true;
-    }), [groupedFiles, searchComplete, searchedCatalog, targetMaterialId, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject, freePdfOnly]);
+    }), [groupedFiles, searchComplete, searchedCatalog, schoolCatalog, catalogState, targetMaterialId, searchKeyword, selectedRegion, selectedDistrict, selectedSchool, selectedGrade, selectedYear, selectedExamScope, selectedSubject, freePdfOnly]);
 
     // 과목 드롭다운: 실제 자료에 있는 과목만, 교육과정별 그룹으로 (수학I/대수 등 이름 혼동 방지)
     // - 양쪽 교육과정에 같은 이름이 있으면(확통·기하와벡터) 먼저 나온 그룹에만 표시
