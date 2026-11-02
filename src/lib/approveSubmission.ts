@@ -26,6 +26,9 @@ export async function approveSubmission(id: string, opts: { sms?: boolean } = {}
     // [10/13] 여러 회차 묶음은 회차로 나눈 뒤(raw-uploads split) 나뉜 회차마다 채택한다 — 묶음째 채택하면 5,000P 한 번만 나간다
     let desc: any = {}; try { desc = JSON.parse(row.description || '{}') || {}; } catch { }
     if (desc.bulk) throw new ApproveError(desc.split ? '이미 회차로 나눈 묶음입니다. 나뉜 회차를 채택해 주세요.' : '여러 회차 묶음입니다. 먼저 회차로 나눠 주세요.', 400);
+    // [10/30 대표] 같은 시험을 나눠 올린 제보는 하나로 합치고 나머지는 닫는다 — 닫힌 쪽까지 채택하면 두 번 지급된다
+    if (desc.merged_into) throw new ApproveError('다른 제보에 합쳐진 제보입니다. 합친 제보를 채택해 주세요.', 409);
+    if (desc.rejected) throw new ApproveError('반려된 제보입니다.', 409);
     const recipient = row.uploader_id;
     if (!recipient) throw new ApproveError('제보자 정보가 없습니다.', 400);
 

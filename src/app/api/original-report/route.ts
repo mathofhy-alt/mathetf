@@ -77,10 +77,15 @@ export async function GET(req: NextRequest) {
         const admin = createAdminClient();
         const { data, error } = await admin.from('exam_materials')
             .select('id, school, exam_year, grade, semester, exam_type, subject, description, created_at')
-            .eq('content_type', '원본제보').eq('uploader_id', user.id).order('created_at', { ascending: false }).limit(100);
+            .eq('content_type', '원본제보').eq('uploader_id', user.id).order('created_at', { ascending: false }).limit(1000);   // [11/2 대표] 100건이면 500건 넘게 올린 회원 목록이 잘린다
         if (error) return NextResponse.json({ error: '제보 내역을 불러오지 못했습니다.' }, { status: 500 });
         const ids = (data || []).map(r => r.id);
-        const { data: rewards } = ids.length ? await admin.from('point_transactions').select('related_id, amount').eq('user_id', user.id).eq('type', 'submission_reward').in('related_id', ids) : { data: [] as any[] };
+        // id 1,000개를 한 번에 넣으면 주소가 너무 길어진다 — 200개씩 나눠 묻는다
+        const rewards: any[] = [];
+        for (let i = 0; i < ids.length; i += 200) {
+            const { data: part } = await admin.from('point_transactions').select('related_id, amount').eq('user_id', user.id).eq('type', 'submission_reward').in('related_id', ids.slice(i, i + 200));
+            rewards.push(...(part || []));
+        }
         const reward = new Map((rewards || []).map(r => [r.related_id, r.amount]));
         // [10/8] 무료 타이핑 — 채택된 것은 판매용 한글 파일을 0원 구매로 넣어 준다(이미 있으면 그대로)
         const typed = new Map<string, any>();

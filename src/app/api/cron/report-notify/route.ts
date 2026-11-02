@@ -60,18 +60,22 @@ async function adminPass(admin: Admin): Promise<Record<string, any>> {
 
     const { data: au } = await admin.auth.admin.getUserById(ADMIN_USER_ID);
     const phone = (au?.user?.user_metadata as any)?.phone || au?.user?.phone;
-    const sms = await sendNotice(phone, text);
-    if (sms === 'dev') return { ok: true, dev: true, count: fresh.length, text };   // 개발 서버: 운영 DB 를 같이 쓰므로 표시하지 않는다
-    if (sms === 'failed' || sms === 'no_phone') return { ok: false, sms, count: fresh.length };   // 표시 안 함 → 다음 회차에 다시
+    if (process.env.NODE_ENV !== 'production') return { ok: true, dev: true, count: fresh.length, text };   // 개발 서버: 운영 DB 를 같이 쓰므로 표시·발송 안 함
 
-    // 보낸 것 표시 — 바로 직전에 다시 읽어 합친다(관리자 안내 저장과 겹쳐도 그쪽 내용을 지우지 않게)
+    // [10/31 대표: 문자가 두 번 온다] 보내기 전에 먼저 표시한다 — 크론이 겹쳐 돌거나 다른 쓰기가 끼어도 같은 제보를 두 번 알리지 않게.
+    //   보내기에 실패하면 표시를 되돌려 다음 회차에 다시 보낸다.
     const at = new Date().toISOString();
-    for (const r of fresh) {
-        const { data: cur } = await admin.from('exam_materials').select('description').eq('id', r.id).maybeSingle();
-        const d = parse(cur?.description ?? r.description);
-        d.admin_notified = at;
-        await admin.from('exam_materials').update({ description: JSON.stringify(d) }).eq('id', r.id);
-    }
+    const mark = async (on: boolean) => {
+        for (const r of fresh) {
+            const { data: cur } = await admin.from('exam_materials').select('description').eq('id', r.id).maybeSingle();
+            const d = parse(cur?.description ?? r.description);
+            if (on) d.admin_notified = at; else if (d.admin_notified === at) delete d.admin_notified;
+            await admin.from('exam_materials').update({ description: JSON.stringify(d) }).eq('id', r.id);
+        }
+    };
+    await mark(true);
+    const sms = await sendNotice(phone, text);
+    if (sms === 'failed' || sms === 'no_phone' || sms === 'dev') { await mark(false); return { ok: sms === 'dev', sms, count: fresh.length }; }
     return { ok: true, sent: fresh.length, sms };
 }
 
