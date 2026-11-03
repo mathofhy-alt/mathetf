@@ -42,7 +42,8 @@ def run_job(bdir, job, out):
     p = PROMPT.replace('{JOB}', job).replace('{OUT}', out)
     t = time.time()
     r = subprocess.run(CODEX + ['exec', '--skip-git-repo-check', '-m', MODEL, '-c', f'model_reasoning_effort={EFFORT}', '-c', 'notify=[]', '-c', 'mcp_servers={}',
-                        '--sandbox', 'workspace-write', '-C', bdir, p], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=2400)
+                        '--sandbox', 'workspace-write', '-C', bdir, p], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=2400,
+                       stdin=subprocess.DEVNULL)   # [10/28] 입력을 열어 두면 배경 스크립트 안에서 코덱스가 입력을 기다리며 멈췄다(14개가 13분 멈춤)
     log = (r.stdout or '') + (r.stderr or '')
     open(os.path.join(bdir, f'codex_{job[:-4]}.log'), 'w', encoding='utf-8').write(log)
     m = re.search(r'tokens used\s*\n\s*([\d,]+)', log)
@@ -51,13 +52,13 @@ def run_job(bdir, job, out):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('n', nargs='?', type=int, default=60); ap.add_argument('--par', type=int, default=8)
-    ap.add_argument('--batch'); ap.add_argument('--no-save', action='store_true'); ap.add_argument('--model'); a = ap.parse_args()
+    ap.add_argument('--batch'); ap.add_argument('--no-save', action='store_true'); ap.add_argument('--model'); ap.add_argument('--ids', help='prepare 로 넘김(@파일 가능) — 11/4 교재 문항 지정용'); a = ap.parse_args()
     global MODEL
     if a.model: MODEL = a.model   # 모델 비교용(10/18) — 평소엔 고정값
     if not CODEX: raise SystemExit('codex CLI 없음 — npm i -g @openai/codex')
     if a.batch: bdir = a.batch
     else:
-        out = subprocess.run([PY, os.path.join(ROOT, 'scripts', 'similar_rerank_prepare.py'), str(a.n)], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        out = subprocess.run([PY, os.path.join(ROOT, 'scripts', 'similar_rerank_prepare.py'), str(a.n)] + (['--ids', a.ids] if a.ids else []), capture_output=True, text=True, encoding='utf-8', errors='replace')
         print(out.stdout[-600:])
         m = re.search(r'배치 (\S+)', out.stdout)
         if not m: raise SystemExit('준비 실패\n' + out.stderr[-800:])
