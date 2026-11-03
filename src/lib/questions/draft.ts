@@ -10,10 +10,10 @@ export function parseDraft(raw: string | null, now = Date.now()): ExamDraft | nu
         const d = JSON.parse(raw || 'null');
         if (!d || d.version !== 1 || !Number.isFinite(d.updatedAt) || now - d.updatedAt > 7 * 86400000 || d.updatedAt > now + 60000 ||
             !Array.isArray(d.cartIds) || !Array.isArray(d.selectedDbIds)) return null;
-        const list = (v:unknown) => Array.isArray(v) ? v.filter((x:unknown)=>typeof x==='string').slice(0,5000) : [];
+        const list = (v:unknown) => Array.isArray(v) ? v.filter((x:unknown)=>typeof x==='string').slice(0,20000) : [];
         const filters = d.filters && typeof d.filters==='object' ? {units:list(d.filters.units),...(Array.isArray(d.filters.unitKeys)?{unitKeys:list(d.filters.unitKeys)}:{}),concepts:list(d.filters.concepts),difficulty:list(d.filters.difficulty),subjects:list(d.filters.subjects),keywords:list(d.filters.keywords),includeOffCurriculum:d.filters.includeOffCurriculum===true,...(typeof d.filters.curriculum==='string'?{curriculum:d.filters.curriculum}:{}),...(typeof d.filters.mockSlug==='string'&&d.filters.mockSlug.length<150?{mockSlug:d.filters.mockSlug}:{})}:null;
         return { ...d, filters, cartIds: d.cartIds.filter((x: unknown) => typeof x === 'string').slice(0, 50),
-            selectedDbIds: d.selectedDbIds.filter((x: unknown) => typeof x === 'string').slice(0, 5000),
+            selectedDbIds: d.selectedDbIds.filter((x: unknown) => typeof x === 'string').slice(0, 20000),
             excludedQuestionIds: Array.isArray(d.excludedQuestionIds) ? d.excludedQuestionIds : [],
             selectedExamIds: Array.isArray(d.selectedExamIds) ? d.selectedExamIds : [],
             title: typeof d.title === 'string' ? d.title.slice(0, 100) : '',

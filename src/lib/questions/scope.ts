@@ -37,7 +37,7 @@ export function toScopeRule(db: CatalogDb): ScopeRule {
 }
 
 export function resolveScope(catalog: CatalogDb[], requested: unknown, mockSlug?:unknown): ScopeRule[] {
-    if (!Array.isArray(requested) || requested.length > 5000) throw new Error('선택한 자료 범위를 확인해주세요.');
+    if (!Array.isArray(requested) || requested.length > 20000) throw new Error('선택한 자료 범위를 확인해주세요.');   // 11/3: 5000 → 20000 — 교과서 32권 연결한 회원은 묶음이 펼쳐져 공용 4,113 + 1,500 칸이 되어 저장이 막혔다
     const map = new Map(catalog.map(db => [db.id, db]));
     const ids = [...new Set(requested.map((db: any) => typeof db === 'string' ? db : db?.id))];
     const scopes=ids.map(id => {
