@@ -1255,7 +1255,7 @@ export default function QuestionBankPage() {
 
             if (response.status === 402 && result.code === 'QB_PASS_REQUIRED') {
                 // 무료 횟수를 다 씀 — 오류가 아니라 결제 안내. 담은 문항은 그대로 둔다.
-                logQb('qb_save_fail', 'QB_PASS_REQUIRED');
+                logQb('qb_pass_block', 'QB_PASS_REQUIRED');   // 11/3: 무료 횟수 소진은 실패가 아님 — 따로 센다
                 if (result.pass) setPassInfo(result.pass);
                 setShowSaveModal(false); setPassFrom('save_blocked'); setShowPass(true);
                 return;

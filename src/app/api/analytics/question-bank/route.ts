@@ -4,7 +4,7 @@ import {createClient} from '@/utils/supabase/server';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {productionSite} from '@/lib/analytics/server';
 import {uuidPattern} from '@/lib/payments/order';
-const allowed = new Set(['qb_enter','qb_db_select','qb_search','qb_search_empty','qb_cart_add','qb_save_fail','qb_demo','qb_auto_generate','qb_auth_request','qb_resume','qb_clone']);
+const allowed = new Set(['qb_enter','qb_db_select','qb_search','qb_search_empty','qb_cart_add','qb_save_fail','qb_pass_block','qb_demo','qb_auto_generate','qb_auth_request','qb_resume','qb_clone']);
 export async function POST(req:NextRequest) {
     if(!productionSite(req)) return new NextResponse(null,{status:204});
     try {
