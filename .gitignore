@@ -124,3 +124,4 @@ scripts/exam_long/cache/
 scripts/exam_long/index_cache.json
 scripts/exam_long/compare.html
 scripts/exam_long/targets_new_*.json
+_trylog/
