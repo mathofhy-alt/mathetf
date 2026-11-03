@@ -35,8 +35,13 @@ def main():
     print(f'저장할 문항 {len(rows)} / {len(key)} · 점수 빠진 사례 {bad}')
     if a.dry_run or not rows: return
     for i in range(0, len(rows), 100):
-        r = requests.post(f'{URL}/rest/v1/question_similar', headers={**H, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'},
-                          data=json.dumps(rows[i:i + 100]), verify=False, timeout=(10, 120))
+        for t in range(6):   # [11/4] 저장 중 연결 끊김(10054)이 두 번 — 끊기면 쉬었다 다시(같은 행 덮어쓰기라 안전)
+            try:
+                r = requests.post(f'{URL}/rest/v1/question_similar', headers={**H, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'},
+                                  data=json.dumps(rows[i:i + 100]), verify=False, timeout=(10, 120)); break
+            except requests.RequestException as e:
+                if t == 5: raise
+                print(f'  연결 끊김 — {10 * (t + 1)}초 뒤 다시 ({e.__class__.__name__})'); time.sleep(10 * (t + 1))
         if r.status_code >= 300:
             raise SystemExit(f'저장 실패 {r.status_code} {r.text[:200]}' + ('\n→ SQL 20261014_similar_rerank.sql 을 먼저 실행해야 함' if 'basis_check' in r.text else ''))
     st = json.load(open(STATE, encoding='utf-8')) if os.path.exists(STATE) else {'done': {}}
