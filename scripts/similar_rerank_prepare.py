@@ -43,7 +43,7 @@ def readable(xml_part):
         if k < 0: continue
         out.append(t[pos:k]); out.append(o); pos = k + len(e)
     out.append(t[pos:]); return re.sub(r'\s+', ' ', re.sub(r'\b(it|rm)\b', '', ''.join(out))).strip()
-def text_of(x, n=900):
+def text_of(x, n=2000):   # [11/4] 900 → 2000: 900 은 10/14 Haiku 한도가 빠듯할 때 정한 값. 해설 2.6% 가 잘렸다(문제는 0.02%), 코덱스는 여유 있음
     xml = x.get('content_xml') or ''; notes = ' '.join(ENDNOTE.findall(xml)); stmt = ENDNOTE.sub(' ', xml)
     return '[문제] ' + readable(stmt)[:n] + '\n[해설] ' + readable(notes)[:n]
 sig = lambda r: re.sub(r'\s|[①②③④⑤]', '', r.get('plain_text') or '') + '|' + re.sub(r'\s', '', ' '.join(r.get('equation_scripts') or []))
