@@ -43,7 +43,7 @@ def readable(xml_part):
         if k < 0: continue
         out.append(t[pos:k]); out.append(o); pos = k + len(e)
     out.append(t[pos:]); return re.sub(r'\s+', ' ', re.sub(r'\b(it|rm)\b', '', ''.join(out))).strip()
-def text_of(x, n=900):
+def text_of(x, n=2000):   # [11/4] 900 → 2000: 900 은 10/14 Haiku 한도가 빠듯할 때 정한 값. 해설 2.6% 가 잘렸다(문제는 0.02%), 코덱스는 여유 있음
     xml = x.get('content_xml') or ''; notes = ' '.join(ENDNOTE.findall(xml)); stmt = ENDNOTE.sub(' ', xml)
     return '[문제] ' + readable(stmt)[:n] + '\n[해설] ' + readable(notes)[:n]
 sig = lambda r: re.sub(r'\s|[①②③④⑤]', '', r.get('plain_text') or '') + '|' + re.sub(r'\s', '', ' '.join(r.get('equation_scripts') or []))
@@ -94,6 +94,7 @@ def main():
     a = ap.parse_args()
     st = json.load(open(STATE, encoding='utf-8')) if os.path.exists(STATE) else {'done': {}}
     done = set() if a.redo else set(st['done'])
+    if a.ids and a.ids.startswith('@'): a.ids = open(a.ids[1:], encoding='utf-8').read().replace(chr(10), ',')   # [10/28] 1,000개면 명령줄 한도를 넘어 '@파일'로
     if a.ids: pick = [x.strip() for x in a.ids.split(',') if x.strip()]
     elif a.source: pick = [r['id'] for r in get('questions', {'select': 'id', 'source_db_id': f'eq.{a.source}', 'work_status': 'eq.sorted', 'order': 'question_number'})]
     else:
@@ -118,7 +119,12 @@ def main():
         pick += [q for q, _ in clicks.most_common() if q not in done and q not in pick]
         if len(pick) < a.n:
             # 최근 등록 순 — 단 유사 목록(question_similar)이 이미 계산된 문항만(갓 등록돼 목록이 없으면 후보를 만들 수 없다)
-            recent = [r['id'] for r in get('questions', {'select': 'id', 'work_status': 'eq.sorted', 'order': 'created_at.desc', 'limit': '3000'}) if r['id'] not in done and r['id'] not in pick]
+            # [11/3] 최근 3,000개만 보던 것을 전체로 — 1만 개 요청이 3,280개에서 멈췄다(내신 6만여 개가 대기열에 안 들어옴)
+            recent = []; off = 0; seen = set(pick)
+            while len(recent) < a.n * 3:
+                b_ = get('questions', {'select': 'id', 'work_status': 'eq.sorted', 'order': 'created_at.desc,id.asc', 'limit': '1000', 'offset': str(off)})
+                if not b_: break
+                recent += [r['id'] for r in b_ if r['id'] not in done and r['id'] not in seen]; off += 1000
             for i in range(0, len(recent), 100):
                 have = {r['question_id'] for r in get('question_similar', {'select': 'question_id', 'basis': 'eq.statement', 'question_id': 'in.(' + ','.join(recent[i:i + 100]) + ')'})}
                 pick += [q for q in recent[i:i + 100] if q in have]

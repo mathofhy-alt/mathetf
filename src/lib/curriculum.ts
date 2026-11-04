@@ -110,3 +110,26 @@ export function canonicalUnit(name: string | null | undefined, subject?: string 
     }
     return _VARIANT_TO_CANONICAL[trimmed] || trimmed;
 }
+
+// 신·구 과정의 같은 자리 과목은 같은 순번 — 공통수학1과 수학(상)을 섞어 담아도 '다항식'끼리 모인다.
+const SUBJECT_RANK: Record<string, number> = {
+    '공통수학1': 0, '수학(상)': 0, '공통수학2': 1, '수학(하)': 1, '대수': 2, '수학I': 2,
+    '미적분I': 3, '수학II': 3, '미적분II': 4, '미적분': 4, '확률과통계': 5, '기하': 6, '기하와벡터': 6,
+};
+
+/** 문항 두 개를 과목 → 교육과정 단원 순서로 비교. 표에 없는 단원은 그 과목 맨 뒤에 가나다순. */
+export function compareByCurriculum(
+    a: { subject?: string | null; unit?: string | null },
+    b: { subject?: string | null; unit?: string | null },
+): number {
+    const rank = (q: { subject?: string | null; unit?: string | null }): [number, number, string] => {
+        const unit = canonicalUnit(q.unit, q.subject) || '';
+        const subject = q.subject && SUBJECT_UNITS[q.subject] ? q.subject
+            : Object.keys(SUBJECT_UNITS).find(s => SUBJECT_UNITS[s].includes(unit));
+        if (!subject) return [99, 999, unit];
+        const i = SUBJECT_UNITS[subject].indexOf(unit);
+        return [SUBJECT_RANK[subject] ?? 98, i < 0 ? 999 : i, unit];
+    };
+    const [sa, ua, na] = rank(a), [sb, ub, nb] = rank(b);
+    return sa - sb || ua - ub || na.localeCompare(nb, 'ko');
+}

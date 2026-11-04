@@ -48,7 +48,7 @@ import PassModal, { passLine, type PassInfo } from '@/components/question-bank/P
 import LadderModal from '@/components/question-bank/LadderModal';
 import { QB_LIMITS } from '@/lib/qbPassConfig';
 import { Folder as FolderIcon, Database, X, Trash2, FileText, Search, CheckSquare, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
-import { SUBJECT_UNITS, SUBJECTS_2015, SUBJECTS_2022 } from '@/lib/curriculum';
+import { SUBJECT_UNITS, SUBJECTS_2015, SUBJECTS_2022, compareByCurriculum } from '@/lib/curriculum';
 import type { UserItem } from '@/types/storage';
 
 
@@ -1046,7 +1046,7 @@ export default function QuestionBankPage() {
         'type-sa': { label: '단답형→객관식', compareFn: (a, b) => { const o = (t: string) => t === 'short_answer' ? 0 : 1; return o(a.question_type) - o(b.question_type); } },
         'diff-asc': { label: '쉬운순', compareFn: (a, b) => getDifficultyValue(a.difficulty) - getDifficultyValue(b.difficulty) },
         'diff-desc': { label: '어려운순', compareFn: (a, b) => getDifficultyValue(b.difficulty) - getDifficultyValue(a.difficulty) },
-        'unit': { label: '단원순', compareFn: (a, b) => (a.unit || '').localeCompare(b.unit || '', 'ko') },
+        'unit': { label: '단원순', compareFn: compareByCurriculum },
         'original': { label: '원본순', compareFn: (a, b) => (a.question_number || 0) - (b.question_number || 0) },
     };
 
@@ -1255,7 +1255,7 @@ export default function QuestionBankPage() {
 
             if (response.status === 402 && result.code === 'QB_PASS_REQUIRED') {
                 // 무료 횟수를 다 씀 — 오류가 아니라 결제 안내. 담은 문항은 그대로 둔다.
-                logQb('qb_save_fail', 'QB_PASS_REQUIRED');
+                logQb('qb_pass_block', 'QB_PASS_REQUIRED');   // 11/3: 무료 횟수 소진은 실패가 아님 — 따로 센다
                 if (result.pass) setPassInfo(result.pass);
                 setShowSaveModal(false); setPassFrom('save_blocked'); setShowPass(true);
                 return;

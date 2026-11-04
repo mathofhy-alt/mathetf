@@ -40,18 +40,12 @@ if sfig_review.run(key, log=os.path.join(log, 'finish.log')):
     #   그림 지적은 굽기를 막지 않는다 — 굽고 트라이까지 보내되 보고 줄에 남겨 사장이 바로 고친다(트라이는 파싱 전 대표 확인 단계).
     fig_warn = ' | ⚠ 해설 그림 지적 남음(_work/sfig_review/%s_after2.json) — 사장 확인' % key
     say('⚠ 해설 그림 검토 지적 남음 — 굽기는 계속')
-while True:                           # 굽기 잠금(한글은 한 번에 하나)
-    try:
-        os.mkdir(LOCK); break
-    except FileExistsError:
-        if time.time() - os.path.getmtime(LOCK) > 3600: os.rmdir(LOCK)
-        time.sleep(15)
-try:
-    b = subprocess.run([SYSPY, '-X', 'utf8', '굽기.py', key, '--force', '--skip-route'], cwd=TOOLS, capture_output=True, text=True,
-                       encoding='utf-8', errors='replace', timeout=3 * 3600)
-    open(os.path.join(log, f'{key}_bake.log'), 'w', encoding='utf-8').write((b.stdout or '') + (b.stderr or ''))
-    ok = [l for l in (b.stdout or '').splitlines() if '자동검사' in l]
-    say('✅ 구움' if ok else '⚠ 굽기 실패', (ok[0] + fig_warn) if ok else (b.stdout or '')[-300:])
-finally:
-    os.rmdir(LOCK)
+# [11/4] 잠금은 이제 한글 쪽(hwpapp → hwp_lock.hold)이 스스로 잡는다 — 여기서 _bake.lock 폴더를 먼저 만들면
+#   안쪽 굽기가 내 폴더를 기다리며 멈춘다(교착). 또 comp 직접 굽기는 막혔으므로 공식 입구(해설일괄.py)로 굽는다.
+#   규약: C:/gpt_solve/tools/hwp_lock_규약.md
+b = subprocess.run([SYSPY, '-X', 'utf8', '해설일괄.py', key, '--from', 'route', '--run', f'solve_finish_{key}'], cwd=TOOLS, capture_output=True, text=True,
+                   encoding='utf-8', errors='replace', timeout=3 * 3600)
+open(os.path.join(log, f'{key}_bake.log'), 'w', encoding='utf-8').write((b.stdout or '') + (b.stderr or ''))
+ok = b.returncode == 0
+say('✅ 구움·납품' if ok else '⚠ 굽기 실패', fig_warn if ok else (b.stdout or b.stderr or '')[-300:])
 if not ok: sys.exit(3)   # [10/25] 굽기 실패를 rc0 으로 끝내 부르는 쪽이 성공으로 알았다
