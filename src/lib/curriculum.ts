@@ -111,6 +111,13 @@ export function canonicalUnit(name: string | null | undefined, subject?: string 
     return _VARIANT_TO_CANONICAL[trimmed] || trimmed;
 }
 
+// 신·구 과정의 같은 자리 과목 묶음. 공통수학1·2 와 수학(상)·(하)는 단원 배치가 달라 한 묶음이다(직선의방정식: 공통수학2 ↔ 수학(상))
+const SAME_SEAT: string[][] = [['공통수학1', '공통수학2', '수학(상)', '수학(하)'], ['대수', '수학I'], ['미적분I', '수학II'], ['미적분II', '미적분'], ['기하', '기하와벡터']];
+/** 고른 과목과 같은 자리의 신·구 과목 — 공통수학2 의 '함수'를 고르면 수학(하)의 '함수'도 찾게 한다(11/6 중동고 2024 수학(하) 0건) */
+export function sameSeatSubjects(subject: string): string[] {
+    return SAME_SEAT.find((g) => g.includes(subject)) || [subject];
+}
+
 // 신·구 과정의 같은 자리 과목은 같은 순번 — 공통수학1과 수학(상)을 섞어 담아도 '다항식'끼리 모인다.
 const SUBJECT_RANK: Record<string, number> = {
     '공통수학1': 0, '수학(상)': 0, '공통수학2': 1, '수학(하)': 1, '대수': 2, '수학I': 2,

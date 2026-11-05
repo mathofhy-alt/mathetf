@@ -144,7 +144,7 @@ export default function SourceCatalog({ items, selectedIds, onItemSelect, onGrou
         const out = Array.from(map.values());
         for (const g of out) g.items.sort((a, b) => {
             const x = a.details || {}, y = b.details || {};
-            return (y.exam_year || 0) - (x.exam_year || 0) || (x.grade || 0) - (y.grade || 0) || (x.semester || 0) - (y.semester || 0) || termOf(x).localeCompare(termOf(y)) || String(x.subject || '').localeCompare(String(y.subject || ''), 'ko');
+            return (y.exam_year || 0) - (x.exam_year || 0) || (x.grade || 0) - (y.grade || 0) || (x.semester || 0) - (y.semester || 0) || TERMS.findIndex(t => t.id === termOf(x)) - TERMS.findIndex(t => t.id === termOf(y)) || String(x.subject || '').localeCompare(String(y.subject || ''), 'ko');
         });
         return out.sort((a, b) => a.sort.localeCompare(b.sort, 'ko'));
     }, [visible, category, isNational]);

@@ -1,3 +1,4 @@
+import { sameSeatSubjects } from '@/lib/curriculum';
 import { NextRequest, NextResponse } from 'next/server';
 import { memberOnly } from '@/lib/requireMember';
 import { createAdminClient } from '@/utils/supabase/server-admin';
@@ -163,7 +164,7 @@ export async function POST(req: NextRequest) {
                 const q = (v: string) => `"${v.replace(/["\\]/g, '')}"`;
                 const bySubject = new Map<string, string[]>();
                 for (const k of unitKeys) { const [s, u] = k.split('::'); bySubject.set(s, [...(bySubject.get(s) || []), u]); }
-                query = query.or(Array.from(bySubject, ([s, us]) => `and(subject.eq.${q(s)},unit.in.(${us.map(q).join(',')}))`).join(','));
+                query = query.or(Array.from(bySubject, ([s, us]) => `and(subject.in.(${sameSeatSubjects(s).map(q).join(',')}),unit.in.(${us.map(q).join(',')}))`).join(','));
             } else if (advancedFilters.units && advancedFilters.units.length > 0) {
                 // 시험지출제는 facets(DB 실제 단원명)로 드롭다운을 만들므로 exact 매칭이 맞다.
                 query = query.in('unit', advancedFilters.units);

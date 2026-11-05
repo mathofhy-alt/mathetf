@@ -28,6 +28,7 @@ export async function readCrop(imageBase64: string, mimeType = 'image/png'): Pro
   "difficulty": 난이도 1~10 정수
 }
 [난이도 기준] 1~3 기본 계산·공식 적용 / 4~5 평이한 3점 / 6~7 일반 4점(복합 개념) / 8~9 준킬러 / 10 킬러
+이미지에 수학 문제가 없으면(머리글·이름·표지 등) text 를 빈 문자열로 둔다.
 unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
 
     // 2026-08-22: gemini-2.5-flash → gemini-3.7-flash (thinkingLevel:'low').
@@ -39,7 +40,9 @@ unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
     // 3.7 이 틀린 2건은 폐지단원(이중근호·이항연산)이라 후보 목록에 아예 없는 문항 —
     // 즉 고를 수 있는 것 중에서는 22/22 다. 더 빠르면서 더 정확하다.
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
+    // [11/6] 구글 쪽 연결이 끊기거나 멈출 때가 있다(170회 중 1회 ECONNRESET) — 18초씩 두 번까지. 운영 제한이 60초라 45초를 기다릴 수 없다
+    const call = async () => {
+        const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -50,10 +53,12 @@ unit 은 반드시 다음 중에서만 고른다: ${ALL_UNITS.join(', ')}`;
             // 'low' 가 둘 다 잡는 지점이다(위 측정표 참고).
             generationConfig: { temperature: 0.1, responseMimeType: 'application/json', thinkingConfig: { thinkingLevel: 'low' } },
         }),
-        signal: AbortSignal.timeout(45000),
-    });
-    if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
-    const data = await res.json();
+        signal: AbortSignal.timeout(18000),
+        });
+        if (!res.ok) throw Object.assign(new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`), { noRetry: res.status < 500 && res.status !== 429 });
+        return res.json();
+    };
+    const data = await call().catch((e) => { if (e?.noRetry) throw e; return call(); });
     const out = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     let p: any = {};
     try { p = JSON.parse(out.replace(/^```(json)?\n?/i, '').replace(/\n?```$/i, '').trim()); } catch { }
