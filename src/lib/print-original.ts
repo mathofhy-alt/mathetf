@@ -19,7 +19,12 @@ function dice(a: Bag, b: Bag): number {
     const total = size(a) + size(b);
     return total ? (2 * common) / total : 0;
 }
-const nums = (t: string) => bag(t.match(NUM) || []);
+// 시험지의 배점([5.1점])은 DB 발문에 없다 — 받아쓰기에서 빼고 숫자를 잰다(11/5 실제 스캔)
+// 맨 앞 문제 번호도 빼고, 사진이 ₂Π₃·x²처럼 읽은 작은 숫자는 보통 숫자로 맞춘다
+const SMALL = '₀₁₂₃₄₅₆₇₈₉⁰¹²³⁴⁵⁶⁷⁸⁹';
+const plainDigits = (t: string) => t.replace(/[₀-₉⁰¹²³⁴-⁹]/g, (c) => String(SMALL.indexOf(c) % 10));
+const nums = (t: string) => bag(plainDigits(t).replace(/^\s*\d{1,2}\s*[.)]\s*/, ' ').replace(/[\[(]?\d+(?:\.\d+)?\s*점[\])]?/g, ' ').match(NUM) || []);
+const body = (t: string) => t.split(/[①②③④⑤]/)[0];
 const grams = (t: string) => {
     const h = t.replace(/[^가-힣]/g, '');
     const out: string[] = [];
@@ -49,7 +54,11 @@ export function findOriginals(verbatim: string, stems: { id: string; stem: strin
     const scored = stems.map(({ id, stem }) => ({ id, numScore: dice(nv, nums(stem)), textScore: shortText ? 0 : dice(gv, grams(stem)) }))
         .sort((a, b) => (b.numScore + b.textScore) - (a.numScore + a.textScore));
     const out: OriginalHit[] = [];
-    const orig = scored.find((s) => shortText ? s.numScore >= 0.95 : s.numScore >= 0.9 && s.textScore >= 0.85);
+    // 짧은 계산 문제는 선지 숫자가 우연히 같을 수 있어 선지 앞 숫자도 같아야 원본(11/5 ₂Π₃+₃H₂ 가 선지 13~17 이 같은 조합 문제를 원본으로 잡았음)
+    const nb = nums(body(verbatim)), byId = new Map(stems.map((x) => [x.id, x.stem]));
+    //   글이 있는 문제도 발문 숫자가 달라지면 원본이 아니다(11/5 실제 스캔: 「곡선 위의 점 … 접선의 기울기」 선지만 같은 다른 학교 문제를 원본으로 잡았음)
+    const bodyOk = (s: { id: string }, min: number) => dice(nb, nums(body(byId.get(s.id) || ''))) >= min;
+    const orig = scored.find((s) => shortText ? s.numScore >= 0.95 && bodyOk(s, 0.95) : s.numScore >= 0.9 && s.textScore >= 0.85 && (size(nb) === 0 || bodyOk(s, 0.9)));
     if (orig) out.push({ ...orig, kind: 'original' });
     if (shortText) return out;   // 숫자만 다른 짧은 계산 문제는 '같은 틀'을 가릴 근거가 없다
     for (const s of scored) {
@@ -59,6 +68,16 @@ export function findOriginals(verbatim: string, stems: { id: string; stem: strin
         if (s.textScore >= 0.9 && s.numScore >= 0.3 && size(gv) >= 12) out.push({ ...s, kind: 'sameFrame' });
     }
     return out;
+}
+
+const numBags = new WeakMap<object, { id: string; b: Bag }[]>();
+/** 숫자 묶음이 가까운 순 n개 id — 글이 짧은 계산 문제는 같은 문장이 수백 개라 글자로는 상위에 못 든다(11/5 「의 전개식에서 의 계수는?」) */
+export function screenByNumbers(verbatim: string, pool: [string, string, string?][], n: number): string[] {
+    const nv = nums(verbatim);
+    if (size(nv) < 5) return [];
+    let rows = numBags.get(pool);
+    if (!rows) { rows = pool.map(([id, , ns]) => ({ id, b: bag((ns || '').split(' ').filter(Boolean)) })); numBags.set(pool, rows); }
+    return rows.map((r) => ({ id: r.id, s: dice(nv, r.b) })).filter((x) => x.s >= 0.7).sort((a, b) => b.s - a.s).slice(0, n).map((x) => x.id);
 }
 
 /** 단원 전체 발문 [id, 글(수식 없음), 수식 숫자] 중 받아쓰기와 가까운 순 n개 id — 숫자 대조 전 1차 거르기.

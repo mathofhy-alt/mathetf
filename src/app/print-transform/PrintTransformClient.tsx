@@ -19,6 +19,7 @@ interface CropItem {
     images: Record<string, any[]>;      // id -> 이미지행
     selected: string[];                 // 채택한 유사문제 id
     widened?: boolean;                  // 같은 단원에 문항이 없어 과목 전체로 넓혀 찾았음
+    found?: boolean | null;             // 프린트 문제를 DB 에서 찾았음(원본·같은 틀), null = 찾기 실패로 모름
     error?: string;
 }
 
@@ -140,7 +141,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                 fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).then((x) => x.json()).catch(() => ({})),
             ]);
             setCrops((p) => p.map((c) => c.id === id ? {
-                ...c, loading: false, reading: j.reading, candidates: cands, widened: !!j.widened,
+                ...c, loading: false, reading: j.reading, candidates: cands, widened: !!j.widened, found: j.found,
                 contents: cont.content || {}, images: imgs.images || {},
                 selected: ids.slice(0, 1),
             } : c));
@@ -321,6 +322,9 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                                 {active.widened && (
                                     <p className="rd-alert rd-tl-note">‘{active.reading?.unit}’ 단원 문제가 아직 DB에 없어, <strong>같은 과목의 다른 단원</strong>에서 찾았어요. 유형이 다를 수 있습니다.</p>
                                 )}
+                                {active.candidates && active.candidates.length > 0 && active.found === false && (
+                                    <p className="rd-alert rd-tl-note"><strong>이 문제는 수학ETF 자료에서 찾지 못했어요.</strong> 아래는 비슷한 내용으로 고른 참고용 문제예요.</p>
+                                )}
                                 {active.candidates && active.candidates.length === 0 && (
                                     <p className="rd-tl-note is-gray">비슷한 문제를 찾지 못했어요. 「원본에서 더 자르기」로 영역을 다시 잘라 보세요.</p>
                                 )}
@@ -348,7 +352,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                                                             </button>
                                                             {on && <span className="rd-pt-card-on">고름</span>}
                                                             {q.match === 'original' && <span className="rd-pt-match is-orig">원본 문항</span>}
-                                                            {q.match === 'sameFrame' && <span className="rd-pt-match">같은 틀 기출 · 숫자 변형</span>}
+                                                            {q.match === 'sameFrame' && <span className="rd-pt-match">같은 틀 기출</span>}
                                                             <span className="rd-pt-card-meta">{q.unit} · 난이도 {q.difficulty}{q.similarity ? ` · ${Math.round(q.similarity * 100)}%` : ''}</span>
                                                         </div>
                                                         <div className="rd-pt-card-body">
