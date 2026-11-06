@@ -1976,6 +1976,7 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 @media (max-width: 640px) { .rd .rd-mine-unit { grid-template-columns: minmax(0, 1fr); } .rd .rd-mine-uname { padding-top: 0; } }
 
 /* 10/7 시험지 만들기 이용권 */
+.rd .rd-modal.rd-pass { overflow-y: auto; overscroll-behavior: contain; }   /* [11/7] 창이 화면보다 길면 결제 버튼이 잘리고 스크롤도 안 됐다(개념의힘 건의) */
 .rd .rd-pass-card { margin-top: 18px; padding: 20px; border-radius: 20px; background: var(--rd-zone); }
 .rd .rd-pass-name { margin: 0; font-size: 15px; font-weight: 700; color: var(--rd-sub); }
 .rd .rd-pass-price { margin: 4px 0 0; font-size: 16px; font-weight: 700; color: var(--rd-text); }
