@@ -9,7 +9,14 @@ for l in open(os.path.join(ROOT, '..', '..', '.env.local'), encoding='utf-8'):
         k, v = l.strip().split('=', 1); env[k] = v.strip('"')
 U = env['NEXT_PUBLIC_SUPABASE_URL']; K = env['SUPABASE_SERVICE_ROLE_KEY']
 def q(p):
-    return json.load(urllib.request.urlopen(urllib.request.Request(U + '/rest/v1/' + p, headers={'apikey': K, 'Authorization': 'Bearer ' + K})))
+    # [11/8] timeout 없이 부르면 연결이 멈출 때 영원히 기다려 등록 배치 분석글 단계가 몇 시간씩 서 있었다(11/7 2건·11/8 3건) → 60초 제한·3번 재시도
+    import time
+    for t in range(3):
+        try:
+            return json.load(urllib.request.urlopen(urllib.request.Request(U + '/rest/v1/' + p, headers={'apikey': K, 'Authorization': 'Bearer ' + K}), timeout=60))
+        except Exception:
+            if t == 2: raise
+            time.sleep(5 * (t + 1))
 band = lambda d: '쉬움' if d <= 2 else '보통' if d <= 4 else '어려움'   # 사이트 시험지 상세와 같은 구간
 SEM = {1: '1학기', 2: '2학기'}
 

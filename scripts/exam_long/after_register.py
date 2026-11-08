@@ -40,7 +40,7 @@ if not ids:
 
 tf = os.path.join(D, f'targets_new_{os.getpid()}.json')
 json.dump([{'id': i} for i in ids], open(tf, 'w', encoding='utf-8'))
-out = run(['run_all.py', '--targets', os.path.basename(tf), '--workers', str(min(10, len(ids))), '--stop-pct', '100'])
+out = run(['run_all.py', '--targets', os.path.basename(tf), '--workers', str(min(60, len(ids))), '--stop-pct', '100'])
 os.remove(tf)
 good = [i for i in ids if os.path.exists(os.path.join(D, 'out_codex', i + '.json'))
         and subprocess.run([PY, '-X', 'utf8', 'check.py', '--dir', 'out_codex', i], cwd=D, capture_output=True).returncode == 0]

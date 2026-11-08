@@ -44,7 +44,7 @@ def codex(D, prompt, tag):
     try:
         r = subprocess.run(CODEX + ['exec', '--skip-git-repo-check', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort=medium', '-c', 'notify=[]',
                                     '-c', 'mcp_servers={}', '--sandbox', 'workspace-write', '-C', D, prompt],
-                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=900)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL, timeout=900)   # [11/6] stdin 이 열려 있으면 codex exec 가 입력을 기다리며 멈춰 15분 제한만 반복(0건)
         os.makedirs(os.path.join(D, 'logs'), exist_ok=True)
         open(os.path.join(D, 'logs', tag + '.log'), 'w', encoding='utf-8').write((r.stdout or '') + (r.stderr or ''))
     except Exception as e:
