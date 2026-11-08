@@ -10,8 +10,9 @@ const { attachment } = require('../src/lib/downloads.ts');
 const playwrightPath = process.env.PLAYWRIGHT_MODULE || 'C:/Users/matho/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright';
 const { chromium } = require(playwrightPath);
 const root = path.resolve(__dirname, '..');
-const output = 'C:/selfmade/다운로드수리';
-const base = 'http://127.0.0.1:3125';
+const output = process.env.DOWNLOADS_TEST_OUTPUT || path.join(root, 'tests/output/downloads-mobile');
+fs.mkdirSync(output, { recursive: true });
+const base = 'http://127.0.0.1:3127';
 const uid = '11111111-1111-4111-8111-111111111111';
 const id = '22222222-2222-4222-8222-222222222222';
 const user = { id: uid, aud: 'authenticated', role: 'authenticated', email: 'mobile-test@example.invalid', user_metadata: { marketing_agreed: true }, app_metadata: {}, created_at: new Date().toISOString() };
@@ -90,7 +91,7 @@ async function contextFor(ua, loggedIn = true) {
 }
 (async () => {
     await new Promise(resolve => server.listen(3126, '127.0.0.1', resolve));
-    next = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3125'], {
+    next = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3127'], {
         cwd: root, windowsHide: true,
         env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:3126', NEXT_PUBLIC_SUPABASE_ANON_KEY: 'local-anon-key', SUPABASE_SERVICE_ROLE_KEY: 'local-service-role', NEXT_PUBLIC_LOCAL_PREVIEW: '1', NEXT_TELEMETRY_DISABLED: '1' },
         stdio: ['ignore','pipe','pipe'],

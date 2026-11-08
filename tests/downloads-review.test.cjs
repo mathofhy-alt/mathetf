@@ -113,6 +113,9 @@ test('exam detail uses the stored grade-specific source key for questions and th
 
 test('patched operational entrypoints contain no public original upload and all TypeScript copies parse', () => {
     const dir=path.join(__dirname,'../scripts_patched');
+    const entries = fs.readdirSync(dir);
+    assert.equal(entries.filter(n => n.endsWith('.ts')).length, 8, 'all eight reviewed uploaders must ship');
+    assert.equal(entries.filter(n => n.endsWith('.py')).length, 12, 'all twelve reviewed drivers must ship');
     for(const name of fs.readdirSync(dir).filter(n=>n.endsWith('.ts'))) {
         const source=fs.readFileSync(path.join(dir,name),'utf8');
         assert.doesNotMatch(source,/storage\.from\(['"]hwpx['"]\)\.upload/);
