@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","include":["scripts_patched/*.ts"],"exclude":["node_modules"]}

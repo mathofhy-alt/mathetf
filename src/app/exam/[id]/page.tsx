@@ -48,7 +48,7 @@ const getExam = cache(async (id: string) => {
     const supabase = createAdminClient();
     const { data: row } = await supabase
         .from('exam_materials')
-        .select('*')
+        .select('id,title,school,exam_year,grade,semester,exam_type,subject,file_type,content_type,price,created_at,region,district,preview_urls,free_pdf_url,source_db_id')
         .eq('id', id)
         .neq('school', 'DELETED')
         .single();

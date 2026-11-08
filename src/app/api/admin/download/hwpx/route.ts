@@ -1,3 +1,4 @@
+import { createAdminClient } from '@/utils/supabase/server-admin';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
@@ -93,8 +94,8 @@ export async function POST(req: NextRequest) {
         // (4) Storage 존재 확인 (유니크한 소스만 체크)
         const uniquePaths = Array.from(new Set(mergeSources.map(s => s.path)));
         for (const storagePath of uniquePaths) {
-            const { data: check, error: checkErr } = await supabase.storage
-                .from('hwpx')
+            const { data: check, error: checkErr } = await createAdminClient().storage
+                .from('hwpx-originals')
                 .list('raw_uploads', { search: path.basename(storagePath) });
 
             if (checkErr || !check || check.length === 0) {
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
             templatePath,
             outputFilename: 'output.hwpx',
             sources: mergeSources as any,
-            bucket: 'hwpx',
+            bucket: 'hwpx-originals',
             isSingleTest,
             isMergeMirror: requestedMirror
         });

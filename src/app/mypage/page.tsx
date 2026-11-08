@@ -1,5 +1,6 @@
 "use client";
 
+import { MATERIAL_COLUMNS, navigateMaterialDownload } from '@/lib/material-columns';
 import Header from "@/components/Header";
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -64,7 +65,7 @@ export default function MyPage() {
                     .from('purchases')
                     .select(`
                     *,
-                    exam:exam_materials(*)
+                    exam:exam_materials(${MATERIAL_COLUMNS})
                 `)
                     .eq('user_id', user.id)
                     .order('created_at', { ascending: false }),
@@ -90,7 +91,7 @@ export default function MyPage() {
                 
                 let exams: any[] = [];
                 if (validUuids.length > 0) {
-                    const { data } = await supabase.from('exam_materials').select('*').in('id', validUuids);
+                    const { data } = await supabase.from('exam_materials').select(MATERIAL_COLUMNS).in('id', validUuids);
                     if (data) exams = data;
                 }
                 
@@ -113,8 +114,7 @@ export default function MyPage() {
                         exam_year: new Date().getFullYear(),
                         grade: '-',
                         semester: '-',
-                        exam_type: '-',
-                        file_path: ''
+                        exam_type: '-'
                     }
                 }));
 
@@ -133,81 +133,8 @@ export default function MyPage() {
         init();
     }, [router, supabase, reloadKey]);   // reloadKey: 무료 타이핑 파일이 막 들어왔을 때 구매 내역을 다시 읽는다(10/8)
 
-    const handleDownload = async (purchase: any) => {
-        const file = purchase.exam;
-
-        if (!file) {
-            alert('자료 정보를 찾을 수 없습니다. (삭제되었거나 데이터 오류)');
-            return;
-        }
-
-        try {
-            // [PG사 심사 요건] 결제일로부터 30일 다운로드 제한
-            // [10/15] 무료 타이핑(payment_id 'typing-…')은 결제가 아니라 원본을 준 회원에게 돌려주는 파일 → 기간 없음(사용자 승인)
-            if (purchase.created_at && !isTypingGrant(purchase)) {
-                const purchaseDate = new Date(purchase.created_at);
-                const now = new Date();
-                const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                
-                if (diffDays > 30) {
-                    alert('다운로드 가능 기간(결제일로부터 30일)이 만료되었습니다.');
-                    return;
-                }
-            }
-
-            // Increment download count (Try-catch wrapped to avoid blocking download if update fails)
-            try {
-                await supabase.from('purchases')
-                    .update({ download_count: (purchase.download_count || 0) + 1 })
-                    .eq('id', purchase.id);
-            } catch (updateErr) {
-                console.warn('Failed to update download count:', updateErr);
-            }
-
-            // [V102] Extract original extension from filePath to prevent format distortion
-            const originalExt = file.file_path.split('.').pop() || (file.file_type === 'PDF' ? 'pdf' : 'hwp');
-            const safeContentType = file.content_type || '자료';
-            // Requested format: 학교이름_년도_학년_학기_중간/기말_문제(or 문제+해설)
-            const filename = `${file.school}_${file.exam_year}_${file.grade}_${file.semester}_${file.exam_type}_${safeContentType}.${originalExt}`;
-
-            const { data, error: urlError } = await supabase.storage
-                .from('exam-materials')
-                .createSignedUrl(file.file_path, 3600);
-
-            if (urlError) {
-                console.error('Signed URL Error Detail:', {
-                    error: urlError,
-                    requestedPath: file.file_path,
-                    bucket: 'exam-materials'
-                });
-                throw new Error(`링크 생성 실패: ${urlError.message} (경로: ${file.file_path})`);
-            }
-            if (!data?.signedUrl) throw new Error('다운로드 링크가 생성되지 않았습니다.');
-
-            // Using Blob download for better reliability and correct filename
-            const response = await fetch(data.signedUrl);
-
-            // Check if response is not OK or if it's a JSON error from Supabase
-            const contentTypeCheck = response.headers.get('content-type');
-            if (!response.ok || (contentTypeCheck && contentTypeCheck.includes('application/json'))) {
-                const errText = await response.text();
-                throw new Error(`파일 서버 응답 오류 (${response.status}): ${errText.substring(0, 30)}`);
-            }
-
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(downloadUrl);
-        } catch (e: any) {
-            console.error('Download error:', e);
-            alert(`다운로드 오류: ${e.message || '알 수 없는 오류'}`);
-        }
+    const handleDownload = (purchase: any) => {
+        navigateMaterialDownload(purchase.exam_id || purchase.exam?.id);
     };
 
     const handleDeletePurchase = async (purchaseId: string) => {
@@ -245,6 +172,7 @@ export default function MyPage() {
         </div>
     );
 
+    const adminDownload = user?.email === 'mathofhy@naver.com';
     const isDbPurchase = (p: any) => p.exam?.file_type === 'DB' || p.exam?.content_type === '개인DB';
     const materialCount = purchases.filter(p => !isDbPurchase(p)).length;
     const dbCount = purchases.filter(p => isDbPurchase(p)).length;
@@ -333,7 +261,7 @@ export default function MyPage() {
                                         if (!file) return null;
                                         const isDb = file.file_type === 'DB' || file.content_type === '개인DB';
                                         // [10/21 Clarity] 줄(학교·제목·아이콘)을 누르는 반응 없는 클릭이 가장 많았다 — 줄 전체를 누르면 받기(만료·개인DB 제외)
-                                        const rowDownload = !isDb && (isTypingGrant(p) || Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000) < 30);
+                                        const rowDownload = !isDb && (adminDownload || isTypingGrant(p) || Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000) < 30);
                                         return (
                                             <li key={p.id} className={`rd-my-item${rowDownload ? ' is-clickable' : ''}`}
                                                 {...(rowDownload ? { role: 'button', tabIndex: 0, title: '눌러서 받기',
@@ -370,7 +298,7 @@ export default function MyPage() {
                                                             const diffTime = now.getTime() - purchaseDate.getTime();
                                                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                                             const daysLeft = Math.max(0, 30 - diffDays);
-                                                            const isExpired = !typing && daysLeft === 0;
+                                                            const isExpired = !adminDownload && !typing && daysLeft === 0;
 
                                                             return (
                                                                 <div className="rd-my-act">

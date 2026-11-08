@@ -1,5 +1,6 @@
 'use client';
 
+import { MATERIAL_COLUMNS } from '@/lib/material-columns';
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import QuestionRenderer from '@/components/QuestionRenderer';
@@ -926,7 +927,7 @@ export default function AdminQuestionsClient({ initialData }: AdminQuestionsClie
             const supabase = createClient();
             const { data, error } = await supabase
                 .from('exam_materials')
-                .select('*')
+                .select(MATERIAL_COLUMNS)
                 .eq('content_type', '개인DB')
                 .order('created_at', { ascending: false });
 

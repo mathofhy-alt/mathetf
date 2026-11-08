@@ -1,4 +1,5 @@
 import CampaignCapture from '@/components/CampaignCapture';
+import ClientReleaseGuard from '@/components/ClientReleaseGuard';
 import KakaoPixel from '@/components/KakaoPixel';
 import ModalFocus from '@/components/ModalFocus';
 import type { Metadata } from "next";
@@ -82,6 +83,7 @@ export default function RootLayout({
             <body className={`${notoSansKr.variable} font-sans bg-background text-foreground antialiased selection:bg-brand-500/30 selection:text-brand-900 flex flex-col min-h-screen`}>
                 {process.env.NEXT_PUBLIC_LOCAL_PREVIEW === '1' && <div className="review-environment">{process.env.NEXT_PUBLIC_REVIEW_ORIGINALS === '1' ? '검토 전용 · 실제 문항 읽기 전용 연결 · 로그인·저장은 테스트 환경' : '검토 전용 · 하나고 2025 실제 문항 · 로그인·저장은 테스트 환경'}</div>}
                 <CartProvider>
+                    <ClientReleaseGuard />
                     <SiteSurface>{children}</SiteSurface>
                     <Footer />
                     <FloatingCart />

@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
                 id: questionIds[idx], // or some unique id
                 path: `raw_uploads/${s.file_id}.hwpx`
             })),
-            bucket: 'hwpx'
+            bucket: 'hwpx-originals'
         });
 
         // 4. Return Download

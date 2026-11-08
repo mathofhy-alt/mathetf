@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
                 content_xml: q.content_xml,
                 original_name: 'question'
             })),
-            bucket: 'hwpx'
+            bucket: 'hwpx-originals'
         });
 
         console.log(`[API] HWPX Buffer created. Size: ${hwpxBuffer.byteLength} bytes.`);

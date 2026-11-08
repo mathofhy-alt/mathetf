@@ -1,9 +1,10 @@
+import { ensurePrivateOriginals } from '@/lib/private-originals';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
 import { parseHmlV2 } from '@/lib/hml-v2/parser';
 import { renderMathToSvg } from '@/lib/math-renderer';
 
-const STORAGE_BUCKET = 'hwpx';
+const STORAGE_BUCKET = 'hwpx-originals';
 
 /**
  * HML V2 Upload API
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Only .hml files allowed' }, { status: 400 });
         }
 
-        const supabase = createClient();
+        const supabase = createAdminClient();
+        await ensurePrivateOriginals(supabase);
 
         // Read file content as text (HML is XML-based)
         const hmlContent = await file.text();
