@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { storageKey } from '@/lib/storage-key';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,9 +8,12 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
     const path = req.nextUrl.searchParams.get('path') || '';
 
-    // 공개 스토리지 하위 경로만 허용 (경로 탈출·프로토콜 삽입 차단 — 오픈 프록시 방지)
-    if (!path || path.includes('..') || path.includes('//') || /^[a-z]+:/i.test(path)) {
-        return new NextResponse('Bad Request', { status: 400 });
+    const [bucket, ...parts] = path.split('/');
+    const key = storageKey(parts.join('/'));
+    const types: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif' };
+    const ext = key?.split('.').pop()?.toLowerCase() || '';
+    if (!['exam-previews','mock-previews','question-assets','hwpx'].includes(bucket) || !key || parts.some(p => p.toLowerCase() === 'raw_uploads') || !types[ext]) {
+        return new NextResponse('Bad Request', { status: 400, headers: { 'Cache-Control': 'no-store' } });
     }
 
     const base = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
@@ -18,18 +22,23 @@ export async function GET(req: NextRequest) {
     try {
         const upstream = await fetch(
             `${base}/storage/v1/object/public/${path.split('/').map(encodeURIComponent).join('/')}`,
-            { signal: AbortSignal.timeout(10000) }
+            { signal: AbortSignal.timeout(10000), redirect: 'error', cache: 'no-store' }
         );
         if (!upstream.ok || !upstream.body) {
             // 원본 유실 시 공통 og 이미지로 폴백 (스크레이퍼에 깨진 카드 방지)
             return NextResponse.redirect(new URL('/og-image.png', req.nextUrl.origin), 302);
         }
+        const mime = upstream.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+        if (mime !== types[ext]) {
+            await upstream.body.cancel();
+            return new NextResponse('Unsupported Image', { status: 415, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+        }
         return new NextResponse(upstream.body, {
             status: 200,
             headers: {
-                'Content-Type': upstream.headers.get('content-type') || 'image/png',
-                // 미리보기 이미지는 사실상 불변 — CDN 1년, 브라우저 1일
-                'Cache-Control': 'public, max-age=86400, s-maxage=31536000, immutable',
+                'Content-Type': mime,
+                'X-Content-Type-Options': 'nosniff',
+                'Cache-Control': 'public, max-age=3600, s-maxage=3600',
             },
         });
     } catch {

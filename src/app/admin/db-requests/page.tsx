@@ -1,12 +1,13 @@
 'use client';
 
+import { downloadMaterialArchive } from '@/lib/download-material-archive';
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { FileDown, Trash2, RefreshCw, User as UserIcon, Calendar } from 'lucide-react';
 
 /**
  * 관리자 — 개인DB 요청 목록 (2026-10-06). 회원이 '개인DB 요청' 버튼으로 올린 파일.
- * 목록·상태·삭제는 /api/admin/db-requests(관리자 확인), 파일 받기는 저장소에서 blob 으로(관리자 세션).
+ * 목록·상태·삭제는 /api/admin/db-requests(관리자 확인), 개별 받기는 서버 서명 경로, 전체 받기는 서버 ZIP.
  */
 const STATUSES = ['접수', '처리중', '완료', '반려'] as const;
 const mb = (n?: number | null) => !n ? '' : n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`;
@@ -62,15 +63,12 @@ export default function DbRequestsAdmin() {
     );
 
     const download = async (path: string, name: string) => {
-        const { data, error: e } = await supabase.storage.from('exam-materials').download(path);
-        if (e || !data) { alert('파일을 받지 못했습니다: ' + (e?.message || '')); return; }
-        const url = URL.createObjectURL(data);
-        const a = document.createElement('a'); a.href = url; a.download = name.replace(/[\\/:*?"<>|]/g, '_');
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        const link = document.createElement('a');
+        link.href = `/api/admin/material-download?${new URLSearchParams({ path, name })}`;
+        document.body.appendChild(link); link.click(); link.remove();
     };
     const downloadAll = async (row: any) => {
-        for (const f of row.files || []) { await download(f.path, f.name || f.path.split('/').pop()); await new Promise(r => setTimeout(r, 400)); }
+        downloadMaterialArchive((row.files || []).map((f: any) => ({ path: f.path, name: f.name || f.path.split('/').pop() })));
     };
     const setStatus = async (id: string, status: string) => {
         const r = await fetch('/api/admin/db-requests', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });

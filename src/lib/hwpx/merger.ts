@@ -1,3 +1,4 @@
+import { originalKey } from '../storage-key';
 import JSZip from 'jszip';
 import { DOMParser, XMLSerializer } from 'xmldom';
 import * as fs from 'fs';
@@ -25,6 +26,9 @@ export class HwpxMerger {
         const { templatePath, sources, bucket, isSingleTest = false, isMergeMirror = false } = opts;
         console.log(`[MERGE_START] count=${sources.length} bucket=${bucket} single=${isSingleTest} mirror=${isMergeMirror}`);
         const targetQuestions = Array.isArray(sources) ? sources : [];
+        if (bucket !== 'hwpx-originals' || !targetQuestions.length || targetQuestions.some(q => !originalKey(q.path))) {
+            throw new Error('Invalid private original source');
+        }
         targetQuestions.sort((a, b) => (a.question_number || 0) - (b.question_number || 0));
 
         const SINGLE_TEST = isSingleTest;
@@ -63,6 +67,7 @@ export class HwpxMerger {
         };
 
         const q0 = targetQuestions[0];
+        if (!originalKey(q0.path)) throw new Error('Invalid original key');
         const { data: data0, error: err0 } = await supabase.storage.from(bucket).download(q0.path);
         if (err0 || !data0) throw new Error(`VESSEL_LOAD_FAIL: ${q0.path}`);
 
@@ -241,7 +246,8 @@ export class HwpxMerger {
 
             // Load Source
             const { zip: sZip, header: sHeaderDoc } = await (async () => {
-                const loadPath = q.path;
+                const loadPath = originalKey(q.path);
+                if (!loadPath) throw new Error('Invalid original key');
                 if (sourceCache.has(loadPath)) return sourceCache.get(loadPath)!;
                 const { data, error } = await supabase.storage.from(bucket).download(loadPath);
                 if (error || !data) throw new Error(`LOAD_FAIL: ${loadPath}`);

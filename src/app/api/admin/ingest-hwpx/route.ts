@@ -1,9 +1,10 @@
+import { ensurePrivateOriginals } from '@/lib/private-originals';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
 import { parseQuestionsFromHwpx } from '@/lib/hwpx/parser';
 import { renderMathToSvg } from '@/lib/math-renderer';
 
-const STORAGE_BUCKET = 'hwpx';
+const STORAGE_BUCKET = 'hwpx-originals';
 
 import { requireAdmin } from '@/utils/admin-auth';
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
         }
 
-        const supabase = createClient();
+        const supabase = createAdminClient();
         const buffer = Buffer.from(await file.arrayBuffer());
 
         // 1. Validate Extension (Admin might upload HML too? User instructions focused on HWPX only for now)
@@ -51,28 +52,7 @@ export async function POST(req: NextRequest) {
         }
 
 
-        // --- PRE-FLIGHT BUCKET CHECK & AUTO-CREATE ---
-        const { data: buckets, error: listErr } = await supabase.storage.listBuckets();
-        if (listErr) {
-            console.error('[ADMIN-INGEST-ERR] Failed to list buckets:', listErr);
-            throw new Error(`Supabase Connection Failed: ${listErr.message}`);
-        }
-
-        const bucketExists = buckets?.find(b => b.name === STORAGE_BUCKET);
-        if (!bucketExists) {
-            console.log(`[ADMIN-INGEST] Bucket '${STORAGE_BUCKET}' not found. Attempting Auto-Creation...`);
-            const { error: createErr } = await supabase.storage.createBucket(STORAGE_BUCKET, {
-                public: true,
-                fileSizeLimit: 52428800 // 50MB
-            });
-
-            if (createErr) {
-                console.warn(`[ADMIN-INGEST-WARN] Auto-creation returned error (ignoring and trying upload):`, createErr.message);
-            } else {
-                console.log(`[ADMIN-INGEST] Bucket '${STORAGE_BUCKET}' created successfully.`);
-            }
-        }
-        // ----------------------------------------------
+        await ensurePrivateOriginals(supabase, true);
 
         // 2. Upload raw HWPX to Storage
         const fileId = crypto.randomUUID();

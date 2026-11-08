@@ -93,16 +93,14 @@ export default function AdminInventory() {
                 return;
             }
 
-            const { data } = await supabase
-                .from('exam_materials')
-                .select('school, title, semester, exam_type, exam_year, file_type, content_type, created_at, file_path, subject')
-                .in('school', targetSchools)
-                // [2026-10-04] 동명이교 — 이름만 보면 다른 지역 같은 이름 학교의 자료로 녹색이 떴다(30칸).
-                //   자료 행의 지역·구는 schools 와 맞춰 둔다(감사 I 항목 0건 유지) → 같이 걸러도 빠지는 자료가 없다.
-                .eq('region', selectedRegion)
-                .eq('district', selectedDistrict)
-                .eq('grade', parseInt(selectedGrade))
-                .not('school', 'eq', 'DELETED');
+            const response = await fetch(`/api/admin/materials?${new URLSearchParams({ region: selectedRegion, district: selectedDistrict })}`, { cache: 'no-store' }).catch(() => null);
+            if (!response?.ok) {
+                alert('관리자 자료 목록을 불러오지 못했습니다. 다시 시도해 주세요.');
+                setIsLoading(false);
+                return;
+            }
+            const data: any[] = ((await response.json()).rows || []).filter((row: any) =>
+                targetSchools.includes(row.school) && Number(row.grade) === Number(selectedGrade) && row.school !== 'DELETED');
 
             const yearOf = (e: any) => (e.title?.match(/20\d{2}/)?.[0] ? parseInt(e.title.match(/20\d{2}/)[0]) : (e.exam_year || 2024));
             const subj = (e: any) => (e.subject || '').trim();

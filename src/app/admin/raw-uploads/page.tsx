@@ -1,5 +1,6 @@
 'use client';
 
+import { downloadMaterialArchive } from '@/lib/download-material-archive';
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { createClient } from '@/utils/supabase/client';
@@ -20,16 +21,9 @@ export default function RawUploadsAdmin() {
     const fetchData = async () => {
         setIsLoading(true);
 
-        // 원본 제보 목록
-        const { data, error } = await supabase
-            .from('exam_materials')
-            .select('*')
-            .eq('content_type', '원본제보')
-            .order('created_at', { ascending: false });
-
-        if (!error && data) {
-            setUploads(data);
-        }
+        const res = await fetch('/api/admin/materials?raw=1', { cache: 'no-store' });
+        if (res.ok) setUploads((await res.json()).rows || []);
+        else alert('제보 목록을 불러오지 못했습니다. 관리자 로그인을 확인해 주세요.');
 
         // 채택 보상 지급 완료 목록
         try {
@@ -126,36 +120,15 @@ export default function RawUploadsAdmin() {
     };
     const handleDownloadAll = async (row: any) => {
         const paths = reportFiles(row);
-        for (let i = 0; i < paths.length; i++) {
-            await handleDownload(paths[i], `${reportFileBase(row)}${paths.length > 1 ? `_${String(i + 1).padStart(2, '0')}` : ''}.${paths[i].split('.').pop()}`);
-            await new Promise(r => setTimeout(r, 400));   // 브라우저가 연속 다운로드를 막지 않게
-        }
+        downloadMaterialArchive(paths.map((path, i) => ({ path,
+            name: `${reportFileBase(row)}${paths.length > 1 ? `_${String(i + 1).padStart(2, '0')}` : ''}.${path.split('.').pop()}`,
+        })));
     };
 
     const handleDownload = async (filePath: string, originalTitle: string) => {
-        try {
-            // [10/5] 파일을 먼저 받아(blob) 같은 출처 주소로 저장한다. 서명 주소를 바로 누르면 다른 도메인이라
-            //   a.download 가 무시돼 현재 탭에서 사진이 열리고(관리자 화면이 사라짐), 연달아 누르면 앞 다운로드가
-            //   취소돼 여러 장 제보의 일부만 받아졌다.
-            const { data, error } = await supabase.storage
-                .from('exam-materials')
-                .download(filePath);
-
-            if (error) throw error;
-            if (data) {
-                const url = URL.createObjectURL(data);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = originalTitle.replace(/[\\/:*?"<>|]/g, '_');
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                setTimeout(() => URL.revokeObjectURL(url), 60_000);
-            }
-        } catch (err) {
-            console.error('Download failed:', err);
-            alert('다운로드에 실패했습니다. 해당 파일이 Storage에 존재하지 않을 수 있습니다.');
-        }
+        const link = document.createElement('a');
+        link.href = `/api/admin/material-download?${new URLSearchParams({ path: filePath, name: originalTitle })}`;
+        document.body.appendChild(link); link.click(); link.remove();
     };
 
     const handleDelete = async (id: string, filePath: string) => {

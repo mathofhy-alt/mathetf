@@ -188,6 +188,28 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         return isDuplicateDate;
     };
 
+    const uploadSignedFile = async (file: File) => {
+        const response = await fetch('/api/material-upload', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: file.name, size: file.size }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || '업로드를 준비하지 못했습니다.');
+        const { error } = await supabase.storage.from('exam-materials')
+            .uploadToSignedUrl(result.path, result.token, file, { contentType: file.type || 'application/octet-stream' });
+        if (error) throw error;
+        return { path: result.path as string, proof: result.proof as string };
+    };
+
+    const saveMaterial = async (proof: string, metadata: Record<string, unknown>) => {
+        const response = await fetch('/api/material-upload', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'register', proof, metadata }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || '등록하지 못했습니다.');
+    };
+
     const uploadSingleFile = async (file: File, fileType: 'PDF' | 'HWP', contentType: '문제' | '해설', price: number) => {
         // 0. Duplicate Check
         const isDuplicate = await checkDuplicate(fileType, contentType);
@@ -195,16 +217,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             throw new Error(`[중복] 이미 등록된 자료입니다 (${year}년): ${fileType} ${contentType}`);
         }
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        // 1. Storage Upload
-        const { error: uploadError } = await supabase.storage
-            .from('exam-materials')
-            .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
+        const filePath = await uploadSignedFile(file);
 
         // 2. DB Insert
         // Adjust title suffix based on contentType to match the new labels if "해설" implies "문+해"
@@ -213,7 +226,7 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             titleSuffix = ' [문제+해설]';
         }
 
-        const { error: dbError } = await supabase.from('exam_materials').insert({
+        await saveMaterial(filePath.proof, {
             uploader_id: user.id,
             uploader_name: user?.email?.split('@')[0] || user?.user_metadata?.full_name || 'Unknown',
             school: selectedSchool,
@@ -227,12 +240,12 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             title: title + titleSuffix,
             file_type: fileType,
             content_type: contentType,
-            file_path: filePath,
+            file_path: filePath.path,
             price: price,
             sales_count: 0
         });
 
-        if (dbError) throw dbError;
+
     };
 
     const uploadRawSingleFile = async (file: File) => {
@@ -240,15 +253,11 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
         const fileExt = file.name.split('.').pop()?.toUpperCase() || 'FILE';
         const fileTypeForDb = fileExt === 'PDF' ? 'PDF' : (['JPG','PNG','JPEG'].includes(fileExt) ? 'IMAGE' : fileExt);
         
-        const fileName = `${Date.now()}_raw_${Math.random().toString(36).substring(7)}.${fileExt.toLowerCase()}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage.from('exam-materials').upload(filePath, file);
-        if (uploadError) throw uploadError;
+        const filePath = await uploadSignedFile(file);
 
         const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Unknown';
 
-        const { error: dbError } = await supabase.from('exam_materials').insert({
+        await saveMaterial(filePath.proof, {
             uploader_id: user.id,
             uploader_name: displayName,
             // ⚠ exam_materials 에는 submitter_id/submitter_name 컬럼이 없다.
@@ -267,12 +276,12 @@ export default function UploadModal({ isOpen, onClose, user, regions, districtsM
             title: title + ' [원본제보]',
             file_type: fileTypeForDb,
             content_type: '원본제보',
-            file_path: filePath,
+            file_path: filePath.path,
             price: 0,
             sales_count: 0
         });
 
-        if (dbError) throw dbError;
+
     };
 
 

@@ -1,9 +1,10 @@
+import { ensurePrivateOriginals } from '@/lib/private-originals';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient as createClient } from '@/utils/supabase/server-admin';
 import { parseQuestionsFromHwpx } from '@/lib/hwpx/parser';
 import { requireAdmin } from '@/utils/admin-auth';
 
-const STORAGE_BUCKET = 'hwpx';
+const STORAGE_BUCKET = 'hwpx-originals';
 
 export async function POST(req: NextRequest) {
     // [보안] service-role 로 파일 업로드 + DB insert 하는 인제스트 엔드포인트 → 관리자만.
@@ -38,29 +39,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Only .hwpx files are allowed' }, { status: 400 });
         }
 
-        // --- PRE-FLIGHT BUCKET CHECK & AUTO-CREATE ---
-        const { data: buckets, error: listErr } = await supabase.storage.listBuckets();
-        if (listErr) {
-            console.error('[INGEST-ERR] Failed to list buckets:', listErr);
-            throw new Error(`Supabase Connection Failed: ${listErr.message}`);
-        }
-
-        const bucketExists = buckets?.find(b => b.name === STORAGE_BUCKET);
-        if (!bucketExists) {
-            console.log(`[INGEST] Bucket '${STORAGE_BUCKET}' not found. Attempting Auto-Creation...`);
-            const { error: createErr } = await supabase.storage.createBucket(STORAGE_BUCKET, {
-                public: true,
-                fileSizeLimit: 52428800 // 50MB
-            });
-
-            if (createErr) {
-                console.warn(`[INGEST-WARN] Auto-creation returned error (ignoring and trying upload):`, createErr.message);
-                // We PROCEED anyway. If the bucket really doesn't exist, the upload step below will fail.
-            } else {
-                console.log(`[INGEST] Bucket '${STORAGE_BUCKET}' created successfully.`);
-            }
-        }
-        // ----------------------------------------------
+        await ensurePrivateOriginals(supabase, true);
 
         // 2. Upload raw HWPX to Storage
         // Path: raw_uploads/{uuid}.hwpx

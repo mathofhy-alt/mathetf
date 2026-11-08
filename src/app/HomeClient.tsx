@@ -1,5 +1,6 @@
 "use client";
 
+import { navigateMaterialDownload } from '@/lib/material-columns';
 import { openPdfLimit } from '@/components/PdfLimitModal';
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileItem, unpackHomeRow } from '../lib/data';
@@ -376,14 +377,14 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
         }
 
         // Fetch purchased exams to distinguish in UI
-        const { data: purchaseData } = await supabase
-            .from('purchased_items')
-            .select('item_id')
-            .eq('user_id', userId);
-
-        if (purchaseData) {
-            setPurchasedIds(new Set(purchaseData.map(p => p.item_id)));
-        }
+        const [current, legacy] = await Promise.all([
+            supabase.from('purchased_items').select('item_id').eq('user_id', userId),
+            supabase.from('purchases').select('exam_id').eq('user_id', userId),
+        ]);
+        setPurchasedIds(new Set([
+            ...(current.data || []).map(p => p.item_id),
+            ...(legacy.data || []).map(p => p.exam_id),
+        ]));
     };
 
     useEffect(() => {
@@ -559,50 +560,7 @@ export default function HomeClient({ initialExamData, initialExamCount, thisWeek
                 return;
             }
 
-            // 2. Download Logic
-            // [크롤예산] 목록에 file_path 를 싣지 않으므로 여기서 조회 (홈 HTML 경량화)
-            const { data: pathRow, error: pathErr } = await supabase
-                .from('exam_materials').select('file_path').eq('id', file.id).single();
-            if (pathErr || !pathRow?.file_path) throw new Error('파일 경로를 찾을 수 없습니다');
-            const filePath: string = pathRow.file_path;
-            // [V102] Extract original extension from filePath to prevent format distortion
-            const originalExt = filePath.split('.').pop() || (file.type === 'PDF' ? 'pdf' : 'hwp');
-            const safeContentType = file.contentType || '자료';
-            // Requested format: 학교이름_년도_학년_학기_중간/기말_문제(or 문제+해설)
-            // e.g. 경기고_2024_1_1_중간고사_문제.pdf
-            const filename = `${file.school}_${file.year}_${file.grade}_${file.semester}_${file.examType}_${safeContentType}.${originalExt}`;
-
-            // 1. Get raw signed URL (no download param)
-            // Increase expiry to 1 hour (3600s) to handle client/server clock drift
-            const { data, error: urlError } = await supabase.storage
-                .from('exam-materials')
-                .createSignedUrl(filePath, 3600);
-
-            if (urlError) throw urlError;
-            if (!data?.signedUrl) throw new Error('다운로드 URL 생성 실패');
-
-            // 2. Fetch Blob
-            const response = await fetch(data.signedUrl);
-
-            // Check if response is JSON error (even with 200 OK sometimes, or 400/403)
-            const contentType = response.headers.get('content-type');
-            if (!response.ok || (contentType && contentType.includes('application/json'))) {
-                // Try to parse error text
-                const errText = await response.text();
-                console.error('Download fetch failed:', errText);
-                throw new Error(`파일 다운로드 실패 (${response.status}): ${errText.substring(0, 100)}`);
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            // [수정] 즉시 revoke하면 다운로드 시작 전에 URL이 폐기돼 간헐 실패 → 40초 뒤 정리
-            setTimeout(() => window.URL.revokeObjectURL(url), 40_000);
+            navigateMaterialDownload(file.id);
 
             setDlState(prev => ({ ...prev, [file.id]: 'done' }));
             // [강사] 다운로드 직후 시험지출제 다리 배너

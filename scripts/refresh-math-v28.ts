@@ -17,7 +17,7 @@ if (fs.existsSync(envPath)) {
         if (key && value) {
             const cleanVal = value.trim().replace(/^["']|["']$/g, '');
             if (key.trim() === 'NEXT_PUBLIC_SUPABASE_URL') supabaseUrl = cleanVal;
-            if (key.trim() === 'NEXT_PUBLIC_SUPABASE_ANON_KEY') supabaseKey = cleanVal;
+            if (key.trim() === 'SUPABASE_SERVICE_ROLE_KEY') supabaseKey = cleanVal;
         }
     });
 }
@@ -28,7 +28,7 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-const STORAGE_BUCKET = 'hwpx';
+const STORAGE_BUCKET = 'hwpx-originals';
 
 async function run() {
     console.log("--- V28 Math Refresh Migration (Optimized) ---");
