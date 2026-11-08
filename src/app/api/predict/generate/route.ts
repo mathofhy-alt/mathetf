@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { memberOnly } from '@/lib/requireMember';
+import { createClient } from '@/utils/supabase/server';
+import { previewAccess } from '@/lib/predictAccess';
+import { recordBundleSelection, BundleError } from '@/lib/planBundles';
+import { FREE_TRIAL } from '@/lib/qbPassConfig';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 
 /**
@@ -19,15 +22,17 @@ function parseEmb(e: any): number[] | null {
 }
 
 export async function POST(req: NextRequest) {
-    const denied = await memberOnly(); if (denied) return denied;   // [10/26] 비로그인 차단
+    const { data: { user } } = await createClient().auth.getUser();
+    if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     try {
+        const ps = await previewAccess(user, 'predict');
         const { school, grade, semester, units, minDifficulty, maxDifficulty, count } = await req.json();
         if (!Array.isArray(units) || units.length === 0) {
             return NextResponse.json({ error: '단원을 1개 이상 선택하세요.' }, { status: 400 });
         }
         const min = Number(minDifficulty) || 1;
         const max = Number(maxDifficulty) || 10;
-        const want = Math.min(Math.max(Number(count) || 15, 1), 40);
+        const want = Math.min(Math.max(Math.floor(Number(count)) || 15, 1), ps.unlimited ? 40 : FREE_TRIAL.questions);
         const supabase = createAdminClient();
 
         // 1) 학교 출제 스타일 벡터(평균 임베딩)
@@ -126,12 +131,14 @@ export async function POST(req: NextRequest) {
         // 쉬움 → 어려움 순으로 정렬해서 시험지답게
         picked.sort((a, b) => (Number(a.difficulty) || 0) - (Number(b.difficulty) || 0));
 
+        const receiptId = await recordBundleSelection(user, 'predict', picked.slice(0, want).map(q => q.id));
         return NextResponse.json({
+            receiptId,
             questions: picked.slice(0, want),
             styleUsed: !!styleVec,
             poolSize: pool.length,
         });
     } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        return NextResponse.json({ error: e.message, needPass: e instanceof BundleError && e.needPass }, { status: e instanceof BundleError ? e.status : 503 });
     }
 }

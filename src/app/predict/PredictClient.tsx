@@ -1,5 +1,8 @@
 "use client";
+import { FREE_TRIAL } from '@/lib/qbPassConfig';
 import {sendToExamCart} from '@/lib/questions/handoff';
+import BundlePassGate from '@/components/BundlePassGate';
+import { usePassInfo } from '@/lib/usePassInfo';
 import FeatureExplanation from '@/components/FeatureExplanation';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -40,6 +43,7 @@ export default function PredictClient({ richSchools }: Props) {
     const [count, setCount] = useState(15);
     const [genLoading, setGenLoading] = useState(false);
     const [results, setResults] = useState<QItem[] | null>(null);
+    const [receiptId, setReceiptId] = useState('');
     const [images, setImages] = useState<Record<string, any[]>>({});
     const [contents, setContents] = useState<Record<string, string>>({});
     const [styleUsed, setStyleUsed] = useState(false);
@@ -66,23 +70,26 @@ export default function PredictClient({ richSchools }: Props) {
 
     const toggleLabel = (l: string) => setSelectedLabels((prev) => prev.includes(l) ? prev.filter((x) => x !== l) : [...prev, l]);
 
-    const fetchPreview = async (ids: string[]) => {
+    const fetchPreview = async (ids: string[], receiptId: string) => {
         if (ids.length === 0) return;
         // 청크 간·청크 내(content/images) 모두 병렬 — 직렬이던 것을 병렬화해 뒷번호 문항도 빨리 뜨게
         const chunks: string[][] = [];
         for (let c = 0; c < ids.length; c += 20) chunks.push(ids.slice(c, c + 20));
         await Promise.all(chunks.flatMap((chunk) => [
-            fetch('/api/predict/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk }) })
+            fetch('/api/predict/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk, setIds: ids, receiptId }) })
                 .then((r) => r.json())
                 .then((cj) => {
+                    if (cj.needPass) window.dispatchEvent(new Event('qb-pass-required'));
+                    if (cj.error) { setErr(cj.error); return; }
                     const cmap: Record<string, string> = {};
                     for (const id of chunk) cmap[id] = (cj.content && cj.content[id]) || '';
                     setContents((prev) => ({ ...prev, ...cmap }));
                 })
                 .catch(() => { }),
-            fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk }) })
+            fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: chunk, setIds: ids, receiptId, preview: true }) })
                 .then((r) => r.json())
                 .then((ij) => {
+                    if (ij.error) { setErr(ij.error); return; }
                     const obj = ij.images || {};
                     const imap: Record<string, any[]> = {};
                     for (const id of chunk) imap[id] = obj[id] || [];
@@ -96,19 +103,20 @@ export default function PredictClient({ richSchools }: Props) {
         // 선택 단원 → DB 단원명 변형 전체로 펼침
         const units = Array.from(new Set(selectedLabels.flatMap((l) => unitVariants(l))));
         if (units.length === 0) { setErr('단원을 1개 이상 선택하세요.'); return; }
-        setErr(''); setGenLoading(true); setResults(null); setImages({}); setContents({});
+        setErr(''); setGenLoading(true); setResults(null); setReceiptId(''); setImages({}); setContents({});
         try {
             const r = await fetch('/api/predict/generate', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ school, grade, semester: semesterStr, units, minDifficulty: minD, maxDifficulty: maxD, count }),
             });
             const j = await r.json();
-            if (j.error) { setErr(j.error); setGenLoading(false); return; }
+            if (j.error) { if (j.needPass) window.dispatchEvent(new Event('qb-pass-required')); setErr(j.error); setGenLoading(false); return; }
             const qs = (j.questions || []) as QItem[];
+            setReceiptId(j.receiptId);
             setResults(qs);
             setStyleUsed(!!j.styleUsed);
             const visible = isLoggedIn ? qs.map((q) => q.id) : qs.slice(0, freeCount).map((q) => q.id);
-            fetchPreview(visible);
+            fetchPreview(visible, j.receiptId);
         } catch { setErr('생성 중 오류가 발생했습니다.'); }
         setGenLoading(false);
     };
@@ -121,10 +129,10 @@ export default function PredictClient({ richSchools }: Props) {
         try {
             const ids = results.map((q) => q.id);
             const title = `${school} ${grade} ${semesterStr} 예상문제`;
-            const r = await fetch('/api/predict/hwp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, title }) });
+            const r = await fetch('/api/predict/hwp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, title, receiptId }) });
             if (!r.ok) {
                 let msg = 'HWP 생성 실패';
-                try { const j = await r.json(); if (j.error) msg = j.error; } catch { try { msg = await r.text() || msg; } catch { } }
+                try { const j = await r.json(); if (j.needPass) window.dispatchEvent(new Event('qb-pass-required')); if (j.error) msg = j.error; } catch { try { msg = await r.text() || msg; } catch { } }
                 alert(msg); setHwpLoading(false); return;
             }
             const blob = await r.blob();
@@ -142,15 +150,12 @@ export default function PredictClient({ richSchools }: Props) {
 
     // [10/25] PDF 받기 — 서버(아이윈브 한글)가 만들어 30~40초. 대표: 무료 회원은 PDF(로고)만, 이용권 회원은 한글·PDF 중 골라 받기
     const [pdfStatus, setPdfStatus] = useState('');
-    const [hasPass, setHasPass] = useState(false);
-    useEffect(() => {
-        if (!isLoggedIn) return;
-        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin) || !hwpPassOnly())).catch(() => {});   // 자정(10/26 0시) 전에는 모두 한글
-    }, [isLoggedIn]);
+    const { info: passInfo } = usePassInfo(isLoggedIn);
+    const hasPass = isLoggedIn && (!!(passInfo?.passUntil || passInfo?.admin) || !hwpPassOnly());
     const getPdf = async () => {
         if (!results || results.length === 0 || pdfStatus) return;
         setPdfStatus('PDF 만드는 중…');
-        try { await downloadPdf(results.map((q) => q.id), `${school} ${grade} ${semesterStr} 예상문제`, 'predict', setPdfStatus); if (!isExamPromoHidden()) setShowPromo(true); }
+        try { await downloadPdf(results.map((q) => q.id), `${school} ${grade} ${semesterStr} 예상문제`, 'predict', setPdfStatus, receiptId); if (!isExamPromoHidden()) setShowPromo(true); }
         catch (e: any) { alert(e?.message || 'PDF를 만들지 못했습니다.'); }
         setPdfStatus('');
     };
@@ -179,9 +184,10 @@ export default function PredictClient({ richSchools }: Props) {
                 <h1 className="rd-tl-h1">우리 학교의 다음 연습.</h1>
                 <p className="rd-lead rd-tl-lead">학교와 시험 범위를 선택하면, 같은 유형의 기존 기출문항을 찾아 한 세트로 모아드립니다.</p>
                 <div className="rd-tl-actions">
-                    <span className="rd-pill is-accent">회원 무료</span>
+                    <span className="rd-pill is-accent">무료 하루 {FREE_TRIAL.predictDaily}회·주 {FREE_TRIAL.predictWeekly}회, 이용권 회원은 제한 없음</span>
                     <button className="rd-btn rd-btn-tint" disabled={!results?.length} onClick={()=>sendToExamCart((results||[]).map(q=>q.id),`${school} 유사 기출`,'predict')}>결과로 시험지 만들기</button>
                 </div>
+                <p className="rd-help">한국 시간 기준이며 주간 한도는 월요일 0시에 초기화돼요. 기간 중인 시험대비권·강사 이용권 회원은 횟수 제한이 없고, 1회권은 해당하지 않아요. PDF 받기 한 묶음을 1회로 세며 같은 묶음 다시 받기는 세지 않아요. 무료 PDF에는 로고가 들어가며 예상문제 한글은 강사 이용권만 제공해요.</p>
                 <div className="rd-tl-explain"><FeatureExplanation/></div>
             </section>
 
@@ -375,6 +381,7 @@ export default function PredictClient({ richSchools }: Props) {
             )}
             </div>
 
+            <BundlePassGate />
             {showPromo && <ExamPromoModal onClose={() => setShowPromo(false)} />}
         </main>
     );

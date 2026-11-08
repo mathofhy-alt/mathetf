@@ -15,6 +15,7 @@ import { deletePurchase } from './actions';
 import MyDbRequests from '@/components/MyDbRequests';
 import MyReports from '@/components/MyReports';
 import MySuggestions from '@/components/MySuggestions';
+import PrintBundles from '@/components/PrintBundles';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 import { paywallOn } from '@/lib/qbPassConfig';
 
@@ -72,7 +73,7 @@ export default function MyPage() {
                     .from('purchased_items')
                     .select('*')
                     .eq('user_id', user.id)
-                    .neq('item_type', 'QB_PASS')   // 이용권은 위 '시험지 만들기' 칸에 따로(10/7) — 목록에서 지우면 기간이 사라진다
+                    .not('item_type', 'in', '(QB_PASS,QB_ONCE,QB_EXAM,QB_SHEET)')   // 이용권은 위 '시험지 만들기' 칸에 따로(10/7) — 목록에서 지우면 기간이 사라진다
                     .order('created_at', { ascending: false }),
             ]);
             if (profile) {
@@ -258,8 +259,8 @@ export default function MyPage() {
                     <h1 className="rd-x-h1 rd-my-h1">나의 수학 서재.</h1>
                     {user && passInfo && !(passInfo.unlimited && !passInfo.passUntil) && (
                         <div className="rd-my-points rd-my-pass">
-                            <span>시험지 만들기</span>
-                            <b>{passInfo.passUntil ? passLine(passInfo) : `무료 ${passInfo.freeLeft}/${passInfo.freePerWeek}회 남음`}</b>
+                            <span>이용권</span>
+                            <b>{passLine(passInfo)}</b>
                             <button type="button" className="rd-btn rd-btn-primary" onClick={() => setShowPass(true)}>{passInfo.passUntil ? '기간 늘리기' : '이용권 보기'}</button>
                         </div>
                     )}
@@ -306,6 +307,7 @@ export default function MyPage() {
 
                     {activeTab === 'purchases' && (
                         <div className="rd-my-stack">
+                            <PrintBundles />
                             {/* Sub-tabs for Purchases */}
                             <div className="rd-seg rd-seg-inline rd-my-sub" role="group" aria-label="구매 내역 종류">
                                 <button type="button" aria-pressed={purchaseTab === 'material'} onClick={() => setPurchaseTab('material')}>

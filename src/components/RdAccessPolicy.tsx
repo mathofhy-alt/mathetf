@@ -11,7 +11,7 @@ export default function RdAccessPolicy({ headingId, title = '이용 범위와 �
         '시험지 미리보기 1쪽은 누구나, 전체 쪽은 회원이 볼 수 있습니다.',
         '회원은 제공 회차의 해설 없는 전체 문제 PDF를 무료로 받습니다.',
         '문제+해설 PDF와 HWP는 자료별로 따로 구매합니다.',
-        '직접 만든 시험지는 한글 호환 HML로 받고, PDF는 한글에서 저장합니다.',
+        '직접 만든 시험지는 무료·시험지 1장권·시험대비권·강사 이용권 모두 한글 호환 HML과 PDF로 받습니다.',
         `만든 시험지는 최대 ${SAVED_EXAM_LIMIT}개(이용권 ${QB_LIMITS.pass.saved}개)까지 보관되고, 한 시험지에 ${QB_LIMITS.free.questions}문항(이용권 ${QB_LIMITS.pass.questions}문항)까지 담을 수 있습니다.`,
     ];
     return (

@@ -1,4 +1,5 @@
 import Header from '@/components/Header';
+import { BUNDLE_KEEP_DAYS } from '@/lib/qbPassConfig';
 import { createClient } from '@/utils/supabase/server';
 import PrintTransformClient from './PrintTransformClient';
 import type { Metadata } from 'next';
@@ -44,7 +45,7 @@ export default async function PrintTransformPage() {
                 <p>
                     학교에서 받은 수학 프린트(PDF)를 올리고 원하는 문제를 드래그로 잘라내면,
                     AI가 문제의 단원과 유형을 인식해 전국 기출에서 같은 유형의 기존 기출문항을 찾아 드립니다.
-                    마음에 드는 변형문제를 골라 담으면 출제 화면에서 조합한 시험지를 한글용 HML로 저장할 수 있습니다.
+                    고른 프린트 변형은 PDF로 받을 수 있습니다. 1회권·시험대비권·강사 이용권으로 받은 프린트 변형은 한글로도 받고, 만든 시각부터 {BUNDLE_KEEP_DAYS}일 동안 마이페이지에서 다시 받습니다.
                     내신 대비로 학교 프린트를 한 번 더 연습하고 싶을 때, 같은 유형의 다른 기출문제로 실전 감각을 키워 보세요.
                 </p>
             </section>
@@ -87,7 +88,7 @@ export default async function PrintTransformPage() {
                             <p className="rd-tl-step-t">3. 같은 유형 기출을 받습니다</p>
                             <p>
                                 잘라낸 문제의 단원과 유형을 읽어, 전국 학교 기출에서 같은 유형의 문제를 찾아 보여 줍니다.
-                                마음에 드는 것을 골라 담으면 문제와 해설이 함께 담긴 PDF로 받을 수 있습니다(이용권 회원은 한글 파일도).
+                                마음에 드는 것을 골라 문제와 해설이 함께 담긴 PDF로 받을 수 있습니다. 무료 체험은 PDF만, 1회권·시험대비권·강사 이용권으로 받은 프린트 변형은 한글도 제공합니다.
                             </p>
                         </li>
                     </ol>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
 import { createClient } from '@/utils/supabase/server';
 
 export async function GET(req: NextRequest) {
@@ -32,6 +33,10 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { folderId, type, referenceId, name } = body;
+
+    // 시험지 생성은 차감·파일·증거를 함께 확정하는 save RPC만 담당한다.
+    // 폴더 이동/이름 변경은 아래 PATCH가 기존 항목을 갱신한다.
+    if (type === 'saved_exam') return NextResponse.json({ error: '시험지 만들기에서 저장해 주세요.' }, { status: 403 });
 
     // Validation
     if (!folderId || !type || !referenceId) {
@@ -86,6 +91,7 @@ export async function DELETE(req: NextRequest) {
             const { error: storageError } = await supabase.storage
                 .from('exams')
                 .remove([hmlPath, jsonPath]);
+            await createAdminClient().storage.from('exams').remove([`locked/${user.id}/${item.reference_id}.hml`, `locked/${user.id}/${item.reference_id}.json`]).catch(() => null);
 
             if (storageError) {
                 console.warn('[StorageCleanup] Storage removal warning:', storageError.message);

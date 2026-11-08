@@ -1,74 +1,38 @@
+import { PLAN_COPY } from '@/lib/qbPassConfig';
 import { NextRequest, NextResponse } from 'next/server';
-import { stampMemberId } from '@/lib/hml-v2/member-stamp';
-import crypto from 'crypto';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { buildPredictHml } from '@/lib/predict-hml';
-import { passStatus } from '@/lib/qbPass';
-import { hwpPassOnly } from '@/lib/hwpPolicy';
+import { bundleExpired } from '@/lib/bundlePolicy';
+import { prepareBundle, bundleHml, logBundleDownload, BundleError, type BundleJob } from '@/lib/planBundles';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
- * POST /api/predict/hwp  { ids: string[], title?: string }
- * 예상문제 세트를 HWP(.hml)로 즉석 생성해 바로 다운로드(저장 목록에 쌓지 않음).
- * 이용권 회원·운영자 전용(10/25부터 — 무료 회원은 PDF). 문항 조립은 기존 generateHmlFromTemplate 재사용.
- */
+/** 프린트 유료 묶음은 PDF와 한글이 같은 작업·차감 기록을 공유한다. */
 export async function POST(req: NextRequest) {
-    const sb = createClient();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return new NextResponse('로그인이 필요합니다.', { status: 401 });
-    // [10/25 대표] 예상문제·프린트변형의 한글(HWP)은 이용권 회원만 — 무료 회원은 로고가 찍힌 PDF(/api/pdf).
-    //   한글을 주면 로고를 지우고 자기 자료로 만든다. 강사는 고쳐 쓰려면 이용권, 학생·학부모는 PDF 로 충분.
-    if (hwpPassOnly()) try {
-        const ps = await passStatus(user);
-        if (!ps.passUntil && !ps.admin) return NextResponse.json({ error: '한글(HWP) 파일은 이용권 회원만 받을 수 있어요. 무료로는 PDF로 받을 수 있어요.', needPass: true }, { status: 402 });
-    } catch { return NextResponse.json({ error: '이용권 확인에 실패했어요. 잠시 후 다시 시도해 주세요.' }, { status: 503 }); }
-
+    const { data: { user } } = await createClient().auth.getUser();
+    if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    let job: BundleJob | undefined;
     try {
         const body = await req.json().catch(() => ({}));
-        const ids: string[] = (Array.isArray(body?.ids) ? body.ids : []).filter((x: any) => typeof x === 'string' && UUID_RE.test(x)).slice(0, 50);
-        const title = (body?.title || '예상문제').toString();
-        const source = body?.source === 'print' ? 'print' : 'predict';
-        if (ids.length === 0) return NextResponse.json({ error: '문항이 없습니다.' }, { status: 400 });
-
-        // [10/26 대표] 시험지 만들기처럼 받은 회원 아이디를 파일 안(그림 설명·문서 정보)에 안 보이게 넣는다 — 유출되면 누가 받았는지 안다
-        const hmlContent = stampMemberId(await buildPredictHml(ids, title), user.email ?? undefined);
-
-        // 사용 로그 (실패해도 다운로드엔 영향 없음)
-        // set_hash: 같은 문항 세트를 반복 다운로드하는지 판별용 (반복 다운로드 조사)
-        try {
-            const setHash = crypto.createHash('sha1')
-                .update([...ids].sort().join(','))
-                .digest('hex').slice(0, 12);
-            const base = {
-                user_id: user.id,
-                user_email: user.email ?? null,
-                feature: source,
-                title,
-                question_count: ids.length,
-            };
-            const admin = createAdminClient();
-            const { error } = await admin.from('feature_usage').insert({ ...base, set_hash: setHash });
-            // set_hash 컬럼 마이그레이션 전이면 컬럼 없이 재시도 (로깅 끊김 방지)
-            if (error) await admin.from('feature_usage').insert(base);
-        } catch { /* 로깅 실패 무시 */ }
-
-        const titleStr = title.replace(/[\\/<>:"|?*]/g, '_').trim() || '예상문제';
-        const filenameAscii = 'yesang_munje.hml';
-        const filenameUtf8 = encodeURIComponent(`${titleStr}.hml`);
-        return new NextResponse(hmlContent, {
-            status: 200,
+        job = await prepareBundle(user, body, 'hwp');
+        const hml = await bundleHml(job, user);
+        if (bundleExpired(job)) throw new BundleError(PLAN_COPY.expired, 410);
+        // 파일 생성·보관이 모두 끝난 뒤에만 제공을 확정한다. 실패·환급과 같은 잠금으로 경쟁한다.
+        const { data, error } = await createAdminClient().rpc('claim_bundle_hwp', { p_user: user.id, p_id: job.id });
+        if (error || !data) throw new BundleError('묶음 상태가 바뀌었어요. 이용 현황을 확인한 뒤 다시 받아 주세요.', 409);
+        job = data as BundleJob;
+        await logBundleDownload(user, job, 'hwp');
+        const title = (job.title || '문제').replace(/[\\/<>:"|?*]/g, '_').trim() || '문제';
+        return new NextResponse(hml, {
             headers: {
                 'Content-Type': 'application/x-hwp; charset=utf-8',
-                'Content-Disposition': `attachment; filename="${filenameAscii}"; filename*=UTF-8''${filenameUtf8}`,
+                'Content-Disposition': `attachment; filename="questions.hml"; filename*=UTF-8''${encodeURIComponent(title + '.hml')}`,
                 'Cache-Control': 'no-store',
             },
         });
     } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        if (job) await createAdminClient().rpc('fail_bundle_hwp', { p_user: user.id, p_id: job.id });
+        return NextResponse.json({ error: e.message || '한글 요청 실패', needPass: e instanceof BundleError && e.needPass }, { status: e instanceof BundleError ? e.status : 503 });
     }
 }

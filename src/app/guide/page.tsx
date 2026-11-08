@@ -5,18 +5,18 @@ import { ChevronDown } from 'lucide-react';
 import Header from '@/components/Header';
 import RdAccessPolicy from '@/components/RdAccessPolicy';
 
-export const metadata: Metadata = { title: '수학 시험지 만들기 사용법·무료 범위·파일 형식 | 수학ETF', description: '기출 5문항 체험부터 범위 선택, 문항 편집, HML 저장과 다운로드까지. 학생의 오답 연습과 교사의 수업용 출제를 안내합니다.', alternates: { canonical: '/guide' } };
+export const metadata: Metadata = { title: '수학 시험지 만들기 사용법·무료 범위·파일 형식 | 수학ETF', description: '기출 5문항 체험부터 범위 선택, 문항 편집, 저장과 다운로드까지. 학생의 오답 연습과 교사의 수업용 출제를 안내합니다.', alternates: { canonical: '/guide' } };
 
 // 2026-10 새 디자인(.rd) — 스타일은 src/app/redesign.css 의 .rd .rd-gd-* / .rd-tc-*.
 // /guide#access, /guide#format, #student, #teacher 는 다른 화면에서 링크하므로 id 를 유지한다.
 const STEPS = [
     { no: '01', name: '찾기', title: '배운 범위를 고르세요.', body: '학교와 시험 회차, 과목과 단원을 선택하세요. 자동 출제도 선택한 자료 안에서 문항을 찾습니다. 원래 시험의 과목과 현재 문항 분류는 다를 수 있으니 단원을 함께 확인하세요.', href: '/schools', link: '학교 이름으로 찾아보기' },
     { no: '02', name: '담기', title: '필요한 문제만 담으세요.', body: '문항 카드를 누르면 선택됩니다. 상세보기에서 수식과 그림을, 해설보기에서 풀이를 확인하세요. 담은 문항은 순서를 바꾸거나 빼면서 시험지를 다듬을 수 있습니다.', href: '/question-bank?demo=1&origin=guide', link: '편집 화면 직접 살펴보기' },
-    { no: '03', name: '받기', title: '나만의 시험지로 받으세요.', body: '로그인 후 제목과 열당 문제 수를 정하고 저장하세요. 완료 화면에서 HML 파일을 받으면 됩니다. 한글에서 편집하고 인쇄할 수 있고, PDF로도 저장할 수 있습니다.', href: '#format', link: '파일 형식 알아보기' },
+    { no: '03', name: '받기', title: '나만의 시험지로 받으세요.', body: '로그인 후 제목과 열당 문제 수를 정하고 저장하세요. 완료 화면에서 무료·시험지 1장권·시험대비권·강사 이용권 모두 PDF와 HML 파일을 받습니다. HML은 한글에서 편집하고 인쇄할 수 있고, PDF로도 저장할 수 있습니다.', href: '#format', link: '파일 형식 알아보기' },
 ];
 
 const FAQ: { id?: string; q: string; a: string }[] = [
-    { id: 'format', q: '시험지는 어떤 파일로 받나요?', a: '직접 만든 시험지는 한글에서 편집할 수 있는 HML 파일입니다. 완성된 PDF를 바로 내려받는 기능과는 다릅니다. PDF가 필요하면 한글에서 HML을 연 뒤 ‘PDF로 저장’을 이용하세요.' },
+    { id: 'format', q: '시험지는 어떤 파일로 받나요?', a: '직접 만든 시험지는 무료·시험지 1장권·시험대비권·강사 이용권 모두 PDF와 한글에서 편집할 수 있는 HML 파일로 받습니다.' },
     { q: '요청한 문항 수보다 적게 만들어졌어요.', a: '선택한 자료, 단원, 난이도와 중복 제외 조건을 모두 만족하는 문항이 부족한 경우입니다. 범위를 임의로 넓히지 않습니다. 안내된 문항을 먼저 확인하고 조건을 조정하거나 다른 자료를 선택하세요.' },
     { q: '같은 범위로 재출제하면 어떤 점이 달라지나요?', a: '이전 시험지에 사용한 문항을 제외합니다. 같은 유형의 유사문항을 보장하는 기능은 아니며, 선택 자료의 단원과 난이도 조건에 맞춰 새로 구성합니다. 설정 도중 취소하면 현재 작업은 유지됩니다.' },
     { q: '로그인하거나 새로고침하면 담은 문제가 없어지나요?', a: '같은 브라우저에서는 최근 7일 이내의 초안을 이어서 만들 수 있습니다. 저장 전 초안은 다른 기기로 옮겨지지 않으므로, 완성한 시험지는 로그인 후 보관함에 저장해주세요.' },

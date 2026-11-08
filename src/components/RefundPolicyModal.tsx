@@ -1,4 +1,5 @@
 "use client"
+import { PASS_SHEET, PASS_EXAM, FREE_TRIAL, QB_LIMITS, BUNDLE_KEEP_DAYS } from '@/lib/qbPassConfig';
 
 import { X } from "lucide-react"
 
@@ -47,10 +48,12 @@ export default function RefundPolicyModal({ isOpen, onClose }: RefundPolicyModal
 
                         {/* [10/7] 시험지 만들기 이용권 — 사용자 결정: 사용 0회여도 환불 안 함. 결제 창에서 동의를 받는다(PassModal). */}
                         <section>
-                            <h3 className="font-bold text-base mb-2">제2조의2 (시험지 만들기 이용권)</h3>
+                            <h3 className="font-bold text-base mb-2">제2조의2 (시험지 1장권·1회권·시험대비권·강사 이용권)</h3>
                             <ul className="list-disc pl-5 space-y-2">
-                                <li>시험지 만들기 이용권은 결제가 완료되는 즉시 이용 기간이 시작되는 기간제 디지털 콘텐츠입니다.</li>
-                                <li>회원은 결제 전에 정해진 무료 이용 횟수 안에서 시험지 만들기를 미리 이용해 볼 수 있으며, 결제 화면에서 아래 내용에 동의한 후 결제합니다.</li>
+                                <li>시험지 1장권, 1회권, 시험대비권, 강사 이용권은 결제가 완료되는 즉시 제공이 시작되는 디지털 콘텐츠입니다. 시험대비권과 강사 이용권의 이용 기간은 결제 시점부터 계산합니다.</li>
+                                <li>시험지 1장권은 구매 후 {PASS_SHEET.days}일 안에 새 시험지 1장 저장에 사용하며, 기간이 지나면 소멸합니다. 주 무료 {FREE_TRIAL.exam}회 → 시험대비권 → 시험지 1장권 순서로 사용하며, 강사 이용권 기간 중에는 1장권을 차감하지 않습니다. 저장한 시험지는 보관함에서 만든 뒤 {BUNDLE_KEEP_DAYS}일 동안 한글·PDF를 추가 차감 없이 다시 받을 수 있습니다.</li>
+                                <li>시험대비권은 {PASS_EXAM.price.toLocaleString('ko-KR')}원/{PASS_EXAM.days}일이며, 시험지 만들기·프린트 변형 합쳐 {PASS_EXAM.bundles}건 · 한글/PDF · {BUNDLE_KEEP_DAYS}일 다시 받기 · 예상문제 제한 없음입니다. 예상문제는 이용 기간 중 건수를 차감하지 않으며 PDF로 제공합니다. 시험지는 최대 {QB_LIMITS.free.questions}문항·로고 없음, 프린트는 건당 최대 {FREE_TRIAL.questions}문항입니다.</li>
+                                <li>회원은 결제 전에 정해진 무료 이용 횟수 안에서 시험지 만들기·프린트 변형·예상문제를 미리 이용해 볼 수 있으며, 결제 화면에서 아래 내용에 동의한 후 결제합니다.</li>
                                 <li><span className="text-rose-600 font-bold">이용권은 결제 즉시 제공이 시작되므로, 이용 여부와 관계없이 결제 후에는 청약철회(환불)가 제한됩니다</span>(전자상거래법 제17조 제2항 제5호).</li>
                                 <li>다만 회사의 귀책 사유(중복 결제, 시스템 오류로 이용권이 적용되지 않은 경우 등)로 이용하지 못한 경우에는 확인 후 환불하거나 이용 기간을 연장합니다.</li>
                             </ul>

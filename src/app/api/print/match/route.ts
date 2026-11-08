@@ -6,6 +6,8 @@ import { generateEmbedding } from '@/lib/embeddings';
 import { unitVariants, SUBJECT_UNITS } from '@/lib/curriculum';
 import { findOriginals, screen, screenByNumbers, stemOf, type OriginalHit } from '@/lib/print-original';
 import { rankBySyllables, syllableQuery, SYLLABLE_MATCH } from '@/lib/print-syllable';
+import { previewAccess } from '@/lib/predictAccess';
+import { recordBundleSelection, ownedBundleReceipt, BundleError } from '@/lib/planBundles';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -74,8 +76,12 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
     try {
+        await previewAccess(user, 'print');
         const startedAt = Date.now();   // 운영 제한 60초 안에서 원본 찾기를 최대한 기다린다
         const body = await req.json().catch(() => ({}));
+        // 여러 크롭은 이전 프린트 영수증에 이번 서버 매칭 후보만 더해 새 영수증으로 발급한다.
+        const previous = body?.receiptId ? await ownedBundleReceipt(user, body.receiptId) : null;
+        if (previous && previous.kind !== 'print') throw new BundleError('프린트 매칭 영수증이 필요합니다.', 403);
         let image: string = body?.image || '';
         const mimeType: string = body?.mimeType || 'image/png';
         const want = Math.min(Math.max(Number(body?.count) || 8, 1), 12);
@@ -212,7 +218,9 @@ export async function POST(req: NextRequest) {
 
         if (searchFailed && !picked.length) throw new Error('찾기 실패: DB 응답 없음');
 
+        const receiptId = await recordBundleSelection(user, 'print', [...(previous?.question_ids || []), ...picked.map(q => q.id)]);
         return NextResponse.json({
+            receiptId,
             reading: { unit: reading.unit, concepts: reading.concepts, difficulty: reading.difficulty },
             candidates: picked,
             // 넓혀서 찾았으면 화면에 알린다 — 같은 단원이 아니라는 걸 숨기면
@@ -223,6 +231,7 @@ export async function POST(req: NextRequest) {
             found: picked.some((q) => q.match) ? true : origFailed ? null : false,
         });
     } catch (e: any) {
+        if (e instanceof BundleError) return NextResponse.json({ error: e.message, needPass: e.needPass }, { status: e.status });
         // 업스트림(OpenAI·Gemini) 에러 문구를 그대로 내보내면 사용자 화면에
         // "429 You exceeded your current quota, please check your plan and billing details ..."
         // 같은 결제 안내가 노출된다(2026-08-07 ~ 08-21 실제로 노출돼 있었고 건의사항으로 접수됨).

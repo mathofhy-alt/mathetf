@@ -1978,6 +1978,10 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 /* 10/7 시험지 만들기 이용권 */
 .rd .rd-modal.rd-pass { overflow-y: auto; overscroll-behavior: contain; }   /* [11/7] 창이 화면보다 길면 결제 버튼이 잘리고 스크롤도 안 됐다(개념의힘 건의) */
 .rd .rd-pass-card { margin-top: 18px; padding: 20px; border-radius: 20px; background: var(--rd-zone); }
+.rd .rd-pass-plans { width: 100%; }
+.rd .rd-pass-plans > button { flex: 1; min-width: 0; white-space: nowrap; }
+.rd .rd-pass-fit { margin: 14px 0 12px; font-size: 16px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.45; color: var(--rd-text); }
+.rd .rd-pass-example { margin: 12px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--rd-sub); }
 .rd .rd-pass-name { margin: 0; font-size: 15px; font-weight: 700; color: var(--rd-sub); }
 .rd .rd-pass-price { margin: 4px 0 0; font-size: 16px; font-weight: 700; color: var(--rd-text); }
 .rd .rd-pass-price b { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; margin-right: 2px; }
@@ -2017,6 +2021,9 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd .rd-my-sec-title { margin: 8px 0 12px; font-size: 18px; font-weight: 800; color: var(--rd-text); }
 .rd .rd-my-status svg { vertical-align: -2px; margin-right: 2px; }
 .rd .rd-my-pass span { white-space: nowrap; }
+/* [11/5] 남은 횟수 문구가 길어져 휴대폰에서 옆으로 넘쳤다 */
+.rd .rd-my-pass { flex-wrap: wrap; }
+.rd .rd-my-pass b { min-width: 0; font-size: 16px; white-space: normal; overflow-wrap: anywhere; }
 .rd .rd-my-reqsec .rd-my-empty { padding-top: 28px; padding-bottom: 28px; } .rd .rd-my-reqsec .rd-my-empty-icon { display: none; }
 /* 10/7 홈 — 원본 제보·개인DB 요청 설명 칸 */
 .rd .rd-feature-cta { margin-top: 24px; }
@@ -2345,3 +2352,11 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 @media (max-width: 860px) { .rd .rd-sx-grid { grid-template-columns: 1fr; gap: 28px; } }
 .rd .rd-sx .rd-x-rows { grid-template-columns: 1fr; gap: 10px; margin-top: 0; }
 .rd .rd-sx .rd-x-row { padding: 16px 20px; min-height: 0; }
+
+/* 긴 이용 현황도 390px에서 생성 버튼 공간을 침범하지 않는다. */
+@media (max-width: 640px) {
+  .rd .rd-qb-bar-in { flex-wrap: wrap; }
+  .rd .rd-qb-bar-info { flex: 1 1 160px; min-width: 0; }
+  .rd .rd-qb-bar-pass, .rd .rd-qb-passline { white-space: normal; overflow-wrap: anywhere; text-align: left; max-width: 100%; }
+  .rd .rd-qb-bar-go { flex: 0 0 auto; max-width: 100%; }
+}

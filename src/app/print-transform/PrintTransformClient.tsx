@@ -1,11 +1,14 @@
 "use client";
+import { BUNDLE_KEEP_DAYS, FREE_TRIAL } from '@/lib/qbPassConfig';
+import BundlePassGate from '@/components/BundlePassGate';
+import { usePassInfo } from '@/lib/usePassInfo';
+import { passLine } from '@/components/question-bank/PassModal';
 import FeatureExplanation from '@/components/FeatureExplanation';
 import {sendToExamCart} from '@/lib/questions/handoff';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Loader2, Upload, Wand2, Check, Download, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { downloadPdf } from '@/lib/pdfDownload';
-import { hwpPassOnly } from '@/lib/hwpPolicy';
 import QuestionRenderer from '@/components/QuestionRenderer';
 import ExamPromoModal, { isExamPromoHidden } from '@/components/ExamPromoModal';
 
@@ -26,6 +29,8 @@ interface CropItem {
 let _cid = 0;
 
 export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boolean }) {
+    const { info: passInfo } = usePassInfo(isLoggedIn);
+    const paidHwp = !!(passInfo?.unlimited || passInfo?.examLeft || passInfo?.onceLeft);
     const [numPages, setNumPages] = useState(0);
     const [cur, setCur] = useState(0);              // 현재 보고 있는 페이지 (0-based)
     const [loadingPdf, setLoadingPdf] = useState(false);
@@ -35,6 +40,9 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const pdfRef = useRef<any>(null);
     const renderSeq = useRef(0);
+    const receiptRef = useRef('');
+    const matchQueue = useRef(Promise.resolve());
+    const matchEpoch = useRef(0);
     // [10/22 대표 시안] 두 단계 화면 — ① 자르기(PDF 크게, 자른 문제는 오른쪽 좁은 줄) ② 고르기(PDF 숨기고 후보를 넓게, 접기 없이 전체)
     //   예전엔 PDF 오른쪽 좁은 칸에 후보가 작은 스크롤 상자로 쌓여 문제를 읽기 어려웠다(느티 선생님 문의).
     const [step, setStep] = useState<'crop' | 'pick'>('crop');
@@ -45,7 +53,8 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
     const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setLoadingPdf(true); setNumPages(0); setCur(0); setCrops([]); setStep('crop'); setActiveId(null);
+        matchEpoch.current++;
+        setLoadingPdf(true); setNumPages(0); setCur(0); setCrops([]); setStep('crop'); setActiveId(null); receiptRef.current = '';
         try {
             // [10/21 Clarity] 삼성 인터넷 휴대폰에서 'PDF 여는 중…' 에 멈춰 여러 번 누르다 떠난 세션 — pdf.js 6 기본판은 최신 브라우저 전용이라
             //   구형 브라우저용(legacy) 판으로 바꾸고, 30초 안에 안 열리면 멈춘 채 두지 않고 알린다.
@@ -127,19 +136,32 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
 
     // 크롭 → 유사문제 찾기
     const findSimilar = async (id: string, crop = crops.find((c) => c.id === id)) => {
-        setCrops((p) => p.map((c) => c.id === id ? { ...c, loading: true, error: undefined } : c));
         if (!crop) return;
+        setCrops((p) => p.map((c) => c.id === id ? { ...c, loading: true, error: undefined } : c));
+        const epoch = matchEpoch.current;
+        const previousMatch = matchQueue.current;
+        let release!: () => void;
+        matchQueue.current = new Promise<void>(resolve => { release = resolve; });
+        await previousMatch;
         try {
-            const r = await fetch('/api/print/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: crop.dataUrl, mimeType: 'image/png', count: 8 }) });
+            if (epoch !== matchEpoch.current) return;
+            const r = await fetch('/api/print/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: crop.dataUrl, mimeType: 'image/png', count: 8, receiptId: receiptRef.current || undefined }) });
             const j = await r.json();
-            if (!r.ok) { setCrops((p) => p.map((c) => c.id === id ? { ...c, loading: false, error: j.error || '실패' } : c)); return; }
+            if (epoch !== matchEpoch.current) return;
+            if (!r.ok) { if (j.needPass) window.dispatchEvent(new Event('qb-pass-required')); setCrops((p) => p.map((c) => c.id === id ? { ...c, loading: false, error: j.error || '실패' } : c)); return; }
             const cands = j.candidates || [];
+            receiptRef.current = j.receiptId;
             const ids = cands.map((q: any) => q.id);
             // 내용·이미지 로드
             const [cont, imgs] = await Promise.all([
-                fetch('/api/predict/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).then((x) => x.json()).catch(() => ({})),
-                fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).then((x) => x.json()).catch(() => ({})),
+                fetch('/api/predict/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, receiptId: j.receiptId }) }).then((x) => x.json()).catch(() => ({})),
+                fetch('/api/questions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, receiptId: j.receiptId, preview: true }) }).then((x) => x.json()).catch(() => ({})),
             ]);
+            if (cont.needPass) window.dispatchEvent(new Event('qb-pass-required'));
+            if (cont.error || imgs.error) {
+                setCrops((p) => p.map((c) => c.id === id ? { ...c, loading: false, error: cont.error || imgs.error } : c));
+                return;
+            }
             setCrops((p) => p.map((c) => c.id === id ? {
                 ...c, loading: false, reading: j.reading, candidates: cands, widened: !!j.widened, found: j.found,
                 contents: cont.content || {}, images: imgs.images || {},
@@ -147,21 +169,24 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
             } : c));
         } catch {
             setCrops((p) => p.map((c) => c.id === id ? { ...c, loading: false, error: '오류' } : c));
+        } finally {
+            release();
         }
     };
 
-    // 「변형 찾기」 — 아직 안 찾은 문제를 한꺼번에(셋씩 동시에) 찾고 ② 고르기로 넘어간다
+    // 「변형 찾기」 — 아직 안 찾은 문제를 순서대로 찾고 ② 고르기로 넘어간다
     const goPick = async () => {
         const todo = crops.filter((c) => !c.candidates && !c.loading);
         setStep('pick');
         if (!activeId || !crops.some((c) => c.id === activeId)) setActiveId((todo[0] || crops[0])?.id ?? null);
         // 소개 문단이 위에 있어 맨 위로 올리면 고르기 화면이 가려진다 — 고르기 영역 머리로
         requestAnimationFrame(() => document.getElementById('pt-pick')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-        for (let i = 0; i < todo.length; i += 3) await Promise.all(todo.slice(i, i + 3).map((c) => findSimilar(c.id, c)));
+        // 이전 영수증을 다음 서버 매칭으로 이어 한 영수증의 범위 안에서만 선택한다.
+        for (const c of todo) await findSimilar(c.id, c);
     };
 
     const toggleSel = (cropId: string, qid: string) =>
-        setCrops((p) => p.map((c) => c.id === cropId ? { ...c, selected: c.selected.includes(qid) ? c.selected.filter((x) => x !== qid) : [...c.selected, qid] } : c));
+        setCrops((p) => p.map((c) => c.id === cropId && c.candidates?.some(q => q.id === qid) ? { ...c, selected: c.selected.includes(qid) ? c.selected.filter((x) => x !== qid) : [...c.selected, qid] } : c));
 
     const totalSelected = crops.reduce((n, c) => n + c.selected.length, 0);
 
@@ -171,12 +196,12 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
         if (ids.length === 0) { alert('채택한 변형문제가 없어요.'); return; }
         setMaking(true);
         try {
-            const r = await fetch('/api/predict/hwp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, title: '학교프린트 변형문제', source: 'print' }) });
-            if (!r.ok) { let m = 'HWP 생성 실패'; try { const j = await r.json(); if (j.error) m = j.error; } catch { } alert(m); setMaking(false); return; }
+            const r = await fetch('/api/predict/hwp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, title: '학교프린트 변형문제', receiptId: receiptRef.current }) });
+            if (!r.ok) { let m = 'HWP 생성 실패'; try { const j = await r.json(); if (j.needPass) window.dispatchEvent(new Event('qb-pass-required')); if (j.error) m = j.error; } catch { } alert(m); setMaking(false); return; }
             const blob = await r.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = '학교프린트_변형문제.hml';
-            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 40_000);
             if (!isExamPromoHidden()) setShowPromo(true);
         } catch { alert('다운로드 오류'); }
         setMaking(false);
@@ -184,16 +209,11 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
 
     // [10/25] 채택한 변형문제 → PDF (서버 한글로 변환). 대표: 무료 회원은 PDF(로고)만, 이용권 회원은 한글·PDF 중 골라 받기
     const [pdfStatus, setPdfStatus] = useState('');
-    const [hasPass, setHasPass] = useState(false);
-    useEffect(() => {
-        if (!isLoggedIn) return;
-        fetch('/api/qb-pass', { cache: 'no-store' }).then((r) => r.json()).then((j) => setHasPass(!!(j?.passUntil || j?.admin) || !hwpPassOnly())).catch(() => {});   // 자정(10/26 0시) 전에는 모두 한글
-    }, [isLoggedIn]);
     const makePdf = async () => {
         const ids = crops.flatMap((c) => c.selected);
         if (ids.length === 0 || pdfStatus) return;
         setPdfStatus('PDF 만드는 중…');
-        try { await downloadPdf(ids, '학교프린트 변형문제', 'print', setPdfStatus); if (!isExamPromoHidden()) setShowPromo(true); }
+        try { await downloadPdf(ids, '학교프린트 변형문제', 'print', setPdfStatus, receiptRef.current); if (!isExamPromoHidden()) setShowPromo(true); }
         catch (e: any) { alert(e?.message || 'PDF를 만들지 못했습니다.'); }
         setPdfStatus('');
     };
@@ -221,7 +241,7 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
                 <h2 className="rd-tl-h1">한 장의 프린트에서,<br/>새로운 연습으로.</h2>
                 <p className="rd-lead rd-tl-lead">PDF를 올리고 연습할 문제를 잘라내세요. 비슷한 유형의 기존 기출문항을 찾아 시험지로 이어갑니다.</p>
                 <div className="rd-tl-actions">
-                    <span className="rd-pill is-accent">회원 무료</span>
+                    <span className="rd-pill is-accent">무료 체험 평생 {FREE_TRIAL.bundle}건 · PDF</span>
                     <button className="rd-btn rd-btn-tint" disabled={!totalSelected} onClick={()=>sendToExamCart(crops.flatMap(c=>c.selected),'프린트 유사 기출','print')}>선택 문항으로 시험지 만들기</button>
                 </div>
                 <div className="rd-tl-explain"><FeatureExplanation/></div>
@@ -371,18 +391,21 @@ export default function PrintTransformClient({ isLoggedIn }: { isLoggedIn: boole
 
                         <div className="rd-pt-bar">
                             <p><b>{totalSelected}개</b> 골랐어요{notYet.length ? <span> · {notYet.join(', ')}번은 아직</span> : null}</p>
-                            {hasPass && <button onClick={makeHwp} disabled={making || totalSelected === 0} className="rd-btn rd-btn-gray rd-pt-hwp">
-                                {making ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글파일 ({totalSelected})</>}
-                            </button>}
-                            <button onClick={makePdf} disabled={!!pdfStatus || totalSelected === 0} className="rd-btn rd-btn-primary rd-pt-hwp">
+                            <button onClick={makeHwp} disabled={making || !!pdfStatus || totalSelected === 0} className="rd-btn rd-btn-gray rd-pt-hwp">
+                                {making ? <><Loader2 size={16} className="animate-spin" /> 만드는 중…</> : <><Download size={16} /> 한글파일 ({totalSelected}){passInfo && !paidHwp ? ' · 이용권 확인' : ''}</>}
+                            </button>
+                            <button onClick={makePdf} disabled={making || !!pdfStatus || totalSelected === 0} className="rd-btn rd-btn-primary rd-pt-hwp">
                                 {pdfStatus ? <><Loader2 size={16} className="animate-spin" /> {pdfStatus}</> : <><FileText size={16} /> 변형문제 PDF 받기 ({totalSelected})</>}
                             </button>
                         </div>
+                        {passInfo && <p role="status" className="rd-tl-hint">{passLine(passInfo)}</p>}
+                        <p className="rd-tl-hint">무료 체험은 로고가 있는 PDF로 받아요. 1회권·시험대비권은 프린트 변형을 PDF·한글로 받고, 마이페이지에서 {BUNDLE_KEEP_DAYS}일 동안 추가 차감 없이 다시 받을 수 있어요.</p>
                     </div>
                 );
             })()}
             </div>
 
+            <BundlePassGate />
             {showPromo && <ExamPromoModal onClose={() => setShowPromo(false)} />}
         </main>
     );

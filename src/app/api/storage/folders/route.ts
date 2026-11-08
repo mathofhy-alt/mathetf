@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
 import { createClient } from '@/utils/supabase/server';
 
 // 주어진 폴더 + 모든 하위 폴더(중첩 포함)의 id 목록을 반환
@@ -290,6 +291,7 @@ export async function DELETE(req: NextRequest) {
             if (paths.length > 0) {
                 const { error: stErr } = await supabase.storage.from('exams').remove(paths);
                 if (stErr) console.warn('[FolderDelete] storage cleanup warning:', stErr.message);
+                await createAdminClient().storage.from('exams').remove(exams.filter((e: any) => e.reference_id).flatMap((e: any) => [`locked/${user.id}/${e.reference_id}.hml`, `locked/${user.id}/${e.reference_id}.json`])).catch(() => null);
             }
         }
     } catch (e: any) {

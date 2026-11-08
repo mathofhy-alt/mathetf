@@ -151,7 +151,7 @@ export default function OriginalReportModal({ open, onClose, initialCode, initia
                                 <Gift size={20} className="text-[#1B7E7A] shrink-0 mt-0.5" />
                                 <p className="m-0 text-[15px] leading-[1.6] text-[#17202C]">
                                     학교에서 받은 수학 시험지를 <b>스캔 PDF</b>나 휴대폰 사진으로 올려주세요. <b className="text-[#1B7E7A]">수식·그림까지 타이핑한 한글 파일</b>과 <b className="text-[#1B7E7A]">제보 참여 보상 {REPORT_REWARD_LABEL}</b>를 드려요.
-                                    <span className="block text-[14px] text-[#5F6B78] mt-1">시험지 {REPORTS_PER_PASS}회차면 {REPORT_REWARD_LABEL} × {REPORTS_PER_PASS}로 <b className="text-[#17202C]">시험지 만들기 이용권 한 달</b>이에요. 완성 파일은 마이페이지 › 내 요청에서 받아요. 올린 파일은 운영자만 봅니다.</span>
+                                    <span className="block text-[14px] text-[#5F6B78] mt-1">시험지 {REPORTS_PER_PASS}회차면 {REPORT_REWARD_LABEL} × {REPORTS_PER_PASS}로 <b className="text-[#17202C]">강사 이용권 한 달</b>이에요. 완성 파일은 마이페이지 › 내 요청에서 받아요. 올린 파일은 운영자만 봅니다.</span>
                                 </p>
                             </div>
 

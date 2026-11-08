@@ -1,6 +1,7 @@
 'use client';
 
 import { createClient } from '@/utils/supabase/client';
+import { downloadSavedExam } from '@/lib/pdfDownload';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { FolderPlus, RefreshCw, DownloadCloud, Search, X, ChevronRight, Folder as FolderIcon } from 'lucide-react';
 import FolderTree from './FolderTree';
@@ -210,7 +211,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
         else if (clipboard.type === 'folder') { await fetch('/api/storage/folders', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: clipboard.id, parentId: targetFolderId === null ? 'root' : targetFolderId }) }); setRefreshTrigger(p => p + 1); }
         setClipboard(null);
     };
-    const handleDownload = () => { if (!contextMenu || contextMenu.type !== 'item') return; window.location.href = `/api/storage/download?id=${contextMenu.id}`; };
+    const handleDownload = () => { if (!contextMenu || contextMenu.type !== 'item' || !contextMenu.id) return; void downloadSavedExam(contextMenu.id).catch((e) => alert(e?.message || 'PDF를 받지 못했습니다.')); };
     const handleSync = async () => {
         if (!confirm('구매한 DB 목록을 보관함으로 가져오시겠습니까?')) return;
         setLoading(true);
@@ -220,7 +221,7 @@ export default function FolderExplorer({ onItemSelect, onSelectAll, onGroupSelec
             if (data.count >= 0) { alert(`${data.count}개의 새로운 DB를 보관함으로 가져왔습니다.`); setRefreshTrigger(p => p + 1); }
         } catch (e) { alert('동기화 실패'); } finally { setLoading(false); }
     };
-    const handleSingleDownload = (type: 'folder' | 'item', id: string) => { if (type === 'item') window.location.href = `/api/storage/download?id=${id}`; };
+    const handleSingleDownload = (type: 'folder' | 'item', id: string) => { if (type === 'item') void downloadSavedExam(id).catch((e) => alert(e?.message || 'PDF를 받지 못했습니다.')); };
     const handleMoveItem = async (itemId: string, targetFolderId: string | null) => {
         await fetch('/api/storage/items', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: itemId, folderId: targetFolderId === null ? 'root' : targetFolderId }) });
         setRefreshTrigger(p => p + 1);

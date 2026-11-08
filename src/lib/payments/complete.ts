@@ -39,6 +39,7 @@ export async function completeOrder(req: NextRequest, kind?: 'cart' | 'topup') {
             if (!response.ok) throw new Error('PAYMENT_UNAVAILABLE');
             verifyPaidPayment(order, await response.json());
         }
+        // QB_SHEET도 서버 주문 items를 그대로 확정한다. SQL에는 item_type 허용 목록이 없다.
         const { data, error } = await sb.rpc('complete_payment_order', { p_payment_id: paymentId, p_user_id: user.id });
         if (error) { console.error('[Order completion]', error.code); throw new Error('ORDER_RETRY'); }
         await removePurchasedCartItems(sb, order);

@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { memberOnly } from '@/lib/requireMember';
 import { stripPrivate } from '@/lib/questions/privateDb';
 import { createAdminClient } from '@/utils/supabase/server-admin';
-import { canSeeSolutions, trimQuestionImages } from '@/lib/questions/imageAccess';
+import { canSeeSolutions, trimQuestionImages, trimPreviewImages } from '@/lib/questions/imageAccess';
+import { createClient } from '@/utils/supabase/server';
+import { previewAccess } from '@/lib/predictAccess';
+import { BundleError } from '@/lib/planBundles';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +61,11 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
     try {
+        if (body?.preview) {
+            const { data: { user } } = await createClient().auth.getUser();
+            if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+            await previewAccess(user, 'predict', ids, body);
+        }
         // [성능 2026-10-01] 카드는 캡쳐(MANUAL_/AUTO_)가 있으면 캡쳐만 그린다(QuestionRenderer manualCaps).
         // 그런데 한글 원본 그림(BMP·PNG base64)까지 같이 보내 응답의 98%가 버려지고 있었다
         // (실측: 문항 50개에 원본 그림 1MB, 실제 쓰는 캡쳐 주소 15KB).
@@ -74,15 +82,20 @@ export async function POST(req: NextRequest) {
         if (listError) throw listError;
         // 회원 전용 개인DB 문항 그림은 쓸 수 있는 사람에게만 (10/6)
         // [10/7] 공개(sorted)가 아닌 문항은 전부 막고, 전용(private)만 쓸 수 있는 사람에게 연다 — 등록 대기(pending) 시중교재 보호
-        const { data: privRows } = await supabase.from('questions').select('id, work_status, source_db_id').in('id', ids).neq('work_status', 'sorted');
+        const { data: privRows, error: privError } = await supabase.from('questions').select('id, work_status, source_db_id').in('id', ids).neq('work_status', 'sorted');
+        if (privError) throw privError;
         const blocked = new Set<string>();
         if (privRows?.length) {
             const ok = new Set((await stripPrivate(privRows.filter(r => r.work_status === 'private'))).map(r => r.id));
             for (const r of privRows) if (!ok.has(r.id)) blocked.add(r.id);
         }
+        const { data: questionRows, error: questionError } = await supabase.from('questions')
+            .select('id, content_xml').in('id', ids);
+        if (questionError) throw questionError;
+        const xmlById = new Map((questionRows || []).map(q => [q.id, q.content_xml || '']));
         const byQuestion: Record<string, any[]> = {};
         for (const r of listed || []) if (!blocked.has(r.question_id)) (byQuestion[r.question_id] = byQuestion[r.question_id] || []).push(r);
-        const keep = Object.values(byQuestion).flatMap(rows => trimQuestionImages(rows, withSolutions));
+        const keep = Object.entries(byQuestion).flatMap(([id, rows]) => withSolutions && !body?.preview ? trimQuestionImages(rows, true) : trimPreviewImages(rows, xmlById.get(id) || ''));
         const dataById: Record<string, string> = {};
         for (let i = 0; i < keep.length; i += 100) {
             const { data: rows, error } = await supabase.from('question_images').select('id, data').in('id', keep.slice(i, i + 100).map(r => r.id));
@@ -99,6 +112,7 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ success: true, images });
     } catch (e: any) {
+        if (e instanceof BundleError) return NextResponse.json({ success: false, images: {}, error: e.message, needPass: e.needPass }, { status: e.status });
         console.error('[questions/images] error:', e);
         return NextResponse.json({ success: false, error: e.message || '이미지 로딩 실패' }, { status: 500 });
     }

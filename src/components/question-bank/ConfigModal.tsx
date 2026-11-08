@@ -53,7 +53,7 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating, initialT
                             autoFocus
                         />
                         <p className="rd-help">
-                            한글에서 열어 편집하는 HML 파일로 저장합니다. PDF는 한글에서 변환할 수 있습니다.
+                            무료·시험지 1장권·시험대비권·강사 이용권 모두 보관함에 저장한 뒤 한글(HML)·PDF로 받을 수 있습니다.
                         </p>
                     </div>
 

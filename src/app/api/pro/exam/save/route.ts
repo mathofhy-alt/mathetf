@@ -1,10 +1,12 @@
+import { createHash, randomUUID } from 'crypto';
 import {parseDraft} from '@/lib/questions/draft';
 import {stampMemberId} from '@/lib/hml-v2/member-stamp';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {availableCatalog} from '@/lib/questions/catalog';
 import { privateCatalog, stripPrivate } from '@/lib/questions/privateDb';
-import { passStatus, recordUsage, QB_PASS } from '@/lib/qbPass';
-import { QB_LIMITS } from '@/lib/qbPassConfig';
+import { passStatus } from '@/lib/qbPass';
+import { chooseCharge } from '@/lib/planAccess';
+import { PLAN_COPY, QB_LIMITS, FREE_TRIAL } from '@/lib/qbPassConfig';
 import { wholeCatalogIneligible } from '@/lib/questions/fastScope';
 import {resolveScope} from '@/lib/questions/scope';
 import {uuidPattern} from '@/lib/payments/order';
@@ -29,8 +31,29 @@ export async function POST(req: NextRequest) {
 
     // 저장 도중 실패하면 되돌릴 수 있도록, 업로드한 스토리지 경로를 추적한다. (고아 파일 방지)
     const uploadedPaths: string[] = [];
+    let rpcStarted = false;
+    let definiteFailure = false;
+    let requestId = '';
+    let requestFingerprint = '';
+    const priorResult = async () => {
+        const { data, error } = await admin.from('qb_save_requests').select('fingerprint, result')
+            .eq('user_id', user.id).eq('request_id', requestId).maybeSingle();
+        if (error) throw new Error('저장 요청을 확인하지 못했습니다. 같은 요청으로 다시 시도해 주세요.');
+        if (data && data.fingerprint !== requestFingerprint) throw new Error('REQUEST_MISMATCH');
+        return data?.result;
+    };
+    const success = (item: any) => NextResponse.json({ success: true, item,
+        savedTitle: item.name || item.details?.title, fileBytes: item.details?.file_bytes });
 
     try {
+        const body = await req.json();
+        requestId = body?.requestId ?? randomUUID();
+        if (typeof requestId !== 'string' || !uuidPattern.test(requestId))
+            return NextResponse.json({success:false,error:'저장 요청 ID가 필요합니다.'},{status:400});
+        const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
+        requestFingerprint = createHash('sha256').update(JSON.stringify({ids,title,folderId,dbIds,questionsPerColumn,filters:body.filters})).digest('hex');
+        const prior = await priorResult();
+        if (prior) return success(prior);
         // [10/7] 시험지 만들기 이용권 — 이용권이 없으면 한 주 무료 횟수까지만 (lib/qbPass)
         const pass = await passStatus(user).catch(() => null);
         if (!pass) return NextResponse.json({ success: false, error: '이용 현황을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
@@ -50,14 +73,14 @@ export async function POST(req: NextRequest) {
             }, { status: 403 });
         }
 
-        if (!pass.unlimited && pass.freeLeft <= 0) return NextResponse.json({
+        // 시험지는 주 무료 → 시험대비권 → 시험지 1장권. 강사 이용권은 차감하지 않는다.
+        const charge = pass.unlimited ? null : chooseCharge(pass, 'exam');
+        if (!pass.unlimited && !charge) return NextResponse.json({
             success: false, code: 'QB_PASS_REQUIRED', pass,
-            error: `이번 주 무료 시험지 ${QB_PASS.freePerWeek}회를 모두 쓰셨습니다. 이용권(${QB_PASS.days}일 ${QB_PASS.salePrice.toLocaleString()}원)으로 계속 만들 수 있어요.`,
+            error: `이번 주 무료 횟수를 모두 쓰셨습니다. ${PLAN_COPY.exhausted}`,
         }, { status: 402 });
 
         console.log('[SaveAPI] Request received');
-        const body = await req.json();
-        const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
         // [10/8] 이용권이 있으면(또는 운영자) 한 시험지 문항 한도를 늘린다(QB_LIMITS)
         const maxQ = (pass.passUntil || pass.admin) ? QB_LIMITS.pass.questions : QB_LIMITS.free.questions;   // 유료화 전 '제한 없음'은 횟수만 — 이용권 혜택은 이용권·운영자만
         if (!Array.isArray(ids) || ids.length<1 || ids.length>maxQ || ids.some((id:unknown)=>typeof id!=='string'||!uuidPattern.test(id)) || new Set(ids).size!==ids.length) return NextResponse.json({success:false,error:`서로 다른 문항을 1~${maxQ}개 선택해주세요.`},{status:400});
@@ -324,9 +347,12 @@ export async function POST(req: NextRequest) {
         // 5. Upload to Storage
         const fileId = crypto.randomUUID();
         const storageFilename = `${fileId}.hml`;
-        const filePath = `${user.id}/${storageFilename}`;
+        // 무료·시험대비권·1장권·강사 이용권 모두 보관함에서 한글과 PDF를 다시 받는다.
+        // locked는 기존 exams 회원 정책의 첫 폴더(auth.uid())와 다르다.
+        // 차감 전후 모두 서버만 읽고 쓸 수 있으며 받기 API는 저장 증거를 확인한다.
+        const filePath = `locked/${user.id}/${storageFilename}`;
 
-        const { error: uploadError } = await supabase
+        const { error: uploadError } = await admin
             .storage
             .from('exams')
             .upload(filePath, result.hmlContent, {
@@ -342,6 +368,7 @@ export async function POST(req: NextRequest) {
         const avgDifficulty = Number((totalDifficulty / questions.length).toFixed(2));
 
         const metaData = {
+            hml_path: filePath,
             source_db_ids: savedDbIds.length > 0
                 ? savedDbIds  // 프론트에서 전달된 exam_materials UUID 배열 사용
                 : Array.from(new Set(questions.map((q: any) => q.source_db_id).filter(Boolean))),  // fallback
@@ -355,42 +382,62 @@ export async function POST(req: NextRequest) {
             created_at: new Date().toISOString()
         };
 
-        const {error:sidecarError} = await supabase.storage
+        const {error:sidecarError} = await admin.storage
             .from('exams')
-            .upload(`${user.id}/${fileId}.json`, JSON.stringify(metaData), {
+            .upload(`locked/${user.id}/${fileId}.json`, JSON.stringify(metaData), {
                 contentType: 'application/json',
                 upsert: false
             });
         if(sidecarError) throw new Error('시험지 편집 정보를 저장하지 못했습니다.');
-        uploadedPaths.push(`${user.id}/${fileId}.json`);
+        uploadedPaths.push(`locked/${user.id}/${fileId}.json`);
 
         // 7. DB Item
         const session = req.headers.get('x-qb-session-id') || '';
-        const {data:itemData,error:itemError} = await admin.rpc('save_exam_item',{
+        rpcStarted = true;
+        const {data:itemData,error:itemError} = await admin.rpc('save_plan_exam_item',{
             p_user_id:user.id,p_folder_id:folderId==='root'?null:(folderId||null),p_name:titleStr,p_reference_id:fileId,
-            p_details:{...metaData,file_format:'hml',analytics_session_id:uuidPattern.test(session)?session:null},
+            p_details:{...metaData,request_id:requestId,request_fingerprint:requestFingerprint,file_format:'hml',pdf_only:false,analytics_session_id:uuidPattern.test(session)?session:null},
             p_session_id:uuidPattern.test(session)?session:null,p_track:productionSite(req)&&user.email!=='mathofhy@naver.com',
             p_limit:savedLimit,
+            p_charge:charge ?? 'teacher',p_email:user.email ?? null,
+            p_plan_limit:charge==='exam'?pass.examGranted:FREE_TRIAL.exam,
+            p_plan_since:charge==='exam'?pass.examStart:null,
         });
 
-        if (itemError) throw new Error(`Item creation failed: ${itemError.message}`);
-        await recordUsage(user.id, (itemData as any)?.id ?? null);
-
-        console.log('[SaveAPI] Success!');
-        // savedTitle — 이름이 겹쳐 번호가 붙었으면 클라이언트가 그걸 알려줄 수 있게 돌려준다.
-        return NextResponse.json({ success: true, item: itemData, savedTitle: titleStr, fileBytes:Buffer.byteLength(result.hmlContent,'utf8') });
+        if (itemError || !itemData) {
+            // 명시적인 SQL 롤백만 삭제 가능. 타임아웃/응답 유실은 커밋 여부가 불명확하다.
+            definiteFailure = itemError?.code === 'P0001' || /^2[23]/.test(itemError?.code || '');
+            throw new Error(`Item creation failed: ${itemError?.message || '응답 유실'}`);
+        }
+        if (itemData.reference_id && itemData.reference_id !== fileId)
+            await admin.storage.from('exams').remove(uploadedPaths);
+        // 저장과 사용 기록은 RPC의 같은 트랜잭션에서 확정된다.
+        return success(itemData);
 
     } catch (e: any) {
-        // 실패 시 이미 업로드된 .hml/.json 을 삭제해 '목록엔 없는데 파일만 남는' 고아를 방지한다.
-        if (uploadedPaths.length > 0) {
+        if (rpcStarted && !definiteFailure) {
             try {
-                await supabase.storage.from('exams').remove(uploadedPaths);
+                const prior = await priorResult();
+                if (prior) {
+                    // 중복 요청이 올린 별도 파일만 정리하고 커밋된 원본은 반드시 보존한다.
+                    const ref = prior.reference_id;
+                    if (ref) await admin.storage.from('exams').remove(uploadedPaths.filter(p => !p.endsWith(`${ref}.hml`) && !p.endsWith(`${ref}.json`)));
+                    return success(prior);
+                }
+            } catch { /* 조회도 실패하면 원본 보존 후 같은 요청 ID로 재시도 */ }
+        }
+        // 실패 시 이미 업로드된 .hml/.json 을 삭제해 '목록엔 없는데 파일만 남는' 고아를 방지한다.
+        if (uploadedPaths.length > 0 && (!rpcStarted || definiteFailure)) {
+            try {
+                await admin.storage.from('exams').remove(uploadedPaths);
                 console.log(`[SaveAPI] Rolled back ${uploadedPaths.length} orphan file(s) after failure`);
             } catch (cleanupErr) {
                 console.warn('[SaveAPI] Rollback cleanup failed:', cleanupErr);
             }
         }
         console.error('[SaveAPI] Fatal Error:', e);
+        if (String(e.message).includes('REQUEST_MISMATCH')) return NextResponse.json({success:false,error:'같은 요청 ID에 다른 시험지 내용을 사용할 수 없습니다.'},{status:409});
+        if (String(e.message).includes('PLAN_LIMIT')) return NextResponse.json({ success: false, code: 'QB_PASS_REQUIRED', error: '다른 요청에서 남은 횟수를 사용했어요. 이용 현황을 확인한 뒤 다시 저장해 주세요.' }, { status: 402 });
         return NextResponse.json({ success: false, error: e.message }, { status: 500 });
     }
 }

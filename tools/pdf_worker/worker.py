@@ -8,9 +8,9 @@
 - 한글은 켜 둔 채 돌려쓴다(켜는 데 3초). 오류가 나면 다시 띄운다.
 - 보안 모듈: HKCU\\SOFTWARE\\HNC\\HwpAutomation\\Modules\\FilePathCheckerModule = pyhwpx 의 DLL(10/25 등록).
 - 열쇠: C:\\pdfworker\\config.json {"url": 수파베이스 주소, "key": 서비스 키} — 이 파일은 저장소에 올리지 않는다.
-- 하루 지난 hml/pdf 는 지운다.
+- 유료 프린트 묶음은 retain_until(생성 후 30일)까지, 나머지는 하루 보관한다.
 """
-import datetime, json, os, sys, time, traceback, urllib.error, urllib.request
+import datetime, json, os, sys, time, traceback, urllib.error, urllib.parse, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CFG = json.load(open(os.path.join(HERE, 'config.json'), encoding='utf-8'))
@@ -96,6 +96,9 @@ def one():
     jid = rows[0]['id']
     got = patch(jid, {'status': 'working', 'started_at': 'now', 'worker': NAME}, '&status=eq.pending')   # 먼저 잡은 쪽만
     if not got: return True
+    # 환급(error)·재접수 뒤에는 이 실행이 상태를 덮지 못한다. 기존 열만 사용한다.
+    owned = ('&status=eq.working&worker=eq.' + urllib.parse.quote(NAME, safe='')
+             + '&started_at=eq.' + urllib.parse.quote(got[0]['started_at'], safe=''))
     t0 = time.time(); src = os.path.join(WORK, jid + '.hml'); dst = os.path.join(WORK, jid + '.pdf')
     try:
         open(src, 'wb').write(http('GET', f'/storage/v1/object/pdf-jobs/{jid}.hml', raw=True, timeout=120))
@@ -106,11 +109,16 @@ def one():
         http('POST', f'/storage/v1/object/pdf-jobs/{jid}.pdf', open(dst, 'rb').read(),
              {'Content-Type': 'application/pdf', 'x-upsert': 'true'}, timeout=120)
         sec = round(time.time() - t0, 1)
-        patch(jid, {'status': 'done', 'done_at': 'now', 'pages': pages, 'sec': sec})
+        done = patch(jid, {'status': 'done', 'done_at': 'now', 'pages': pages, 'sec': sec}, owned)
+        if not done:
+            http('DELETE', '/storage/v1/object/pdf-jobs', {'prefixes': [jid + '.pdf']},
+                 {'Content-Type': 'application/json'})
+            log('완료 취소(상태 또는 소유권 변경)', jid)
+            return True
         log('완료', jid, pages, '쪽', sec, '초')
     except Exception as e:
         log('실패', jid, repr(e)[:300]); log(traceback.format_exc()[-800:])
-        try: patch(jid, {'status': 'error', 'done_at': 'now', 'error': repr(e)[:300]})
+        try: patch(jid, {'status': 'error', 'done_at': 'now', 'error': repr(e)[:300]}, owned)
         except Exception: pass
         reset_hwp()
     finally:
@@ -121,13 +129,24 @@ def one():
 
 
 def cleanup():
-    """하루 지난 저장소 파일 지우기(하루 한 번)"""
+    """보관 기한이 끝난 파일만 지우기. 조회 실패 시 삭제하지 않는다."""
     try:
-        old = http('GET', '/rest/v1/pdf_jobs?select=id&created_at=lt.' + (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%S') + '&order=created_at.desc&limit=500')
-        names = [f'{r["id"]}.{x}' for r in old or [] for x in ('hml', 'pdf')]
+        now = datetime.datetime.utcnow()
+        cutoff = (now - datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%S')
+        expiry = now.strftime('%Y-%m-%dT%H:%M:%S')
+        try:
+            old = http('GET', '/rest/v1/pdf_jobs?select=id&or=(and(retain_until.is.null,created_at.lt.' + cutoff + ',or(done_at.is.null,done_at.lt.' + cutoff + '),status.not.in.(pending,working)),retain_until.lte.' + expiry + ')&order=created_at.desc&limit=500')
+        except urllib.error.HTTPError as error:
+            detail = error.read().decode('utf-8', errors='replace')
+            if error.code != 400 or 'retain_until' not in detail or not any(code in detail for code in ('42703', 'PGRST204')):
+                raise
+            old = http('GET', '/rest/v1/pdf_jobs?select=id&created_at=lt.' + cutoff + '&or=(done_at.is.null,done_at.lt.' + cutoff + ')&status=not.in.(pending,working)&order=created_at.desc&limit=500')
+        names = [f'{r["id"]}.{x}' for r in old or [] for x in ('hml', 'pdf', 'm.pdf')]
         if names: http('DELETE', '/storage/v1/object/pdf-jobs', {'prefixes': names}, {'Content-Type': 'application/json'})
+        return True
     except Exception as e:
         log('정리 실패', repr(e)[:200])
+        return False
 
 
 def main():
@@ -142,7 +161,8 @@ def main():
             log('연결 오류', repr(e)[:200]); busy = False; time.sleep(10)
         except Exception as e:
             log('오류', repr(e)[:300]); busy = False; time.sleep(5)
-        if time.time() - last_clean > 86400: cleanup(); last_clean = time.time()
+        if time.time() - last_clean > 86400:
+            last_clean = time.time() if cleanup() else time.time() - 86400 + 60
         if not busy: time.sleep(1.5)
 
 
