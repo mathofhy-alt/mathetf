@@ -38,16 +38,24 @@ async function allPaths() {
     const { data: bucket, error } = await sb.storage.getBucket('hwpx-originals');
     if (error || !bucket || bucket.public) throw Error('Create a PRIVATE hwpx-originals bucket with migration part A first.');
     // Verify all copies before ANY deletion. Retry is safe after a partial failure.
-    for (const [i, path] of paths.entries()) {
-        const original = await bytes(source, path);
-        if (mode === 'copy') {
-            const { error } = await target.upload(path, original, { upsert: false, contentType: 'application/octet-stream' });
-            if (error && !['409', '400'].includes(String(error.statusCode))) throw Error('Original copy failed; source has not been removed.');
+    const CONC = Number(process.env.SPLIT_CONC || 16); let done = 0, next = 0;
+    const one = async path => {
+        for (let attempt = 1; ; attempt++) {
+            try {
+                const original = await bytes(source, path);
+                if (mode === 'copy') {
+                    const { error } = await target.upload(path, original, { upsert: false, contentType: 'application/octet-stream' });
+                    if (error && !['409', '400'].includes(String(error.statusCode))) throw Error('Original copy failed; source has not been removed.');
+                }
+                const copied = await bytes(target, path);
+                if (hash(original) !== hash(copied)) throw Error('SHA-256 mismatch. Source has not been removed.');
+                return;
+            } catch (e) { if (attempt >= 4 || /SHA-256/.test(e.message)) throw e; await new Promise(r => setTimeout(r, 1500 * attempt)); }
         }
-        const copied = await bytes(target, path);
-        if (hash(original) !== hash(copied)) throw Error('SHA-256 mismatch. Source has not been removed.');
-        if ((i + 1) % 100 === 0) console.log(JSON.stringify({ verified: i + 1, total: paths.length }));
-    }
+    };
+    await Promise.all(Array.from({ length: CONC }, async () => {
+        while (next < paths.length) { const path = paths[next++]; await one(path); if (++done % 200 === 0) console.log(JSON.stringify({ verified: done, total: paths.length })); }
+    }));
     if (mode === 'prune') {
         // Freeze original ingestion while pruning; each object is rechecked immediately before removal.
         for (const path of paths) {
