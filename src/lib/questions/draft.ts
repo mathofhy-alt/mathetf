@@ -24,13 +24,17 @@ export function parseDraft(raw: string | null, now = Date.now()): ExamDraft | nu
 
 export function draftContext(params:URLSearchParams):string {
     const selected=new URLSearchParams();
-    for(const key of [...ENTRY_KEYS,'src'])if(params.has(key))selected.set(key,params.get(key)||'');
+    for(const key of [...ENTRY_KEYS,'src','variant','intent'])if(params.has(key))selected.set(key,params.get(key)||'');
     selected.sort();return selected.toString();
 }
 export function shouldRestoreDraft(draft:ExamDraft|null,params:URLSearchParams):boolean {
     if(!draft)return false;
+    const sameContext=draft.cartIds.length>0&&draft.entryContext===draftContext(params);
+    // 정답 제작은 로그인 복귀여도 목적·원본 회차가 확인된 초안만 이어간다.
+    // intent/variant를 기록하지 않았던 기존 초안은 원본 여부를 알 수 없다.
+    if(params.get('intent')==='answer'&&params.has('src'))return sameContext;
     return params.has('resume')||(!hasEntryContext(params)&&!params.has('src'))||
-        (draft.cartIds.length>0&&draft.entryContext===draftContext(params));
+        sameContext;
 }
 
 // A normal visit restores filters without unexpectedly running an old search.

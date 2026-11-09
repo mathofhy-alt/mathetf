@@ -42,7 +42,7 @@ export default function PaidMaterialChoice({ examId, title, materials }: { examI
     }
   };
 
-  return <div className="rd-get-card is-zone">
+  return <div id="paid-materials" tabIndex={-1} className="rd-get-card is-zone" style={{ scrollMarginTop: 96 }}>
     <p className="rd-get-kicker is-gray">해설이 필요하다면</p>
     <h2 className="rd-get-title">문제+해설 원본</h2>
     <fieldset className="rd-fmt">

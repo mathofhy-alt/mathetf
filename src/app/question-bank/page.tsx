@@ -35,6 +35,8 @@ const TEACHER_TOUR_STEPS: TourStep[] = [
 import DuplicateCheckModal from '@/components/storage/DuplicateCheckModal';
 
 import ConfigModal from '@/components/question-bank/ConfigModal';
+import AnswerPdfBanner from '@/components/question-bank/AnswerPdfBanner';
+import { isAnswerEntry, answerExamTitle } from '@/lib/role-cta';
 import SimilarQuestionsModal from '@/components/question-bank/SimilarQuestionsModal';
 import SolutionViewerModal from '@/components/question-bank/SolutionViewerModal';
 import ReportModal from '@/components/ReportModal';
@@ -100,6 +102,8 @@ export default function QuestionBankPage() {
     const [filterVersion,setFilterVersion]=useState(0);
     const [entryLabel,setEntryLabel]=useState('');
     const [entryFailure,setEntryFailure]=useState(false);
+    const [answerSource, setAnswerSource] = useState('');
+    const answerIntent = !!answerSource;
     const [cart, setCart] = useState<any[]>([]);
     const [draftReady, setDraftReady] = useState(false);
     const restoredDraftRef=useRef(false);
@@ -254,8 +258,14 @@ export default function QuestionBankPage() {
         const r = await res.json();
         const data = (r?.data || []) as any[];
         if (!data.length) return 0;
+        const params = new URLSearchParams(window.location.search);
+        if (!variant && isAnswerEntry(params) && params.get('src') === src) {
+            setAnswerSource(src);
+            setExamTitle(answerExamTitle(src, data[0]));
+        }
         setCart(data.slice(0, MAX_CART_SIZE));
         setViewMode('review');
+        setShowMobileSidebar(false);
         logQb('qb_cart_add', logTitle.replace('{n}', String(data.length)));
         if (data.length > MAX_CART_SIZE) {
             showToast(`한 시험지 최대 ${MAX_CART_SIZE}문제라 ${MAX_CART_SIZE}개만 담았습니다.`, 'info');
@@ -266,9 +276,16 @@ export default function QuestionBankPage() {
     };
 
     useEffect(() => {
-        if (srcLoaded.current || new URLSearchParams(window.location.search).has('resume') || hasEntryContext(new URLSearchParams(window.location.search))) return;
-        const src = new URLSearchParams(window.location.search).get('src');
+        const params = new URLSearchParams(window.location.search);
+        if (srcLoaded.current || hasEntryContext(params)) return;
+        // 정답 목적은 로그인 복귀여도 확인되지 않은 초안 대신 원본 회차를 담는다.
+        if (params.has('resume') && params.get('intent') !== 'answer') return;
+        const src = params.get('src');
         if (!src) return;
+        // 같은 회차·variant·intent의 작업은 복원 effect에 맡겨 문항과 제목을 덮어쓰지 않는다.
+        let savedDraft = null;
+        try { savedDraft = parseDraft(localStorage.getItem(DRAFT_KEY)); } catch { }
+        if (shouldRestoreDraft(savedDraft, params)) return;
         srcLoaded.current = true;
         (async () => {
             const similar = new URLSearchParams(window.location.search).get('variant') === 'similar1';
@@ -1140,11 +1157,24 @@ export default function QuestionBankPage() {
     const [examTitle, setExamTitle] = useState('');
     const [questionsPerColumn, setQuestionsPerColumn] = useState(2);
 
+    // 기존 설정 → 저장 위치 → 저장 처리를 함께 쓰며 여기서는 설정 창만 연다.
+    const openFinalConfig = () => {
+        if (!draftReady || !cart.length) return;
+        if (!user) { setShowLoginGate(true); return; }
+        const params = new URLSearchParams(window.location.search);
+        void fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+            body: JSON.stringify({ feature: 'qb_generate_click', title: `${answerIntent ? 'v2|answer' : 'standard'}|${params.get('origin') || 'direct'}|${cart.length}|${answerSource}` }),
+        }).catch(() => {});
+        setShowConfigModal(true);
+    };
+
     useEffect(() => {
         let active = true;
         const restore = async () => {
             try {
                 const resuming = new URLSearchParams(window.location.search).has('resume');
+                const params = new URLSearchParams(window.location.search);
+                if (isAnswerEntry(params)) setAnswerSource(params.get('src')!);
                 const savedDraft=parseDraft(localStorage.getItem(DRAFT_KEY));
                 const draft=shouldRestoreDraft(savedDraft,new URLSearchParams(window.location.search))?savedDraft:null;
                 let ids: string[] = [];
@@ -1175,6 +1205,7 @@ export default function QuestionBankPage() {
                     if (active) {
                         const restored = ids.map(id => map.get(id)).filter(Boolean);
                         setCart(restored);
+                        if (restored.length && isAnswerEntry(params) && !draft?.title) setExamTitle(answerExamTitle(params.get('src')!, restored[0] as any));
                         if (!restored.length) setViewMode('search');
                         if (result.data.length !== ids.length) showToast('일부 문항을 복원하지 못했습니다. 저장 전에 문항 수를 확인해주세요.', 'info');
                     }
@@ -1367,6 +1398,7 @@ export default function QuestionBankPage() {
                 onUploadClick={handleUploadClick}
             />
 
+            {user && answerIntent && viewMode === 'review' && cart.length > 0 && <AnswerPdfBanner info={passInfo} disabled={!draftReady || isGenerating} onGenerate={openFinalConfig} />}
             <div className="workbench-title"><div><h2>시험지 만들기</h2></div><div className="workbench-tabs" aria-label="편집 화면"><button aria-pressed={viewMode==='search'} onClick={()=>setViewMode('search')}>문항 찾기</button><button disabled={!cart.length} aria-pressed={viewMode==='review'} onClick={()=>{setViewMode('review');setShowMobileSidebar(false);}}>선택한 문항 {cart.length}</button></div></div>
             <div className="qb-context px-3 py-2 bg-white border-b text-xs shrink-0 flex flex-wrap gap-2 items-center"><a href="/guide" className="hover:text-[#166B68]">사용법·이용 범위 ↗</a><button className="hover:text-[#166B68]" onClick={()=>{setViewMode('search');setShowMobileSidebar(true);setRunTeacherTour(true);}}>화면 안내</button>{catalogNotice&&<details className="relative"><summary className="cursor-pointer">자료 안내</summary><p className="absolute top-6 left-0 z-40 w-60 rounded-xl border bg-white p-4 shadow-lg">{catalogNotice}</p></details>}<span>한글·PDF 저장 · 보관함 {savedCount}/{SAVED_LIMIT}</span>{user&&passInfo&&<span role="status">{passLine(passInfo, true)}</span>}{user&&passInfo?.paywall&&<button className="rd-qb-ctxpass" onClick={()=>{setPassFrom('top');setShowPass(true);}}>{passInfo.passUntil?passLine(passInfo, true):passInfo.unlimited?'이용권':'이용권 구매'}</button>}{entryLabel&&<span role="status" className="text-[#0F5552]">{entryLabel}</span>}{filterState?.mockSlug&&<button className="underline" onClick={()=>{setFilterState((f:any)=>f?{...f,mockSlug:undefined}:null);setFilterVersion(v=>v+1);setEntryLabel('자료 범위에서 검색');}}>모의고사 회차 제한 해제</button>}{entryFailure&&<button className="underline" onClick={()=>{setEntryFailure(false);setEntryLabel('전체 자료에서 검색');setFilterState(null);setFilterVersion(v=>v+1);}}>전체 검색으로 전환</button>}</div>
             <nav aria-label="출제 단계" className="md:hidden grid grid-cols-3 shrink-0 border-b bg-white text-xs"><button className="p-3" onClick={()=>setShowMobileSidebar(true)}>1. 범위 선택</button><button className="p-3" onClick={()=>{setViewMode('search');setShowMobileSidebar(false);}}>2. 문항 확인</button><button className="p-3" disabled={!cart.length} onClick={()=>{setViewMode('review');setShowMobileSidebar(false);}}>3. 완성 ({cart.length})</button></nav>
@@ -1756,7 +1788,7 @@ export default function QuestionBankPage() {
                                         ← <span className="hidden sm:inline">검색으로 </span>돌아가기
                                     </button>
                                     <button
-                                        onClick={() => { if (!draftReady) return; if (!user) { setShowLoginGate(true); return; } setShowConfigModal(true); }}
+                                        onClick={openFinalConfig}
                                         className="px-3 sm:px-8 py-2 sm:py-2.5 bg-[#1B7E7A] text-white rounded-xl font-bold hover:bg-[#166B68] shadow-lg shadow-[#1B7E7A]/20 transition-all text-xs sm:text-sm whitespace-nowrap"
                                     >
                                         최종 생성 ({cart.length})
@@ -2336,8 +2368,8 @@ export default function QuestionBankPage() {
                             <p className="rd-modal-text" style={{ fontSize: 15, marginTop: 14 }}>한글에서 열어 편집할 수 있는 HML 파일과 PDF 중에서 받으실 수 있어요. 보관함에서 추가 차감 없이 다시 받을 수 있습니다.</p>
                             <p className="rd-help">자료 보호를 위해 파일 내부에 회원 아이디(이메일)가 기록됩니다.</p>
                             <div className="rd-modal-actions">
-                                <button className={`rd-btn rd-btn-gray rd-btn-block`} disabled={!!examPdfStatus} onClick={async () => { try { await downloadExamPdf(savedExam.id, setExamPdfStatus); } catch (e: any) { showToast(e?.message || 'PDF를 받지 못했습니다.', 'error'); } setExamPdfStatus(''); }}>{examPdfStatus || 'PDF 받기'}</button>
-                                <a className="rd-btn rd-btn-primary rd-btn-block" href={`/api/storage/download?id=${savedExam.id}`} download onClick={() => window.setTimeout(() => setSavedExam(null), 400)}>시험지 파일 받기 (.hml)</a>
+                                <button className={`rd-btn ${answerIntent ? 'rd-btn-primary' : 'rd-btn-gray'} rd-btn-block`} disabled={!!examPdfStatus} onClick={async () => { try { await downloadExamPdf(savedExam.id, setExamPdfStatus); } catch (e: any) { showToast(e?.message || 'PDF를 받지 못했습니다.', 'error'); } setExamPdfStatus(''); }}>{examPdfStatus || 'PDF 받기'}</button>
+                                <a className={`rd-btn ${answerIntent ? 'rd-btn-gray' : 'rd-btn-primary'} rd-btn-block`} href={`/api/storage/download?id=${savedExam.id}`} download onClick={() => window.setTimeout(() => setSavedExam(null), 400)}>시험지 파일 받기 (.hml)</a>
                                 <button className="rd-btn rd-btn-gray rd-btn-block" onClick={() => setSavedExam(null)}>계속 출제하기</button>
                             </div>
                         </div>

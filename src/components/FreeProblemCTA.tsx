@@ -16,7 +16,7 @@ import { gaEvent } from '@/lib/analytics/ga';
  * - 로그인: 워터마크 없는 문제 PDF 즉시 다운로드.
  * 페이지는 ISR 정적 캐시라 로그인 여부는 클라이언트에서 판별한다.
  */
-export default function FreeProblemCTA({ examId, filename, sourceKey, school }: { examId: string; filename: string; sourceKey?: string | null; school?: string; compact?: boolean }) {
+export default function FreeProblemCTA({ examId, filename, sourceKey, school, createHref, hasSolutionMaterial = false }: { examId: string; filename: string; sourceKey?: string | null; school?: string; compact?: boolean; createHref?: string; hasSolutionMaterial?: boolean }) {
     const [authed, setAuthed] = useState<boolean | null>(null);
     const [marketingAgreed, setMarketingAgreed] = useState(true); // 기본 true → 확인 전엔 배너 안 뜸
     const [showNotify, setShowNotify] = useState(false);
@@ -121,8 +121,9 @@ export default function FreeProblemCTA({ examId, filename, sourceKey, school }: 
                 <ExamPromoModal
                     src={sourceKey || undefined}
                     school={school}
+                    freePdfDetail={{ createHref: createHref || `/question-bank?src=${encodeURIComponent(sourceKey || '')}&origin=exam`, paidHref: hasSolutionMaterial ? '#paid-materials' : undefined }}
                     allowHideToday={false}
-                    onClose={() => { setShowPromo(false); setAskPersona(true); }}
+                    onClose={(reason) => { setShowPromo(false); if (reason !== 'purchase') setAskPersona(true); }}
                 />
             )}
             <NotifyOptIn school={filename.split('_')[0] || ''} visible={showNotify} onClose={() => setShowNotify(false)} />

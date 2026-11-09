@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Save, MousePointerClick, FileEdit, X } from 'lucide-react';
 import { getStoredRole } from '@/components/RoleOnboardingModal';
+import { ROLE_CTA_V2, rolePromoActions, answerLinkLabel, ANSWER_CONTENT_NOTICE, promoV2Title } from '@/lib/role-cta';
+import { useProfilePersona } from '@/lib/useProfilePersona';
+import { usePassInfo } from '@/lib/usePassInfo';
 
 const HIDE_KEY = 'examPromoHideDate';
 
@@ -35,31 +38,40 @@ export function isExamPromoHidden(): boolean {
  */
 // [2026-10-06] 무료PDF 경로는 '오늘 하루 보지 않기'와 상관없이 받을 때마다 띄운다(사용자 지시).
 //   그래서 그 경로에선 버튼도 숨긴다(allowHideToday=false) — 눌러도 다시 뜨면 거짓 버튼이 된다.
-export default function ExamPromoModal({ onClose, src, school, allowHideToday = true }: { onClose: () => void; src?: string; school?: string; allowHideToday?: boolean }) {
+export default function ExamPromoModal({ onClose, src, school, allowHideToday = true, freePdfDetail }: { onClose: (reason?: 'purchase') => void; src?: string; school?: string; allowHideToday?: boolean; freePdfDetail?: { createHref: string; paidHref?: string } }) {
     const href = src ? `/question-bank?src=${encodeURIComponent(src)}` : '/question-bank';
+    // 호출 위치를 명시한 상세 페이지 무료 PDF에만 적용한다. 홈·예상·프린트는 기존 표시.
+    const roleCta = ROLE_CTA_V2 && !!freePdfDetail && !!src;
+    const { persona, ready } = useProfilePersona(roleCta);
+    const { info: passInfo } = usePassInfo(roleCta);
+    const actions = roleCta ? rolePromoActions(persona, src!, freePdfDetail!.createHref, freePdfDetail!.paidHref) : null;
 
     // [2026-09-08] 역할별 문구. 무료PDF 를 받는 사람 273명 중 역할을 밝힌 240명이
     //   학생 179 · 강사 61 이다(강사 25%). 그런데 문구는 '시험지 출제' 라는 강사 도구 이름으로
     //   말하고 있었다. 학생이 원하는 건 방금 받은 그 시험지의 해설 하나다.
     //   미응답도 학생 쪽으로 기운 모수라 기본값을 학생 문구로 둔다.
-    const isTeacher = getStoredRole() === 'teacher';
+    const isTeacher = !roleCta && getStoredRole() === 'teacher';
     const variant = src ? (isTeacher ? 'teacher' : 'student') : 'bare';
-    const logTitle = src ? `${src}|${variant}` : 'bare';
+    const logTitle = roleCta ? promoV2Title(src!, persona, 'view') : src ? `${src}|${variant}` : 'bare';
+    const viewed = useRef('');
 
     // [2026-09-08] 노출 로그. 클릭만 남기고 있어서 "1/55" 가 안 눌렀다는 뜻인지
     //   아예 안 떴다는 뜻인지 구분할 수 없었다(삼자대면 감사). 분모를 남긴다.
     useEffect(() => {
+        if (roleCta && !ready) return;
+        if (viewed.current === logTitle) return;
+        viewed.current = logTitle;
         try {
-            fetch('/api/log/feature', {
+            void fetch('/api/log/feature', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ feature: 'promo_view', title: logTitle }),
-            });
+            }).catch(() => {});
         } catch { }
-    }, [logTitle]);
+    }, [logTitle, roleCta, ready]);
 
     // 어느 버튼을 눌렀는지 title 끝에 붙인다(answer / similar1). bare 는 기존 그대로.
     const logClick = (which?: string) => {
-        try { fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: 'promo_click', title: which ? `${logTitle}|${which}` : logTitle }) }); } catch { }
+        try { void fetch('/api/log/feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ feature: 'promo_click', title: roleCta ? promoV2Title(src!, persona, which || 'create') : which ? `${logTitle}|${which}` : logTitle }) }).catch(() => {}); } catch { }
     };
 
     const hideToday = () => {
@@ -77,17 +89,26 @@ export default function ExamPromoModal({ onClose, src, school, allowHideToday = 
                     <div>
                         <p style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 700, color: 'var(--rd-ink)' }}>다운로드 완료</p>
                         <h2 id="exam-promo-title" className="rd-modal-title">
-                            {!src ? '‘시험지 만들기’도 써보셨어요?'
+                            {roleCta && persona === 'teacher' ? '이 회차로 시험지를 만드세요'
+                                : !src ? '‘시험지 만들기’도 써보셨어요?'
                                 : '정답과 해설이 필요하신가요?'}
                         </h2>
                     </div>
-                    <button type="button" onClick={onClose} aria-label="닫기" className="rd-modal-x">
+                    <button type="button" onClick={() => onClose()} aria-label="닫기" className="rd-modal-x">
                         <X size={20} />
                     </button>
                 </div>
 
                 <div className="rd-modal-body" style={{ marginTop: 14 }}>
-                    {src ? (
+                    {actions ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {actions.purchase && <a href={actions.purchase} className="rd-btn rd-btn-primary rd-btn-block" style={{ whiteSpace: 'normal' }} onClick={() => { logClick('purchase'); onClose('purchase'); }}>이 시험 문제+해설 받기 (구매)</a>}
+                            {actions.create && <Link href={actions.create} className={persona === 'teacher' ? 'rd-btn rd-btn-primary rd-btn-block' : 'rd-text-btn'} onClick={() => logClick('create')}>이 회차로 시험지 만들기</Link>}
+                            {actions.answer && <Link href={actions.answer} className="rd-text-btn" style={{ fontSize: 14 }} onClick={() => logClick('answer')}>{answerLinkLabel(passInfo)}</Link>}
+                            <Link href={actions.similar} className="rd-text-btn" style={{ fontSize: 14 }} onClick={() => logClick('similar1')}>유사문제 풀기</Link>
+                            {actions.answer && <p className="rd-help" style={{ margin: 0 }}>{ANSWER_CONTENT_NOTICE}</p>}
+                        </div>
+                    ) : src ? (
                         // [2026-10-06] 무료PDF 경로 — 사용자 지정 문구 두 줄 + 각 줄 옆 버튼.
                         //   ① 이 회차 문항 전부 담긴 채 시험지출제(?src=) → HML 저장 시 정답·해설 포함(generator 미주)
                         //   ② '유사문제' — 각 문항을 유사 1순위로 바꾼 시험지가 담긴 채(?src=&variant=similar1, api/questions/by-ids)
@@ -153,7 +174,7 @@ export default function ExamPromoModal({ onClose, src, school, allowHideToday = 
                                 오늘 하루 보지 않기
                             </button>
                         )}
-                        <button type="button" onClick={onClose} className="rd-text-btn" style={{ minHeight: 44 }}>
+                        <button type="button" onClick={() => onClose()} className="rd-text-btn" style={{ minHeight: 44 }}>
                             다음에 할게요
                         </button>
                     </div>
