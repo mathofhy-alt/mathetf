@@ -28,11 +28,19 @@ export async function GET() {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response;
 
+    // [11/9] 1,000건 한 번만 읽던 것을 끝까지 나눠 읽는다 — 채택이 1,177건을 넘자 나머지가 '검토 중' 탭에 다시 떴다
     const admin = createAdminClient();
-    const { data } = await admin
-        .from('point_transactions')
-        .select('related_id')
-        .eq('type', REWARD_TYPE)
-        .limit(1000);
-    return NextResponse.json({ ids: (data || []).map((x: any) => x.related_id).filter(Boolean) });
+    const ids: string[] = [];
+    for (let from = 0; ; from += 1000) {
+        const { data, error } = await admin
+            .from('point_transactions')
+            .select('id, related_id')
+            .eq('type', REWARD_TYPE)
+            .order('id')
+            .range(from, from + 999);
+        if (error) return NextResponse.json({ error: '채택 목록을 불러오지 못했습니다.' }, { status: 500 });
+        for (const x of data || []) if (x.related_id) ids.push(String(x.related_id));
+        if (!data || data.length < 1000) break;
+    }
+    return NextResponse.json({ ids });
 }
