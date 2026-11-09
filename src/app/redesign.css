@@ -2360,3 +2360,8 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-qb-bar-pass, .rd .rd-qb-passline { white-space: normal; overflow-wrap: anywhere; text-align: left; max-width: 100%; }
   .rd .rd-qb-bar-go { flex: 0 0 auto; max-width: 100%; }
 }
+/* 무료 PDF에서 온 정답·해설 목적 안내: 문항 검토의 첫 화면에 동작을 둔다. */
+.rd .rd-answer-pdf { flex-shrink: 0; padding: 12px 16px; background: var(--rd-zone, #eef7f6); border-bottom: 1px solid var(--rd-line); }
+.rd .rd-answer-pdf p { margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: var(--rd-text); }
+.rd .rd-answer-pdf .rd-btn { min-height: 44px; white-space: normal; }
+.rd .rd-answer-pdf small { display: block; margin-top: 6px; font-size: 11px; line-height: 1.4; color: var(--rd-sub); }

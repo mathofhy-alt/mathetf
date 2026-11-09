@@ -122,7 +122,7 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
             <aside id="exam-side" className="rd-x-side" aria-label="자료 받기와 이용자 의견">
               <ExamSide opinion={opinionExamId && questionCount ? { examId: opinionExamId, questionCount, initialOpinions: opinions } : null}>
                 <div className="rd-get-stack">
-                  {row.free_pdf_url && <FreeProblemCTA compact examId={row.id} filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`} sourceKey={sourceKey} school={row.school} />}
+                  {row.free_pdf_url && <FreeProblemCTA compact examId={row.id} filename={`${row.school}_${row.exam_year}_${row.grade}_${row.semester}_${row.exam_type}_문제.pdf`} sourceKey={sourceKey} school={row.school} createHref={createHref} hasSolutionMaterial={hasSolutionMaterial && paidMaterials.length > 0} />}
                   {hasSolutionMaterial && <PaidMaterialChoice examId={row.id} title={previewLabel} materials={paidMaterials} />}
                   {hasDb && <Link href={createHref} className="rd-get-row">
                     <span><b>{canStartWithQuestions ? `${questionCount}문항으로 시험지 만들기` : '문항 출제 자료 확인하기'}</b><small>필요한 문항만 골라 새 시험지로</small></span>
