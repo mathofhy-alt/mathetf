@@ -23,16 +23,19 @@ function load(file,deps={}) {
 }
 function harness(overrides={}) {
  const state={user:member,pass:{...computeAccess([],[]),unlimited:false,passUntil:null,admin:false},
-  tables:{questions:[{id:qid,work_status:'sorted',content_xml:'<P>문제</P>'}],user_items:[],profiles:[{id:member.id,earned_points:5000}]},
+  tables:{questions:[{id:qid,work_status:'sorted',content_xml:'<P>문제</P>'}],user_items:[],profiles:[{id:member.id,earned_points:5000}],payment_transition:[{direct_insert_retired:false}]},
   uploads:[],removes:[],rpc:[],fileReads:[],readError:false,uploadError:false,rpcError:null,...overrides};
  const client={auth:{getUser:async()=>({data:{user:state.user}})},from(table){
-  let rows=state.tables[table]||[],mutation=null;
-  const query={select(){return this;},eq(k,v){rows=rows.filter(r=>r[k]===v);return this;},
-   in(k,v){rows=rows.filter(r=>v.includes(r[k]));return this;},like(){rows=[];return this;},order(){return this;},
+  let rows=state.tables[table]||[],mutation=null,columns='*';
+  const query={select(c='*'){columns=c;return this;},eq(k,v){rows=rows.filter(r=>r[k]===v);return this;},
+   or(filter){a.equal(filter,'manual_review_required.eq.true,and(legacy_reconciliation.eq.true,status.eq.pending)');rows=rows.filter(r=>r.manual_review_required||(r.legacy_reconciliation&&r.status==='pending'));return this;},
+   in(k,v){rows=rows.filter(r=>v.includes(r[k]));return this;},gte(k,v){rows=rows.filter(r=>r[k]>=v);return this;},like(){rows=[];return this;},order(){return this;},limit(n){rows=rows.slice(0,n);return this;},range(from,to){rows=rows.slice(from,to+1);return this;},
    insert(value){mutation=value;return this;},
    single(){return Promise.resolve({data:rows[0]||null,error:state.readError?{}:null});},
    maybeSingle(){return this.single();},
-   then(resolve,reject){if(mutation){(state.tables[table]??=[]).push(mutation);}return Promise.resolve({data:rows,count:rows.length,error:state.readError?{}:null}).then(resolve,reject);}
+   then(resolve,reject){if(mutation){(state.tables[table]??=[]).push(mutation);}
+    const absent=state.oldPlanSchema&&table==='plan_usage'&&columns.includes('qb_once_purchase_id');
+    return Promise.resolve({data:absent?null:rows,count:rows.length,error:absent?{code:'42703'}:state.readError?{}:null}).then(resolve,reject);}
   };return query;
  },storage:{from:bucket=>({
   upload:async(name)=>{state.uploads.push([bucket,name]);return {error:state.uploadError?{message:'upload failed'}:null};},
@@ -40,6 +43,11 @@ function harness(overrides={}) {
   download:async(name)=>{state.fileReads.push([bucket,name]);return {data:{text:async()=>'<HWPML />'},error:null};},
   createSignedUrl:async()=>({data:null,error:{message:'not found'}})
  })},rpc:async(name,args)=>{state.rpc.push([name,args]);
+  if(name==='payment_checkout_ready')return {data:true,error:null};
+  if(name==='create_payment_order'){
+   const order={payment_id:args.p_payment_id,user_id:args.p_user_id,create_request_id:args.p_request_id,...args.p_quote,status:'pending'};
+   (state.tables.payment_orders??=[]).push(order);return {data:{paymentId:order.payment_id},error:null};
+  }
   if(name==='create_exam_pdf_job') {
    const jobs=state.tables.pdf_jobs??=[];
    let job=jobs.find(j=>j.user_id===args.p_user && j.kind==='exam' && j.set_hash===args.p_exam && ['pending','working'].includes(j.status));
@@ -56,6 +64,9 @@ function harness(overrides={}) {
   '@/lib/questions/catalog':{availableCatalog:async()=>[]},'@/lib/questions/privateDb':{privateCatalog:async()=>[],stripPrivate:async rows=>rows,PRIVATE_ITEM_TYPE:'PRIVATE_DB'},
   '@/lib/questions/fastScope':{wholeCatalogIneligible:async()=>[]},'@/lib/questions/scope':{resolveScope:()=>[]},
   '@/lib/payments/order':require('../src/lib/payments/order.ts'),
+  '@/lib/schemaCapabilities':load('lib/schemaCapabilities.ts'),
+  '@/lib/payments/reconcile':{readOrder:async()=>{throw Error('Unexpected recovery');},reconcileOrder:async()=>{throw Error('Unexpected recovery');}},
+  '@/lib/payments/complete':{paymentErrorResponse:()=>{throw Error('Unexpected payment error');}},
   '@/lib/analytics/server':{productionSite:()=>false,recordDownload:async()=>{}},
   '@/lib/hml-v2/validate':{validateHml(){},validateQuestionXml(){},examFilename:name=>name+'.hml'},
   '@/lib/hml-v2/generator':{generateHmlFromTemplate:async()=>({questionCount:state.tables.questions.length,hmlContent:'<HWPML />'})},
@@ -63,10 +74,26 @@ function harness(overrides={}) {
   fs:{existsSync:()=>true,readFileSync:()=>'<HWPML />'},
  };
  deps['@/lib/savedExamAccess']=load('lib/savedExamAccess.ts',deps);
+ if(state.realPass){
+  const pass=load('lib/qbPass.ts',{'@/utils/supabase/server-admin':{createAdminClient:()=>client},'./qbPassConfig':config,
+   './planAccess':{computeAccess,chooseCharge,...require('../src/lib/planAccess.ts')},
+   './schemaCapabilities':load('lib/schemaCapabilities.ts')});
+  deps['@/lib/qbPass']=pass;
+ }
  return {state,client,route:file=>load(file,deps)};
 }
 const request=(body={})=>({json:async()=>({requestId:randomUUID(),...body}),headers:new Headers()});
 const examBody=()=>({requestId:randomUUID(),ids:[qid],title:'시험지',questionsPerColumn:2});
+
+for(const oldPlanSchema of [true,false])for(const kind of ['free','teacher','exam','sheet'])test(`actual passStatus and exam save keep ${kind} working on ${oldPlanSchema?'pre-resolution':'post-resolution'} schema`,async()=>{
+ const h=harness({realPass:true,oldPlanSchema});
+ const now=new Date(Date.now()-60000).toISOString();
+ h.state.tables.purchased_items=kind==='free'?[]:[{id:randomUUID(),user_id:member.id,item_type:kind==='teacher'?'QB_PASS':kind==='exam'?'QB_EXAM':'QB_SHEET',created_at:now}];
+ h.state.tables.plan_usage=kind==='free'?[]:Array.from({length:config.FREE_TRIAL.exam},()=>({id:randomUUID(),user_id:member.id,feature:'plan_free_exam',created_at:now}));
+ const result=await h.route('app/api/pro/exam/save/route.ts').POST(request(examBody()));
+ a.equal(result.status,200,JSON.stringify(result.body));a.equal(result.body.success,true);
+ a.equal(h.state.rpc.length,1);a.equal(h.state.rpc[0][0],'save_plan_exam_item');a.equal(h.state.rpc[0][1].p_charge,kind);
+});
 
 test('save endpoint supports free, exam pass and sheet HML storage; teacher bypasses credits',async()=>{
  for(const kind of ['free','exam','sheet','teacher']){
@@ -94,6 +121,17 @@ test('save cleans both uploaded files after an atomic RPC failure',async()=>{
  const r=await h.route('app/api/pro/exam/save/route.ts').POST(request(examBody()));
  a.equal(r.status,402,JSON.stringify(r.body));a.equal(h.state.removes.length,2);
 });
+test('round12 teacher cancellation during upload removes rejected files and never reports a paid exam save',async()=>{
+ const h=harness();h.state.pass.unlimited=true;
+ h.client.rpc=async(name,args)=>{
+  a.equal(name,'save_plan_exam_item');a.equal(args.p_charge,'teacher');a.equal(h.state.uploads.length,2);
+  return {data:null,error:{code:'P0001',message:'PLAN_LIMIT'}};
+ };
+ const result=await h.route('app/api/pro/exam/save/route.ts').POST(request(examBody()));
+ a.equal(result.status,402);a.deepEqual(h.state.removes,h.state.uploads.map(([,p])=>p));
+ a.equal(h.state.tables.user_items.length,0);
+});
+
 test('exam precheck makes no upload when exhausted; a last-credit race exposes only server paths and removes rejected files',async()=>{
  const exhausted=harness({pass:{...computeAccess([],[]),unlimited:false,freeExamLeft:0,sheetLeft:0}});
  a.equal((await exhausted.route('app/api/pro/exam/save/route.ts').POST(request(examBody()))).status,402);
@@ -203,6 +241,9 @@ test('order route quotes QB_SHEET using trusted price, allows partial/full point
   const body={kind:'cart',items:[{item_id:config.PASS_SHEET.itemId,price:1,item_type:'QB_PASS'}],usedPoints};
   for(let i=0;i<2;i++){
    const r=await route.POST(request(body));a.equal(r.status,200);a.equal(r.body.amount,2900-usedPoints);
+   // A repeat purchase follows a completed checkout, rather than inserting a
+   // second pending order (atomic replacement is covered by real SQL tests).
+   h.state.tables.payment_orders.at(-1).status='completed';
   }
   a.equal(h.state.tables.payment_orders.length,2);
   for(const order of h.state.tables.payment_orders){a.equal(order.items[0].item_type,'QB_SHEET');a.equal(order.total,2900);}
@@ -215,6 +256,7 @@ test('pass modal shows sheet only in exam context and includes points reward and
   '@/lib/payments/client':{payOrder:async()=>{}},'@/lib/qbPassConfig':config,
   '@/components/RefundPolicyModal':{default:()=>null,__esModule:true},
   '@/components/PointsPicker':{default:()=>null,__esModule:true},
+  '@/components/payments/PendingOrderNotice':{default:()=>null,__esModule:true},
   '@/utils/supabase/client':{createClient:()=>({})},
   '@/lib/report-reward':{REPORT_REWARD_LABEL:'5,000P',REPORT_REWARD_POINTS:5000},
  });

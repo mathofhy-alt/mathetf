@@ -91,9 +91,9 @@ test('Server quotes ignore browser prices and reject negative, fractional and in
  assert.throws(()=>cartQuote([{item_id:uid(1)},{item_id:uid(1)}],materials,0));assert.throws(()=>cartQuote([{item_id:uid(2)}],materials,0));
  const order={payment_id:'order-test',user_id:uid(1),amount:1100};const paid={id:order.payment_id,status:'PAID',currency:'KRW',amount:{total:1100},customer:{id:uid(1)},customData:JSON.stringify({orderId:'order-test'})};
  verifyPaidPayment(order,paid);for(const bad of [{status:'READY'},{currency:'USD'},{customer:{id:uid(2)}},{amount:{total:1}},{customData:'{}'},{id:'wrong'}])assert.throws(()=>verifyPaidPayment(order,{...paid,...bad}));
- assert.throws(()=>verifyPaidPayment(order,{...paid,status:'READY'}),{message:'PAYMENT_PENDING'});
+ assert.throws(()=>verifyPaidPayment(order,{...paid,status:'READY'}),{message:'PAYMENT_RETRY_CHOICE'});
 });
-test('A payment still READY keeps its original order and does not open another checkout',async()=>{
+test('An approval still PENDING keeps its original order and does not open another checkout',async()=>{
  const originalFetch=global.fetch,originalWindow=global.window,originalStorage=global.localStorage;
  const user={id:uid(1),email:'test@mathetf.invalid',user_metadata:{}};
  const storageKey=`mathetf_pending_payment_${user.id}_cart`,paymentId='order-'+ 'b'.repeat(32);

@@ -7,8 +7,8 @@ import { FREE_TRIAL, PASS_EXAM, PASS_ONCE, PASS_SHEET } from './qbPassConfig';
 
 export type UseKind = 'exam' | 'bundle' | 'predict';   // 기존 bundle 기록은 프린트로 유지
 export type PlanCharge = 'free' | 'exam' | 'once' | 'sheet';
-export type PlanUse = { feature: string; title?: string | null; created_at: string; qb_sheet_purchase_id?: string | null };
-export type PlanBuy = { id?: string; item_type: string; created_at: string };
+export type PlanUse = { feature: string; title?: string | null; created_at: string; qb_sheet_purchase_id?: string | null; qb_once_purchase_id?: string | null; qb_exam_purchase_id?: string | null };
+export type PlanBuy = { id?: string; item_type: string; created_at: string; plan_starts_at?: string | null; plan_ends_at?: string | null };
 export type Access = { sheetLeft: number; sheetExpiresAt: string | null; freeExamLeft: number; freeBundleLeft: number; freePredictLeft: number; predictDayLeft: number; predictWeekLeft: number; examUntil: string | null; examStart: string | null; examGranted: number; examLeft: number; onceLeft: number; onceTotal: number };
 
 const DAY = 86_400_000;
@@ -29,13 +29,18 @@ export function computeAccess(buys: PlanBuy[], uses: PlanUse[], failedJobs: Set<
     }).length;
     // 시험대비권 — 기간 중에 또 사면 뒤로 이어 붙고 건수도 더한다. 끝난 묶음의 남은 건수는 사라진다.
     let until = 0, start = 0, granted = 0;
+    let examPurchaseIds = new Set<string>();
     for (const b of buys.filter(x => x.item_type === PASS_EXAM.itemType && Date.parse(x.created_at) <= now).sort((a, b) => a.created_at.localeCompare(b.created_at))) {
         const at = new Date(b.created_at).getTime();
-        if (at >= until) { start = at; granted = 0; until = at; }
-        until += PASS_EXAM.days * DAY; granted += PASS_EXAM.bundles;
+        if (at >= until) { start = at; granted = 0; until = at; examPurchaseIds = new Set(); }
+        until = b.plan_ends_at ? Math.max(until, Date.parse(b.plan_ends_at)) : until + PASS_EXAM.days * DAY;
+        granted += PASS_EXAM.bundles;
+        if (b.id) examPurchaseIds.add(b.id);
     }
     const active = until > now;
-    const examUsed = count(planFeature('exam', 'exam'), start) + count(planFeature('exam', 'bundle'), start);
+    const examUsed = live.filter(u => ['plan_exam_exam', 'plan_exam_bundle'].includes(u.feature)
+        && Date.parse(u.created_at) >= start && Date.parse(u.created_at) <= now
+        && (!u.qb_exam_purchase_id || examPurchaseIds.has(u.qb_exam_purchase_id))).length;
     const windows = predictWindows(now);
     const predictDayLeft = Math.max(0, FREE_TRIAL.predictDaily - count(planFeature('free', 'predict'), windows.day));
     const predictWeekLeft = Math.max(0, FREE_TRIAL.predictWeekly - count(planFeature('free', 'predict'), windows.week));
@@ -44,6 +49,18 @@ export function computeAccess(buys: PlanBuy[], uses: PlanUse[], failedJobs: Set<
     const sheets = buys.filter(b => b.item_type === PASS_SHEET.itemType && b.id && !spent.has(b.id)
         && Date.parse(b.created_at) <= now && Date.parse(b.created_at) + PASS_SHEET.days * DAY > now)
         .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    const once = buys.filter(b => b.item_type === PASS_ONCE.itemType && Date.parse(b.created_at) <= now)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at) || (a.id || '').localeCompare(b.id || ''));
+    const onceUses = live.filter(u => u.feature === planFeature('once', 'bundle') && Date.parse(u.created_at) <= now);
+    const onceSpent = new Set(onceUses.filter(u => u.qb_once_purchase_id).map(u => u.qb_once_purchase_id));
+    // Support pre-migration snapshots by assigning unlinked history only to a
+    // purchase that existed then. Explicit cancelled purchase IDs never spill
+    // over to other purchases; the audit records themselves remain untouched.
+    const availableOnce = once.filter(b => !b.id || !onceSpent.has(b.id));
+    for (const u of onceUses.filter(u => !u.qb_once_purchase_id).sort((a, b) => a.created_at.localeCompare(b.created_at))) {
+        const index = availableOnce.findIndex(b => Date.parse(b.created_at) <= Date.parse(u.created_at));
+        if (index >= 0) availableOnce.splice(index, 1);
+    }
     return {
         sheetLeft: sheets.length,
         sheetExpiresAt: sheets.length ? new Date(Date.parse(sheets[0].created_at) + PASS_SHEET.days * DAY).toISOString() : null,
@@ -55,8 +72,8 @@ export function computeAccess(buys: PlanBuy[], uses: PlanUse[], failedJobs: Set<
         examStart: active ? new Date(start).toISOString() : null,
         examGranted: active ? granted : 0,
         examLeft: active ? Math.max(0, granted - examUsed) : 0,
-        onceLeft: Math.max(0, buys.filter(x => x.item_type === PASS_ONCE.itemType).length - count(planFeature('once', 'bundle'))),
-        onceTotal: buys.filter(x => x.item_type === PASS_ONCE.itemType).length,
+        onceLeft: availableOnce.length,
+        onceTotal: once.length,
     };
 }
 

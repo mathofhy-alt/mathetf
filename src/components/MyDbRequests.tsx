@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, MessageSquare, Database, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { payOrder } from '@/lib/payments/client';
+import PendingOrderNotice from '@/components/payments/PendingOrderNotice';
 import PointsPicker from '@/components/PointsPicker';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 
@@ -79,6 +80,7 @@ export default function MyDbRequests() {
 
     return (
         <>
+        <PendingOrderNotice userId={checkout?.user.id} kind="cart" />
         <ul className="rd-my-list rd-my-reqs">
             {rows.map(row => (
                 <li key={row.id} className="rd-my-req">

@@ -43,6 +43,7 @@ test('image API removes solution captures and solution-only binaries even when c
  a.equal(await access.canSeeSolutions(),true);unlimited=false;a.equal(await access.canSeeSolutions(),false);
 });
 const modalDeps=config=>({'@/lib/qbPassConfig':config,'@/lib/payments/client':{},'@/components/RefundPolicyModal':()=>null,
+ '@/components/payments/PendingOrderNotice':()=>null,
  '@/components/PointsPicker':()=>null,'@/utils/supabase/client':{},'@/lib/report-reward':{REPORT_REWARD_LABEL:'5,000P',REPORT_REWARD_POINTS:5000}});
 function find(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of React.Children.toArray(node.props?.children)){const hit=find(child,predicate);if(hit)return hit;}return null;}
 test('PDF allowance error opens the local purchase flow without navigating away or losing the current crop state',async()=>{
@@ -108,7 +109,8 @@ test('actual passStatus reads live legacy-inclusive plan_usage and preserves a d
   range(from,to){rows=rows.slice(from,to+1);return this;},eq(k,v){rows=rows.filter(r=>r[k]===v);return this;},in(k,v){rows=rows.filter(r=>v.includes(r[k]));return this;},
   gte(k,v){rows=rows.filter(r=>r[k]>=v);return this;},then(resolve,reject){return Promise.resolve({data:rows,error:null}).then(resolve,reject);}};}};
  const access=load('lib/planAccess.ts',{'./qbPassConfig':cfg});
- const pass=load('lib/qbPass.ts',{'@/utils/supabase/server-admin':{createAdminClient:()=>sb},'./qbPassConfig':cfg,'./planAccess':access});
+ const pass=load('lib/qbPass.ts',{'@/utils/supabase/server-admin':{createAdminClient:()=>sb},'./qbPassConfig':cfg,'./planAccess':access,
+  './schemaCapabilities':load('lib/schemaCapabilities.ts',{}, {process:{env:{}}})});
  const status=await pass.passStatus(member);a.equal(status.freeExamLeft,0);a.equal(status.examLeft,cfg.PASS_EXAM.bundles-1);
  a(reads.includes('plan_usage'));a(!reads.includes('feature_usage'));
 });

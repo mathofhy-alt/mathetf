@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { hasSchemaCapability } from './schemaCapabilities';
 
 /**
  * 시험지 만들기 이용권 (2026-10-07, 브랜치 redesign-2026 — 배포 시점은 사용자가 결제와 묶어 정한다)
@@ -49,17 +50,21 @@ export async function recentViewers(): Promise<number | null> {
 }
 
 /** 결제 기록을 이어 붙여 이용권 끝나는 시각 */
-export function passUntilFrom(purchases: { created_at: string; item_id?: string | null }[]): Date | null {
+export function passUntilFrom(purchases: { created_at: string; item_id?: string | null; plan_ends_at?: string | null }[]): Date | null {
     let until = 0;
     for (const p of [...purchases].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
         const at = new Date(p.created_at).getTime();
-        until = Math.max(until, at) + (passTerm(String(p.item_id || ''))?.days ?? QB_PASS.days) * DAY;   // 몇 개월짜리인지(10/8)
+        // Installed SQL freezes each purchase's extension. Removing an earlier
+        // purchase must not move a surviving purchase's expiry backwards.
+        until = p.plan_ends_at ? Math.max(until, Date.parse(p.plan_ends_at))
+            : Math.max(until, at) + (passTerm(String(p.item_id || ''))?.days ?? QB_PASS.days) * DAY;
     }
     return until ? new Date(until) : null;
 }
 
 export async function passStatus(user: { id: string; email?: string | null }): Promise<PassStatus> {
     const sb = createAdminClient();
+    const oncePurchaseUsage = await hasSchemaCapability(sb, 'oncePurchaseUsage');
     // 평생 횟수는 PostgREST의 기본 1,000행 제한으로 잘리면 안 된다. 읽기 실패는 503으로 돌린다.
     const all = async (query: () => any): Promise<any[]> => {
         const rows: any[] = [];
@@ -71,9 +76,14 @@ export async function passStatus(user: { id: string; email?: string | null }): P
         }
     };
     const [buys, other, uses, failed] = await Promise.all([
-        all(() => sb.from('purchased_items').select('created_at, item_id').eq('user_id', user.id).eq('item_type', QB_PASS.itemType)),
-        all(() => sb.from('purchased_items').select('id, created_at, item_type').eq('user_id', user.id).in('item_type', [PASS_ONCE.itemType, PASS_EXAM.itemType, PASS_SHEET.itemType])),
-        all(() => sb.from('plan_usage').select('feature, title, created_at, qb_sheet_purchase_id').eq('user_id', user.id).in('feature', PLAN_FEATURES)),
+        // '*' also retains frozen periods if SQL commits during a negative
+        // capability cache; the deployed table works before these columns exist.
+        all(() => sb.from('purchased_items').select('*').eq('user_id', user.id).eq('item_type', QB_PASS.itemType)),
+        all(() => sb.from('purchased_items').select('*').eq('user_id', user.id).in('item_type', [PASS_ONCE.itemType, PASS_EXAM.itemType, PASS_SHEET.itemType])),
+        // The old view has no purchase attribution columns. '*' retains new IDs if
+        // the migration commits during the five-second negative cache window.
+        all(() => sb.from('plan_usage').select(oncePurchaseUsage
+            ? 'feature, title, created_at, qb_sheet_purchase_id, qb_once_purchase_id, qb_exam_purchase_id' : '*').eq('user_id', user.id).in('feature', PLAN_FEATURES)),
         all(() => sb.from('pdf_jobs').select('id').eq('user_id', user.id).eq('status', 'error').eq('hwp_ready', false).eq('pdf_delivered', false)),
     ]);
     const [offer, viewers] = await Promise.all([currentOffer(), recentViewers().catch(() => null)]);

@@ -1,47 +1,53 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { gaEvent } from '@/lib/analytics/ga';
-// 결제 결과(10/7 새 디자인) — 계정 화면과 같은 가운데 카드(rd-auth). 확인 로직은 그대로, 겉모습만 바꿨다.
+import { clearPendingPayment, rememberPaymentReview, clearPaymentReview } from '@/lib/payments/client';
+// 결제사 상태를 서버에서 확정한 뒤 복구 포인터를 정리하고 구매 내역으로 이동한다.
 export default function PaymentReturn() {
     const [message,setMessage] = useState('결제 결과를 확인하고 있습니다.');
     const [done,setDone] = useState(false);
     const [busy,setBusy] = useState(false);
+    const [unpaid,setUnpaid] = useState(false);
+    const [choice,setChoice] = useState(false);
+    const verifying = useRef(false);
     async function verify() {
+        if (verifying.current) return;
+        verifying.current = true;
         setBusy(true);
+        setUnpaid(false); setChoice(false);
         try {
             const params = new URLSearchParams(window.location.search);
             const paymentId = params.get('paymentId');
             if (!paymentId) { setMessage('주문 번호가 없습니다. 결제를 시작한 화면에서 결과 확인을 눌러주세요.'); return; }
-            // [10/8] 모바일에서 결제를 취소·실패하면 포트원이 code 를 붙여 돌려보낸다 — 결제 안 된 것이니 남은 주문을 지우고 바로 안내(예전엔 '진행 중'으로 막혔다)
-            if (params.get('code')) {
-                const { data: { user } } = await createClient().auth.getUser();
-                if (user) for (const kind of ['topup', 'cart']) {
-                    const key = `mathetf_pending_payment_${user.id}_${kind}`;
-                    if (localStorage.getItem(key) === paymentId) localStorage.removeItem(key);
-                }
-                setMessage(`결제가 진행되지 않았어요. ${params.get('message') || ''} 다시 결제하시면 됩니다.`.replace(/\s+/g, ' ').trim());
-                return;
-            }
-            const res = await fetch('/api/payments/complete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId}) });
+            // Redirect code/message are untrusted and can race with approval.
+            // Always reconcile PAID on the server before clearing recovery state.
+            const res = await fetch('/api/payments/complete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId}), signal:AbortSignal.timeout(45000) });
             if (res.status===401) { window.location.href=`/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`; return; }
             const data = await res.json();
-            if (data.code === 'PAYMENT_NOT_PAID') {
+            if (['PAYMENT_MANUAL_REVIEW', 'PAYMENT_REFUND_PENDING'].includes(data.code)) {
                 const { data: { user } } = await createClient().auth.getUser();
-                if (user) for (const kind of ['topup', 'cart']) {
-                    const key = `mathetf_pending_payment_${user.id}_${kind}`;
-                    if (localStorage.getItem(key) === paymentId) localStorage.removeItem(key);
+                if (user) rememberPaymentReview(user.id, 'cart', paymentId);
+            }
+            if (['PAYMENT_NOT_PAID', 'PAYMENT_SUPERSEDED', 'PAYMENT_REFUNDED', 'PAYMENT_RETRY_CHOICE', 'PAYMENT_CLOSED'].includes(data.code)) {
+                const { data: { user } } = await createClient().auth.getUser();
+                if (user && ['PAYMENT_SUPERSEDED', 'PAYMENT_REFUNDED', 'PAYMENT_CLOSED'].includes(data.code)) for (const kind of ['topup', 'cart']) {
+                    clearPendingPayment(user.id, kind, paymentId);
+                    clearPaymentReview(user.id, kind, paymentId);
                 }
+                setUnpaid(data.code !== 'PAYMENT_RETRY_CHOICE');
+                setChoice(data.code === 'PAYMENT_RETRY_CHOICE');
             }
             if (!res.ok || !data.success) throw new Error(data.message);
             const {data:{user}} = await createClient().auth.getUser();
-            if(user) localStorage.removeItem(`mathetf_pending_payment_${user.id}_${data.kind}`);
+            if(user) { clearPendingPayment(user.id, data.kind, paymentId); clearPaymentReview(user.id, data.kind, paymentId); }
             if (!data.alreadyProcessed) gaEvent('purchase', { transaction_id: paymentId, value: data.amount, currency: 'KRW', kind: data.kind });
             setDone(true); setMessage(data.kind==='topup' ? `${data.points.toLocaleString()} 포인트 충전이 완료되었습니다.` : '결제가 완료되었습니다. 이용권은 시험지 만들기에 바로 적용되고, 자료는 마이페이지 구매 내역에서 받을 수 있습니다.');
+            window.location.replace('/mypage');
         } catch (e:any) { setMessage(e.message || '같은 주문의 결과를 다시 확인해주세요.'); }
-        finally { setBusy(false); }
+        finally { verifying.current = false; setBusy(false); }
     }
     useEffect(()=>{ void verify(); },[]);
     return <div className="rd rd-auth rd-cart-ret">
@@ -50,7 +56,9 @@ export default function PaymentReturn() {
             <h1 className="rd-auth-title">결제 결과</h1>
             <p role="status" className={done ? 'rd-cart-ret-msg is-done' : 'rd-cart-ret-msg'}>{message}</p>
             <div className="rd-cart-ret-actions">
-                {!done && <button disabled={busy} onClick={verify} className="rd-btn rd-btn-primary rd-btn-block">결제 결과 다시 확인</button>}
+                {!done && !unpaid && <button disabled={busy} onClick={verify} className="rd-btn rd-btn-primary rd-btn-block">결제 결과 다시 확인</button>}
+                {unpaid && <Link href="/cart" className="rd-btn rd-btn-primary rd-btn-block">장바구니에서 다시 결제</Link>}
+                {choice && <Link href="/cart" className="rd-btn rd-btn-gray rd-btn-block">결제창을 닫았어요 · 장바구니에서 새로 결제</Link>}
                 <Link href="/mypage" className={done ? 'rd-btn rd-btn-primary rd-btn-block' : 'rd-btn rd-btn-gray rd-btn-block'}>내 보관함으로</Link>
             </div>
         </div>

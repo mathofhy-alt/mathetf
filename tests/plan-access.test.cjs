@@ -9,6 +9,20 @@ const buy = (type, d = 0) => ({ item_type: type, created_at: at(d) });
 const use = (feature, d = 0, title = null) => ({ feature, created_at: at(d), title });
 const access = (buys = [], uses = [], now = 1, failed = new Set()) => computeAccess(buys, uses, failed, epoch + now * DAY);
 
+test('round13 frozen exam periods survive either refund without transferring cancelled credits', () => {
+    const aBuy={...buy('QB_EXAM'),id:'a',plan_starts_at:at(0),plan_ends_at:at(14)};
+    const bBuy={...buy('QB_EXAM',1),id:'b',plan_starts_at:at(14),plan_ends_at:at(28)};
+    const uses=[{...use('plan_exam_exam',2),qb_exam_purchase_id:'b'},
+        ...Array.from({length:10},()=>({...use('plan_exam_bundle',2),qb_exam_purchase_id:'a'}))];
+    const before=access([aBuy,bBuy],uses,20),after=access([bBuy],uses,20);
+    a.equal(before.examUntil,at(28));a.equal(after.examUntil,at(28));
+    a.equal(after.examLeft,9);a.equal(after.examGranted,10);
+    a.equal(access([aBuy],uses,20).examUntil,null);
+    // Early access to prepaid stacked credits remains the deployed behavior.
+    a.equal(access([bBuy],[],2).examLeft,10);
+    a.equal(access([bBuy],[],28).examLeft,0);
+});
+
 test('exam replenishes weekly, print stays lifetime and prediction is independent', () => {
     const p = access([], [use('plan_free_exam'), use('plan_free_bundle'), use('plan_free_bundle')], 100);
     a.equal(p.freeExamLeft, 2); a.equal(p.freeBundleLeft, 0); a.equal(p.freePredictLeft, 1);
@@ -31,11 +45,35 @@ test('once never pays for an exam or prediction, even after both other allowance
     a.equal(chooseCharge(p, 'bundle'), 'once'); a.equal(chooseCharge(p, 'exam'), null); a.equal(chooseCharge(p, 'predict'), null);
     a.equal(access([buy('QB_ONCE')], [use('plan_once_bundle')]).onceLeft, 0);
 });
+
+test('once usage stays with its original purchase after cancellation, including old unlinked snapshots', () => {
+    const aBuy = { ...buy('QB_ONCE'), id: 'a' }, bBuy = { ...buy('QB_ONCE', 2), id: 'b' };
+    const aUse = { ...use('plan_once_bundle', 1), qb_once_purchase_id: 'a' };
+    a.equal(access([aBuy, bBuy], [aUse], 3).onceLeft, 1);
+    a.equal(access([bBuy], [aUse], 3).onceLeft, 1);
+    a.equal(access([aBuy], [aUse], 3).onceLeft, 0);
+    a.equal(access([bBuy], [use('plan_once_bundle', 1)], 3).onceLeft, 1);
+    a.equal(access([aBuy, bBuy], [use('plan_once_bundle', 1)], 3).onceLeft, 1);
+    a.equal(access([bBuy], [aUse, { ...use('plan_once_bundle', 3), qb_once_purchase_id: 'b' }], 3).onceLeft, 0);
+    a.equal(access([bBuy], [{ ...use('plan_once_bundle', 3, 'failed'), qb_once_purchase_id: 'b' }], 3, new Set(['failed'])).onceLeft, 1);
+    a.equal(access([{ ...buy('QB_ONCE', 4), id: 'future' }], [], 3).onceTotal, 0);
+});
 test('download order is free, exam, once; HWP deliberately skips free', () => {
     const p = access([buy('QB_EXAM'), buy('QB_ONCE')]);
     a.equal(chooseCharge(p, 'bundle'), 'free'); a.equal(chooseCharge(p, 'bundle', true), 'exam');
     a.equal(chooseCharge({ ...p, examLeft: 0 }, 'bundle', true), 'once');
     a.equal(chooseCharge(access(), 'bundle', true), null);
+});
+
+test('exam usage attributed to a cancelled purchase never spends another active purchase; legacy counts and failures remain compatible',()=>{
+    const aBuy={...buy('QB_EXAM'),id:'a'},bBuy={...buy('QB_EXAM',1),id:'b'};
+    const usedA=Array.from({length:10},()=>({...use('plan_exam_bundle',2),qb_exam_purchase_id:'a'}));
+    const usedB={...use('plan_exam_exam',2),qb_exam_purchase_id:'b'};
+    a.equal(access([aBuy,bBuy],[...usedA,usedB],3).examLeft,9);
+    a.equal(access([bBuy],[...usedA,usedB],3).examLeft,9);
+    a.equal(access([aBuy],[...usedA,usedB],3).examLeft,0);
+    a.equal(access([bBuy],[...usedA,use('plan_exam_exam',2)],3).examLeft,9);
+    a.equal(access([bBuy],[{...usedB,title:'failed'}],3,new Set(['failed'])).examLeft,10);
 });
 test('renewal within the period extends days and shared allowance without mutating purchases', () => {
     const buys = [buy('QB_EXAM', 5), buy('QB_EXAM', 0)];

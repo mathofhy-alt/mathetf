@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { stampPdfMember } from '@/lib/pdfMemberStamp';
 import { bundleExpired } from '@/lib/bundlePolicy';
-import { assertBundleQuestions, assertJobReceipt, bundleHml, BundleError, type BundleJob } from '@/lib/planBundles';
+import { assertBundleQuestions, assertJobReceipt, assertBundleDelivery, bundleHml, BundleError, type BundleJob } from '@/lib/planBundles';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
             const ttl = job.retain_until ? Math.min(120, Math.floor((new Date(job.retain_until).getTime() - Date.now()) / 1000) - 60) : 120;
             if (ttl < 1) throw new BundleError(PLAN_COPY.expired, 410);
             const signed = await admin.storage.from('pdf-jobs').createSignedUrl(file, ttl, { download: name });
+            await assertBundleDelivery(user, job);
             // 서명 처리가 여유보다 오래 걸렸으면 그 URL도 내보내지 않는다.
             if (job.retain_until && new Date(job.retain_until).getTime() - Date.now() < ttl * 1000)
                 throw new BundleError(PLAN_COPY.expired, 410);

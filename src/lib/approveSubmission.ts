@@ -3,13 +3,13 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import { REPORT_REWARD_POINTS } from '@/lib/report-reward';
 import { sendNotice } from '@/lib/sms';
 import { notifySendAt, parseNotify, type NotifyWhen } from '@/lib/reportDoneNotice';
+import { hasSchemaCapability } from '@/lib/schemaCapabilities';
 
 /**
  * 원본 제보 채택 (10/8 route 에서 옮김) — 관리자 화면 버튼(api/admin/approve-submission)과 등록 스크립트가 같은 코드를 쓴다.
  * 포인트 내역(멱등 열쇠) → 포인트 적립 → 판매용 한글 파일 0원 구매(있으면) → 제보자 문자(회원이 제보 때 고른 받을지·시간대대로, 고른 기록이 없으면 밤엔 오전 9시 예약).
  */
 const REWARD_POINTS = REPORT_REWARD_POINTS;
-const REWARD_TYPE = 'submission_reward';
 export class ApproveError extends Error { constructor(msg: string, public status: number) { super(msg); } }
 
 export async function approveSubmission(id: string, opts: { sms?: boolean } = {}) {
@@ -32,46 +32,17 @@ export async function approveSubmission(id: string, opts: { sms?: boolean } = {}
     const recipient = row.uploader_id;
     if (!recipient) throw new ApproveError('제보자 정보가 없습니다.', 400);
 
-    // 멱등: 이미 이 제보로 지급된 이력이 있으면 차단
-    const { data: dup } = await admin
-        .from('point_transactions')
-        .select('id')
-        .eq('related_id', id)
-        .eq('type', REWARD_TYPE)
-        .limit(1)
-        .maybeSingle();
-    if (dup) throw new ApproveError('이미 보상이 지급된 제보입니다.', 409);
-
-    // [10/5] 내역을 먼저 남긴다 — 내역이 중복 지급을 막는 열쇠라, 포인트부터 올리고 내역이 실패하면
-    //   (point_transactions_type_check 에 submission_reward 가 없던 때처럼) 누를 때마다 포인트만 쌓였다.
-    //   같은 제보 두 번째 기록은 유니크 인덱스(20261005_submission_reward.sql)가 막는다.
-    const { data: tx, error: logErr } = await admin.from('point_transactions').insert({
-        user_id: recipient,
-        type: REWARD_TYPE,
-        amount: REWARD_POINTS,
-        description: `기출 제보 채택 보상: ${row.title || row.school}`,
-        related_id: id,
-    }).select('id').single();
-    if (logErr) {
-        if (logErr.code === '23505') throw new ApproveError('이미 보상이 지급된 제보입니다.', 409);
-        throw logErr;
+    // A separate ledger/balance write cannot safely recover a lost response.
+    // Before independent preparation, leave no writes and allow a later retry.
+    if (!await hasSchemaCapability(admin, 'submissionReward')) {
+        throw new ApproveError('보상 지급 준비가 필요합니다. 준비 완료 후 다시 채택해 주세요.', 503);
     }
-
-    // 포인트 적립 (earned_points) — 실패하면 방금 남긴 내역을 지워 다시 채택할 수 있게 한다
     try {
-        const { data: profile, error: pErr } = await admin
-            .from('profiles')
-            .select('earned_points')
-            .eq('id', recipient)
-            .maybeSingle();
-        if (pErr) throw pErr;
-        const { error: upErr } = profile
-            ? await admin.from('profiles').update({ earned_points: (profile.earned_points || 0) + REWARD_POINTS }).eq('id', recipient)
-            : await admin.from('profiles').insert({ id: recipient, earned_points: REWARD_POINTS, purchased_points: 0 });
-        if (upErr) throw upErr;
-    } catch (e) {
-        await admin.from('point_transactions').delete().eq('id', tx.id);
-        throw e;
+        const { error } = await admin.rpc('reward_submission', { p_submission_id: id });
+        if (error) throw error;
+    } catch (error: any) {
+        if (error.code === '23505') throw new ApproveError('이미 보상이 지급된 제보입니다.', 409);
+        throw error;
     }
 
     // [10/8] 무료 타이핑 — 판매용 한글 파일이 이미 등록돼 있으면 바로 0원 구매로(없으면 회원이 마이페이지를 열 때 다시 확인)

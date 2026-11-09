@@ -58,7 +58,7 @@ export default function MyPage() {
             setUser(user);
 
             // [10/21 Clarity] 마이페이지 '로딩중' 동안의 반응 없는 클릭 — 포인트·옛 구매·새 구매를 하나씩 기다리던 것을 한 번에
-            const [{ data: profile }, { data: purchaseDataOld }, { data: purchaseDataNew }] = await Promise.all([
+            const [{ data: profile }, { data: purchaseDataOld }, { data: allPurchasesNew }, { data: hiddenPurchases }] = await Promise.all([
                 supabase.from('profiles').select('earned_points').eq('id', user.id).single(),
                 // Fetch Purchases (Old Point System)
                 supabase
@@ -76,12 +76,15 @@ export default function MyPage() {
                     .eq('user_id', user.id)
                     .not('item_type', 'in', '(QB_PASS,QB_ONCE,QB_EXAM,QB_SHEET)')   // 이용권은 위 '시험지 만들기' 칸에 따로(10/7) — 목록에서 지우면 기간이 사라진다
                     .order('created_at', { ascending: false }),
+                supabase.from('purchase_list_hides').select('purchase_id').eq('user_id', user.id),
             ]);
+            const hiddenIds = new Set((hiddenPurchases || []).map((p: any) => p.purchase_id));
+            const purchaseDataNew = (allPurchasesNew || []).filter((p: any) => !hiddenIds.has(p.id));
             if (profile) {
                 setEarnedPoints(profile.earned_points || 0);
             }
 
-            let finalPurchases = purchaseDataOld || [];
+            let finalPurchases = (purchaseDataOld || []).filter((p: any) => !hiddenIds.has(p.id));
             
             if (purchaseDataNew && purchaseDataNew.length > 0) {
                 const itemIds = purchaseDataNew.map((p: any) => p.item_id);
@@ -138,27 +141,23 @@ export default function MyPage() {
     };
 
     const handleDeletePurchase = async (purchaseId: string) => {
-        // First warning
-        alert('이 내역을 삭제하시면 해당 자료를 다시 다운로드할 수 없습니다.');
-
-        // Second confirmation
-        if (!confirm('그래도 삭제하시겠습니까?')) return;
+        if (!confirm('구매 목록에서 이 내역을 숨기시겠습니까?')) return;
 
         try {
             const result = await deletePurchase(purchaseId);
 
             if (!result.success) {
-                alert(result.message || '삭제 실패');
+                alert(result.message || '숨기기 실패');
                 return;
             }
 
-            alert('구매 내역이 삭제되었습니다.');
+            alert('구매 목록에서 숨겼습니다.');
             // Refresh List locally
             setPurchases(prev => prev.filter(p => p.id !== purchaseId));
 
         } catch (error) {
             console.error('Purchase delete error:', error);
-            alert('삭제 중 오류가 발생했습니다.');
+            alert('내역을 숨기는 중 오류가 발생했습니다.');
         }
     };
 
@@ -325,8 +324,8 @@ export default function MyPage() {
                                                         type="button"
                                                         onClick={() => handleDeletePurchase(p.id)}
                                                         className="rd-my-del"
-                                                        title="구매 내역 삭제"
-                                                        aria-label="구매 내역 삭제"
+                                                        title="구매 내역 숨기기"
+                                                        aria-label="구매 내역 숨기기"
                                                     >
                                                         <Trash2 size={18} />
                                                     </button>

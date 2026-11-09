@@ -1255,13 +1255,13 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
 .rd.rd-cart .rd-cart-total b { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: var(--rd-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rd.rd-cart .rd-cart-pay { margin-top: 16px; min-height: 56px; font-size: 18px; }
 .rd.rd-cart .rd-cart-pay:disabled { background: var(--rd-icon); cursor: wait; }
-.rd.rd-cart .rd-cart-spin { width: 20px; height: 20px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: #fff; animation: rd-cart-spin .8s linear infinite; }
+.rd.rd-cart .rd-cart-spin { display: inline-block; vertical-align: middle; width: 20px; height: 20px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: #fff; animation: rd-cart-spin .8s linear infinite; }
 @keyframes rd-cart-spin { to { transform: rotate(360deg); } }
 @media (max-width: 960px) {
-  .rd.rd-cart .rd-cart-grid { display: flex; flex-direction: column; gap: 24px; }
+  .rd.rd-cart .rd-cart-grid { display: flex; flex-direction: column; align-items: stretch; gap: 24px; }
   .rd.rd-cart .rd-cart-side { display: contents; }
   .rd.rd-cart .rd-cart-sum { border-radius: 24px; background: var(--rd-zone); padding: 24px 20px; }
-  .rd.rd-cart .rd-cart-paybar { position: sticky; bottom: 0; z-index: 30; margin: 0 -24px; padding: 12px 24px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--rd-line); background: #fff; box-shadow: 0 -8px 24px rgba(23, 32, 44, 0.06); display: flex; align-items: center; gap: 16px; }
+  .rd.rd-cart .rd-cart-paybar { position: static; z-index: auto; margin: 0 -24px; padding: 12px 24px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--rd-line); background: #fff; box-shadow: 0 -8px 24px rgba(23, 32, 44, 0.06); display: flex; align-items: center; gap: 16px; }
   .rd.rd-cart .rd-cart-total { flex: 1 1 auto; min-width: 0; flex-direction: column; align-items: flex-start; gap: 0; }
   .rd.rd-cart .rd-cart-total span { font-size: 13px; color: var(--rd-sub); }
   .rd.rd-cart .rd-cart-total b { font-size: 24px; }
@@ -2360,3 +2360,8 @@ a.rd-rg-name:hover { color: var(--rd-ink); }
   .rd .rd-qb-bar-pass, .rd .rd-qb-passline { white-space: normal; overflow-wrap: anywhere; text-align: left; max-width: 100%; }
   .rd .rd-qb-bar-go { flex: 0 0 auto; max-width: 100%; }
 }
+.payment-retry-dialog { max-width: min(390px, calc(100vw - 32px)); padding: 24px; border: 0; border-radius: 16px; color: #172033; box-shadow: 0 12px 60px #0004; }
+.payment-retry-dialog::backdrop { background: #0007; }
+.payment-retry-dialog p { margin: 0 0 20px; line-height: 1.65; }
+.payment-retry-dialog button { display: block; width: 100%; margin-top: 12px; padding: 12px; border: 1px solid #ccd2dc; border-radius: 8px; background: white; color: #172033; cursor: pointer; font: inherit; }
+.payment-retry-dialog button:focus-visible { outline: 3px solid #4d70e8; outline-offset: 2px; }

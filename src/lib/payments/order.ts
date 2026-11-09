@@ -18,15 +18,31 @@ export function cartQuote(requested: unknown, materials: any[], usedPoints: unkn
     if (typeof used !== 'number' || !Number.isSafeInteger(used) || used < 0 || used > total || !Number.isSafeInteger(total)) throw new Error('사용할 포인트를 확인해주세요.');
     return { kind: 'cart', amount: total - used, total, used_points: used, points: 0, items, name: items.length === 1 ? items[0].title : `${items[0].title} 외 ${items.length - 1}건` };
 }
-// [10/8] READY = 결제창만 열고 카드 결제까지 안 간 주문. 예전엔 이것도 '진행 중'으로 보고 새 결제를 막아서,
-//   창을 닫은 회원은 영영 다시 결제하지 못했다(라온 회원 — 서문여고). 10분 넘은 READY 는 '결제 안 됨'으로 본다.
-export const READY_STALE_MS = 10 * 60 * 1000;
-export function verifyPaidPayment(order: { payment_id: string; user_id: string; amount: number; created_at?: string }, payment: any): void {
-    if (payment.status === 'READY' && order.created_at && Date.now() - new Date(order.created_at).getTime() > READY_STALE_MS) throw new Error('PAYMENT_NOT_PAID');
-    if (['READY', 'PENDING', 'VIRTUAL_ACCOUNT_ISSUED'].includes(payment.status)) throw new Error('PAYMENT_PENDING');
-    if (payment.status !== 'PAID') throw new Error('PAYMENT_NOT_PAID');
+export const paymentIdPattern = /^order-[a-f0-9]{32}$/;
+export function samePaymentSelection(order: any, input: any): boolean {
+    const ids = (items: any[]) => items.map(i => i?.item_id).sort().join(',');
+    return Array.isArray(input?.items) && Array.isArray(order.items)
+        && ids(input.items) === ids(order.items) && (input.usedPoints ?? 0) === order.used_points;
+}
+
+export function paymentResumeRequired(order: any): Error {
+    return Object.assign(new Error('PAYMENT_RESUME_REQUIRED'), {
+        resumeOrder: { paymentId: order.payment_id, amount: order.amount, usedPoints: order.used_points,
+            name: order.name, items: order.items },
+    });
+}
+export const retryChoiceMessage = '이전 결제를 끝내셨나요? 결제를 끝내셨다면 잠시 뒤 확인해주세요. 결제하지 않으셨다면 새로 결제할 수 있어요.';
+export function verifyPaymentIdentity(order: { payment_id: string; user_id: string; amount: number }, payment: any): void {
     if (payment.id !== order.payment_id || payment.currency !== 'KRW' || payment.amount?.total !== order.amount || payment.customer?.id !== order.user_id) throw new Error('PAYMENT_MISMATCH');
     let custom = payment.customData;
     if (typeof custom === 'string') { try { custom = JSON.parse(custom); } catch { throw new Error('PAYMENT_MISMATCH'); } }
     if (custom?.orderId !== order.payment_id) throw new Error('PAYMENT_MISMATCH');
+}
+export function verifyPaidPayment(order: { payment_id: string; user_id: string; amount: number; created_at?: string }, payment: any): void {
+    // READY never expires into consent. Only the member can replace this order.
+    if (payment.status === 'READY') throw new Error('PAYMENT_RETRY_CHOICE');
+    if (['READY', 'FAILED', 'CANCELLED'].includes(payment.status)) throw new Error('PAYMENT_NOT_PAID');
+    if (['PENDING', 'PAY_PENDING', 'CANCEL_PENDING', 'VIRTUAL_ACCOUNT_ISSUED'].includes(payment.status)) throw new Error('PAYMENT_PENDING');
+    if (payment.status !== 'PAID') throw new Error('PAYMENT_UNAVAILABLE');
+    verifyPaymentIdentity(order, payment);
 }

@@ -10,7 +10,7 @@ import { hwpPassOnly } from '@/lib/hwpPolicy';
 import { bundleExpired, bundleHash } from '@/lib/bundlePolicy';
 
 type Member = { id: string; email?: string | null };
-export type BundleJob = { id: string; user_id: string; kind: string; title: string; status: string; created_at: string; retain_until: string | null; question_ids: string[] | null; set_hash: string | null; plan_charge: string | null; hwp_ready: boolean; pdf_delivered?: boolean; receipt_id?: string | null; stamp: boolean };
+export type BundleJob = { id: string; user_id: string; kind: string; title: string; status: string; created_at: string; retain_until: string | null; question_ids: string[] | null; set_hash: string | null; plan_charge: string | null; hwp_ready: boolean; pdf_delivered?: boolean; receipt_id?: string | null; revoked_at?: string | null; stamp: boolean };
 export class BundleError extends Error {
     constructor(message: string, public status = 500, public needPass = false) { super(message); }
 }
@@ -56,8 +56,19 @@ export async function resolveBundleSource(user: Member, ids: string[], receiptId
 }
 /** 기존 보관함 작업의 NULL만 예외. 새 작업은 발급 때 연결된 영수증을 재검증한다. */
 export async function assertJobReceipt(user: Member, job: BundleJob) {
+    await assertBundleDelivery(user, job);
     if (job.receipt_id && await resolveBundleSource(user, job.question_ids || [], job.receipt_id) !== job.kind)
         throw new BundleError('묶음의 발급 영수증이 일치하지 않아요.', 403);
+}
+export async function assertBundleDelivery(user: Member, job: BundleJob) {
+    if (job.revoked_at) throw new BundleError('취소·환불된 이용권으로 만든 묶음입니다.', 403);
+    // SELECT * includes this marker only after the atomic resolution migration.
+    // Old-schema file delivery keeps its deployed contract.
+    if (job.revoked_at !== undefined) {
+        const { data, error } = await createAdminClient().rpc('check_bundle_delivery', { p_user: user.id, p_id: job.id });
+        if (error) throw new BundleError('묶음 권한을 확인하지 못했어요.', 503);
+        if (data !== true) throw new BundleError('취소·환불된 이용권으로 만든 묶음입니다.', 403);
+    }
 }
 export async function ownedPrintBundle(user: Member, id: string): Promise<BundleJob> {
     if (!UUID_RE.test(id)) throw new BundleError('잘못된 묶음 요청입니다.', 400);
@@ -71,6 +82,7 @@ export async function ownedPrintBundle(user: Member, id: string): Promise<Bundle
     return data as BundleJob;
 }
 export async function bundleHml(job: BundleJob, user: Member): Promise<string> {
+    await assertBundleDelivery(user, job);
     const admin = createAdminClient();
     const { data } = await admin.storage.from('pdf-jobs').download(`${job.id}.hml`);
     let hml = data ? await data.text() : '';
@@ -115,7 +127,7 @@ export async function prepareBundle(user: Member, body: any, format: 'pdf' | 'hw
             throw new BundleError('예상문제 한글은 강사 이용권 회원만 받을 수 있어요. 무료·시험대비권은 PDF로 받아 주세요.', 402, true);
         const { data: same, error: sameError } = await admin.from('pdf_jobs').select('*').eq('user_id', user.id).eq('kind', source).eq('set_hash', hash).order('created_at', { ascending: false });
         if (sameError) throw new BundleError('이용 기록을 확인하지 못했어요.', 503);
-        const live = (same || []).filter(j => j.status !== 'error' || j.hwp_ready || j.pdf_delivered);
+        const live = (same || []).filter(j => !j.revoked_at && (j.status !== 'error' || j.hwp_ready || j.pdf_delivered));
         const paid = live.find(j => j.plan_charge !== 'free' && !bundleExpired(j));
         // 만료 작업의 재수령 권한은 끝났지만, 새 영수증과 현재 이용권으로 새 묶음을 만들 수 있다.
         job = (paid || (format === 'pdf' && !ps.unlimited ? live.find(j => j.plan_charge === 'free') : null) || null) as BundleJob | null;
@@ -133,7 +145,7 @@ export async function prepareBundle(user: Member, body: any, format: 'pdf' | 'hw
             const hml = stampMemberId(await buildPredictHml(ids, title), user.email ?? user.id);
             const up = await admin.storage.from('pdf-jobs').upload(`${id}.hml`, Buffer.from(hml, 'utf8'), { contentType: 'application/octet-stream', upsert: false });
             if (up.error) throw new BundleError('파일을 올리지 못했어요.', 503);
-            // 프린트 차감 수단은 RPC가 잠금 후 구매·사용을 다시 읽어 선택한다. 인자는 최초 조회 스냅샷이다.
+            // RPC가 잠금 후 구매·유효 기간·사용을 다시 읽는다. 인자는 최초 조회 스냅샷이다.
             const features = kind === 'bundle' && charge === 'exam' ? ['plan_exam_exam', 'plan_exam_bundle']
                 : charge && !(kind === 'predict' && charge === 'exam') ? [planFeature(charge, kind)] : [];
             const limit = charge === 'free' ? (kind === 'bundle' ? FREE_TRIAL.bundle : FREE_TRIAL.predictDaily) : charge === 'exam' ? ps.examGranted : ps.onceTotal;
@@ -153,6 +165,7 @@ export async function prepareBundle(user: Member, body: any, format: 'pdf' | 'hw
             if (job.id !== id) await admin.storage.from('pdf-jobs').remove([`${id}.hml`]);
         }
     }
+    await assertBundleDelivery(user, job);
     if (job.kind === 'print' && job.plan_charge !== 'free' && (!job.retain_until || bundleExpired(job)))
         throw new BundleError(PLAN_COPY.expired, 410);
     if (format === 'hwp' && job.plan_charge === 'free') throw new BundleError('무료 체험은 PDF만 받을 수 있어요.', 402, true);

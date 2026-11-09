@@ -43,9 +43,9 @@ export async function deletePurchase(purchaseId: string) {
         return { success: false, message: '삭제 권한이 없습니다.' };
     }
 
-    // 2. Delete from DB (try both gracefully)
-    await adminSupabase.from('purchases').delete().eq('id', purchaseId);
-    await adminSupabase.from('purchased_items').delete().eq('id', purchaseId);
+    // Hide the list entry; the immutable purchase rows still prove delivery.
+    const { error } = await adminSupabase.rpc('hide_purchase', { p_purchase_id: purchaseId, p_user_id: user.id });
+    if (error) return { success: false, message: '구매 내역을 숨기지 못했습니다. 다시 시도해주세요.' };
 
     revalidatePath('/mypage');
     return { success: true };

@@ -46,9 +46,11 @@ function harness(overrides = {}) {
         download: async name => name.endsWith('.pdf') || state.missingHml ? {data:null} : { data: { text: async () => '<HWPML />' } } }) },
     rpc: async (name,args) => {
         state.events.push(name);
+        if(name==='check_bundle_delivery')return {data:!state.jobs.find(j=>j.id===args.p_id)?.revoked_at};
         if(name==='fail_bundle_hwp') { const job=state.jobs.find(j=>j.id===args.p_id) || state.reservation; if(job && !job.hwp_ready && !job.pdf_delivered && job.status!=='done')job.status='error'; return {data:null}; }
-        if(name==='claim_bundle_hwp') { const job=state.jobs.find(j=>j.id===args.p_id) || state.reservation; if(job)job.hwp_ready=true; return {data:job}; }
+        if(name==='claim_bundle_hwp') { const job=state.jobs.find(j=>j.id===args.p_id) || state.reservation; if(job?.revoked_at)return {error:{message:'BUNDLE_REVOKED'}}; if(job)job.hwp_ready=true; return {data:job}; }
         state.rpc.push(args);
+        if(state.failCreate)return {error:{code:'P0001',message:'PLAN_LIMIT'}};
         state.reservation={id:args.p_id,user_id:args.p_user,kind:args.p_kind,plan_charge:args.p_charge,question_ids:args.p_ids,stamp:args.p_charge==='free',status:'pending',hwp_ready:false,retain_until:new Date(now+86400000).toISOString()};
         return {data:state.reservation};
     } };
@@ -79,6 +81,26 @@ const paid = (more = {}) => ({ id, user_id: member.id, kind: 'print', title: 'í”
     created_at: new Date(now).toISOString(), plan_charge: 'once', retain_until: new Date(now + 86400000).toISOString(),
     question_ids: [qid], set_hash: policy.bundleHash([qid]), hwp_ready: false, ...more });
 const exhausted = () => ({ ...computeAccess([], []), unlimited: false, freeBundleLeft: 0, freePredictLeft: 0 });
+
+for(const plan_charge of ['once','exam','teacher'])test(`round8 revoked ${plan_charge} job is blocked before PDF signing, HWP building and job reuse`,async()=>{
+ const h=harness({jobs:[paid({plan_charge,revoked_at:new Date().toISOString()})],ps:exhausted()});
+ const pdf=await h.route('app/api/pdf/[id]/route.ts').GET({}, {params:{id}});a.equal(pdf.status,403);
+ const hwp=await h.route('app/api/predict/hwp/route.ts').POST({json:async()=>({jobId:id})});a.equal(hwp.status,403);
+ a.equal(h.state.events.includes('build'),false);a.equal(h.state.uploads.length,0);
+ await a.rejects(h.bundles.prepareBundle(member,{ids:[qid],receiptId:rid},'pdf'),e=>e.status===402);
+});
+test('round7 cancellation during PDF signing suppresses the newly signed URL',async()=>{
+ const h=harness({jobs:[paid({revoked_at:null})]});
+ h.admin.storage.from=()=>({createSignedUrl:async()=>{h.state.jobs[0].revoked_at=new Date().toISOString();return {data:{signedUrl:'must-not-escape'}};}});
+ const response=await h.route('app/api/pdf/[id]/route.ts').GET({}, {params:{id}});
+ a.equal(response.status,403);a.equal(response.body.url,undefined);
+});
+test('round7 HWP claim after cancellation fails without providing the generated file',async()=>{
+ const h=harness({jobs:[paid({revoked_at:null})]});const original=h.admin.rpc;
+ h.admin.rpc=async(name,args)=>{if(name==='claim_bundle_hwp')h.state.jobs[0].revoked_at=new Date().toISOString();return original(name,args);};
+ const response=await h.route('app/api/predict/hwp/route.ts').POST({json:async()=>({jobId:id})});
+ a.equal(response.status,409);a.equal(h.state.jobs[0].hwp_ready,false);
+});
 
 test('owned paid print re-download works with no active pass and never charges again', async () => {
     const h = harness({ jobs: [paid()], ps: exhausted(), bundle_selections:[{id:rid,user_id:member.id,kind:'print',question_ids:[qid]}] });
@@ -442,4 +464,12 @@ test('print matching issues one server receipt and extends it only with current 
  await a.rejects(h.bundles.resolveBundleSource(member,[id],two.body.receiptId),e=>e.status===403);
  const prediction=await h.bundles.recordBundleSelection(member,'predict',[qid]);
  a.equal((await route.POST({json:async()=>({image:'image',receiptId:prediction})})).status,403);
+});
+
+for(const kind of ['print','predict'])for(const plan of ['exam','teacher'])test(`round8 ${plan} ${kind} stale entitlement is rejected after HML upload by the creation RPC`,async()=>{
+ const ps={...exhausted(),examUntil:plan==='exam'?new Date(now+86400000).toISOString():null,examGranted:10,examLeft:10,examStart:new Date(now-1000).toISOString(),unlimited:plan==='teacher',passUntil:plan==='teacher'?new Date(now+86400000).toISOString():null};
+ const h=harness({failCreate:true,ps,bundle_selections:[{id:rid,user_id:member.id,kind,question_ids:[qid]}]});
+ await a.rejects(h.bundles.prepareBundle(member,{ids:[qid],receiptId:rid},'pdf'),e=>e.status===402);
+ a.deepEqual(h.state.events.filter(e=>['build','upload','create_plan_bundle'].includes(e)),['build','upload','create_plan_bundle']);
+ a.equal(h.state.jobs.length,0);
 });

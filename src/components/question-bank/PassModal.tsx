@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { payOrder } from '@/lib/payments/client';
+import PendingOrderNotice from '@/components/payments/PendingOrderNotice';
 import { PLAN_COPY, FREE_TRIAL, PASS_SHEET, QB_PASS, QB_PASS_TERMS, QB_LIMITS, PASS_PLANS, SHEET_PLAN, termPrice, type PassPlanId } from '@/lib/qbPassConfig';
 import RefundPolicyModal from '@/components/RefundPolicyModal';
 import PointsPicker from '@/components/PointsPicker';
@@ -85,6 +86,7 @@ export default function PassModal({ user, info, onClose, onPaid, from = 'button'
                 <p className="rd-modal-text">
                     {out ? PLAN_COPY.exhausted : '쓰시는 만큼 골라 보세요.'}
                 </p>
+                <PendingOrderNotice userId={user?.id} kind="cart" />
                 <div className="rd-pass-card">
                     {/* [10/8] 최근 30분 이용자 수 — 사실 그대로의 문구, 3명 미만이면 서버가 null(숨김) */}
                     {info?.viewers ? <p className="rd-pass-bubble" role="status"><span className="rd-pass-dot" aria-hidden="true" />최근 30분 동안 <b>{info.viewers}명</b>이 시험지 만들기를 이용했어요</p> : null}

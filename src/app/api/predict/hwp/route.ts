@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { bundleExpired } from '@/lib/bundlePolicy';
-import { prepareBundle, bundleHml, logBundleDownload, BundleError, type BundleJob } from '@/lib/planBundles';
+import { prepareBundle, bundleHml, logBundleDownload, assertBundleDelivery, BundleError, type BundleJob } from '@/lib/planBundles';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
         if (error || !data) throw new BundleError('묶음 상태가 바뀌었어요. 이용 현황을 확인한 뒤 다시 받아 주세요.', 409);
         job = data as BundleJob;
         await logBundleDownload(user, job, 'hwp');
+        await assertBundleDelivery(user, job);
         const title = (job.title || '문제').replace(/[\\/<>:"|?*]/g, '_').trim() || '문제';
         return new NextResponse(hml, {
             headers: {

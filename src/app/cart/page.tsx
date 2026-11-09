@@ -10,37 +10,49 @@ import Header from '@/components/Header';
 import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
 
-// 장바구니(10/7 새 디자인) — 왼쪽 담은 자료 목록, 오른쪽 결제 정보(데스크톱은 따라 내려오고, 폰은 결제 금액과 버튼이 화면 아래에 붙는다).
-// 결제 로직(payOrder, 포인트 계산, 대기 주문 확인)은 그대로 두고 겉모습만 바꿨다.
+// 데스크톱 결제 정보는 따라 내려오고, 모바일 결제 정보는 본문 아래에 놓인다.
 export default function CartPage() {
     const { items, cartCount, totalPrice, isLoading, removeFromCart, fetchCart } = useCart();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [earnedPoints, setEarnedPoints] = useState(0);
+    const [pointsStatus, setPointsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+    const [pointsRetry, setPointsRetry] = useState(0);
     const [pointsToUse, setPointsToUse] = useState<number | string>('');
     const supabase = createClient();
 
     const totalPoints = earnedPoints;
-    const usedPoints = typeof pointsToUse === 'number' ? pointsToUse : 0;
+    const usedPoints = Math.max(0, Math.min(totalPrice, totalPoints, typeof pointsToUse === 'number' ? pointsToUse : 0));
     const finalAmount = Math.max(0, totalPrice - usedPoints);
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => {
-            setUser(data.user);
-            if (data.user) {
-                supabase.from('profiles').select('earned_points').eq('id', data.user.id).single()
-                .then(({ data: profileData }) => {
-                    if (profileData) {
-                        setEarnedPoints(profileData.earned_points || 0);
-                    }
-                });
-            }
-        });
-        fetchCart();
-    }, [supabase, fetchCart]);
+        let cancelled = false;
+        setPointsStatus('loading');
+        void (async () => {
+            try {
+                const { data, error } = await supabase.auth.getUser();
+                if (cancelled) return;
+                setUser(data.user);
+                if (error || !data.user) throw new Error('AUTH');
+                const { data: profile, error: profileError } = await supabase.from('profiles').select('earned_points').eq('id', data.user.id).maybeSingle();
+                if (profileError) throw new Error('POINTS');
+                const balance = Number(profile?.earned_points ?? 0);
+                if (!Number.isSafeInteger(balance) || balance < 0) throw new Error('POINTS');
+                if (!cancelled) { setEarnedPoints(balance); setPointsStatus('ready'); }
+            } catch { if (!cancelled) setPointsStatus('error'); }
+        })();
+        return () => { cancelled = true; };
+    }, [supabase, pointsRetry]);
+
+    // 운영본처럼 장바구니에 들어올 때마다 서버 목록을 다시 받는다(다른 탭에서 결제한 상품이 남아 보이지 않게)
+    useEffect(() => { fetchCart(); }, [fetchCart]);
+
+    useEffect(() => {
+        if (pointsStatus === 'ready') setPointsToUse(value => value === '' ? '' : Math.max(0, Math.min(Number(value), totalPoints, totalPrice)));
+    }, [pointsStatus, totalPoints, totalPrice]);
 
     const handleCheckout = async () => {
-        if (!user || cartCount === 0) return;
+        if (!user || cartCount === 0 || pointsStatus !== 'ready' || isCheckingOut) return;
         setIsCheckingOut(true);
         try {
             await payOrder(user, {kind:'cart',items,usedPoints});
@@ -106,7 +118,7 @@ export default function CartPage() {
                         <div className="rd-cart-sum">
                             <h2 className="rd-cart-h2">결제 정보</h2>
 
-                            <dl className="rd-cart-rows">
+                            <dl className="rd-cart-rows" aria-live="polite">
                                 <div className="rd-cart-row">
                                     <dt>총 상품 수량</dt>
                                     <dd>{cartCount}개</dd>
@@ -127,20 +139,24 @@ export default function CartPage() {
                             <div className="rd-cart-points">
                                 <div className="rd-cart-points-head">
                                     <label htmlFor="rd-cart-points-input">포인트 사용</label>
-                                    <span>보유: {totalPoints.toLocaleString()}P</span>
+                                    <span role="status">{pointsStatus === 'loading' ? '포인트 불러오는 중' : pointsStatus === 'error' ? '포인트 조회 실패' : `보유: ${totalPoints.toLocaleString()}P`}</span>
                                 </div>
                                 <div className="rd-cart-points-row">
                                     <input
                                         id="rd-cart-points-input"
-                                        type="number"
-                                        value={pointsToUse}
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        disabled={pointsStatus !== 'ready' || isCheckingOut}
+                                        value={pointsToUse === '' ? '' : usedPoints}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             if (val === '') {
                                                 setPointsToUse('');
                                                 return;
                                             }
-                                            let num = parseInt(val, 10);
+                                            if (!/^\d+$/.test(val)) return;
+                                            let num = Number(val);
                                             if (isNaN(num)) return;
                                             if (num < 0) num = 0;
                                             // 보유 포인트 또는 총 결제 금액을 초과할 수 없음
@@ -152,12 +168,16 @@ export default function CartPage() {
                                         className="rd-input rd-cart-points-input"
                                     />
                                     <button
+                                        type="button"
+                                        disabled={pointsStatus !== 'ready' || isCheckingOut}
                                         onClick={() => setPointsToUse(Math.min(totalPoints, totalPrice))}
                                         className="rd-btn rd-btn-gray rd-cart-points-all"
                                     >
-                                        전액사용
+                                        {pointsStatus === 'loading' ? '불러오는 중' : '전액사용'}
                                     </button>
                                 </div>
+                                {pointsStatus === 'error' && <p role="alert">포인트를 불러오지 못했습니다. <button type="button" className="rd-btn rd-btn-gray" onClick={() => { setPointsStatus('loading'); setPointsRetry(v => v + 1); }}>다시 불러오기</button></p>}
+                                {usedPoints > 0 && <p role="status">{usedPoints.toLocaleString()}P 적용됨{finalAmount === 0 ? ' · 카드 결제 없이 완료됩니다.' : ''}</p>}
                             </div>
 
                             <div className="rd-cart-notes">
@@ -173,15 +193,15 @@ export default function CartPage() {
                             </div>
                             <button
                                 onClick={handleCheckout}
-                                disabled={isCheckingOut}
+                                disabled={isCheckingOut || pointsStatus !== 'ready' || !user}
                                 className="rd-btn rd-btn-primary rd-btn-block rd-cart-pay"
                             >
                                 {isCheckingOut ? (
-                                    <span className="rd-cart-spin" />
+                                    <span role="status"><span className="rd-cart-spin" /> 결제 확인 중</span>
                                 ) : (
                                     <>
                                         <CreditCard size={20} aria-hidden="true" />
-                                        결제 / 결과 확인
+                                        {pointsStatus === 'loading' ? '포인트 불러오는 중' : finalAmount === 0 ? '포인트로 결제' : '결제 / 결과 확인'}
                                     </>
                                 )}
                             </button>

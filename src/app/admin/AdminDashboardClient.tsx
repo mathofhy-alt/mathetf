@@ -66,6 +66,7 @@ export default function AdminDashboardClient({ initialQuestionsData }: AdminDash
                         </nav>
 
                         <div className="text-sm text-gray-500">
+                            <a href="/admin/payment-reviews" className="mr-4 underline">결제 검토함</a>
                             {new Date().toLocaleDateString()}
                         </div>
                     </div>
