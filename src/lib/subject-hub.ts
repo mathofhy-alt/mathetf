@@ -2,7 +2,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin';
 import { NOT_A_SCHOOL } from '@/lib/stats';
 
 /** 실제 분류 문항 또는 내신 시험지가 등록된 과목. 과거 교육과정 명칭도 구분한다. */
-export const HUB_SUBJECTS = ['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하', '수학(상)', '수학(하)', '수학I', '수학II', '미적분', '기하와벡터'] as const;
+export const HUB_SUBJECTS = ['공통수학1', '공통수학2', '대수', '미적분I', '미적분II', '확률과통계', '기하', '수학(상)', '수학(하)', '수학I', '수학II', '미적분'] as const;   // [11/10] '기하와벡터' 795문항을 '기하'로 바꿈 — 옛 주소는 middleware 가 /subject/기하 로 넘긴다
 export type HubSubject = (typeof HUB_SUBJECTS)[number];
 export const SUBJECT_INFO: Record<HubSubject, { grade: string; when: string; blurb: string; eun: '은' | '는' }> = {
  '공통수학1': {grade:'고등학교',when:'공통 과목',eun:'은',blurb:'2022 개정 교육과정의 공통 과목입니다. 다항식·방정식과 부등식·경우의 수·행렬을 다룹니다. 학교별 시험 범위는 원본에서 확인하세요.'},
@@ -17,7 +17,6 @@ export const SUBJECT_INFO: Record<HubSubject, { grade: string; when: string; blu
  '수학I': {grade:'고등학교',when:'등록 과목 분류',eun:'은',blurb:'지수와 로그·삼각함수·수열 관련 기출을 찾아볼 수 있습니다. 학년·학기·시험 범위는 학교별 자료를 확인하세요.'},
  '수학II': {grade:'고등학교',when:'등록 과목 분류',eun:'는',blurb:'함수의 극한과 연속·미분·적분 관련 기출을 찾아볼 수 있습니다. 학년·학기·시험 범위는 학교별 자료를 확인하세요.'},
  '미적분': {grade:'고등학교',when:'등록 과목 분류',eun:'은',blurb:'미적분으로 등록된 기출 문항을 모았습니다. 미적분I·미적분II 분류와 별도로 제공하며 실제 시험 범위는 원본을 확인하세요.'},
- '기하와벡터': {grade:'고등학교',when:'과거 교육과정 자료',eun:'는',blurb:'기하와벡터로 분류된 과년도 기출 문항입니다. 현재 기하 과목과 범위가 일치하지 않으므로 필요한 단원을 확인해 활용하세요.'},
 };
 
 export type SubjectHub = {

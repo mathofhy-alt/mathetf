@@ -80,6 +80,17 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // [11/10] 과목 '기하와벡터'(2009 개정 이름)를 DB 에서 '기하'로 바꿨다 — 사이트맵·검색에 남은 옛 과목 허브 주소를 넘긴다
+    {
+        let dec = request.nextUrl.pathname
+        try { dec = decodeURIComponent(dec) } catch { }
+        if (/^\/subject\/기하와벡터\/?$/.test(dec)) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/subject/기하'
+            return NextResponse.redirect(url, 301)
+        }
+    }
+
     // 한글 URL(/모의고사…)은 next start에서 리터럴 한글 라우트 매칭이 깨지므로
     // 브라우저 URL은 한글로 유지하되 내부적으로 영문 라우트(/mock…)로 리라이트한다.
     let decoded = request.nextUrl.pathname

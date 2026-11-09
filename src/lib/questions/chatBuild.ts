@@ -33,7 +33,7 @@ export function normalizeAsk(t: string): string {
         .replace(/미적분\s*(1|Ⅰ|i)(?![0-9I])/gi, '미적분I').replace(/미적분\s*(2|Ⅱ|ii)(?![0-9I])/gi, '미적분II')
         .replace(/(?<!공통)수학\s*(1|Ⅰ)(?![0-9I])/g, '수학I').replace(/(?<!공통)수학\s*(2|Ⅱ)(?![0-9I])/g, '수학II')
         .replace(/(^|\s)수\s?1(?![0-9])/g, '$1수학I').replace(/(^|\s)수\s?2(?![0-9])/g, '$1수학II')
-        .replace(/확통/g, '확률과통계').replace(/기벡/g, '기하와벡터');
+        .replace(/확통/g, '확률과통계').replace(/기벡/g, '기하');   // [11/10] DB 과목명이 '기하'로 통일됨
 }
 /** 강사가 콕 집은 과목(정규화한 말 기준) — 있으면 짝 과목을 붙이지 않는다. 긴 이름부터(미적분II 가 미적분으로 읽히지 않게) */
 function namedSubjects(said: string, subjects: string[]): string[] {
@@ -99,7 +99,7 @@ export async function buildFromChat(rawMessages: ChatTurn[], concepts: ConceptCa
         // 과목만 말하고 단원을 안 정했으면(확통 전범위) 그 과목 모든 단원 — AI 가 [] 로 두면 전체 과목에서 골라 엉뚱했다(10/11 2차)
         plan.targets = keep.length ? keep : !plan.keywords.length && !plan.concepts.length ? Object.keys(concepts).filter(t => named.includes(t.split('|')[0])) : plan.targets;
     }
-    // 모의고사·수능 문항은 DB 에 2022 과정 이름(대수·미적분I·미적분II·기하와벡터)으로 들어 있다 — '수능 미적분'·'고2 수학1' 처럼 콕 집어도 짝을 붙인다(10/12: 0문항)
+    // 모의고사·수능 문항은 DB 에 2022 과정 이름(대수·미적분I·미적분II·기하)으로 들어 있다 — '수능 미적분'·'고2 수학1' 처럼 콕 집어도 짝을 붙인다(10/12: 0문항)
     const mockScope = plan.filters.kinds.includes('mock') || plan.filters.schools.some(x => /평가원|수능|전국연합/.test(x));
     if ((mockScope || !named.length) && !/20(15|22)\s*(개정|과정)/.test(said)) {
         const add = plan.targets.map(t => { const [s, u] = t.split('|'); return `${CURRICULUM_PAIR[s]}|${u}`; }).filter(t => concepts[t] && !plan.targets.includes(t));
