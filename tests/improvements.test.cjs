@@ -11,6 +11,7 @@ const {validateHml,validateQuestionXml,examFilename}=require('../src/lib/hml-v2/
 const {generateHmlFromTemplate}=require('../src/lib/hml-v2/generator.ts');
 const fixture=JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname,'fixtures/question-scope.json.gz'))));
 const audit=require('./fixtures/source-link-audit.json');
+const snapshot=require('./fixtures/question-scope.meta.json');
 const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const migrations=['202609200001_question_scope.sql','202609200002_payment_orders.sql','202609200003_question_bank_events.sql','202609200004_growth_metrics.sql','20260926_retire_seller_settlements.sql'];
 async function database(){
@@ -29,24 +30,25 @@ async function database(){
  for(const file of migrations)await db.exec(fs.readFileSync(path.join(__dirname,'../supabase/migrations',file),'utf8'));
  return db;
 }
-test('Catalog reads all 1,094 materials, handles exact page boundaries and reports failures',async()=>{
- const rows=fixture.materials;assert.equal(rows.length,1094);
- assert.equal((await readAllPages(async(a,b)=>({data:rows.slice(a,b+1),error:null}))).length,1094);
+test('Catalog reads the complete refreshed snapshot, handles exact page boundaries and reports failures',async()=>{
+ const rows=fixture.materials;assert.equal(rows.length,snapshot.materialCount);
+ assert.equal((await readAllPages(async(a,b)=>({data:rows.slice(a,b+1),error:null}))).length,snapshot.materialCount);
  assert.equal((await readAllPages(async(a,b)=>({data:rows.slice(0,1000).slice(a,b+1),error:null}))).length,1000);
  await assert.rejects(readAllPages(async()=>({data:null,error:new Error('offline')})));
 });
-test('Actual metadata: all 32 verified source bundles and exact 20/21-paper selection',async()=>{
+test('Actual metadata: all audited source bundles and exact 20/21-paper selection',async()=>{
  const db=await database();
  try{
+  assert.equal(audit.length,snapshot.auditedBundleCount);
+  assert.equal(fixture.questions.length,snapshot.questionCount);
   for(let i=0;i<fixture.questions.length;i+=1000) await db.query('INSERT INTO questions SELECT * FROM jsonb_populate_recordset(NULL::questions,$1::jsonb)',[JSON.stringify(fixture.questions.slice(i,i+1000))]);
   for(const row of audit){
-   if(!row.expectedQuestionIds.length && row.id !== '97672baf-c3cc-4c9a-a1b5-3a98987090f3'){assert.throws(()=>resolveScope(fixture.materials,[row.id]));continue;}
    const scope=resolveScope(fixture.materials,[row.id]);
    const result=await db.query('SELECT id FROM question_bank_candidates($1::jsonb)',[JSON.stringify(scope)]);
    assert.deepEqual(result.rows.map(q=>q.id).sort(),[...row.expectedQuestionIds].sort(),row.title);
   }
   const selected=audit.filter(r=>r.expectedQuestionIds.length);
-  for(const n of [1,20,21,32]){
+  for(const n of [1,20,21,selected.length]){
    const chosen=selected.slice(0,n),scope=resolveScope(fixture.materials,chosen.map(r=>r.id));
    const result=await db.query('SELECT id FROM question_bank_candidates($1::jsonb)',[JSON.stringify(scope)]);
    assert.deepEqual(result.rows.map(q=>q.id).sort(),[...new Set(chosen.flatMap(r=>r.expectedQuestionIds))].sort());
@@ -197,8 +199,10 @@ test('Entry context, school initials, Korea-time deadline and campaign privacy',
  assert.equal(examSeason(new Date('2026-07-31T15:00:00Z')).semester,'2');
  const clean=safeAttribution({campaign:'email@example.com',origin:'private@email.com',device:'mobile',email:'private@email.com'});assert.equal(clean.campaign,null);assert.equal(clean.origin,'direct');assert.equal(clean.device,'mobile');assert.ok(!JSON.stringify(clean).includes('@'));
 });
-test('Fixed demo is exactly five usable questions; mock links are exact original sources',()=>{
+test('Fixed demo is exactly five usable questions; all current mock links match the refreshed snapshot',()=>{
  const demo=require('../src/lib/questions/demo-set.json'),links=require('../src/lib/questions/verified-mock-links.json');
+ const manifest=fs.readFileSync(path.join(__dirname,'../src/lib/questions/verified-mock-links.json'));
+ assert.equal(require('node:crypto').createHash('sha256').update(manifest).digest('hex'),snapshot.manifestSha256,'Refresh the fixture when the production manifest changes');
  assert.equal(new Set(demo.ids).size,5);for(const id of demo.ids){const q=fixture.questions.find(q=>q.id===id);assert.ok(q);assert.equal(q.work_status,'sorted');assert.equal(q.is_off_curriculum,false);}
  for(const [slug,link] of Object.entries(links)){
   assert.ok(link.dbIds.every(id=>fixture.materials.some(d=>d.id===id)),slug);
@@ -206,7 +210,7 @@ test('Fixed demo is exactly five usable questions; mock links are exact original
   const qs=fixture.questions.filter(q=>q.source_db_id===link.source&&q.work_status==='sorted'&&(!link.grade||q.grade===link.grade));assert.equal(qs.length,link.questionCount,slug);assert.ok(qs.length>0);assert.ok(!link.source.includes('변형'),slug);
   const grade=slug.match(/고[123]/)?.[0];if(grade)assert.ok(qs.every(q=>q.grade===grade),slug);
  }
- assert.equal(Object.keys(links).length,115);
+ assert.equal(Object.keys(links).length,snapshot.mockLinkCount);
 });
 test('Growth reporting uses first events and mature 7-day cohorts, excludes other site and denies public access',async()=>{
  const db=await database();try{
@@ -276,12 +280,17 @@ test('Migrations enforce RPC permissions, retired earnings access and the 20-exa
  }finally{await db.close();}
 });
 
-test('Resolved Sangmun paper is selectable; missing grade-2 paper remains unavailable',()=>{
+test('Resolved Sangmun and registered November 2020 grade-2 papers are selectable with exact scope',()=>{
  const {unavailableDbs}=require('../src/lib/questions/scope.ts');
  const id='97672baf-c3cc-4c9a-a1b5-3a98987090f3';
  assert.equal(unavailableDbs[id],undefined);
  assert.deepEqual(resolveScope(fixture.materials,[id]),[{sources:['상문고등학교_2022_2학기기말_수학(하)']}]);
- assert.throws(()=>resolveScope(fixture.materials,['fe34d2ea-2f6b-4c1a-a774-33ab238b2141']),/고2 문항 등록 준비 중/);
+ const grade2Id='fe34d2ea-2f6b-4c1a-a774-33ab238b2141';
+ assert.equal(unavailableDbs[grade2Id],undefined);
+ assert.deepEqual(resolveScope(fixture.materials,[grade2Id]),[{school:'전국연합',grade:'고2',year:'2020',semesters:['11월','11월 모의고사']}]);
+ const registered=fixture.questions.filter(q=>q.school==='전국연합'&&q.grade==='고2'&&q.year==='2020'&&['11월','11월 모의고사'].includes(q.semester)&&q.work_status==='sorted');
+ assert.equal(registered.length,30);
+ assert.deepEqual(registered.map(q=>q.id).sort(),audit.find(row=>row.id===grade2Id).expectedQuestionIds);
 });
 
 test('Normal entry keeps old filters without automatically searching; explicit resume preserves work',()=>{
