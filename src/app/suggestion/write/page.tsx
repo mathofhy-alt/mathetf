@@ -6,11 +6,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { ArrowLeft, Lock } from 'lucide-react';
+import { NOTIFY_WHEN, type NotifyWhen } from '@/lib/reportDoneNotice';
 
 export default function SuggestionWritePage() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [hasPhone, setHasPhone] = useState<boolean | null>(null);
+    const [notifySms, setNotifySms] = useState(true);
+    const [notifyWhen, setNotifyWhen] = useState<NotifyWhen>('asap');
 
     const router = useRouter();
     const supabase = createClient();
@@ -21,6 +25,9 @@ export default function SuggestionWritePage() {
             if (!user) {
                 alert('로그인이 필요합니다.');
                 router.replace('/login');
+            } else {
+                const phone = String(user.user_metadata?.phone || user.phone || '').replace(/\D/g, '');
+                setHasPhone(/^01\d{8,9}$/.test(phone));
             }
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -38,7 +45,7 @@ export default function SuggestionWritePage() {
             const res = await fetch('/api/suggestions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content }),
+                body: JSON.stringify({ title, content, notify: { sms: hasPhone === true && notifySms, when: notifyWhen } }),
             });
             const j = await res.json();
             if (res.status === 401) {
@@ -94,13 +101,29 @@ export default function SuggestionWritePage() {
                         />
                     </div>
 
+                    <div className="rd-bd-field">
+                        {hasPhone === null ? <p className="rd-bd-hint" role="status">문자 알림 가능 여부를 확인하고 있어요.</p>
+                        : hasPhone ? <>
+                            <label className="rd-bd-notify">
+                                <input type="checkbox" checked={notifySms} onChange={e => setNotifySms(e.target.checked)} />
+                                <span>답변이 달리면 문자로 알려 드릴까요?</span>
+                            </label>
+                            {notifySms && <>
+                                <select aria-label="문자 받을 시간" value={notifyWhen} onChange={e => setNotifyWhen(e.target.value as NotifyWhen)} className="rd-input">
+                                    {NOTIFY_WHEN.map(w => <option key={w.value} value={w.value}>{w.value === 'asap' ? '답변이 달리는 대로 바로 (새벽에도)' : w.label}</option>)}
+                                </select>
+                                <p className="rd-bd-hint">회원 정보에 있는 휴대폰 번호로 한 번만 보내요.</p>
+                            </>}
+                        </> : <p className="rd-bd-hint">휴대폰 번호가 없어 문자 알림을 받을 수 없어요</p>}
+                    </div>
+
                     <div className="rd-bd-actions">
                         <Link href="/suggestion" className="rd-btn rd-btn-gray">
                             취소
                         </Link>
                         <button
                             type="submit"
-                            disabled={submitting}
+                            disabled={submitting || hasPhone === null}
                             className="rd-btn rd-btn-primary"
                         >
                             {submitting ? '등록 중...' : '등록하기'}

@@ -29,6 +29,7 @@ export default function SuggestionDetailPage() {
     const [replyDraft, setReplyDraft] = useState('');
     const [replyEditing, setReplyEditing] = useState(false);
     const [replySaving, setReplySaving] = useState(false);
+    const [replySms, setReplySms] = useState<string | null>(null);
 
     const supabase = createClient();
 
@@ -111,6 +112,13 @@ export default function SuggestionDetailPage() {
             });
             const j = await res.json();
             if (!res.ok) throw new Error(j.error || '저장 실패');
+            const smsLabels: Record<string, string> = {
+                sent: '보냄', scheduled: '예약', no_phone: '번호 없음', failed: '실패',
+                not_requested: '알림 안 받음', empty_reply: '알림 안 받음 (답변 없음)',
+                already_notified: '이미 처리됨 (재발송 안 함)', unavailable: '알림 안 받음 (알림 기능 준비 중)',
+                dev: '실패 (개발 모드 미발송)',
+            };
+            setReplySms(smsLabels[j.sms] || '실패');
             setData((prev: any) => ({
                 ...prev,
                 admin_reply: j.admin_reply,
@@ -247,6 +255,7 @@ export default function SuggestionDetailPage() {
                                 답변 작성
                             </button>
                         )}
+                        {isAdmin && replySms && <p className="rd-bd-hint" role="status">문자: {replySms}</p>}
                     </div>
                 )}
 
