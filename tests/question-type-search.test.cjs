@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const ts = require('typescript');
 const groups = require('../src/lib/questions/type-groups.ts');
+const curriculum = require('../src/lib/curriculum.ts');
 
 // Route imports are replaced before evaluation: these tests cannot connect to a DB.
 function routeHarness({ search, definitions = [], definitionsError = null, whole = false, wholeExcluded = ['excluded'] } = {}) {
@@ -41,6 +42,8 @@ function routeHarness({ search, definitions = [], definitionsError = null, whole
             if (name === 'next/server') return { NextResponse: { json: (body, options) => ({ body, status: options?.status || 200 }) } };
             if (name.endsWith('/server-admin')) return { createAdminClient: () => sb };
             if (name.endsWith('/type-groups')) return groups;
+            if (name.endsWith('/curriculum')) return curriculum;
+            if (name.endsWith('/requireMember')) return { memberOnly: async () => null };
             if (name.endsWith('/fastScope')) return {
                 resolveRequestScope: async () => ({ catalog: [], scope: [{ sources: ['test'] }] }),
                 isWholeCatalog: () => whole,
@@ -106,6 +109,7 @@ test('Exam order uses only the original RPC, columns, ordering, and off-curricul
             : { p_scope: [{ sources: ['test'] }], p_excluded: userExcluded });
         assert.deepEqual(plain(call.options), { count: 'estimated' });
         assert.deepEqual(plain(steps(call, 'order')), [
+            ['order', 'source_db_id', { ascending: true }],
             ['order', 'question_number', { ascending: true }], ['order', 'id', { ascending: true }],
         ]);
         assert.deepEqual(steps(call, 'eq').map(s => s[1]), ['is_off_curriculum']);

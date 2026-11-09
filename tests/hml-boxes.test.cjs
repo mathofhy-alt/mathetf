@@ -86,7 +86,7 @@ test('Role paragraphs retain body text containing 보기 and deduplicate only an
     assert.equal(descendants(bogis(doc)[0], 'CHAR').filter(c => c.textContent.replace(/\s/g, '') === '<보기>').length, 1);
 });
 
-test('Native endnotes and direct BOX_MIJU keep their original numbering and box structure after either final column', () => {
+test('Native endnotes and direct BOX_MIJU are renumbered in exam order and keep box structure after either final column', () => {
     const shape = '<SHAPEOBJECT InstId="123"><SIZE Width="29852"/><POSITION HorzRelTo="Column" TreatAsChar="false"/></SHAPEOBJECT>';
     const sourceTable = dataTable.replace('<TABLE ', '<TABLE data-hml-style="BOX_JOKUN" ').replace('<ROW>', `${shape}<ROW>`);
     const note = `<ENDNOTE><PARALIST><P><TEXT><AUTONUM Number="21" NumberType="Endnote"><AUTONUMFORMAT SuffixChar=")" Superscript="false" Type="Digit"/></AUTONUM><CHAR> ④</CHAR></TEXT></P><P><TEXT>${sourceTable}</TEXT></P></PARALIST></ENDNOTE>`;
@@ -107,10 +107,10 @@ test('Native endnotes and direct BOX_MIJU keep their original numbering and box 
         assert.equal(descendants(section, 'P').filter(p => p.getAttribute('ColumnBreak') === 'true').length, Math.ceil(count / 2) - 1);
         const notes = descendants(section, 'ENDNOTE');
         assert.equal(notes.length, count);
-        for (const en of notes) {
+        for (const [index, en] of notes.entries()) {
             const num = descendants(en, 'AUTONUM')[0];
             assert.equal(num.getAttribute('NumberType'), 'Endnote');
-            assert.equal(num.getAttribute('Number'), '21');
+            assert.equal(num.getAttribute('Number'), String(index + 1));
             assert.equal(descendants(num, 'AUTONUMFORMAT')[0].getAttribute('SuffixChar'), ')');
             const [table] = descendants(en, 'TABLE');
             assert.equal(table.getAttribute('ColCount'), '2', 'Native note tables are not replaced with templates');

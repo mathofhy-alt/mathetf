@@ -1,0 +1,14 @@
+{
+  "capturedAt": "2026-11-08T08:43:19.973Z",
+  "method": "GET only; existing snapshot plus all current mock-manifest sources",
+  "manifestSha256": "3a97c5a4ecb2097b80d3f86b4fca23d45caf044f5bd68b0024eae00ceb790c01",
+  "mockLinkCount": 239,
+  "materialCount": 1218,
+  "questionCount": 29003,
+  "oldMaterialCount": 1094,
+  "oldQuestionCount": 25253,
+  "fetchedMaterialCount": 250,
+  "fetchedQuestionCount": 7165,
+  "auditedBundleCount": 34,
+  "grade2QuestionCount": 30
+}
