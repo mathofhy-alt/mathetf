@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { hashPassword } from '@/lib/suggestion-password';
+import { parseNotify } from '@/lib/reportDoneNotice';
+import { missingSuggestionNotify } from '@/lib/suggestionNotice';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,20 +43,28 @@ export async function POST(req: NextRequest) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
 
-        const { title, content, password } = await req.json();
+        const { title, content, password, notify } = await req.json();
         // [10/24] 운영자에게만 보이는 의견이 되어 글 비밀번호는 받지 않는다(옛 글의 비밀번호 열람은 그대로 동작)
         if (!title?.trim() || !content?.trim()) {
             return NextResponse.json({ error: '제목과 내용을 입력해주세요.' }, { status: 400 });
         }
 
         const admin = createAdminClient();
-        const { error } = await admin.from('suggestions').insert({
+        const row = {
             title: title.trim(),
             content,
             password: hashPassword(password?.trim() || crypto.randomUUID()),
             author_id: user.id,
             author_nickname: user.user_metadata?.full_name || user.email?.split('@')[0],
+        };
+        const choice = parseNotify(notify);
+        const when = parseNotify({ sms: true, when: notify?.when })!.when;
+        let { error } = await admin.from('suggestions').insert({
+            ...row, notify: { sms: !!choice, when },
         });
+        if (missingSuggestionNotify(error)) {
+            ({ error } = await admin.from('suggestions').insert(row));
+        }
         if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (e: any) {

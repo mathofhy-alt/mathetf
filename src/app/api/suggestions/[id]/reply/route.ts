@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
+import { notifySuggestionReply, type SuggestionSms } from '@/lib/suggestionNotice';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             .eq('id', params.id);
         if (error) throw error;
 
-        return NextResponse.json({ success: true, admin_reply: reply || null });
+        // 문자 장애가 이미 저장된 답변을 실패로 보이게 하지는 않는다.
+        let sms: SuggestionSms = 'empty_reply';
+        if (reply) {
+            try { sms = await notifySuggestionReply(admin, params.id); }
+            catch { sms = 'failed'; }
+        }
+        return NextResponse.json({ success: true, admin_reply: reply || null, sms });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
