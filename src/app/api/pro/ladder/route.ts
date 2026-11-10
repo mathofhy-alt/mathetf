@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
             const out: Row[] = [];
             for (let from = 0; from < 8000; from += PAGE) {
                 const { data, error } = await supabase.from('questions').select(COLS)
-                    .eq('work_status', 'sorted').eq('unit', t.unit).neq('id', t.id).lt('difficulty', String(td))
+                    .eq('work_status', 'sorted').eq('unit', t.unit).neq('id', t.id)
+                    // difficulty 는 text 칸 — lt('10') 은 글자 비교라 '2'~'9' 를 빠뜨린다(11/10 난이도 원상복구로 10점이 생김). 값 목록으로 고른다.
+                    .in('difficulty', Array.from({ length: td }, (_, i) => String(i)))
                     .order('id').range(from, from + PAGE - 1);
                 if (error) throw error;
                 out.push(...((data || []) as Row[]));
