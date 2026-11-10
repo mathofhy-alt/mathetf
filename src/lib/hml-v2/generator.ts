@@ -16,7 +16,7 @@ import type { GenerateResult, DbQuestionImage, QuestionWithImages } from './type
 export function generateHmlFromTemplate(
     templateContent: string,
     questionsWithImages: QuestionWithImages[],
-    options?: { title?: string; date?: string; questionsPerColumn?: number }
+    options?: { title?: string; date?: string; questionsPerColumn?: number; extraLinesPerQuestion?: number }
 ): GenerateResult {
 
     console.log(`[HML-V2 Surgical Generator] Processing ${questionsWithImages.length} questions`);
@@ -411,8 +411,10 @@ export function generateHmlFromTemplate(
         // NULL 이면(새로 들어온 문항) 예전 추정으로 조용히 되돌아간다.
         // 다시 재려면: python scratch_measure_heights.py all 50 → scratch_write_heights.py
         const measuredLines = (qwi.question as { layout_lines?: number | null }).layout_lines;
+        // [11/11] 출처 줄처럼 문항 위에 덧붙인 줄은 실측·추정에 없으므로 더한다(빼먹으면 단이 넘쳐 문항이 잘린다)
+        const extra = options?.extraLinesPerQuestion || 0;
         if (typeof measuredLines === 'number' && measuredLines > 0) {
-            questionLineHeights.push(measuredLines);
+            questionLineHeights.push(measuredLines + extra);
             continue;
         }
 
@@ -433,7 +435,7 @@ export function generateHmlFromTemplate(
         } else {
             console.log(`[LAYOUT V3] Q "${qwi.question.id}": No MANUAL_Q_ capture, using default ${DEFAULT_QUESTION_LINES} lines`);
         }
-        questionLineHeights.push(lines);
+        questionLineHeights.push(lines + extra);
     }
 
 

@@ -1,3 +1,4 @@
+import { withSourceLine } from '@/lib/hml-v2/sourceLine';
 import { createHash, randomUUID } from 'crypto';
 import {parseDraft} from '@/lib/questions/draft';
 import {stampMemberId} from '@/lib/hml-v2/member-stamp';
@@ -51,7 +52,8 @@ export async function POST(req: NextRequest) {
         if (typeof requestId !== 'string' || !uuidPattern.test(requestId))
             return NextResponse.json({success:false,error:'저장 요청 ID가 필요합니다.'},{status:400});
         const { ids, questions: rawQuestions, title, folderId, dbIds, questionsPerColumn } = body;
-        requestFingerprint = createHash('sha256').update(JSON.stringify({ids,title,folderId,dbIds,questionsPerColumn,filters:body.filters})).digest('hex');
+        const showSource = body?.showSource === true;   // [11/11 대표] 출처 표시 — 문항 위에 [출처] 줄
+        requestFingerprint = createHash('sha256').update(JSON.stringify({ids,title,folderId,dbIds,questionsPerColumn,filters:body.filters,...(showSource?{showSource}:{})})).digest('hex');
         const prior = await priorResult();
         if (prior) return success(prior);
         // [10/7] 시험지 만들기 이용권 — 이용권이 없으면 한 주 무료 횟수까지만 (lib/qbPass)
@@ -311,6 +313,7 @@ export async function POST(req: NextRequest) {
                 q.content_xml = q.fragment_xml;
             }
             validateQuestionXml(q.content_xml);
+            if (showSource) q.content_xml = withSourceLine(q.content_xml, q);   // 원본 번호로 — 번호 덮어쓰기 전에
             q.question_number = idx + 1;
         });
 
@@ -338,6 +341,7 @@ export async function POST(req: NextRequest) {
             title: titleStr,
             date: dateStr,
             questionsPerColumn: questionsPerColumn || 2,
+            extraLinesPerQuestion: showSource ? 1 : 0,
         });
 
         if (!result || result.questionCount!==ids.length) throw new Error("시험지 문항 수가 일치하지 않습니다.");
@@ -375,6 +379,7 @@ export async function POST(req: NextRequest) {
             question_ids: questions.map((q: any) => q.id), // [V73] For re-editing
             question_count: questions.length,
             questions_per_column:questionsPerColumn,
+            show_source:showSource,
             filters:parseDraft(JSON.stringify({version:1,updatedAt:Date.now(),cartIds:[],selectedDbIds:[],filters:body.filters}))?.filters||null,
             file_bytes:Buffer.byteLength(result.hmlContent,'utf8'),
             average_difficulty: avgDifficulty,

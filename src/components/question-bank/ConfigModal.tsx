@@ -5,21 +5,23 @@ import { X } from 'lucide-react';
 
 interface ConfigModalProps {
     onClose: () => void;
-    onConfirm: (title: string, questionsPerColumn: number) => void;
+    onConfirm: (title: string, questionsPerColumn: number, showSource: boolean) => void;
     isGenerating: boolean;
     onDraftChange?: (title:string, questionsPerColumn:number) => void;
     initialTitle?: string;
     initialQuestionsPerColumn?: number;
+    initialShowSource?: boolean;
 }
 
-export default function ConfigModal({ onClose, onConfirm, isGenerating, initialTitle = '', initialQuestionsPerColumn = 2, onDraftChange }: ConfigModalProps) {
+export default function ConfigModal({ onClose, onConfirm, isGenerating, initialTitle = '', initialQuestionsPerColumn = 2, initialShowSource = true, onDraftChange }: ConfigModalProps) {
     const [title, setTitle] = useState(initialTitle);
     const [questionsPerColumn, setQuestionsPerColumn] = useState(initialQuestionsPerColumn);
+    const [showSource, setShowSource] = useState(initialShowSource);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim()) return;
-        onConfirm(title, questionsPerColumn);
+        onConfirm(title, questionsPerColumn, showSource);
     };
 
     return (
@@ -74,6 +76,21 @@ export default function ConfigModal({ onClose, onConfirm, isGenerating, initialT
                         </div>
                         <p className="rd-help">
                             한 열(단)에 배치할 문제 수를 선택하세요.
+                        </p>
+                    </div>
+
+                    <div className="rd-field">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                            <input
+                                type="checkbox" aria-label="출처 표시"
+                                checked={showSource}
+                                onChange={(e) => setShowSource(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#497AB7' }}
+                            />
+                            <span className="rd-field-label" style={{ margin: 0 }}>출처 표시</span>
+                        </label>
+                        <p className="rd-help">
+                            문제마다 바로 위에 출처를 한 줄로 넣습니다. 예: [출처] ○○고등학교 2025 2학기 기말 공통수학2 17번
                         </p>
                     </div>
                     </div>

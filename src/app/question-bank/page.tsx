@@ -149,6 +149,7 @@ export default function QuestionBankPage() {
     const [similarTarget, setSimilarTarget] = useState<any | null>(null);
     const [solutionTarget, setSolutionTarget] = useState<any | null>(null);
     const [showConfigModal, setShowConfigModal] = useState(false);
+    const [showSource, setShowSource] = useState(true);   // [11/11 대표] 시험지 설정 창 「출처 표시」 — 기본 켜짐
     const [viewMode, setViewMode] = useState<'search' | 'review'>('search');
     const [searchSortBy, setSearchSortBy] = useState<'type' | 'exam'>('type');
     const searchSortRef = useRef<'type' | 'exam'>('type');
@@ -1263,9 +1264,10 @@ export default function QuestionBankPage() {
     };
 
     // Config Confirmed -> Open Save Modal
-    const handleConfigConfirm = (title: string, qpc: number) => {
+    const handleConfigConfirm = (title: string, qpc: number, src: boolean) => {
         setExamTitle(title);
         setQuestionsPerColumn(qpc);
+        setShowSource(src);
         setShowConfigModal(false);
         setShowSaveModal(true);
     };
@@ -1280,7 +1282,7 @@ export default function QuestionBankPage() {
 
         try {
             const payload = { ids: cart.map(q => q.id), title: examTitle, folderId: folderId || 'root',
-                dbIds: selectedDbIds, questionsPerColumn, filters: filterState };
+                dbIds: selectedDbIds, questionsPerColumn, filters: filterState, ...(showSource ? { showSource: true } : {}) };
             const serialized = JSON.stringify(payload);
             let pending = pendingSaveRequest.current;
             try { pending ||= JSON.parse(sessionStorage.getItem('qb-pending-save') || 'null'); } catch {}
@@ -2380,6 +2382,7 @@ export default function QuestionBankPage() {
                         onDraftChange={(title,qpc)=>{setExamTitle(title);setQuestionsPerColumn(qpc);}}
                         initialTitle={examTitle}
                         initialQuestionsPerColumn={questionsPerColumn}
+                        initialShowSource={showSource}
                         onClose={() => setShowConfigModal(false)}
                         onConfirm={handleConfigConfirm}
                         isGenerating={isGenerating}
