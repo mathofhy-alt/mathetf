@@ -2,11 +2,12 @@
 import {useEffect,useState} from 'react';
 import {Copy,RefreshCw,Download,FileText} from 'lucide-react';
 import {formatFileSize} from '@/lib/discovery';
+import {STORAGE_HREF,openStorageHere} from '@/lib/storageLink';   // [11/12] 예전엔 마이페이지로 갔는데 거긴 시험지 목록이 없었다
 export default function RecentExams({refresh,onRestore,onCount}:{refresh:number;onRestore:(item:any,fresh:boolean)=>void|Promise<void>;onCount:(n:number)=>void}){
  const [items,setItems]=useState<any[]>([]),[count,setCount]=useState(0),[limit,setLimit]=useState(20),[error,setError]=useState(''),[busy,setBusy]=useState('');
  useEffect(()=>{let active=true;fetch('/api/questions/saved').then(async r=>{if(r.status===401)return;const d=await r.json();if(!r.ok)throw Error(d.error);if(active){setItems(d.items);setCount(d.count);setLimit(d.limit);onCount(d.count);setError('');}}).catch(()=>{if(active)setError('최근 시험지를 불러오지 못했습니다.');});return()=>{active=false;};},[refresh]);
  const restore=async(id:string,fresh:boolean)=>{setBusy(id);try{const r=await fetch(`/api/questions/saved?id=${encodeURIComponent(id)}`),d=await r.json();if(!r.ok||!d.items?.[0]?.ids?.length)throw Error('시험지 편집 정보를 불러오지 못했습니다.');await onRestore(d.items[0],fresh);}catch(e){setError((e as Error).message);}finally{setBusy('');}};
- return <section aria-label="최근 시험지" className="recent-exams text-sm"><div className="flex justify-between gap-2"><strong>최근 만든 시험지</strong><a href="/mypage" className="underline">보관함 {count}/{limit}</a></div>
+ return <section aria-label="최근 시험지" className="recent-exams text-sm"><div className="flex justify-between gap-2"><strong>최근 만든 시험지</strong><a href={STORAGE_HREF} onClick={openStorageHere} className="underline">보관함 {count}/{limit}</a></div>
  {count>=limit-2&&<p role="status" className="mt-2 text-amber-800">{count>=limit?'보관함이 가득 찼습니다.':'보관함이 곧 가득 찹니다.'} 새로 저장하기 전에 기존 파일을 받은 뒤 보관함을 정리해주세요.</p>}
  {busy&&<p role="status" className="mt-2 text-[#166B68]">시험지 정보를 불러오고 있습니다…</p>}{error&&<p role="alert">{error}</p>}{!items.length&&!error&&<div className="mt-2 flex flex-wrap items-center gap-2 text-slate-500"><span>완성한 시험지는 여기에 표시됩니다.</span><a href="/question-bank?demo=1&origin=saved-empty" className="font-bold text-[#1B7E7A] underline">기출 5문항으로 시작 →</a></div>}
  <div className="recent-grid">{items.map(item=><article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4">

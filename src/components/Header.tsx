@@ -2,6 +2,7 @@
 
 import PdfLimitModal from '@/components/PdfLimitModal';
 import { paywallOn } from '@/lib/qbPassConfig';
+import { STORAGE_HREF, openStorageHere } from '@/lib/storageLink';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -259,6 +260,8 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                             <b>{earnedPoints.toLocaleString()} P</b>
                                         </div>
                                         <Link href="/mypage" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>마이페이지</Link>
+                                        {/* [11/12 대표] 만든 시험지 보관함 — 누르면 시험지 만들기에서 보관함 폴더 창이 바로 열린다(개념의힘 선생님 건의) */}
+                                        <Link href={STORAGE_HREF} role="menuitem" className="rd-dropdown-link" onClick={(e) => { setAccountOpen(false); openStorageHere(e); }}>내 시험지 보관함</Link>
                                         <Link href="/cart" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>장바구니</Link>
                                         {/* [10/7] 이용권 사는 곳이 늘 보이게(사용자: '이용권 사는 곳이 안 보인다') */}
                                         {paywallOn() && <Link href="/mypage?pass=1" role="menuitem" className="rd-dropdown-link" onClick={() => setAccountOpen(false)}>이용권</Link>}
@@ -372,6 +375,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
                                         <div className="text-sm font-bold text-slate-700">마이페이지 · {earnedPoints.toLocaleString()}P</div>
                                     </div>
                                 </Link>
+                                <Link href={STORAGE_HREF} className="rd-m-link" onClick={(e) => { setMobileMenuOpen(false); openStorageHere(e); }}>내 시험지 보관함</Link>
                                 {paywallOn() && <Link href="/mypage?pass=1" className="rd-m-link">이용권</Link>}
                                 <button onClick={()=>supabase.auth.signOut().then(()=>window.location.reload())} className="rd-m-link rd-m-btn"><LogOut size={17}/>로그아웃</button>
                             </>

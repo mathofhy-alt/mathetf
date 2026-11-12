@@ -13,6 +13,7 @@ import AutoGenModal from '@/components/question-bank/AutoGenModal';
 import ChatGenModal from '@/components/question-bank/ChatGenModal';
 import QbBuddy from '@/components/question-bank/QbBuddy';
 import FolderExplorer from '@/components/storage/FolderExplorer';
+import { OPEN_STORAGE_EVENT } from '@/lib/storageLink';
 import SourceCatalog from '@/components/storage/SourceCatalog';
 import FilterSidebar from '@/components/question-bank/FilterSidebar';
 import GuidedTour, { TourStep } from '@/components/GuidedTour';
@@ -338,6 +339,19 @@ export default function QuestionBankPage() {
     const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
     const [currentExamItems, setCurrentExamItems] = useState<any[]>([]); // tracks viewItems from FolderExplorer
     const [excludedQuestionIds, setExcludedQuestionIds] = useState<string[]>([]); // 중복출제 방지용 제외 문제 ID
+
+    // [11/12 대표] 「내 시험지 보관함」(상단 계정 메뉴·최근 시험지) — ?open=exams 로 들어오거나 이 화면에서 누르면 '만든 시험지' 폴더 창을 바로 연다
+    useEffect(() => {
+        const open = () => { setStorageModalMode('exam'); setShowStorageModal(true); setShowMobileSidebar(false); };
+        const q = new URLSearchParams(window.location.search);
+        if (q.get('open') === 'exams') {
+            open();
+            q.delete('open');
+            window.history.replaceState(window.history.state, '', window.location.pathname + (q.toString() ? `?${q}` : '') + window.location.hash);
+        }
+        window.addEventListener(OPEN_STORAGE_EVENT, open);
+        return () => window.removeEventListener(OPEN_STORAGE_EVENT, open);
+    }, []);
 
     // ESC로 모달 닫기
     useEffect(() => {

@@ -17,6 +17,7 @@ import MyDbRequests from '@/components/MyDbRequests';
 import MyReports from '@/components/MyReports';
 import MySuggestions from '@/components/MySuggestions';
 import PrintBundles from '@/components/PrintBundles';
+import { STORAGE_HREF } from '@/lib/storageLink';
 import PassModal, { passLine, type PassInfo } from '@/components/question-bank/PassModal';
 import { paywallOn } from '@/lib/qbPassConfig';
 
@@ -189,6 +190,13 @@ export default function MyPage() {
                             <span>이용권</span>
                             <b>{passLine(passInfo)}</b>
                             <button type="button" className="rd-btn rd-btn-primary" onClick={() => setShowPass(true)}>{passInfo.passUntil ? '기간 늘리기' : '이용권 보기'}</button>
+                        </div>
+                    )}
+                    {user && (
+                        /* [11/12 대표] 만든 시험지는 시험지 만들기 화면의 보관함에 있다 — 마이페이지에서 바로 그 폴더 창으로 */
+                        <div className="rd-my-points">
+                            <span>내가 만든 시험지</span>
+                            <a href={STORAGE_HREF} className="rd-btn rd-btn-primary">내 시험지 보관함</a>
                         </div>
                     )}
                     {user && (
