@@ -243,7 +243,17 @@ export async function PATCH(req: NextRequest) {
 
     const updateData: any = {};
     if (name) updateData.name = name;
-    if (parentId !== undefined) updateData.parent_id = parentId === 'root' ? null : parentId;
+    if (parentId !== undefined) {
+        const target = parentId === 'root' || parentId === null ? null : String(parentId);
+        // [11/12] 폴더 옮기기 — 내 폴더로만, 자기 자신·자기 하위 폴더 안으로는 못 옮긴다(옮기면 나무가 끊겨 폴더가 사라져 보인다)
+        if (target) {
+            const { data: f } = await supabase.from('folders').select('id').eq('id', target).eq('user_id', user.id).maybeSingle();
+            if (!f) return NextResponse.json({ error: '옮길 폴더를 찾을 수 없습니다' }, { status: 400 });
+            const sub = await getFolderSubtreeIds(supabase, user.id, id);
+            if (sub.includes(target)) return NextResponse.json({ error: '폴더를 자기 안으로는 옮길 수 없습니다' }, { status: 400 });
+        }
+        updateData.parent_id = target;
+    }
 
     const { data, error } = await supabase
         .from('folders')

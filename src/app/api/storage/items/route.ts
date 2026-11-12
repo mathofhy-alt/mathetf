@@ -137,12 +137,30 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
     const { id, name, folderId } = body;
+    // [11/12] 여러 개 한 번에 옮기기 — { ids: [...], folderId }. 예전엔 한 개씩 PATCH 해야 했다.
+    const ids: string[] | null = Array.isArray(body.ids) ? body.ids.filter((x: any) => typeof x === 'string').slice(0, 500) : null;
 
-    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    if (!id && !ids?.length) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
     const updateData: any = {};
     if (name) updateData.name = name;
-    if (folderId !== undefined) updateData.folder_id = folderId === 'root' ? null : folderId;
+    if (folderId !== undefined) {
+        const target = folderId === 'root' || folderId === null ? null : String(folderId);
+        // 옮길 곳이 내 폴더인지 확인(남의 폴더 id 나 가상 폴더로 옮기지 못하게)
+        if (target) {
+            const { data: f } = await supabase.from('folders').select('id').eq('id', target).eq('user_id', user.id).maybeSingle();
+            if (!f) return NextResponse.json({ error: '옮길 폴더를 찾을 수 없습니다' }, { status: 400 });
+        }
+        updateData.folder_id = target;
+    }
+    if (!Object.keys(updateData).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+
+    if (ids?.length) {
+        if (updateData.name) return NextResponse.json({ error: '이름은 한 개씩 바꿀 수 있습니다' }, { status: 400 });
+        const { data, error } = await supabase.from('user_items').update(updateData).in('id', ids).eq('user_id', user.id).select('id');
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ moved: (data || []).length });
+    }
 
     const { data, error } = await supabase
         .from('user_items')

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Folder as FolderIcon, FileText, CheckCircle2, DownloadCloud, ChevronDown, ChevronRight } from 'lucide-react';
+import { Folder as FolderIcon, FileText, CheckCircle2, DownloadCloud, ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react';
 import type { Folder as FolderType, UserItem } from '@/types/storage';
 import { DbFileIcon } from '@/components/FileIcons';
 
@@ -88,6 +88,10 @@ interface FileGridProps {
     onDownload?: (type: 'folder' | 'item', id: string) => void;
     onContextMenu: (e: React.MouseEvent, type: 'folder' | 'item', id: string) => void;
     onMoveItem: (itemId: string, targetFolderId: string | null) => void;
+    /** [11/12] 끌어 놓기 — 시험지·폴더를 폴더로. 있으면 onMoveItem 대신 쓴다 */
+    onDropMove?: (data: { type: 'folder' | 'item', id: string }, targetFolderId: string | null) => void;
+    /** 사용자가 만든 폴더인지(가상·내신기출 폴더는 끌기·메뉴 없음) */
+    canEditFolder?: (id: string) => boolean;
     selectedIds?: string[];
     onGroupSelect?: (items: UserItem[], select: boolean) => void;
 }
@@ -113,7 +117,19 @@ const shortenName = (name: string, type: string): string => {
 };
 
 
-export default function FileGrid({ selectionOnly = false, folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, selectedIds = [], onGroupSelect }: FileGridProps) {
+// 「⋯」 버튼 — 휴대폰은 오른쪽 클릭·끌기가 없어서 이걸로 메뉴(이동·이름 바꾸기·삭제)를 연다
+function MoreButton({ label, onOpen }: { label: string; onOpen: (e: React.MouseEvent) => void }) {
+    return (
+        <button type="button" aria-label={`${label} 메뉴`} title="메뉴"
+            className="ml-1 flex-shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+            onClick={(e) => { e.stopPropagation(); const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); onOpen({ ...e, clientX: r.right - 8, clientY: r.bottom + 4 } as React.MouseEvent); }}>
+            <MoreHorizontal size={18} />
+        </button>
+    );
+}
+
+export default function FileGrid({ selectionOnly = false, folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, onDropMove, canEditFolder = () => true, selectedIds = [], onGroupSelect }: FileGridProps) {
+    const [overFolder, setOverFolder] = useState<string | null>(null);
 
     // 학년 아코디언 상태 (기본값: 접힘)
     const [openGrades, setOpenGrades] = useState<Record<string, boolean>>({});
@@ -133,11 +149,11 @@ export default function FileGrid({ selectionOnly = false, folders, items, onFold
 
     const handleDropOnFolder = (e: React.DragEvent, targetFolderId: string) => {
         e.preventDefault();
+        setOverFolder(null);
         try {
             const data = JSON.parse(e.dataTransfer.getData('application/json'));
-            if (data.type === 'item') {
-                onMoveItem(data.id, targetFolderId);
-            }
+            if (onDropMove) { if (data.id !== targetFolderId) onDropMove(data, targetFolderId); }
+            else if (data.type === 'item') onMoveItem(data.id, targetFolderId);
         } catch (err) {
             console.error(err);
         }
@@ -205,6 +221,7 @@ export default function FileGrid({ selectionOnly = false, folders, items, onFold
                             <CheckCircle2 size={16} className="fill-[#E8F6F5] border-white rounded-full" />
                         </div>
                     )}
+                    {!selectionOnly && item.type === 'saved_exam' && <MoreButton label={item.name || '시험지'} onOpen={(e) => onContextMenu(e, 'item', item.id)} />}
                 </div>
                 {/* 날짜: 모바일에서 숨김 */}
                 <div className="hidden sm:block col-span-2 text-xs text-slate-400 text-center truncate">
@@ -224,17 +241,22 @@ export default function FileGrid({ selectionOnly = false, folders, items, onFold
 
             <div className="flex flex-col">
                 {/* 폴더 */}
-                {folders.map(folder => (
+                {folders.map(folder => {
+                    const editable = !selectionOnly && !folder.id.startsWith('tmp-') && canEditFolder(folder.id);
+                    return (
                     <div
                         key={folder.id}
-                        className="group relative grid grid-cols-12 gap-1 sm:gap-4 px-2 sm:px-4 py-1.5 items-center border-b border-slate-100 hover:bg-[#E8F6F5] cursor-pointer transition-colors"
+                        className={`group relative grid grid-cols-12 gap-1 sm:gap-4 px-2 sm:px-4 py-1.5 items-center border-b border-slate-100 cursor-pointer transition-colors ${overFolder === folder.id ? 'bg-[#BFE5E2] ring-2 ring-inset ring-[#3AADA9]' : 'hover:bg-[#E8F6F5]'} ${folder.id.startsWith('tmp-') ? 'opacity-60' : ''}`}
                         onClick={() => onFolderClick(folder)}
                         onContextMenu={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             onContextMenu(e, 'folder', folder.id);
                         }}
-                        onDragOver={(e) => e.preventDefault()}
+                        draggable={editable}
+                        onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+                        onDragOver={(e) => { if (!editable && onDropMove) return; e.preventDefault(); setOverFolder(folder.id); }}
+                        onDragLeave={() => setOverFolder(c => c === folder.id ? null : c)}
                         onDrop={(e) => handleDropOnFolder(e, folder.id)}
                     >
                         <div className="col-span-12 sm:col-span-10 flex items-center min-w-0 pr-2">
@@ -242,12 +264,14 @@ export default function FileGrid({ selectionOnly = false, folders, items, onFold
                             <span className="text-sm text-slate-700 truncate min-w-0 flex-1">
                                 {folder.name}
                             </span>
+                            {editable && <MoreButton label={folder.name} onOpen={(e) => onContextMenu(e, 'folder', folder.id)} />}
                         </div>
                         <div className="hidden sm:block col-span-2 text-xs text-slate-400 text-center truncate">
                             {formatDate(folder.created_at)}
                         </div>
                     </div>
-                ))}
+                    );
+                })}
 
                 {/* 개인DB: 학년 → 년도 아코디언 */}
                 {hasDbItems && Object.entries(grouped).map(([grade, yearMap]) => {
