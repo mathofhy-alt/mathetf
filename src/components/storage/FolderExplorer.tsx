@@ -20,6 +20,10 @@ interface FolderExplorerProps {
     initialData?: any;
     refreshKey?: number;
     onGetViewItems?: (items: UserItem[]) => void;
+    /** [11/14] 시험지 줄에 「비슷한 문제로」 버튼을 단다 */
+    onSimilarExam?: (item: UserItem) => void;
+    /** 고르기 전용 창(중복 소스 체크 등) — 「선택 n개 옮기기」를 숨긴다(선택이 옮길 대상이 아니라 고른 시험지라서) */
+    picker?: boolean;
 }
 
 // [11/12 대표] 「윈도우 탐색기처럼 가볍고 빠르게」
@@ -36,7 +40,7 @@ let tmpSeq = 0;
 type Menu = { x: number, y: number, type: 'folder' | 'item' | 'background', id: string | null };
 type MoveTarget = { kind: 'folder', id: string } | { kind: 'items', ids: string[] };
 
-export default function FolderExplorer({ onItemSelect, onGroupSelect, selectedIds = [], filterType = 'all', initialData, refreshKey = 0, onGetViewItems }: FolderExplorerProps) {
+export default function FolderExplorer({ onItemSelect, onGroupSelect, selectedIds = [], filterType = 'all', initialData, refreshKey = 0, onGetViewItems, onSimilarExam, picker = false }: FolderExplorerProps) {
     // 폴더는 전체 나무(mode=all)를 한 번에 받아 둔다 — 보이는 폴더 목록은 여기서 바로 뽑는다(다시 안 불러도 됨)
     const [allFolders, setAllFolders] = useState<Folder[]>(initialData?.folders || []);
     // 폴더별 시험지 목록(키 = 폴더 id, 맨 바깥은 'root') — 한 번 연 폴더는 다시 안 불러온다
@@ -341,7 +345,7 @@ export default function FolderExplorer({ onItemSelect, onGroupSelect, selectedId
                             ))}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            {selectedHereIds.length > 0 && (
+                            {!picker && selectedHereIds.length > 0 && (
                                 <button onClick={() => setMoveTarget({ kind: 'items', ids: selectedHereIds })} className="rd-btn rd-btn-gray rd-btn-sm"><FolderInput size={16} /> 선택 {selectedHereIds.length}개 옮기기</button>
                             )}
                             {/* 「가져오기」는 구매한 DB를 보관함에 넣는 버튼 — 시험지 창엔 상관없어 숨긴다 */}
@@ -361,7 +365,7 @@ export default function FolderExplorer({ onItemSelect, onGroupSelect, selectedId
                             <button onClick={() => setSearchQuery('')} aria-label="검색어 지우기" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X size={13} /></button>
                         )}
                     </div>
-                    {selectedHereIds.length > 0 && (
+                    {!picker && selectedHereIds.length > 0 && (
                         <button onClick={() => setMoveTarget({ kind: 'items', ids: selectedHereIds })} className="md:hidden mt-2 w-full rd-btn rd-btn-gray rd-btn-sm"><FolderInput size={16} /> 선택한 {selectedHereIds.length}개 폴더로 옮기기</button>
                     )}
                 </div>
@@ -393,6 +397,7 @@ export default function FolderExplorer({ onItemSelect, onGroupSelect, selectedId
                             canEditFolder={isUserFolder}
                             selectedIds={selectedIds}
                             onGroupSelect={onGroupSelect}
+                            onSimilar={filterType === 'exam' ? onSimilarExam : undefined}
                         />
                     )}
                 </div>

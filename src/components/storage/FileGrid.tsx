@@ -94,6 +94,8 @@ interface FileGridProps {
     canEditFolder?: (id: string) => boolean;
     selectedIds?: string[];
     onGroupSelect?: (items: UserItem[], select: boolean) => void;
+    /** [11/14] 시험지 줄의 「비슷한 문제로」 버튼 — 각 문항을 유사 1순위로 바꾼 새 시험지 */
+    onSimilar?: (item: UserItem) => void;
 }
 
 const formatDate = (dateStr?: string) => {
@@ -128,7 +130,7 @@ function MoreButton({ label, onOpen }: { label: string; onOpen: (e: React.MouseE
     );
 }
 
-export default function FileGrid({ selectionOnly = false, folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, onDropMove, canEditFolder = () => true, selectedIds = [], onGroupSelect }: FileGridProps) {
+export default function FileGrid({ selectionOnly = false, folders, items, onFolderClick, onItemClick, onDelete, onDownload, onContextMenu, onMoveItem, onDropMove, canEditFolder = () => true, selectedIds = [], onGroupSelect, onSimilar }: FileGridProps) {
     const [overFolder, setOverFolder] = useState<string | null>(null);
 
     // 학년 아코디언 상태 (기본값: 접힘)
@@ -220,6 +222,13 @@ export default function FileGrid({ selectionOnly = false, folders, items, onFold
                         <div className="ml-2 text-[#1B7E7A] flex-shrink-0">
                             <CheckCircle2 size={16} className="fill-[#E8F6F5] border-white rounded-full" />
                         </div>
+                    )}
+                    {onSimilar && item.type === 'saved_exam' && (
+                        <button type="button" title="이 시험지의 각 문항과 비슷한 문제로 새 시험지를 만듭니다"
+                            className="ml-2 flex-shrink-0 whitespace-nowrap rounded-lg border border-[#BFE3E1] bg-white px-2 py-1 text-xs font-bold text-[#166B68] hover:bg-[#E8F6F5]"
+                            onClick={(e) => { e.stopPropagation(); onSimilar(item); }}>
+                            비슷한 문제로
+                        </button>
                     )}
                     {!selectionOnly && item.type === 'saved_exam' && <MoreButton label={item.name || '시험지'} onOpen={(e) => onContextMenu(e, 'item', item.id)} />}
                 </div>

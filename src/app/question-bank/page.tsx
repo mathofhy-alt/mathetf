@@ -843,36 +843,69 @@ export default function QuestionBankPage() {
         }
     };
 
+    // [11/14 대표] 보관함 시험지 줄의 「비슷한 문제로」 — 각 문항을 유사 1순위로 바꾼 새 시험지를 편집 화면에 담는다.
+    //   바로 저장하지 않는다(유사 1순위 적합률이 40% 남짓 — 강사가 보고 「유사 교체」로 고친 뒤 저장).
+    //   원본 시험지와 강사가 고른 이전 시험지(이미 낸 회차)의 문항은 빼고 다음 순위를 쓴다.
+    const [similarBase, setSimilarBase] = useState<any | null>(null);
+    const buildSimilarExam = async (base: any, exclude: string[]) => {
+        setSimilarBase(null);
+        const baseIds: string[] = (base?.details?.question_ids || []).map((q: any) => typeof q === 'string' ? q : q?.id).filter(Boolean);
+        if (!baseIds.length) { showToast('이 시험지에는 문항 기록이 없어 비슷한 문제를 찾을 수 없습니다.', 'info'); return; }
+        if (cart.length && !window.confirm(`지금 담아 둔 ${cart.length}문항을 비우고 새 시험지를 만들까요?`)) return;
+        showToast('비슷한 문제를 찾는 중…', 'info');
+        const r = await fetch('/api/questions/by-ids', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ variant: 'similar1', base: baseIds, exclude }),
+        }).then(x => x.json()).catch(() => null);
+        const data = (r?.data || []) as any[];
+        if (!data.length) { showToast(r?.error || '비슷한 문제를 찾지 못했습니다.', 'error'); return; }
+        setCart(data.slice(0, MAX_CART_SIZE));
+        setExamTitle(`${base.name || '시험지'} 비슷한 문제`);
+        setViewMode('review');
+        setShowStorageModal(false);
+        setShowMobileSidebar(false);
+        logQb('qb_cart_add', `similar_exam:${data.length}`);
+        showToast(r?.missing > 0
+            ? `비슷한 문제 ${data.length}개를 담았습니다. ${r.missing}문항은 맞는 문제가 없어 빠졌습니다. 확인 후 저장하세요.`
+            : `비슷한 문제 ${data.length}개를 담았습니다. 확인 후 저장하세요.`, 'success');
+    };
+
     const handleBulkDownloadExams = async (format: 'hml' | 'pdf' = 'hml') => {
         if (selectedExamIds.length === 0) return showToast('다운로드할 시험지를 선택해주세요.', 'info');
         if (examPdfStatus) return;
         // 보관함의 동일 시험지를 다시 받는 경로는 저장/횟수 차감을 호출하지 않는다.
-        // [11/14] 한글 여러 장은 ZIP 하나로 — 연속 다운로드를 브라우저가 막아 한 장만 받던 문제(건의 89994210)
-        if (format === 'hml' && selectedExamIds.length > 1) {
-            const link = document.createElement('a');
-            link.href = `/api/storage/download?ids=${selectedExamIds.map(encodeURIComponent).join(',')}`;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast(`시험지 ${selectedExamIds.length}개를 ZIP 파일 하나로 받습니다.`, 'info');
+        // [11/14 대표] 한글 여러 장은 압축 없이 한글 파일 그대로 하나씩 — 「압축 푸는 수고를 왜 사용자가」.
+        //   크롬은 두 번째 파일부터 「여러 파일 다운로드」 허용을 한 번 묻는다(사이트가 끌 수 없음) → 미리 안내.
+        //   파일을 먼저 받아 확인한 뒤 저장해서, 실패한 시험지는 이름으로 알린다(건의 89994210: 한 장만 받아짐).
+        if (format === 'hml') {
+            const names = new Map((currentExamItems || []).map((i: any) => [i.id, i.name]));
+            if (selectedExamIds.length > 1) showToast(`한글 파일 ${selectedExamIds.length}개를 차례로 받습니다. 브라우저가 「여러 파일 다운로드」를 물으면 「허용」을 눌러 주세요.`, 'info');
+            const failed: string[] = [];
+            for (const id of selectedExamIds) {
+                try {
+                    const res = await fetch(`/api/storage/download?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+                    if (!res.ok) throw new Error(await res.text());
+                    const cd = res.headers.get('content-disposition') || '';
+                    const m = cd.match(/filename\*=UTF-8''([^;]+)/i);
+                    const filename = m ? decodeURIComponent(m[1]) : `${names.get(id) || '시험지'}.hml`;
+                    const url = URL.createObjectURL(await res.blob());
+                    const link = document.createElement('a');
+                    link.href = url; link.download = filename; link.style.display = 'none';
+                    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+                } catch {
+                    failed.push(names.get(id) || '시험지');
+                }
+                await new Promise(ok => setTimeout(ok, 700));
+            }
+            if (failed.length) showToast(`${failed.length}개는 받지 못했습니다: ${failed.join(', ')}`, 'error');
             return;
         }
         for (const id of selectedExamIds) {
-            if (format === 'pdf') {
-                setExamPdfStatus('PDF 요청 중…');
-                try { await downloadExamPdf(id, setExamPdfStatus); }
-                catch (e: any) { showToast(e?.message || 'PDF를 받지 못했습니다.', 'error'); }
-                finally { setExamPdfStatus(''); }
-                continue;
-            }
-            const link = document.createElement('a');
-            link.href = `/api/storage/download?id=${id}`;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            await new Promise(ok => setTimeout(ok, 1000));
+            setExamPdfStatus('PDF 요청 중…');
+            try { await downloadExamPdf(id, setExamPdfStatus); }
+            catch (e: any) { showToast(e?.message || 'PDF를 받지 못했습니다.', 'error'); }
+            finally { setExamPdfStatus(''); }
         }
     };
 
@@ -1498,6 +1531,7 @@ export default function QuestionBankPage() {
                                 filterType={storageModalMode}
                                 refreshKey={storageRefreshKey}
                                 onGetViewItems={(items) => setCurrentExamItems(items)}
+                                onSimilarExam={(item) => setSimilarBase(item)}
                             />}
                             </div>
                         </div>
@@ -2530,6 +2564,20 @@ export default function QuestionBankPage() {
                 schoolsMap={{}}
             />
 
+            {similarBase && (
+                <DuplicateCheckModal
+                    isOpen
+                    title="비슷한 문제로 새 시험지"
+                    sub={`「${similarBase.name}」의 각 문항과 비슷한 문제로 새 시험지를 만듭니다.`}
+                    note="이미 낸 시험지를 함께 고르면 그 시험지에 쓴 문제는 빼고 찾습니다. 원본 시험지는 처음부터 골라 두었습니다."
+                    confirmLabel="새 시험지 만들기"
+                    skipLabel="취소"
+                    preselected={[similarBase.id]}
+                    allowEmpty
+                    onClose={() => setSimilarBase(null)}
+                    onCheck={(questionIds) => void buildSimilarExam(similarBase, questionIds)}
+                />
+            )}
             {showDuplicateModal && (
                 <DuplicateCheckModal
                     isOpen={showDuplicateModal}

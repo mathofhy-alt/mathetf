@@ -58,7 +58,11 @@ export async function POST(req: NextRequest) {
     // 회차 하나의 문항은 그 페이지에 이미 미리보기로 공개돼 있으므로 새로 열리는 것이 없다.
     // ids 모드와 같은 컬럼·같은 속도제한을 쓴다.
     const src = typeof body?.src === 'string' ? body.src.slice(0, 200) : '';
-    if (ids.length === 0 && !src) {
+    // [11/14] 보관함 「비슷한 문제로」 — 저장한 시험지의 문항 목록(base)과 뺄 문항(exclude: 원본·이미 낸 시험지)
+    const UUID = /^[0-9a-f-]{36}$/i;
+    const baseIds: string[] = Array.isArray(body?.base) ? body.base.filter((x: any) => typeof x === 'string' && UUID.test(x)).slice(0, 50) : [];
+    const excludeIds: string[] = Array.isArray(body?.exclude) ? body.exclude.filter((x: any) => typeof x === 'string' && UUID.test(x)).slice(0, 5000) : [];
+    if (ids.length === 0 && !src && !baseIds.length) {
         return NextResponse.json({ success: true, data: [] });
     }
 
@@ -67,25 +71,37 @@ export async function POST(req: NextRequest) {
     // [2026-10-06] similar1 모드 — 무료PDF 팝업의 '유사문제 풀기' 버튼. 회차의 각 문항을 유사 1순위로 바꾼 시험지.
     //   기준은 시험지출제 화면의 유사문항 버튼과 같다(미리계산 question_similar · 발문 기준 · 같은 단원 · sorted).
     //   원본 회차 문항과 이미 고른 문항은 건너뛰고 다음 순위를 쓴다. 후보가 없으면 그 문항은 뺀다(missing 으로 알림).
-    if (src && body?.variant === 'similar1') {
-        const { data: base, error: baseErr } = await supabase.from('questions')
-            .select('id, unit').eq('source_db_id', src).eq('work_status', 'sorted')
-            .order('question_number', { ascending: true }).limit(MAX_IDS);
-        if (baseErr) return NextResponse.json({ success: false, error: baseErr.message }, { status: 500 });
-        const baseRows = base || [];
+    if ((src || baseIds.length) && body?.variant === 'similar1') {
+        let baseRows: { id: string; unit: string | null }[];
+        if (baseIds.length) {
+            const { data: base, error: baseErr } = await supabase.from('questions').select('id, unit').in('id', baseIds);
+            if (baseErr) return NextResponse.json({ success: false, error: baseErr.message }, { status: 500 });
+            const byId = new Map((base || []).map((r: any) => [r.id, r]));
+            baseRows = baseIds.map(id => byId.get(id)).filter(Boolean) as any[];   // 시험지 순서 그대로
+        } else {
+            const { data: base, error: baseErr } = await supabase.from('questions')
+                .select('id, unit').eq('source_db_id', src).eq('work_status', 'sorted')
+                .order('question_number', { ascending: true }).limit(MAX_IDS);
+            if (baseErr) return NextResponse.json({ success: false, error: baseErr.message }, { status: 500 });
+            baseRows = base || [];
+        }
         const { data: sims } = baseRows.length
             ? await supabase.from('question_similar').select('question_id, neighbors')
                 .in('question_id', baseRows.map(r => r.id)).eq('basis', 'statement')
             : { data: [] as any[] };
-        const TOP = 8;   // 원본별 상위 몇 개까지 후보로 볼지 — 중복·단원 불일치로 1순위를 못 쓸 때 대비
+        const TOP = excludeIds.length ? 20 : 8;   // 원본별 상위 몇 개까지 후보로 볼지 — 중복·단원 불일치로 1순위를 못 쓸 때 대비
         const nbrs = new Map<string, string[]>((sims || []).map((s: any) =>
             [s.question_id, (Array.isArray(s.neighbors) ? s.neighbors : []).filter(([, sim]: [string, number]) => sim > 0.5).slice(0, TOP).map(([id]: [string, number]) => id)]));
         const candIds = Array.from(new Set(Array.from(nbrs.values()).flat()));
-        const { data: cands } = candIds.length
-            ? await supabase.from('questions').select('id, unit').in('id', candIds).eq('work_status', 'sorted')
-            : { data: [] as any[] };
-        const unitOf = new Map((cands || []).map((c: any) => [c.id, c.unit]));
-        const used = new Set<string>(baseRows.map(r => r.id));
+        // 후보가 수백 개면 주소가 너무 길어 조회가 통째로 실패한다 → 150개씩 나눠 읽는다
+        const cands: any[] = [];
+        for (let i = 0; i < candIds.length; i += 150) {
+            const { data, error: cErr } = await supabase.from('questions').select('id, unit').in('id', candIds.slice(i, i + 150)).eq('work_status', 'sorted');
+            if (cErr) return NextResponse.json({ success: false, error: cErr.message }, { status: 500 });
+            cands.push(...(data || []));
+        }
+        const unitOf = new Map(cands.map((c: any) => [c.id, c.unit]));
+        const used = new Set<string>([...baseRows.map(r => r.id), ...excludeIds]);
         const picked: string[] = [];
         for (const r of baseRows) {
             const pick = (nbrs.get(r.id) || []).find(id => unitOf.has(id) && !used.has(id) && (!r.unit || unitOf.get(id) === r.unit));
