@@ -847,6 +847,17 @@ export default function QuestionBankPage() {
         if (selectedExamIds.length === 0) return showToast('다운로드할 시험지를 선택해주세요.', 'info');
         if (examPdfStatus) return;
         // 보관함의 동일 시험지를 다시 받는 경로는 저장/횟수 차감을 호출하지 않는다.
+        // [11/14] 한글 여러 장은 ZIP 하나로 — 연속 다운로드를 브라우저가 막아 한 장만 받던 문제(건의 89994210)
+        if (format === 'hml' && selectedExamIds.length > 1) {
+            const link = document.createElement('a');
+            link.href = `/api/storage/download?ids=${selectedExamIds.map(encodeURIComponent).join(',')}`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast(`시험지 ${selectedExamIds.length}개를 ZIP 파일 하나로 받습니다.`, 'info');
+            return;
+        }
         for (const id of selectedExamIds) {
             if (format === 'pdf') {
                 setExamPdfStatus('PDF 요청 중…');
