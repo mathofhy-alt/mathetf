@@ -52,6 +52,30 @@ with cf.ThreadPoolExecutor(16) as ex:   # 3,000장을 하나씩 올리면 25분 
         else:
             up += 1
             if not a.dry: index[eid] = at
+def live_exam_ids():
+    """지금 공개된 시험지 id(sitemap.ts 와 같은 조건: 해설 PDF·DELETED 아님·미리보기 있음)."""
+    out, start = set(), 0
+    while True:
+        req = urllib.request.Request(
+            f'{U}/rest/v1/exam_materials?select=id,preview_urls&file_type=eq.PDF&content_type=eq.%ED%95%B4%EC%84%A4'
+            f'&school=neq.DELETED&preview_urls=not.is.null&order=id',
+            headers={'apikey': K, 'Authorization': 'Bearer ' + K, 'Range': f'{start}-{start + 999}'})
+        rows = json.load(urllib.request.urlopen(req))
+        out |= {r['id'] for r in rows if r.get('preview_urls')}
+        if len(rows) < 1000: return out
+        start += 1000
+
+
+# [11/16] 교체(새 id)·삭제된 시험지가 색인에 남아 분석글 사이트맵에 301·404 주소 18개가 섞였다 → 올릴 때마다 걸러 낸다
+pruned = []
+try:
+    live = live_exam_ids()
+    if len(live) >= 1000:   # 조회가 이상하면(0행 등) 색인을 지우지 않는다
+        pruned = [k for k in index if k not in live]
+        for k in pruned: index.pop(k)
+except Exception as e:
+    print('⚠ 공개 시험지 조회 실패 — 색인 정리 건너뜀:', str(e)[:120])
+if pruned: print(f'색인에서 사라진 시험지 {len(pruned)}개 뺌:', ' '.join(p[:8] for p in pruned[:20]))
 if not a.dry:
     index = dict(sorted(index.items()))
     put('_index.json', json.dumps(index, ensure_ascii=False).encode('utf-8'))

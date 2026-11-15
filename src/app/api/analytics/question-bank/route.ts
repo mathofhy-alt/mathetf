@@ -4,7 +4,9 @@ import {createClient} from '@/utils/supabase/server';
 import {createAdminClient} from '@/utils/supabase/server-admin';
 import {productionSite} from '@/lib/analytics/server';
 import {uuidPattern} from '@/lib/payments/order';
-const allowed = new Set(['qb_enter','qb_db_select','qb_search','qb_search_empty','qb_cart_add','qb_save_fail','qb_pass_block','qb_demo','qb_auto_generate','qb_auth_request','qb_resume','qb_clone']);
+const allowed = new Set(['qb_enter','qb_db_select','qb_search','qb_search_empty','qb_cart_add','qb_save_fail','qb_pass_block','qb_demo','qb_auto_generate','qb_auth_request','qb_resume','qb_clone',
+    // [11/16] 화면이 보내는데 여기 없어 400 으로 버려지던 것(비로그인 방문은 10/26 차단 뒤 기록 0) — DB 제약도 같이 넓힘(20261116 마이그레이션)
+    'qb_login_wall','qb_generate_click','qb_ladder','qb_autogen']);
 export async function POST(req:NextRequest) {
     if(!productionSite(req)) return new NextResponse(null,{status:204});
     try {
