@@ -174,8 +174,15 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             return (
                 <div className="py-12 bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
                     <span className="text-4xl mb-2">📒</span>
-                    <p className="font-bold text-sm">등록된 해설 이미지가 없습니다.</p>
-                    <p className="text-xs">우측의 [해설 캡쳐] 버튼을 사용해 등록해 주세요.</p>
+                    {onDeleteCapture ? <>
+                        <p className="font-bold text-sm">등록된 해설 이미지가 없습니다.</p>
+                        <p className="text-xs">우측의 [해설 캡쳐] 버튼을 사용해 등록해 주세요.</p>
+                    </> : <>
+                        {/* [11/15] 회원에게 운영자용 안내(「해설 캡쳐 버튼으로 등록」)가 보였다 — 해설은 강사 이용권 전용(imageAccess.canSeeSolutions) */}
+                        <p className="font-bold text-sm text-slate-600">해설은 강사 이용권으로 볼 수 있어요.</p>
+                        <p className="text-xs mt-1">이용권이 있는데도 보이지 않으면 아직 해설이 등록되지 않은 문항입니다.</p>
+                        <a href="/mypage?pass=1" className="mt-3 rounded-lg bg-[#1B7E7A] px-3 py-1.5 text-xs font-bold text-white">이용권 보기</a>
+                    </>}
                 </div>
             );
         }

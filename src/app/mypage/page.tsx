@@ -37,6 +37,8 @@ export default function MyPage() {
     // [10/7] 시험지 만들기 이용권
     const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
     const [showPass, setShowPass] = useState(false);
+    // [11/15] 마이페이지에서 이용권을 산 뒤 창만 닫혀 다음 할 일을 몰랐다(29,000원 결제 후 시험지 0장) — 바로 가기를 띄운다
+    const [justPaid, setJustPaid] = useState(false);
     const loadPass = () => fetch('/api/qb-pass', { cache: 'no-store' }).then(r => r.json()).then(j => setPassInfo(j.loggedIn && !j.error ? j : null)).catch(() => {});
     useEffect(() => { void loadPass(); try { if (new URLSearchParams(window.location.search).get('pass') && paywallOn()) setShowPass(true); } catch { } }, []);
     const [purchaseTab, setPurchaseTab] = useState<'material' | 'db'>('material');
@@ -190,6 +192,14 @@ export default function MyPage() {
                             <span>이용권</span>
                             <b>{passLine(passInfo)}</b>
                             <button type="button" className="rd-btn rd-btn-primary" onClick={() => setShowPass(true)}>{passInfo.passUntil ? '기간 늘리기' : '이용권 보기'}</button>
+                            {(passInfo.passUntil || passInfo.examUntil || passInfo.sheetLeft > 0) && <a href="/question-bank" className="rd-btn rd-btn-primary">시험지 만들기</a>}
+                        </div>
+                    )}
+                    {justPaid && (
+                        <div className="rd-my-points rd-my-pass" role="status">
+                            <span>결제 완료</span>
+                            <b>이용권이 적용됐어요. 이제 문항을 골라 시험지를 만들어 보세요.</b>
+                            <a href="/question-bank" className="rd-btn rd-btn-primary">시험지 만들기 시작</a>
                         </div>
                     )}
                     {user && (
@@ -208,7 +218,7 @@ export default function MyPage() {
                 </div>
             </section>
 
-            {showPass && user && <PassModal user={user} info={passInfo} from="mypage" onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); void loadPass(); }} />}
+            {showPass && user && <PassModal user={user} info={passInfo} from="mypage" onClose={() => setShowPass(false)} onPaid={() => { setShowPass(false); setJustPaid(true); void loadPass(); }} />}
             <main className="rd-wrap rd-my-main">
                 <div className="rd-seg rd-my-tabs" role="group" aria-label="마이페이지 메뉴">
                     <button type="button" aria-pressed={activeTab === 'purchases'} onClick={() => setActiveTab('purchases')}>
