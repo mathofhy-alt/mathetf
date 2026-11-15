@@ -5,7 +5,7 @@ export function isPersonalDbFree(at = new Date()): boolean {
     return at.getTime() < Date.parse(`${PERSONAL_DB_FREE_UNTIL}T23:59:59.999+09:00`) + 1;
 }
 export const PERSONAL_DB_FREE_MODE = isPersonalDbFree();
-export const FREE_PDF_DAILY_LIMIT = 3;   // 10/7 사용자: 10 → 3
+export const FREE_PDF_DAILY_LIMIT = 1;   // 10/7 사용자: 10 → 3, 11/15 대표: 3 → 1
 // [10/16 대표 결정] 30일 상한 20건 — 60일 실측: 818명 중 34명(4%)만 걸리고 그들이 다운로드의 21%, 결제자는 108명 중 6명만 걸림
 export const FREE_PDF_MONTHLY_LIMIT = 20;
 export const FREE_PDF_MONTH_DAYS = 30;
