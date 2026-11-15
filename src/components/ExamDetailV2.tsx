@@ -48,6 +48,10 @@ function unitHeadline(units: { unit: string; count: number }[]) {
 }
 
 export default function ExamDetailV2({ row, previews, questionCount, sourceKey, hasDb, hasSolutionMaterial, canStartWithQuestions, createHref, otherYears, paidMaterials, opinionExamId, opinions, narrative, concepts, composition, relatedExams, nearbyExams = [], relatedReport, longEditorial = null }: Props) {
+  const solUrl = previews.find(u => /_s1\.webp/.test(u || ''));
+  const hasSolPreview = !!solUrl;
+  const shownPreviews = hasSolPreview ? [previews[0], solUrl as string] : previews.slice(0, 1);
+
   const editorial = examEditorials[row.id];
   const isMock = row.exam_type === '모의고사' || row.exam_type === '수능';
   const period = isMock ? `${row.semester}월` : `${row.semester}학기`;
@@ -82,9 +86,10 @@ export default function ExamDetailV2({ row, previews, questionCount, sourceKey, 
               <section id="exam-preview" className="rd-x-prev" aria-labelledby="exam-preview-title">
                 <div className="rd-x-prev-head">
                   <h2 id="exam-preview-title">시험지 미리보기</h2>
-                  <p>1쪽은 누구나, 전체 쪽은 회원이 볼 수 있어요. 해설은 빠져 있습니다.</p>
+                  {/* [11/15 대표] 미리보기는 문제 첫 쪽 + 해설 첫 쪽 두 장만, 비회원 포함 모두에게. 옛 미리보기(문제 여러 쪽)는 1쪽만 */}
+                  <p>{hasSolPreview ? '문제 첫 쪽과 해설 첫 쪽을 누구나 볼 수 있어요.' : '문제 첫 쪽을 누구나 볼 수 있어요.'}</p>
                 </div>
-                {previews.length > 0 ? <ExamPreview examId={row.id} first={previews[0]} total={previews.length} label={previewLabel} /> : <p className="rd-x-empty">미리보기를 준비 중입니다.</p>}
+                {previews.length > 0 ? <ExamPreview images={shownPreviews} captions={hasSolPreview ? ['문제 1쪽', '해설 1쪽'] : ['문제 1쪽']} label={previewLabel} /> : <p className="rd-x-empty">미리보기를 준비 중입니다.</p>}
               </section>
 
               {editorial && <ExamEditorialArticle editorial={editorial} />}

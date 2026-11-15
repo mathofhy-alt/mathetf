@@ -11,7 +11,7 @@ import { createClient } from '@/utils/supabase/client';
  *   로그인한 회원이면 /api/exam-previews/[id] 에서 나머지 쪽 주소를 받아 채운다.
  */
 //   모의고사 페이지는 지금처럼 전부 공개 — images 로 다 넘긴다(그러면 회원 확인을 안 한다).
-type Props = { label: string } & ({ images: string[]; examId?: undefined; first?: undefined; total?: undefined } | { images?: undefined; examId: string; first: string; total: number });
+type Props = { label: string; captions?: string[] } & ({ images: string[]; examId?: undefined; first?: undefined; total?: undefined } | { images?: undefined; examId: string; first: string; total: number });
 export default function ExamPreview(props: Props) {
     const { label, examId } = props;
     const first = props.images ? props.images[0] : props.first;
@@ -43,7 +43,7 @@ export default function ExamPreview(props: Props) {
             <div className="rd-x-stage">
                 {images.map((url, idx) => url && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={idx} src={url} alt={`${label} 수학 기출문제 미리보기 ${idx + 1}페이지`} loading={idx === 0 ? 'eager' : 'lazy'}
+                    <img key={idx} src={url} alt={`${label} 수학 기출문제 미리보기 ${props.captions?.[idx] || `${idx + 1}페이지`}`} loading={idx === 0 ? 'eager' : 'lazy'}
                         style={{ opacity: idx === i ? 1 : 0, pointerEvents: idx === i ? 'auto' : 'none' }} />
                 ))}
                 {locked && <div className="rd-x-lock" role="note">
@@ -60,7 +60,7 @@ export default function ExamPreview(props: Props) {
             {n > 1 && (
                 <div className="rd-x-pager">
                     <button type="button" className="rd-round" aria-label="이전 쪽" onClick={() => setI(p => (p - 1 + n) % n)}><ChevronLeft size={20} aria-hidden="true" /></button>
-                    <span aria-live="polite">{i + 1} / {n}쪽{member === false && <small className="rd-x-pager-note"> · 2쪽부터 회원</small>}</span>
+                    <span aria-live="polite">{props.captions?.[i] ? `${props.captions[i]} (${i + 1}/${n})` : `${i + 1} / ${n}쪽`}{member === false && <small className="rd-x-pager-note"> · 2쪽부터 회원</small>}</span>
                     <button type="button" className="rd-round" aria-label="다음 쪽" onClick={() => setI(p => (p + 1) % n)}><ChevronRight size={20} aria-hidden="true" /></button>
                 </div>
             )}

@@ -208,6 +208,14 @@ def main():
             doc.close()
             if not urls:
                 raise RuntimeError('렌더 페이지 없음')
+            # [2026-10-02] --all 재생성 때 옛 주소의 ?v=<교체 시각> 을 지키면 홈 '이번 주 새로 올라온 기출'이
+            #   교체일을 잃지 않는다(home-catalog.ts 가 ?v= 를 교체일로 읽음). 같은 파일명 덮어쓰기라
+            #   CDN 캐시 우회용으로 &r=<지금> 을 따로 붙인다 — ?v= 는 교체 후속 스크립트만 쓴다.
+            old_v = next((m.group(1) for u in (row.get('preview_urls') or [])
+                          if (m := re.search(r'[?&]v=(\d{10})(?!\d)', u or ''))), None)
+            if old_v:
+                stamp = int(time.time())
+                urls = [f'{u.split("?")[0]}?v={old_v}&r={stamp}' for u in urls]
             if not no_db:
                 save_urls(row['id'], urls)
                 done_ids.append(row['id'])
@@ -224,5 +232,68 @@ def main():
     else:
         revalidate_exam_pages(done_ids)   # 생성된 시험지 페이지만 즉시 갱신
 
+# ---- [11/15 대표] 미리보기 = 문제 첫 쪽 + 해설 첫 쪽 두 장(비회원 포함 모두에게) ----
+def solution_start(doc):
+    """해설 시작 쪽 번호(0부터). 못 찾으면 None — 그때는 문제 1쪽만 올린다(추측 금지)."""
+    for i in range(len(doc)):
+        try: txt = doc[i].get_text()
+        except Exception: txt = ''
+        # [11/15] 「풀이」는 서술형 발문(「풀이 과정을 쓰시오」)에도 나와 문제 쪽이 해설로 잡혔다(경일고 확통 21~24번 쪽).
+        #   우리 합본 PDF 해설은 문항마다 「따라서 정답은 …」으로 끝나므로 「정답」으로만 판정한다.
+        if i > 0 and ('따라서 정답' in txt or txt.count('정답') >= 2):
+            return i
+    return None
+
+def delete_objects(names):
+    if not names: return
+    requests.delete(f'{URL}/storage/v1/object/{DST_BUCKET}', headers={**H, 'Content-Type': 'application/json'}, json={'prefixes': names})
+
+def qs_one(row, wm_tile):
+    pdf = download_pdf(row['file_path'])
+    doc = fitz.open(stream=pdf, filetype='pdf')
+    total = len(doc); si = solution_start(doc)
+    urls = [upload_preview(f"{row['id']}_p1.webp", render_page(doc, 0, wm_tile))]
+    if si is not None:
+        urls.append(upload_preview(f"{row['id']}_s1.webp", render_page(doc, si, wm_tile)))
+    doc.close()
+    old = row.get('preview_urls') or []
+    old_v = next((m.group(1) for u in old if (m := re.search(r'[?&]v=(\d{10})(?!\d)', u or ''))), None)
+    stamp = int(time.time())
+    urls = [f'{u}?v={old_v}&r={stamp}' if old_v else f'{u}?r={stamp}' for u in urls]
+    save_urls(row['id'], urls)
+    # 예전 문제 2쪽 이후 그림은 공개 버킷에 남으면 주소로 볼 수 있다 — 지운다
+    delete_objects([f"{row['id']}_p{k}.webp" for k in range(2, MAX_QUESTION_PAGES + 2)])
+    return total, si
+
+def main_qs():
+    from concurrent.futures import ThreadPoolExecutor
+    font = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 30)
+    wm = make_watermark_tile(font)
+    limit = int(sys.argv[sys.argv.index('--limit') + 1]) if '--limit' in sys.argv else None
+    rows, off = [], 0
+    while True:
+        params = {'select': 'id,file_path,school,exam_year,grade,semester,exam_type,subject,preview_urls', 'file_type': 'eq.PDF', 'content_type': 'eq.해설', 'school': 'neq.DELETED', 'order': 'created_at.desc'}
+        r = requests.get(f'{URL}/rest/v1/exam_materials', headers={**H, 'Range': f'{off}-{off+999}'}, params=params); r.raise_for_status()
+        got = r.json(); rows += got; off += 1000
+        if len(got) < 1000: break
+    if '--only-old' in sys.argv: rows = [x for x in rows if not any('_s1.webp' in (u or '') for u in (x.get('preview_urls') or []))]
+    if limit: rows = rows[:limit]
+    print(f'[문제1+해설1] 대상 {len(rows)}개')
+    ok = fail = nosol = 0; ids = []
+    def go(row):
+        try:
+            total, si = qs_one(row, wm); return row['id'], total, si, None
+        except Exception as e: return row['id'], 0, None, str(e)[:120]
+    with ThreadPoolExecutor(8) as ex:
+        for k, (rid, total, si, err) in enumerate(ex.map(go, rows), 1):
+            if err: fail += 1; print(f'[{k}] FAIL {rid} {err}')
+            else:
+                ok += 1; ids.append(rid)
+                if si is None: nosol += 1; print(f'[{k}] 해설 시작 못 찾음(문제 1쪽만) {rid} 총{total}p')
+            if k % 200 == 0: print(f'... {k}/{len(rows)} 성공 {ok} 실패 {fail} 해설못찾음 {nosol}')
+    print(f'완료: 성공 {ok} / 실패 {fail} / 해설 못 찾음 {nosol}')
+    for i in range(0, len(ids), 200): revalidate_exam_pages(ids[i:i+200])
+
+
 if __name__ == '__main__':
-    main()
+    main_qs() if '--qs' in sys.argv else main()
