@@ -51,5 +51,6 @@ export function storeImageUrl(path: string) {
 }
 export function withStoreImages(book: StoreBook) {
     return { ...book, cover_path: book.cover_path ? storeImageUrl(book.cover_path) : null,
-        sample_paths: book.sample_paths.map(storeImageUrl) };
+        sample_paths: book.sample_paths.map(storeImageUrl),
+        examples: (book.examples || []).map(e => ({ ...e, original: storeImageUrl(e.original), variant: storeImageUrl(e.variant) })) };
 }

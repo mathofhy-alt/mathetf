@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import type { AdminStoreBook } from '@/lib/store/types';
 
-const blank = (): Omit<AdminStoreBook, 'id' | 'created_at'> & { id?: string } => ({ slug: '', series: '', title: '', subtitle: '', grade: null, subject: null, description: '', contents: {}, contents_description: '', usage_notes: '', cover_path: null, cover_text_color: '#FFFFFF', sample_paths: [], source_db_id: '', pdf_path: null, price: null, published: false, sort_order: 0 });
+const blank = (): Omit<AdminStoreBook, 'id' | 'created_at'> & { id?: string } => ({ slug: '', series: '', title: '', subtitle: '', grade: null, subject: null, description: '', contents: {}, contents_description: '', usage_notes: '', cover_path: null, cover_text_color: '#FFFFFF', sample_paths: [], examples: [], source_db_id: '', pdf_path: null, price: null, published: false, sort_order: 0 });
 export default function StoreAdmin() {
     const [books, setBooks] = useState<AdminStoreBook[]>([]);
     const [draft, setDraft] = useState(blank);
