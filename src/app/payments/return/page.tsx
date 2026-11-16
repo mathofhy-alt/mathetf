@@ -44,7 +44,7 @@ export default function PaymentReturn() {
             const {data:{user}} = await createClient().auth.getUser();
             if(user) { clearPendingPayment(user.id, data.kind, paymentId); clearPaymentReview(user.id, data.kind, paymentId); }
             if (!data.alreadyProcessed) gaEvent('purchase', { transaction_id: paymentId, value: data.amount, currency: 'KRW', kind: data.kind });
-            setDone(true); setMessage(data.kind==='topup' ? `${data.points.toLocaleString()} 포인트 충전이 완료되었습니다.` : '결제가 완료되었습니다. 이용권은 시험지 만들기에 바로 적용되고, 자료는 마이페이지 구매 내역에서 받을 수 있습니다.');
+            setDone(true); setMessage(data.kind==='topup' ? `${data.points.toLocaleString()} 포인트 충전이 완료되었습니다.` : data.hasStoreBooks ? '책 구매가 완료되었습니다. 마이페이지 구매 내역에서 책을 받거나 이용할 수 있습니다.' : '결제가 완료되었습니다. 이용권은 시험지 만들기에 바로 적용되고, 자료는 마이페이지 구매 내역에서 받을 수 있습니다.');
             window.location.replace('/mypage');
         } catch (e:any) { setMessage(e.message || '같은 주문의 결과를 다시 확인해주세요.'); }
         finally { verifying.current = false; setBusy(false); }

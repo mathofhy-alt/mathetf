@@ -33,6 +33,7 @@ function harness(overrides = {}) {
             eq(k,v) { state.reads.push([table,k,v]); rows = rows.filter(r => r[k] === v); return this; },
             in(k,v) { rows = rows.filter(r => v.includes(r[k])); return this; },
             neq(k,v) { rows = rows.filter(r => r[k] !== v); return this; },
+            or(filter) { a.equal(filter,'work_status.neq.sorted,work_status.is.null'); rows=rows.filter(r=>r.work_status!=='sorted'); return this; },
             gt(k,v) { rows=rows.filter(r=>r[k]>v); return this; },
             gte(k,v) { rows = rows.filter(r => r[k] >= v); return this; },
             update(v) { mutation = v; return this; },

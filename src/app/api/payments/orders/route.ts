@@ -5,6 +5,7 @@ import { cartQuote, paymentIdPattern, uuidPattern, samePaymentSelection, payment
 import { readOrder, reconcileOrder } from '@/lib/payments/reconcile';
 import { paymentErrorResponse } from '@/lib/payments/complete';
 import { PRIVATE_ITEM_TYPE } from '@/lib/questions/privateDb';
+import { STORE_ITEM_TYPE, storeEnabled } from '@/lib/store/config';
 import { hasSchemaCapability, paymentCreationMode } from '@/lib/schemaCapabilities';
 import { QB_PASS_TERMS, PASS_ONCE, PASS_EXAM, PASS_SHEET, termPrice, termTitle, paywallOn } from '@/lib/qbPassConfig';
 
@@ -56,8 +57,25 @@ export async function POST(req: NextRequest) {
         const passRows = QB_PASS_TERMS.filter(t => itemIds.includes(t.itemId)).map(t => ({ id: t.itemId, title: termTitle(t.months), price: termPrice(t.months), file_type: 'PASS' }));
         // [11/5 대표] 1회권·시험대비권 — 가격·이름은 서버 설정에서만
         const planRows = [{ p: PASS_ONCE, file_type: 'ONCE' }, { p: PASS_EXAM, file_type: 'EXAMPASS' }, { p: PASS_SHEET, file_type: 'SHEET' }].filter(x => itemIds.includes(x.p.itemId)).map(x => ({ id: x.p.itemId, title: x.p.title, price: x.p.price, file_type: x.file_type }));
-        const quote = cartQuote(body.items, [...(materials || []), ...privateRows, ...passRows, ...planRows], body.usedPoints);
+        const knownRows = [...(materials || []), ...privateRows, ...passRows, ...planRows];
+        // Resolve unknown IDs too: omitting/forging item_type must not bypass book checks.
+        const storeIds = itemIds.filter((id: string) => !knownRows.some(row => row.id === id)
+            || body.items.some((item: any) => item.item_id === id && item.item_type === STORE_ITEM_TYPE));
+        let storeRows: { id: string; title: string; price: number; file_type: string }[] = [];
+        if (storeIds.length) {
+            if (!storeEnabled() && user.email !== 'mathofhy@naver.com') throw new Error('서점을 준비하고 있습니다.');
+            const { data: books, error: bookError } = await sb.from('store_books').select('id,title,price,published').in('id', storeIds);
+            if (bookError) throw new Error('ORDER_RETRY');
+            if (!books || storeIds.some((id: string) => !books.some(b => b.id === id && b.published && b.price !== null))) throw new Error('판매 중인 책이 아니거나 가격을 준비하고 있습니다.');
+            const { data: bought, error: boughtError } = await sb.from('purchased_items').select('item_id')
+                .eq('user_id', user.id).eq('item_type', STORE_ITEM_TYPE).in('item_id', storeIds);
+            if (boughtError) throw new Error('ORDER_RETRY');
+            if (bought?.length) return NextResponse.json({ message: '이미 구매한 책입니다.' }, { status: 409 });
+            storeRows = books.map(b => ({ id: b.id, title: b.title, price: b.price!, file_type: 'STORE' }));
+        }
+        const quote = cartQuote(body.items, [...knownRows, ...storeRows], body.usedPoints);
         const mode = await paymentCreationMode(sb, quote.amount > 0);
+        if (storeRows.length && mode !== 'modern') return NextResponse.json({ message: '서점 결제 기능을 확인 중입니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
         if (mode === 'closed')
             return NextResponse.json({ message: '결제 자동 복구 기능을 확인 중입니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
         // Reviews protect the same goods in both rollout paths. Before the SQL
@@ -153,9 +171,14 @@ export async function POST(req: NextRequest) {
             p_previous_payment_ids: checkedIds, p_replace_open: body.replaceOpen === true,
             p_request_id: requestId, p_snapshot_id: latest[0]?.payment_id || null, p_snapshot_status: latest[0]?.status || null,
         });
-        if (insertError) { console.error('[Order create]', insertError.code); return NextResponse.json({ message: '주문을 준비하지 못했습니다. 결제는 시작되지 않았습니다.' }, { status: 503 }); }
+        if (insertError) {
+            if (insertError.code === 'P0004') return NextResponse.json({ message: '이미 구매한 책입니다.' }, { status: 409 });
+            if (insertError.code === 'P0005') return NextResponse.json({ message: '책의 판매 정보가 바뀌었습니다. 서점에서 다시 확인해주세요.' }, { status: 409 });
+            console.error('[Order create]', insertError.code);
+            return NextResponse.json({ message: '주문을 준비하지 못했습니다. 결제는 시작되지 않았습니다.' }, { status: 503 });
+        }
         if (created?.reviewRequired) return paymentErrorResponse(new Error('PAYMENT_MANUAL_REVIEW'), created.reviewPaymentId);
-        if (created?.alreadyPurchased) return NextResponse.json({ message: '이미 결제한 개인DB입니다.' }, { status: 409 });
+        if (created?.alreadyPurchased) return NextResponse.json({ message: storeRows.length ? '이미 구매한 책입니다.' : '이미 결제한 개인DB입니다.' }, { status: 409 });
         if (!created?.paymentId) {
             if (legacyClient) {
                 if (created?.choiceRequired) return paymentErrorResponse(new Error('PAYMENT_RETRY_CHOICE'), created.recoverPaymentId);

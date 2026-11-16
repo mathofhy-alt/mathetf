@@ -28,11 +28,14 @@ export async function deletePurchase(purchaseId: string) {
 
     const { data: purchaseNew } = await adminSupabase
         .from('purchased_items')
-        .select('user_id')
+        .select('user_id,item_type')
         .eq('id', purchaseId)
         .maybeSingle();
 
     const purchase = purchaseOld || purchaseNew;
+    if (purchaseNew?.item_type === 'STORE_BOOK') {
+        return { success: false, message: '구매한 책의 이용 권한을 보존하기 위해 이 구매 내역은 삭제할 수 없습니다.' };
+    }
 
     if (!purchase) {
         return { success: false, message: '구매 내역을 찾을 수 없습니다.' };

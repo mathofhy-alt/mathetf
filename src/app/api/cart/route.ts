@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server-admin';
+import { STORE_ITEM_TYPE, storeEnabled } from '@/lib/store/config';
+import { uuidPattern } from '@/lib/payments/order';
 
 /**
  * Shopping Cart API
@@ -38,7 +41,19 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { item_type, item_id, title, price } = body;
+        const { item_type, item_id } = body;
+        let { title, price } = body;
+
+        if (item_type === STORE_ITEM_TYPE) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+            if ((!storeEnabled() && user.email !== 'mathofhy@naver.com') || typeof item_id !== 'string' || !uuidPattern.test(item_id)) return NextResponse.json({ error: '구매할 수 없는 책입니다.' }, { status: 400 });
+            const sb = createAdminClient();
+            const { data: book, error: bookError } = await sb.from('store_books').select('title,price').eq('id', item_id).eq('published', true).maybeSingle();
+            const { data: bought, error: boughtError } = await sb.from('purchased_items').select('item_id').eq('user_id', user.id).eq('item_type', STORE_ITEM_TYPE).eq('item_id', item_id).limit(1);
+            if (bookError || boughtError || !book || book.price === null || bought?.length) return NextResponse.json({ error: '가격 준비 중이거나 이미 구매한 책입니다.' }, { status: 400 });
+            title = book.title; price = book.price;
+        }
 
         if (!item_type || !item_id || !title || price === undefined) {
              return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

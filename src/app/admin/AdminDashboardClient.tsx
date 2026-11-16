@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Package, Upload, AlertTriangle, FileDown, Database, MessageSquare } from 'lucide-react';
 import AdminQuestionsClient from './questions/AdminQuestionsClient';
 import AdminIngestPage from './ingest/page';
@@ -43,6 +44,7 @@ export default function AdminDashboardClient({ initialQuestionsData }: AdminDash
 
                         {/* Tab Navigation */}
                         <nav className="flex space-x-4">
+                            <Link href="/admin/store" className="flex items-center px-3 py-2 text-sm font-medium text-brand-700">서점 관리</Link>
                             {tabs.map((tab) => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;

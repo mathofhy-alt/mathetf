@@ -1,8 +1,31 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { uuidPattern, verifyPaidPayment, verifyPaymentIdentity, samePaymentSelection, paymentResumeRequired } from './order';
 import { hasSchemaCapability, paymentCreationMode } from '../schemaCapabilities';
+import { STORE_ITEM_TYPE, storeEnabled } from '../store/config';
 
 type Admin = ReturnType<typeof createAdminClient>;
+const hasStoreBooks = (order: any) => Array.isArray(order.items) && order.items.some((item: any) => item.item_type === STORE_ITEM_TYPE);
+
+// Shared by browser completion, recovery, webhook and the scheduled worker.
+// Card-approved orders retain their quoted entitlement after a book is withdrawn.
+async function recheckPointBooks(sb: Admin, order: any) {
+    if (order.amount !== 0 || !hasStoreBooks(order)) return;
+    let allowed = storeEnabled();
+    if (!allowed) {
+        const { data, error } = await sb.auth.admin.getUserById(order.user_id);
+        if (error) throw new Error('ORDER_RETRY');
+        allowed = data.user?.email === 'mathofhy@naver.com';
+    }
+    const ids = order.items.filter((item: any) => item.item_type === STORE_ITEM_TYPE).map((item: any) => item.item_id);
+    const { data: books, error } = await sb.from('store_books').select('id,published,price').in('id', ids);
+    if (error || !books) throw new Error('ORDER_RETRY');
+    if (allowed && ids.every((id: string) => books.some(book => book.id === id && book.published && book.price !== null))) return;
+    const { error: retireError } = await sb.rpc('supersede_payment_order', { p_payment_id: order.payment_id, p_user_id: order.user_id, p_reason: 'store_unavailable' });
+    if (retireError) throw new Error('ORDER_RETRY');
+    // Completion may have won the member lock first. Return that durable result.
+    const current = await readOrder(sb, order.payment_id, order.user_id);
+    if (current.status !== 'completed') throw new Error('STORE_UNAVAILABLE');
+}
 
 // Same server-only secret and authentication scheme as the existing lookup.
 export async function portone(paymentId: string, cancel = false) {
@@ -196,6 +219,7 @@ async function reconcileBeforeResolution(sb: Admin, order: any, retryInput?: any
 
 export async function reconcileOrder(sb: Admin, initialOrder: any, retryInput?: any) {
     const resolution = await hasSchemaCapability(sb, 'paymentResolution');
+    if (!resolution && hasStoreBooks(initialOrder)) throw new Error('ORDER_RETRY');
     if (!resolution) return reconcileBeforeResolution(sb, initialOrder, retryInput);
     // A probe can see a migration committed after the caller read the order.
     // Refresh its legacy marker before making any fulfillment decision.
@@ -223,7 +247,7 @@ export async function reconcileOrder(sb: Admin, initialOrder: any, retryInput?: 
             await defer(sb, order, payment.status);
         }
         await removePurchasedCartItems(sb, order);
-        return { success: true, alreadyProcessed: true, kind: order.kind, points: order.points, amount: order.amount };
+        return { success: true, alreadyProcessed: true, kind: order.kind, points: order.points, amount: order.amount, hasStoreBooks: hasStoreBooks(order) };
     }
     // The migration marks pre-rollout rows. Neither a background job nor a
     // delayed browser callback may guess whether those old payments delivered.
@@ -278,6 +302,7 @@ export async function reconcileOrder(sb: Admin, initialOrder: any, retryInput?: 
         if (order.legacy_resolution && payment.status === 'PAID') verifyOrderIdentity(order, payment);
         else verifyPaidPayment(order, payment);
     }
+    await recheckPointBooks(sb, order);
     const { data, error } = await sb.rpc('complete_payment_order_v2', { p_payment_id: order.payment_id, p_user_id: order.user_id });
     // Transport failure may mean SQL committed. Reconcile the row again;
     // never refund a possibly fulfilled order based on a transport error.
@@ -291,5 +316,5 @@ export async function reconcileOrder(sb: Admin, initialOrder: any, retryInput?: 
     if (data.status !== 'completed') throw new Error('ORDER_RETRY');
     if (order.amount > 0) await defer(sb, order, 'PAID');
     await removePurchasedCartItems(sb, order);
-    return { success: true, ...data, kind: order.kind, points: order.points, amount: order.amount };
+    return { success: true, ...data, kind: order.kind, points: order.points, amount: order.amount, hasStoreBooks: hasStoreBooks(order) };
 }

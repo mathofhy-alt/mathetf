@@ -6,6 +6,7 @@ import { readOrder, reconcileOrder } from './reconcile';
 
 export function paymentErrorResponse(error: any, paymentId?: string) {
     const messages: Record<string, string> = {
+        STORE_UNAVAILABLE: '책의 판매 상태가 바뀌어 주문을 종료했습니다. 포인트는 사용되지 않았습니다. 서점에서 판매 정보를 다시 확인해주세요.',
         PAYMENT_RETRY_CHOICE: `${retryChoiceMessage} 선택 버튼이 보이지 않으면 화면을 새로고침해주세요.`,
         PAYMENT_NOT_PAID: '결제가 완료되지 않았습니다. 새로 결제하면 서버에서 이전 주문을 대체합니다.',
         PAYMENT_SUPERSEDED: '대체된 주문입니다. 이 주문으로 상품이나 포인트가 지급되지 않습니다. 늦게 승인되면 자동 전액 취소합니다.',

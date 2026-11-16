@@ -95,7 +95,7 @@ export default function CartPage() {
                             <li key={item.id} className="rd-cart-item">
                                 <div className="rd-cart-item-body">
                                     <span className="rd-cart-tag">
-                                        {/* item_type 'MOCK_EXAM' 은 옛 이름일 뿐 모든 PDF 자료다(내신 포함) — 화면엔 파일 종류로 보인다(10/7) */}{item.item_type === 'MOCK_EXAM' ? 'PDF' : item.item_type === 'HWP_DOC' ? '한글 HWP' : item.item_type === 'PRIVATE_DB' ? '개인DB' : item.item_type}
+                                        {/* item_type 'MOCK_EXAM' 은 옛 이름일 뿐 모든 PDF 자료다(내신 포함). */}{item.item_type === 'STORE_BOOK' ? '서점 · 개인DB' : item.item_type === 'MOCK_EXAM' ? 'PDF' : item.item_type === 'HWP_DOC' ? '한글 HWP' : item.item_type === 'PRIVATE_DB' ? '개인DB' : item.item_type}
                                     </span>
                                     <h3 className="rd-cart-item-title">{item.title}</h3>
                                 </div>

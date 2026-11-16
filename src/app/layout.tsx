@@ -9,6 +9,7 @@ import "./cloud.css";
 import "./atelier.css";
 import "./suite.css";
 import "./redesign.css";
+import "./store.css";
 import SiteSurface from "@/components/SiteSurface";
 import { Noto_Sans_KR } from 'next/font/google';
 

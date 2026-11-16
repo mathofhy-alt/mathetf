@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/server-admin';
 import { createClient } from '@/utils/supabase/server';
 import type { CatalogDb } from './scope';
+import { STORE_ITEM_TYPE } from '@/lib/store/config';
 
 /**
  * 회원 전용 개인DB (2026-10-06) — 개인DB 요청으로 받은 시중 교재를 운영자가 DB 로 만들어 그 회원에게만 판다.
@@ -15,7 +16,7 @@ import type { CatalogDb } from './scope';
 export const PRIVATE_ITEM_TYPE = 'PRIVATE_DB';
 const ADMIN_EMAIL = 'mathofhy@naver.com';
 
-export type PrivateDb = { id: string; owner_user_id: string; title: string; source_db_id: string; subject: string | null; grade: string | null; price: number; request_id: string | null };
+export type PrivateDb = { id: string; owner_user_id: string; title: string; source_db_id: string; subject: string | null; grade: string | null; price: number | null; request_id: string | null };
 
 async function currentUser() {
     try { return (await createClient().auth.getUser()).data.user; } catch { return null; }
@@ -26,17 +27,35 @@ export async function usablePrivateDbs(): Promise<PrivateDb[]> {
     const user = await currentUser();
     if (!user) return [];
     const sb = createAdminClient();
+    // Store purchases use the same scope and image authorization as owner-only DBs.
+    // Unpublishing a book or changing its price does not revoke a purchase.
+    let storeRows: PrivateDb[] = [];
+    try {
+        const { data: bookPaid, error: paidError } = await sb.from('purchased_items').select('item_id').eq('user_id', user.id).eq('item_type', STORE_ITEM_TYPE);
+        if (paidError) throw paidError;
+        if (user.email === ADMIN_EMAIL || bookPaid?.length) {
+            let query = sb.from('store_books').select('id,title,source_db_id,subject,grade,price');
+            if (user.email !== ADMIN_EMAIL) query = query.in('id', bookPaid!.map(p => p.item_id));
+            const { data, error } = await query;
+            if (error) throw error;
+            // [11/17] PDF 책(문항 묶음 없음)은 개인DB 목록에 넣지 않는다
+            storeRows = (data || []).filter(b => !!b.source_db_id).map(b => ({ ...b, source_db_id: b.source_db_id as string, owner_user_id: user.id, request_id: null }));
+        }
+    } catch (error) {
+        // This lookup only adds entitlements. Keep owner-only DBs usable on failure.
+        console.error('[Store DB entitlements]', error);
+    }
     if (user.email === ADMIN_EMAIL) {
         const { data } = await sb.from('private_dbs').select('*').order('created_at');
         // 같은 교재를 여러 회원에게 연결하면 줄이 여러 개 — 운영자 목록에는 교재마다 하나(10/7)
         const seen = new Set<string>();
-        return ((data || []) as PrivateDb[]).filter(db => !seen.has(db.source_db_id) && !!seen.add(db.source_db_id));
+        return [...((data || []) as PrivateDb[]), ...storeRows].filter(db => !seen.has(db.source_db_id) && !!seen.add(db.source_db_id));
     }
     const { data: mine } = await sb.from('private_dbs').select('*').eq('owner_user_id', user.id);
-    if (!mine?.length) return [];
+    if (!mine?.length) return storeRows;
     const { data: paid } = await sb.from('purchased_items').select('item_id').eq('user_id', user.id).eq('item_type', PRIVATE_ITEM_TYPE);
     const paidIds = new Set((paid || []).map(p => p.item_id));
-    return (mine as PrivateDb[]).filter(db => db.price === 0 || paidIds.has(db.id));
+    return [...(mine as PrivateDb[]).filter(db => db.price === 0 || paidIds.has(db.id)), ...storeRows];
 }
 
 /**
@@ -65,6 +84,10 @@ async function bundlesUnder(dbSource: string): Promise<Bundle[]> {
     if (hit && Date.now() - hit.at < 600_000) return hit.list;
     const sb = createAdminClient();
     const count = new Map<string, number>();
+    const { count: rootCount, error: rootError } = await sb.from('questions').select('id', { count: 'exact', head: true })
+        .eq('work_status', 'private').eq('source_db_id', dbSource);
+    if (rootError) throw rootError;
+    if (rootCount) count.set(dbSource, rootCount);
     for (let from = 0; from < 50_000; from += 1000) {
         const { data, error } = await sb.from('questions').select('id, source_db_id').eq('work_status', 'private')
             .like('source_db_id', subPattern(dbSource)).order('id').range(from, from + 999);
@@ -85,10 +108,13 @@ export async function privateCatalog(): Promise<CatalogDb[]> {
         const subs = await bundlesUnder(db.source_db_id).catch(() => [] as Bundle[]);
         if (!subs.length) { out.push({ ...base, id: db.id, title: db.title, source_db_id: db.source_db_id } as CatalogDb); continue; }
         // 칸 id = 상품 id + 경로 — 묶음이 늘어도 기존 칸 id 가 바뀌지 않는다
-        for (const b of subs) out.push({
-            ...base, id: `${db.id}::${b.source.slice(db.source_db_id.length + PATH_SEP.length)}`, title: b.source, source_db_id: b.source,
-            book: db.title, path: b.source.slice(db.source_db_id.length + PATH_SEP.length).split(PATH_SEP), question_count: b.n,
-        } as CatalogDb);
+        for (const b of subs) {
+            if (b.source === db.source_db_id) { out.push({ ...base, id: db.id, title: db.title, source_db_id: b.source, book: db.title, question_count: b.n } as CatalogDb); continue; }
+            out.push({
+                ...base, id: `${db.id}::${b.source.slice(db.source_db_id.length + PATH_SEP.length)}`, title: b.source, source_db_id: b.source,
+                book: db.title, path: b.source.slice(db.source_db_id.length + PATH_SEP.length).split(PATH_SEP), question_count: b.n,
+            } as CatalogDb);
+        }
     }
     return out;
 }

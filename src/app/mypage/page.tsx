@@ -109,14 +109,16 @@ export default function MyPage() {
                     user_id: p.user_id,
                     created_at: p.created_at,
                     payment_id: p.payment_id,   // [10/15] 무료 타이핑(typing-) 판별 — 기간 제한 없음
+                    item_type: p.item_type,
                     price: p.price_paid,
                     exam_id: p.item_id,
                     exam: examMap[p.item_id] || {
                         id: p.item_id,
                         title: p.title,
-                        file_type: p.item_type.includes('MOCK_EXAM') ? 'PDF' : p.item_type.includes('HWP') ? 'HWP' : 'DB',
-                        content_type: p.item_type.includes('MOCK_EXAM') ? '문제' : p.item_type.includes('HWP') ? '자료' : '개인DB',
-                        school: '자료',
+                        // [11/17] 서점 책은 PDF 로 받는 책 — 자료 탭에 두고 기간 없이 받는다(개인DB 책이면 받기 경로가 안내)
+                        file_type: p.item_type === 'STORE_BOOK' ? 'PDF' : p.item_type.includes('MOCK_EXAM') ? 'PDF' : p.item_type.includes('HWP') ? 'HWP' : 'DB',
+                        content_type: p.item_type === 'STORE_BOOK' ? '책' : p.item_type.includes('MOCK_EXAM') ? '문제' : p.item_type.includes('HWP') ? '자료' : '개인DB',
+                        school: p.item_type === 'STORE_BOOK' ? '서점 · 변형 문제집' : '자료',
                         exam_year: new Date().getFullYear(),
                         grade: '-',
                         semester: '-',
@@ -140,6 +142,7 @@ export default function MyPage() {
     }, [router, supabase, reloadKey]);   // reloadKey: 무료 타이핑 파일이 막 들어왔을 때 구매 내역을 다시 읽는다(10/8)
 
     const handleDownload = (purchase: any) => {
+        if (purchase.item_type === 'STORE_BOOK') { window.location.href = `/api/store/download?book=${purchase.exam_id}`; return; }
         navigateMaterialDownload(purchase.exam_id || purchase.exam?.id);
     };
 
@@ -278,7 +281,7 @@ export default function MyPage() {
                                         if (!file) return null;
                                         const isDb = file.file_type === 'DB' || file.content_type === '개인DB';
                                         // [10/21 Clarity] 줄(학교·제목·아이콘)을 누르는 반응 없는 클릭이 가장 많았다 — 줄 전체를 누르면 받기(만료·개인DB 제외)
-                                        const rowDownload = !isDb && (adminDownload || isTypingGrant(p) || Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000) < 30);
+                                        const rowDownload = !isDb && (p.item_type === 'STORE_BOOK' || adminDownload || isTypingGrant(p) || Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000) < 30);
                                         return (
                                             <li key={p.id} className={`rd-my-item${rowDownload ? ' is-clickable' : ''}`}
                                                 {...(rowDownload ? { role: 'button', tabIndex: 0, title: '눌러서 받기',
@@ -290,21 +293,26 @@ export default function MyPage() {
                                                 <div className="rd-my-info">
                                                     <p className="rd-my-meta">
                                                         <span className="rd-my-school">{file.school}</span>
-                                                        <span>{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>
+                                                        {p.item_type !== 'STORE_BOOK' && <span>{file.exam_year}년 {file.grade}학년 {file.semester}학기 {file.exam_type}</span>}
                                                     </p>
                                                     <p className="rd-my-title">{file.title}</p>
                                                     <p className="rd-my-facts">
                                                         <span>구매일: {new Date(p.created_at).toLocaleDateString()}</span>
                                                         {file.subject && <span>{file.subject}</span>}
-                                                        <span>-{p.price?.toLocaleString()}P</span>
+                                                        <span>{p.item_type === 'STORE_BOOK' ? `${p.price?.toLocaleString()}원 · 포인트 포함` : `-${p.price?.toLocaleString()}P`}</span>
                                                     </p>
                                                 </div>
                                                 <div className="rd-my-actions">
-                                                    {isDb ? (
+                                                    {p.item_type === 'STORE_BOOK' ? (
+                                                        <div className="rd-my-act">
+                                                            <a href={`/api/store/download?book=${p.exam_id}`} className="rd-btn rd-my-dl"><Download size={18} /> PDF 받기</a>
+                                                            <span className="rd-my-act-note">구매한 책 · 기간 없음</span>
+                                                        </div>
+                                                    ) : isDb ? (
                                                         <div className="rd-my-act">
                                                             <span className="rd-my-dbtag"><Database size={14} /> DB 소스용</span>
-                                                            <Link href="/" className="rd-my-act-note rd-my-act-link">
-                                                                '시험지 만들기'에서 문항 추출
+                                                            <Link href="/question-bank" className="rd-my-act-note rd-my-act-link">
+                                                                시험지 만들기에서 문항 추출
                                                             </Link>
                                                         </div>
                                                     ) : (
@@ -338,7 +346,7 @@ export default function MyPage() {
                                                             );
                                                         })()
                                                     )}
-                                                    <button
+                                                    {p.item_type !== 'STORE_BOOK' && <button
                                                         type="button"
                                                         onClick={() => handleDeletePurchase(p.id)}
                                                         className="rd-my-del"
@@ -346,7 +354,7 @@ export default function MyPage() {
                                                         aria-label="구매 내역 숨기기"
                                                     >
                                                         <Trash2 size={18} />
-                                                    </button>
+                                                    </button>}
                                                 </div>
                                             </li>
                                         );

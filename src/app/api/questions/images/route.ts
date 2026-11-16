@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         if (listError) throw listError;
         // 회원 전용 개인DB 문항 그림은 쓸 수 있는 사람에게만 (10/6)
         // [10/7] 공개(sorted)가 아닌 문항은 전부 막고, 전용(private)만 쓸 수 있는 사람에게 연다 — 등록 대기(pending) 시중교재 보호
-        const { data: privRows, error: privError } = await supabase.from('questions').select('id, work_status, source_db_id').in('id', ids).neq('work_status', 'sorted');
+        const { data: privRows, error: privError } = await supabase.from('questions').select('id, work_status, source_db_id').in('id', ids).or('work_status.neq.sorted,work_status.is.null');
         if (privError) throw privError;
         const blocked = new Set<string>();
         if (privRows?.length) {

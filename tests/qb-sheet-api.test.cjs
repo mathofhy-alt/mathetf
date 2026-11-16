@@ -64,6 +64,7 @@ function harness(overrides={}) {
   '@/lib/questions/catalog':{availableCatalog:async()=>[]},'@/lib/questions/privateDb':{privateCatalog:async()=>[],stripPrivate:async rows=>rows,PRIVATE_ITEM_TYPE:'PRIVATE_DB'},
   '@/lib/questions/fastScope':{wholeCatalogIneligible:async()=>[]},'@/lib/questions/scope':{resolveScope:()=>[]},
   '@/lib/payments/order':require('../src/lib/payments/order.ts'),
+  '@/lib/store/config':{STORE_ITEM_TYPE:'STORE_BOOK',storeEnabled:()=>true},
   '@/lib/schemaCapabilities':load('lib/schemaCapabilities.ts'),
   '@/lib/payments/reconcile':{readOrder:async()=>{throw Error('Unexpected recovery');},reconcileOrder:async()=>{throw Error('Unexpected recovery');}},
   '@/lib/payments/complete':{paymentErrorResponse:()=>{throw Error('Unexpected payment error');}},

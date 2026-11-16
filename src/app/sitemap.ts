@@ -5,6 +5,7 @@ import { HUB_SUBJECTS } from '@/lib/subject-hub';
 import { buildRegionTree } from '@/lib/region-hub';
 import { INSIGHT_REPORTS } from '@/lib/seo-insights';
 import { examEditorials } from '@/lib/exam-editorials';
+import { storeEnabled } from '@/lib/store/config';
 
 export const revalidate = 3600; // 1시간마다 갱신
 
@@ -247,7 +248,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.7,
         }));
 
-        return [...dataDriven, ...staticPages(), ...insightPages, ...subjectPages, ...regionPages, ...schoolPages, ...examPages,
+        const storePages: MetadataRoute.Sitemap = [];
+        if (storeEnabled()) {
+            const books = await fetchAll<{ slug: string; created_at: string }>((from, to) => supabase.from('store_books').select('slug,created_at').eq('published', true).order('id').range(from, to));
+            if (books.length) storePages.push({ url: `${BASE}/store`, lastModified: new Date('2026-11-10'), changeFrequency: 'weekly', priority: 0.7 });
+            for (const book of books) storePages.push({ url: `${BASE}/store/${book.slug}`, lastModified: new Date(book.created_at), changeFrequency: 'monthly', priority: 0.6 });
+        }
+        return [...storePages, ...dataDriven, ...staticPages(), ...insightPages, ...subjectPages, ...regionPages, ...schoolPages, ...examPages,
             ...mockStatic, ...mockCategoryPages, ...mockExamPages];
     } catch (e) {
         // ⚠ 예전엔 여기서 정적 5개만 담아 HTTP 200 으로 응답했다.

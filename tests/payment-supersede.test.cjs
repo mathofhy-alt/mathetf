@@ -13,7 +13,7 @@ async function applySupersede(db,manifest){
  }
  await db.exec(migration('supersede'));
 }
-async function harness(t,{legacyCount=0,ready=true,stage='schedule',beforeResolution,rewardPrepared=true,sourceRoot,withPlans=false}={}){
+async function harness(t,{legacyCount=0,ready=true,stage='schedule',beforeResolution,rewardPrepared=true,sourceRoot,withPlans=false,withStore=false}={}){
  const db=new PGlite();t.after(()=>db.close());
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
  CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY); CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$;
@@ -68,6 +68,14 @@ async function harness(t,{legacyCount=0,ready=true,stage='schedule',beforeResolu
  const scheduleSql=fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261109_payment_schedule.sql'),'utf8');
  a.equal((scheduleSql.match(/^CREATE EXTENSION IF NOT EXISTS /gm)||[]).length,3);
  if(stage==='schedule')await db.exec(scheduleSql.replace(/^CREATE EXTENSION IF NOT EXISTS (pgcrypto|pg_cron|pg_net).*;\r?$/gm,''));
+ if(withStore){
+  await db.exec(`ALTER TABLE exam_materials ADD COLUMN source_db_id text; ALTER TABLE private_dbs ADD COLUMN source_db_id text;
+   CREATE TABLE questions(id uuid DEFAULT gen_random_uuid(),source_db_id text,work_status text);`);
+  for(const file of ['20261108_store_books.sql','20261110_store_payment_guards.sql']){
+   const sql=fs.readFileSync(path.join(__dirname,'../supabase/migrations',file),'utf8');
+   await db.exec(sql);await db.exec(sql);
+  }
+ }
  const provider=new Map(),calls=[],cache=new Map(),providerEnv={PORTONE_API_SECRET:'local-only'};let cancelMode='ok',authUser=uid,beforeComplete,beforeCreate,queueError=false,runError=false,now=Date.now(),beforeProfileUpdate,lookupStatus;
  class Clock extends Date { static now(){return now;} }
  const safe=s=>{if(!/^[a-z_][a-z0-9_]*$/.test(s))throw Error(s);return s;};
@@ -145,6 +153,85 @@ async function harness(t,{legacyCount=0,ready=true,stage='schedule',beforeResolu
  if(ready&&stage==='schedule'){a.equal((await scheduledRun()).status,200);calls.length=0;}
  return {db,sb,provider,calls,seed,read,complete,orders,create,webhook,cron,scheduledRun,adminGet,adminResolve,load,useSource:root=>{sourceRoot=root;cache.clear();},browser,saved,pay:input=>load('src/lib/payments/client.ts').payOrder({id:uid,email:'test@example.invalid'},{kind:'cart',items:[{item_id:item}],usedPoints:0,...input}),advance:ms=>now+=ms,hide:purchaseId=>load('src/app/mypage/actions.ts').deletePurchase(purchaseId),approve:()=>load('src/lib/approveSubmission.ts').approveSubmission(item,{sms:false}),setCancel:v=>cancelMode=v,setAuth:v=>authUser=v,setBeforeProfileUpdate:f=>beforeProfileUpdate=f,setBeforeComplete:f=>beforeComplete=f,setBeforeCreate:f=>beforeCreate=f,setQueueError:v=>queueError=v,setRunError:v=>runError=v,setProviderSecret:v=>providerEnv.PORTONE_API_SECRET=v,setLookupStatus:v=>lookupStatus=v,count:async(table)=>(await db.query('SELECT count(*)::int n FROM '+safe(table))).rows[0].n};
 }
+
+test('store RPC creation and v2 fulfillment preserve type, one-time ownership and withdrawn buyer access',async t=>{
+ const h=await harness(t,{withStore:true});
+ const book='33333333-3333-4333-8333-333333333333';
+ await h.db.exec(`INSERT INTO questions(source_db_id,work_status) VALUES('fixture-store','private');
+  INSERT INTO store_books(id,slug,title,source_db_id,price,published) VALUES('${book}','fixture-store','fixture','fixture-store',1,true);`);
+ const result=await h.orders({items:[{item_id:book,item_type:'STORE_BOOK',price:999}],usedPoints:1});
+ a.equal(result.status,200);
+ const paymentId=result.body.paymentId;
+ a.ok(h.calls.some(c=>c.rpc==='create_payment_order'));
+ a.equal((await h.read(paymentId)).items[0].item_type,'STORE_BOOK');
+ a.equal((await h.read(paymentId)).items[0].price,1);
+ a.equal((await h.complete({paymentId})).body.hasStoreBooks,true);
+ a.equal((await h.db.query('SELECT earned_points FROM profiles WHERE id=$1',[uid])).rows[0].earned_points,999);
+ a.equal((await h.db.query("SELECT count(*)::int n FROM purchased_items WHERE item_type='STORE_BOOK'")).rows[0].n,1);
+ a.ok(h.calls.some(c=>c.rpc==='complete_payment_order_v2'));
+ a.equal((await h.orders({items:[{item_id:book}]})).status,409);
+ const duplicate=await h.create(id(803),[],{...quote(0,1),items:[{item_id:book,item_type:'STORE_BOOK',title:'fixture',price:1}]});
+ a.equal(duplicate.error.code,'P0004'); // database backstop under the RPC lock
+ a.equal(await h.count('payment_orders'),1);
+ await h.db.query('UPDATE store_books SET published=false,price=NULL WHERE id=$1',[book]);
+ a.equal((await h.complete({paymentId})).body.alreadyProcessed,true);
+ a.equal(await h.count('purchased_items'),1);
+});
+
+test('store creation sale/ownership races are rejected under the RPC member lock',async t=>{
+ const h=await harness(t,{withStore:true});
+ const book='33333333-3333-4333-8333-333333333333';
+ await h.db.exec(`INSERT INTO questions(source_db_id,work_status) VALUES('fixture-store','private');
+  INSERT INTO store_books(id,slug,title,source_db_id,price,published) VALUES('${book}','fixture-store','fixture','fixture-store',1,true);`);
+ for(const update of ['published=false','price=NULL','price=2']){
+  h.setBeforeCreate(()=>h.db.exec('UPDATE store_books SET '+update));
+  a.equal((await h.orders({items:[{item_id:book,item_type:'STORE_BOOK'}],usedPoints:1})).status,409);
+  a.equal(await h.count('payment_orders'),0);
+  await h.db.exec('UPDATE store_books SET published=true,price=1');
+ }
+ // A modern capability outage must never fall through to the direct INSERT path.
+ await h.db.exec('DROP FUNCTION create_payment_order(text,uuid,jsonb,text[],boolean,uuid,text,text)');
+ h.useSource(path.resolve(__dirname,'..'));
+ a.equal((await h.orders({items:[{item_id:book,item_type:'STORE_BOOK'}],usedPoints:1})).status,503);
+ a.equal(await h.count('payment_orders'),0);
+});
+
+test('store point sale changes at v2 time roll back all grants and ledgers',async t=>{
+ const h=await harness(t,{withStore:true});
+ const book='33333333-3333-4333-8333-333333333333';
+ await h.db.exec(`INSERT INTO questions(source_db_id,work_status) VALUES('fixture-store','private');
+  INSERT INTO store_books(id,slug,title,source_db_id,price,published) VALUES('${book}','fixture-store','fixture','fixture-store',1,true);`);
+ const result=await h.orders({items:[{item_id:book}],usedPoints:1});
+ a.equal(result.status,200);
+ h.setBeforeComplete(()=>h.db.exec('UPDATE store_books SET published=false'));
+ a.equal((await h.complete({paymentId:result.body.paymentId})).body.code,'PAYMENT_SUPERSEDED');
+ a.equal((await h.db.query('SELECT earned_points FROM profiles WHERE id=$1',[uid])).rows[0].earned_points,1000);
+ for(const table of ['purchased_items','payment_history','point_transactions'])a.equal(await h.count(table),0);
+ a.equal(h.calls.filter(c=>c.url).length,0);
+});
+
+test('store UNIQUE failure rolls back mixed v2 fulfillment and automatically refunds a duplicate card',async t=>{
+ const h=await harness(t,{withStore:true});
+ const book='33333333-3333-4333-8333-333333333333';
+ await h.db.exec(`INSERT INTO questions(source_db_id,work_status) VALUES('fixture-store','private');
+  INSERT INTO store_books(id,slug,title,source_db_id,price,published) VALUES('${book}','fixture-store','fixture','fixture-store',1,true);`);
+ const q={...quote(0,1),items:[{item_id:book,item_type:'STORE_BOOK',title:'fixture',price:1}]};
+ await h.seed(id(801),q,'PAID');
+ await h.seed(id(802),{...quote(1,2),items:[{item_id:item,item_type:'HWP_DOC',title:'fixture',price:1},...q.items]},'PAID');
+ await h.db.exec('UPDATE store_books SET published=false,price=NULL');
+ a.equal((await h.complete({paymentId:id(801)})).body.success,true); // approval survives withdrawal
+ // Bypass only the general overlapping-order heuristic to exercise the UNIQUE
+ // backstop itself, including a grant made earlier in the same mixed order.
+ await h.db.query("UPDATE payment_orders SET completed_at=now()-interval '1 day' WHERE payment_id=$1",[id(801)]);
+ a.equal((await h.complete({paymentId:id(802)})).body.code,'PAYMENT_REFUNDED');
+ a.equal((await h.read(id(802))).supersede_reason,'fulfillment_failed:23505');
+ a.equal((await h.read(id(802))).refund_status,'succeeded');
+ a.equal(h.provider.get(id(802)).status,'CANCELLED');
+ a.equal((await h.db.query('SELECT earned_points FROM profiles WHERE id=$1',[uid])).rows[0].earned_points,1000);
+ a.equal(await h.count('purchased_items'),1);a.equal(await h.count('payment_history'),1);a.equal(await h.count('point_transactions'),0);
+ a.equal((await h.complete({paymentId:id(802)})).body.code,'PAYMENT_REFUNDED');
+ a.equal(h.calls.filter(c=>c.url?.endsWith('/cancel')).length,1);
+});
 
 for(const failure of ['none','supersede','resolution'])test(`code-first ${failure}: real old-schema completion and pass reads survive absent/failed migration`,async t=>{
  const h=await harness(t,{stage:failure==='resolution'?'supersede':'legacy'});

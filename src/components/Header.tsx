@@ -3,6 +3,7 @@
 import PdfLimitModal from '@/components/PdfLimitModal';
 import { paywallOn } from '@/lib/qbPassConfig';
 import { STORAGE_HREF, openStorageHere } from '@/lib/storageLink';
+import { storeEnabled } from '@/lib/store/config';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -138,6 +139,7 @@ export default function Header({ user: propUser, purchasedPoints: propPurchased,
     type NavItem = { href: string; label: string; badge?: string; children?: NavChild[] };
     const navItems: NavItem[] = [
         { href: '/', label: '내신기출' },
+        ...(storeEnabled() || isAdmin ? [{ href: '/store', label: '서점' }] : []),
         {
             // [2026-09-08] '시험지 출제' 자식을 뺐다 — 부모와 같은 /question-bank 라 한 화면에
             //   같은 곳으로 가는 링크가 두 줄이었다(외부 감사 지적). 부모는 데스크톱·모바일 모두

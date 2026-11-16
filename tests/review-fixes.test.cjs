@@ -16,7 +16,7 @@ test('image API removes solution captures and solution-only binaries even when c
  const xml='<P><IMAGE BinItem="1"/><ENDNOTE><IMAGE BinItem="2"/></ENDNOTE></P>';
  const admin={from(table){let data=table==='questions'?[{id:qid,work_status:'sorted',content_xml:xml}]:rows;
   return {select(){return this;},in(k,values){requested.push([table,k,values]);data=data.filter(r=>values.includes(r[k]));return this;},
-   neq(k,v){data=data.filter(r=>r[k]!==v);return this;},order(){return this;},then(resolve,reject){return Promise.resolve({data,error:null}).then(resolve,reject);}};
+   neq(k,v){data=data.filter(r=>r[k]!==v);return this;},or(filter){a.equal(filter,'work_status.neq.sorted,work_status.is.null');data=data.filter(r=>r.work_status!=='sorted');return this;},order(){return this;},then(resolve,reject){return Promise.resolve({data,error:null}).then(resolve,reject);}};
  }};
  const deps={'@/utils/supabase/server':{createClient:()=>({auth:{getUser:async()=>({data:{user}})}})},
   '@/utils/supabase/server-admin':{createAdminClient:()=>admin},'@/lib/qbPass':{passStatus:async()=>({unlimited})},
