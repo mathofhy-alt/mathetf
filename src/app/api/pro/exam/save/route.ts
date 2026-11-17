@@ -75,6 +75,12 @@ export async function POST(req: NextRequest) {
             }, { status: 403 });
         }
 
+        // [11/18 대표] 강사 이용권 시험지 최근 30일 150장
+        if (pass.teacherCap && pass.teacherCap.used >= pass.teacherCap.limit) {
+            const at = pass.teacherCap.nextAt ? new Date(pass.teacherCap.nextAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+            return NextResponse.json({ success: false, code: 'QB_TEACHER_CAP', pass,
+                error: `강사 이용권은 최근 30일 동안 시험지를 ${pass.teacherCap.limit}장까지 만들 수 있습니다.${at ? ` ${at}부터 다시 만들 수 있습니다.` : ''} 이미 만든 시험지는 보관함에서 그대로 받으실 수 있습니다.` }, { status: 429 });
+        }
         // 시험지는 주 무료 → 시험대비권 → 시험지 1장권. 강사 이용권은 차감하지 않는다.
         const charge = pass.unlimited ? null : chooseCharge(pass, 'exam');
         if (!pass.unlimited && !charge) return NextResponse.json({

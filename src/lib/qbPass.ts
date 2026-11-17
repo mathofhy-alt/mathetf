@@ -30,6 +30,7 @@ export type PassStatus = Access & {
     days: number;
     offer: Offer;
     viewers: number | null;    // 최근 30분 동안 시험지 만들기 화면에 들어온 사람(방문 단위). 3명 미만이면 null
+    teacherCap: { used: number; limit: number; nextAt: string | null } | null;   // [11/18] 강사 이용권 시험지 30일 한도(한도 적용 대상일 때만)
 };
 
 export type Offer = { price: number; listPrice: number };
@@ -90,6 +91,18 @@ export async function passStatus(user: { id: string; email?: string | null }): P
     const until = passUntilFrom(buys || []);
     const active = !!until && until.getTime() > Date.now();
     const access = computeAccess(other || [], uses || [], new Set((failed || []).map(f => f.id)));
+    // [11/18 대표] 강사 이용권 시험지 최근 30일 150장. 한도 전에 산 이용권이 덮는 기간 안에서는 적용하지 않는다.
+    let teacherCap: PassStatus['teacherCap'] = null;
+    const capFrom = Date.parse(QB_PASS.capFrom);
+    const legacyUntil = passUntilFrom((buys || []).filter(b => Date.parse(b.created_at) < capFrom));
+    if (active && user.email !== ADMIN_EMAIL && Date.now() >= capFrom && !(legacyUntil && legacyUntil.getTime() > Date.now())) {
+        const since = Date.now() - 30 * DAY;
+        const times = (uses || []).filter(u => u.feature === 'plan_teacher_exam').map(u => Date.parse(u.created_at)).filter(t => t > since).sort((a, b) => a - b);
+        const limit = QB_PASS.examsPer30Days;
+        // 다 쓰면, 가장 오래된 기록이 30일 창에서 빠지는 시각부터 다시 저장 가능
+        const nextAt = times.length >= limit ? new Date(times[times.length - limit] + 30 * DAY).toISOString() : null;
+        teacherCap = { used: times.length, limit, nextAt };
+    }
     return {
         ...access,
         unlimited: active || user.email === ADMIN_EMAIL || !paywallOn(),
@@ -102,7 +115,7 @@ export async function passStatus(user: { id: string; email?: string | null }): P
         resetsAt: new Date(predictWindows().week + 7 * DAY).toISOString(),
         price: offer.price,
         days: QB_PASS.days,
-        offer, viewers,
+        offer, viewers, teacherCap,
     };
 }
 

@@ -36,7 +36,7 @@ export default function ChangeNotice() {
                         <li><b>시험대비권:</b> {PASS_EXAM.price.toLocaleString()}원 · {PASS_EXAM.days}일. 시험지 만들기·프린트 변형 합쳐 {PASS_EXAM.bundles}건 · 한글/PDF · {BUNDLE_KEEP_DAYS}일 다시 받기 · 예상문제 제한 없음. 시험지는 최대 {QB_LIMITS.free.questions}문항·로고 없음, 프린트는 건당 최대 {FREE_TRIAL.questions}문항입니다. 시험지는 주 무료 {FREE_TRIAL.exam}회 → 시험대비권 → 시험지 1장권 순서로 사용하고, 예상문제에는 건수를 차감하지 않습니다. 예: 기말 2주 전, 반별 시험지와 학교 프린트 비슷한 문제를 같이 준비할 때.</li>
                         <li><b>강사 이용권:</b> 1개월 {QB_PASS.salePrice.toLocaleString()}원 (3·6·12개월 선택)
                             <ul>
-                                <li>세 기능 모두 무제한 · 한글과 PDF · 한 시험지 최대 {QB_LIMITS.pass.questions}문항 · 보관함 {QB_LIMITS.pass.saved}개</li>
+                                <li>프린트 변형·예상문제 무제한 · 시험지 만들기는 최근 30일에 {QB_PASS.examsPer30Days}장까지 · 한글과 PDF · 한 시험지 최대 {QB_LIMITS.pass.questions}문항 · 보관함 {QB_LIMITS.pass.saved}개</li>
                                 <li>보유 포인트로도 결제할 수 있습니다</li>
                             </ul>
                         </li>

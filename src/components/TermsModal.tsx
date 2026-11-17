@@ -1,5 +1,5 @@
 "use client"
-import { PASS_SHEET, PASS_EXAM, FREE_TRIAL, QB_LIMITS, BUNDLE_KEEP_DAYS } from '@/lib/qbPassConfig';
+import { PASS_SHEET, PASS_EXAM, FREE_TRIAL, QB_LIMITS, BUNDLE_KEEP_DAYS, QB_PASS } from '@/lib/qbPassConfig';
 
 import { X } from "lucide-react"
 
@@ -66,7 +66,7 @@ export default function TermsModal({ isOpen, onClose, onAgree, readonly = false 
                                     <span className="font-bold">청약철회:</span> 디지털 콘텐츠의 특성상 결제 후 열람(다운로드) 기록이 없는 경우에 한하여 7일 이내 환불이 가능합니다. 1회라도 다운로드/열람한 자료는 환불 대상에서 제외됩니다.
                                 </li>
                                 <li>
-                                    <span className="font-bold">이용권:</span> 시험지 1장권({PASS_SHEET.price.toLocaleString('ko-KR')}원)은 구매 후 {PASS_SHEET.days}일 안에 새 시험지 1장 저장에 사용할 수 있으며 이후 소멸합니다. 최대 {QB_LIMITS.free.questions}문항·한글/PDF를 제공하고, 주 무료 {FREE_TRIAL.exam}회 → 시험대비권 → 시험지 1장권 순서로 사용합니다. 시험대비권은 {PASS_EXAM.price.toLocaleString('ko-KR')}원/{PASS_EXAM.days}일, 시험지 만들기·프린트 변형 합쳐 {PASS_EXAM.bundles}건 · 한글/PDF · {BUNDLE_KEEP_DAYS}일 다시 받기 · 예상문제 제한 없음(기간 중 PDF, 건수 차감 없음)을 제공합니다. 강사 이용권 이용 중에는 1장권을 차감하지 않습니다. 저장한 시험지는 기존 보관함에서 만든 뒤 {BUNDLE_KEEP_DAYS}일 동안 추가 차감 없이 다시 받을 수 있습니다.
+                                    <span className="font-bold">이용권:</span> 시험지 1장권({PASS_SHEET.price.toLocaleString('ko-KR')}원)은 구매 후 {PASS_SHEET.days}일 안에 새 시험지 1장 저장에 사용할 수 있으며 이후 소멸합니다. 최대 {QB_LIMITS.free.questions}문항·한글/PDF를 제공하고, 주 무료 {FREE_TRIAL.exam}회 → 시험대비권 → 시험지 1장권 순서로 사용합니다. 시험대비권은 {PASS_EXAM.price.toLocaleString('ko-KR')}원/{PASS_EXAM.days}일, 시험지 만들기·프린트 변형 합쳐 {PASS_EXAM.bundles}건 · 한글/PDF · {BUNDLE_KEEP_DAYS}일 다시 받기 · 예상문제 제한 없음(기간 중 PDF, 건수 차감 없음)을 제공합니다. 강사 이용권 이용 중에는 1장권을 차감하지 않습니다. 강사 이용권의 시험지 만들기는 최근 30일 동안 {QB_PASS.examsPer30Days}장까지이며(공정 사용 한도), 프린트 변형·예상문제는 이용 기간 중 횟수 제한이 없습니다. 저장한 시험지는 기존 보관함에서 만든 뒤 {BUNDLE_KEEP_DAYS}일 동안 추가 차감 없이 다시 받을 수 있습니다.
                                 </li>
                                 <li>
                                     <span className="font-bold">이용권 청약철회:</span> 시험지 1장권·프린트 1회권·시험대비권·강사 이용권은 결제 즉시 제공이 시작되므로 사용 여부와 관계없이 결제 후 환불되지 않습니다. 결제 전에 이에 동의를 받으며, 회사 귀책의 중복 결제·시스템 오류 등은 환불 정책에 따라 환불 또는 이용 기간 연장으로 처리합니다.

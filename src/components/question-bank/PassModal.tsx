@@ -101,7 +101,7 @@ export default function PassModal({ user, info, onClose, onPaid, from = 'button'
                         </div>
                         <p className="rd-pass-price"><b>{total.toLocaleString()}</b>원 <small>{term.days}일</small></p>
                         <ul>
-                            <li><Check size={16} aria-hidden="true" /> 시험지 만들기·프린트 변형·예상문제 모두 무제한</li>
+                            <li><Check size={16} aria-hidden="true" /> 프린트 변형·예상문제 무제한 · 시험지 만들기 30일에 {QB_PASS.examsPer30Days}장</li>
                             <li><Check size={16} aria-hidden="true" /> 한글(HWP)과 PDF 둘 다 받기</li>
                             <li><Check size={16} aria-hidden="true" /> 로고 없음</li>
                             <li><Check size={16} aria-hidden="true" /> 한 시험지 최대 {QB_LIMITS.pass.questions}문항 <small className="rd-pass-was">무료 {QB_LIMITS.free.questions}문항</small></li>
