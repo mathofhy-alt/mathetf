@@ -457,7 +457,7 @@ export function generateHmlFromTemplate(
                 ancestor = ancestor.parentNode;
             }
             if (ancestor && /^(hp:)?endnote$/i.test(ancestor.nodeName)) continue;
-            const role = table.getAttribute('data-hml-style') || '';
+            const role = boxRoleOf(table);
             if (!boxPatterns[role]) continue;
             const xml = wrapInBoxPattern([table], role, boxPatterns, serializer, parser, nextInstId++, validStyles);
             table.parentNode?.replaceChild(parser.parseFromString(xml, 'text/xml').documentElement, table);
@@ -1486,6 +1486,17 @@ const boxTitles: Record<string, string[]> = {
     BOX_MIJU: ['미주', '해설', '정답', '정답및해설'],
     BOX_INNER: ['박스안'],
 };
+
+// [11/22] 파싱 때 박스 종류가 잘못 붙은 표(중산고 2024 2중간 7번: '<보 기>' 제목 칸이 있는 3×3 표가 BOX_JOKUN)는
+//   제목 칸을 알아보지 못해 내용이 통째로 빠졌다. 직계 칸에 다른 박스의 제목이 있으면 그 종류로 본다.
+function boxRoleOf(table: Element): string {
+    const role = table.getAttribute('data-hml-style') || '';
+    if (role !== 'BOX_BOGI' && role !== 'BOX_JOKUN') return role;
+    const cells = directElements(table, 'ROW').flatMap(row => directElements(row, 'CELL'));
+    if (cells.length < 2 || cells.some(c => isBoxTitle(c, role))) return role;
+    const other = role === 'BOX_BOGI' ? 'BOX_JOKUN' : 'BOX_BOGI';
+    return cells.some(c => isBoxTitle(c, other)) ? other : role;
+}
 
 function isBoxTitle(node: Element, role: string): boolean {
     if (hasBoxObjects(node)) return false;
