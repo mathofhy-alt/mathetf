@@ -11,14 +11,20 @@ export type TypedGrant = { status: 'ready'; title: string; grantedAt: string } |
 export async function grantTypedFile(reportId: string): Promise<TypedGrant> {
     const sb = createAdminClient();
     const { data: r } = await sb.from('exam_materials')
-        .select('id, uploader_id, school, exam_year, grade, semester, exam_type, subject, content_type').eq('id', reportId).maybeSingle();
+        .select('id, uploader_id, school, exam_year, grade, semester, exam_type, subject, content_type, region, district').eq('id', reportId).maybeSingle();
     if (!r || r.content_type !== '원본제보' || !r.uploader_id) return { status: 'none' };
     const { data: reward } = await sb.from('point_transactions').select('id').eq('type', 'submission_reward').eq('related_id', reportId).limit(1);
     if (!reward?.length) return { status: 'none' };   // 아직 채택 전
-    const { data: mats } = await sb.from('exam_materials').select('id, title, price')
-        .eq('school', r.school).eq('exam_year', r.exam_year).eq('grade', r.grade).eq('semester', r.semester)
-        .eq('exam_type', r.exam_type).eq('subject', r.subject).eq('content_type', '해설').eq('file_type', 'HWP').limit(1);
-    const mat = mats?.[0];
+    // [11/24] 같은 이름 학교가 여럿이라 지역·구까지 맞춘다. 동명이교는 시험지 쪽 이름에 지역 접두가 붙는다(제보 '현대고등학교' → 시험지 '울산현대고등학교').
+    //   전에는 이름만 보고 찾아 울산 현대고 제보에 서울 현대고 한글파일을 준 일이 있었다.
+    const { data: mats } = await sb.from('exam_materials').select('id, title, price, school, region, district')
+        .like('school', `%${r.school}`).eq('exam_year', r.exam_year).eq('grade', r.grade).eq('semester', r.semester)
+        .eq('exam_type', r.exam_type).eq('subject', r.subject).eq('content_type', '해설').eq('file_type', 'HWP').limit(20);
+    const dist = (d: string | null) => d === '세종시' ? '세종특별자치시' : d;   // 제보 쪽은 '세종시'로 들어온다
+    const cand = (mats || []).filter(m => r.region
+        ? m.region === r.region && (!r.district || !m.district || dist(m.district) === dist(r.district))
+        : m.school === r.school);
+    const mat = cand.find(m => m.school === r.school) ?? (cand.length === 1 ? cand[0] : undefined);
     if (!mat) return { status: 'working' };   // 채택은 했고, 한글 작업·등록 중
     const { data: have } = await sb.from('purchased_items').select('created_at').eq('user_id', r.uploader_id).eq('item_id', mat.id).order('created_at', { ascending: false }).limit(1);
     if (have?.length) return { status: 'ready', title: mat.title, grantedAt: have[0].created_at };
