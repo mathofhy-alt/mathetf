@@ -11,6 +11,7 @@ import { FileItem } from '@/lib/data';
 import { Download, FileText, ArrowLeft, Trash2, Database, Settings, MessageSquare } from 'lucide-react';
 import MarketingSettings from '@/components/MarketingSettings';
 import PasswordSettings from '@/components/PasswordSettings';
+import WithdrawSettings from '@/components/WithdrawSettings';
 import { PdfFileIcon, HwpFileIcon } from '@/components/FileIcons';
 import { deletePurchase } from './actions';
 import MyDbRequests from '@/components/MyDbRequests';
@@ -250,6 +251,7 @@ export default function MyPage() {
                         <div className="rd-my-stack">
                             <MarketingSettings />
                             <PasswordSettings />
+                            <WithdrawSettings />
                         </div>
                     )}
 

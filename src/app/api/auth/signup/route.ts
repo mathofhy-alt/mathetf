@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { safeSignupAttribution } from '@/lib/analytics/signup-attribution';
 import { isPhoneRegistered, PHONE_TAKEN_MESSAGE } from '@/lib/phone-registered';
 import { checkEmail } from '@/lib/email-check';
+import { rejoinBlockedUntil, rejoinBlockedMessage } from '@/lib/withdraw';
 
 // 서버에서만 사용하는 Service Role Key (관리자 권한). 절대 클라이언트로 나가면 안 됨.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -52,6 +53,12 @@ export async function POST(req: Request) {
         // 2-1. 1번호 1계정 (10/6) — 화면 단계(verify-sms)를 건너뛴 요청도 여기서 막는다
         if (await isPhoneRegistered(supabaseAdmin, phone)) {
             return NextResponse.json({ success: false, code: 'phone_taken', message: PHONE_TAKEN_MESSAGE }, { status: 409 });
+        }
+
+        // 2-2. [11/25] 탈퇴한 번호는 7일 동안 다시 가입 불가(대표 지시)
+        const blockedUntil = await rejoinBlockedUntil(supabaseAdmin, phone);
+        if (blockedUntil) {
+            return NextResponse.json({ success: false, code: 'rejoin_blocked', message: rejoinBlockedMessage(blockedUntil) }, { status: 409 });
         }
 
         // 3. 관리자 권한으로 계정 생성 (이메일 인증 절차 없이 즉시 활성)
