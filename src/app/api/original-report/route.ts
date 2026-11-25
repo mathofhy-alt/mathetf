@@ -155,10 +155,16 @@ export async function POST(req: NextRequest) {
         if (!picked) return NextResponse.json({ error: '학교는 목록에서 골라주세요.' }, { status: 400 });
         const school = picked.name, region = picked.region;
         const paths: string[] = Array.isArray(body.paths) ? body.paths.filter((p: unknown) => typeof p === 'string') : [];
+        // [11/25] 올린 파일을 이름으로 하나씩 찾는다. 예전엔 폴더 목록을 1,000개까지만 읽어서,
+        //   제보 파일이 1,000개를 넘은 회원(11/25 1,015개)은 새 파일이 목록 밖으로 밀려 매번
+        //   「사진 업로드가 끝나지 않았어요」가 났다(11/25 00:49~ 제출 전부 실패, 건의사항으로 신고).
         const listedOk = async () => {
-            const { data: listed } = await admin.storage.from(BUCKET).list(user.id, { limit: 1000, search: 'report_' });
-            const have = new Set((listed || []).map(o => `${user.id}/${o.name}`));
-            return paths.every(p => have.has(p));
+            for (const p of paths) {
+                const name = p.slice(user.id.length + 1);
+                const { data: found } = await admin.storage.from(BUCKET).list(user.id, { limit: 10, search: name });
+                if (!(found || []).some(o => o.name === name)) return false;
+            }
+            return true;
         };
         const displayName = user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown';
         // [10/21] 여러 회차 묶음(10/13~14)은 회차 정보가 없어 이미 있는 회차를 못 거른다(10/14 수원 8개교 고1 2학기 중간이 그대로 들어옴).

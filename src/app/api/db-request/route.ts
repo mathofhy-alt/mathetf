@@ -71,8 +71,14 @@ export async function POST(req: NextRequest) {
         const note = String(body.note || '').trim().slice(0, 300);
         if (paths.length < 1 || paths.length > MAX_FILES || paths.some(p => !p.startsWith(`${user.id}/dbreq_`)))
             return NextResponse.json({ error: '올린 파일 정보를 확인할 수 없습니다. 다시 시도해주세요.' }, { status: 400 });
-        const { data: listed } = await admin.storage.from(BUCKET).list(user.id, { limit: 1000, search: 'dbreq_' });
-        const sizes = new Map((listed || []).map(o => [`${user.id}/${o.name}`, (o.metadata as any)?.size ?? null]));
+        // [11/25] 올린 파일을 이름으로 하나씩 찾는다 — 폴더 목록 1,000개 한도에 새 파일이 밀려나지 않게(원본 제보와 같은 버그).
+        const sizes = new Map<string, number | null>();
+        for (const p of paths) {
+            const name = p.slice(user.id.length + 1);
+            const { data: found } = await admin.storage.from(BUCKET).list(user.id, { limit: 10, search: name });
+            const hit = (found || []).find(o => o.name === name);
+            if (hit) sizes.set(p, (hit.metadata as any)?.size ?? null);
+        }
         if (paths.some(p => !sizes.has(p))) return NextResponse.json({ error: '파일 업로드가 끝나지 않았어요. 다시 시도해주세요.' }, { status: 400 });
 
         const displayName = user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || null;
