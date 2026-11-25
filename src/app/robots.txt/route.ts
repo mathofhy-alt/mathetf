@@ -7,6 +7,15 @@ import { getLongIndex } from '@/lib/exam-long';
 //   ⚠ Googlebot 전용 블록이 있으면 구글은 '*' 블록을 무시한다 — 막을 것은 Disallow: / 하나로 다 덮인다.
 //   ⚠ 네이버(Yeti)·다른 봇 규칙은 전과 같다(주 유입원).
 //   분석글 목록은 저장소 색인(exam-analysis/_index.json)에서 읽는다 — 새 분석글이 올라가면 1시간 안에 배포 없이 반영.
+//
+// [2026-11-25] 대표 지시(코덱스 진단): 학교 페이지와 사이트맵에 올린 공개 안내 페이지를 구글봇에 연다.
+//   11/16 서치콘솔: 분석글 사이트맵 4,222개 중 3,825개가 '발견됨-색인 미생성'(본문을 아직 안 가져감), 색인 41개.
+//   막혀 있던 것: 개별 학교 /school/… 779개(sitemap.xml 747 + sitemap-neis.xml 32) — 시험지로 가는 내부 링크
+//   (동탄고 한 곳에 <a href="/exam/…"> 47개)를 구글이 읽지 못했다. 사이트맵에 올려 놓고 robots 로 막은
+//   /store·/study·/question-bank·/teacher·/guide·/predict·/print-transform 도 같은 모순이었다
+//   (모두 비로그인 공개, index·follow, 자기 canonical — 11/25 구글봇 UA 로 확인).
+//   ⚠ 파비콘(/icon.png 등)도 막혀 있었다 — 구글은 파비콘 파일과 홈이 둘 다 크롤 가능해야 검색결과에 아이콘을 띄운다.
+//   효과 확인: 대표 시험지에 구글의 '마지막 크롤링' 날짜가 생기는지(scripts/gsc/check_index.py).
 export const revalidate = 3600;
 
 const COMMON = [
@@ -56,6 +65,23 @@ export async function GET() {
         'Allow: /schools$',
         `Allow: /${encodeURIComponent('지역')}`,
         'Allow: /subject/',
+        // [11/25] 개별 학교 페이지 — 학교별 기출 목록에서 시험지 상세로 이어지는 내부 링크 경로.
+        'Allow: /school/',
+        // [11/25] 사이트맵에 올린 공개 안내·서점 페이지 — 사이트맵과 robots 를 맞춘다.
+        //   $ 로 끝낸 것은 쿼리 주소(?school= ?src= ?demo= 등, 본문이 같은 중복)를 계속 막기 위해서다.
+        'Allow: /store$',
+        'Allow: /store/',
+        'Disallow: /store/*/complete',                     // 구매 완료(로그인 전용·noindex)
+        'Allow: /study/',
+        'Allow: /question-bank$',
+        'Allow: /teacher$',
+        'Allow: /guide$',
+        'Allow: /predict$',
+        'Allow: /print-transform$',
+        // [11/25] 파비콘 — 막혀 있으면 구글 검색결과에 사이트 아이콘이 안 뜬다.
+        'Allow: /icon.png',
+        'Allow: /icon.svg',
+        'Allow: /apple-icon.png',
         // ⚠ 사이트맵 파일도 허용해야 한다 — 구글은 사이트맵을 가져올 때도 robots 를 지킨다.
         //   10/23 배포 직후 /sitemap-exam-analysis.xml 이 서치콘솔에서 '가져올 수 없음'(Disallow: / 에 막힘).
         'Allow: /sitemap',             // sitemap.xml · sitemap-neis.xml · sitemap-exam-analysis.xml
@@ -69,7 +95,7 @@ export async function GET() {
         'User-agent: *', ...COMMON, '',
         '# 네이버 검색로봇 명시적 허용',
         'User-agent: Yeti', ...COMMON, '',
-        '# [2026-10-22] 구글봇: 장문 분석글이 붙은 시험지만',
+        '# [2026-10-22] 구글봇: 장문 분석글이 붙은 시험지 + 입구(학교·지역·과목) + 사이트맵의 공개 안내 페이지(11/25)',
         ...google, '',
         ...TAIL,
     ].join('\n');
