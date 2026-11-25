@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import { createClient as createSupabase } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/server-admin';
@@ -7,11 +8,12 @@ import { recordWithdrawnPhone } from '@/lib/withdraw';
 export const dynamic = 'force-dynamic';
 
 /**
- * [2026-11-25] 회원 탈퇴(대표 지시: 탈퇴 후 7일간 같은 번호 재가입 금지).
- * 1) 로그인한 본인 + 현재 비밀번호 재확인(자리 비운 화면에서 남이 누르지 못하게)
- * 2) 번호 해시를 withdrawn_phones 에 남김(7일 재가입 차단)
- * 3) withdraw_account(): 개인 이용 기록 삭제, 제보 자료는 올린 사람만 지움
- * 4) 거래 기록이 없으면 계정 삭제, 있으면(결제·포인트 등 법정 보관) 계정의 개인정보를 지우고 로그인 차단
+ * [2026-11-25] 회원 탈퇴(대표 지시: 탈퇴 후 7일간 같은 번호 재가입 금지). 11/25 배포 전 검토 반영.
+ * 1) 로그인한 본인 + 현재 비밀번호 재확인
+ * 2) 충전 포인트가 남아 있으면 막는다(약관상 소멸 대상은 적립 포인트뿐 — 사용·환불 안내)
+ * 3) 번호는 HMAC 값으로만 7일 기록 + 가입 인증 기록의 원번호 삭제
+ * 4) withdraw_account(): 한 트랜잭션 — 거래 기록 없으면 계정까지 삭제, 있으면 기록은 남기고 개인정보만 비움
+ * 5) 익명 처리면 계정 이메일·메타데이터를 지우고 로그인 차단 / 저장소 파일(저장 시험지·PDF·개인DB 요청 첨부) 삭제
  */
 export async function POST(req: Request) {
     const supabase = createClient();
@@ -29,25 +31,43 @@ export async function POST(req: Request) {
 
     const admin = createAdminClient();
     const uid = user.id;
+    const { data: prof } = await admin.from('profiles').select('purchased_points').eq('id', uid).maybeSingle();
+    if ((prof?.purchased_points ?? 0) > 0)
+        return NextResponse.json({ ok: false, message: `충전한 포인트 ${Number(prof!.purchased_points).toLocaleString()}점이 남아 있어요. 사용하시거나 건의사항으로 환불을 요청하신 뒤 탈퇴해 주세요.` }, { status: 409 });
+
     try {
-        const phone = String(user.user_metadata?.phone || user.phone || '');
-        await recordWithdrawnPhone(admin, phone);
-        const { data: mode, error: rpcError } = await admin.rpc('withdraw_account', { p_uid: uid });
+        await recordWithdrawnPhone(admin, String(user.user_metadata?.phone || user.phone || ''));
+        const { data: res, error: rpcError } = await admin.rpc('withdraw_account', { p_uid: uid });
         if (rpcError) throw rpcError;
-        if (mode === 'delete') {
-            const { error } = await admin.auth.admin.deleteUser(uid);
-            if (error) throw error;
-        } else {
-            // 거래 기록이 남는 회원: 로그인 정보·연락처를 지우고 계정을 막는다
-            const { error } = await admin.auth.admin.updateUserById(uid, {
+        const mode: string = res?.mode;
+        if (mode === 'anonymize') {
+            // 거래 기록이 남는 회원: 로그인 정보·연락처를 지우고 계정을 막는다(실패하면 두 번 더 시도)
+            const patch: any = {
                 email: `withdrawn+${uid}@deleted.mathetf.com`,
-                phone: '',
-                // user_metadata 는 덮어쓰기가 아니라 합치기라, 기존 칸(이름·번호·동의·유입 등)을 하나하나 null 로 비운다(11/25 시험에서 확인)
-                user_metadata: { ...Object.fromEntries(Object.keys(user.user_metadata || {}).map(k => [k, null])), withdrawn_at: new Date().toISOString() },
+                // user_metadata 는 덮어쓰기가 아니라 합치기라, 기존 칸(이름·번호·동의·유입 등)을 하나하나 null 로 비운다
+                user_metadata: { ...Object.fromEntries(Object.keys(user.user_metadata || {}).map(k => [k, null])), withdrawn: true },
                 ban_duration: '876000h',
-                password: crypto.randomUUID() + crypto.randomUUID(),
-            } as any);
-            if (error) throw error;
+                password: randomBytes(32).toString('base64url'),
+            };
+            let lastErr: any = null;
+            for (let i = 0; i < 3; i++) {
+                const { error } = await admin.auth.admin.updateUserById(uid, patch);
+                if (!error) { lastErr = null; break; }
+                lastErr = error;
+            }
+            if (lastErr) throw lastErr;
+        } else if (mode !== 'deleted') {
+            throw new Error('withdraw_account 결과를 알 수 없음');
+        }
+        // 저장소 파일 — 실패해도 탈퇴는 끝난 것으로 보고 서버 기록에 남긴다
+        const objs: { bucket: string; name: string }[] = Array.isArray(res?.objects) ? res.objects : [];
+        const byBucket = new Map<string, string[]>();
+        for (const o of objs) byBucket.set(o.bucket, [...(byBucket.get(o.bucket) || []), o.name]);
+        for (const [bucket, names] of byBucket) {
+            for (let i = 0; i < names.length; i += 100) {
+                const { error } = await admin.storage.from(bucket).remove(names.slice(i, i + 100));
+                if (error) console.error('[withdraw] 파일 삭제 실패', uid, bucket, error.message);
+            }
         }
         await supabase.auth.signOut().catch(() => {});
         return NextResponse.json({ ok: true, mode });

@@ -56,7 +56,8 @@ export default function PrivacyModal({ isOpen, onClose, onAgree, readonly = fals
                                 <li>대금결제 및 재화 등의 공급에 관한 기록: 5년 (전자상거래법)</li>
                                 <li>소비자의 불만 또는 분쟁처리에 관한 기록: 3년 (전자상거래법)</li>
                             </ul>
-                            <p className="mt-2"><span className="font-bold">재가입 제한:</span> 무료 혜택의 부정 이용을 막기 위해, 탈퇴한 회원의 휴대폰 번호는 복원할 수 없게 변환(암호화)한 값으로만 탈퇴일로부터 7일 동안 보관하며, 이 기간에는 같은 번호로 다시 가입할 수 없습니다. 7일이 지나면 파기합니다.</p>
+                            <p className="mt-2"><span className="font-bold">재가입 제한:</span> 무료 혜택의 부정 이용을 막기 위해, 탈퇴한 회원의 휴대폰 번호는 원래 번호를 알아볼 수 없도록 변환한 값으로만 탈퇴일로부터 7일 동안 보관하며, 이 기간에는 같은 번호로 다시 가입할 수 없습니다. 7일이 지나면 파기합니다.</p>
+                            <p className="mt-2"><span className="font-bold">원본 제보 자료:</span> 회원이 보내 사이트 자료로 등록된 시험지는 탈퇴 후에도 사이트 자료로 남으며, 보낸 사람의 정보와 메모는 탈퇴 시 삭제합니다.</p>
                         </section>
 
                         <section>

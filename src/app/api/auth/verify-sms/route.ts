@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isPhoneRegistered, PHONE_TAKEN_MESSAGE } from '@/lib/phone-registered';
-import { rejoinBlockedUntil, rejoinBlockedMessage } from '@/lib/withdraw';
+import { rejoinBlockedUntil, rejoinBlockedMessage, purgePhoneVerifications } from '@/lib/withdraw';
 
 // 서버에서만 사용하는 Supabase Service Role Key (관리자 권한)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -73,7 +73,10 @@ export async function POST(req: Request) {
         // 3-2. [11/25] 탈퇴한 번호는 7일 동안 다시 가입 불가 — 번호 주인 확인 뒤에 알려 준다
         if (forSignup) {
             const until = await rejoinBlockedUntil(supabaseAdmin, phone);
-            if (until) return NextResponse.json({ success: false, code: 'rejoin_blocked', message: rejoinBlockedMessage(until) }, { status: 409 });
+            if (until) {
+                await purgePhoneVerifications(supabaseAdmin, phone);   // 원번호를 남기지 않는다
+                return NextResponse.json({ success: false, code: 'rejoin_blocked', message: rejoinBlockedMessage(until) }, { status: 409 });
+            }
         }
 
         // 4. 인증 통과 -> DB 업데이트

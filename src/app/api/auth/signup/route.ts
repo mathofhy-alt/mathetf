@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { safeSignupAttribution } from '@/lib/analytics/signup-attribution';
 import { isPhoneRegistered, PHONE_TAKEN_MESSAGE } from '@/lib/phone-registered';
 import { checkEmail } from '@/lib/email-check';
-import { rejoinBlockedUntil, rejoinBlockedMessage } from '@/lib/withdraw';
+import { rejoinBlockedUntil, rejoinBlockedMessage, purgePhoneVerifications } from '@/lib/withdraw';
 
 // 서버에서만 사용하는 Service Role Key (관리자 권한). 절대 클라이언트로 나가면 안 됨.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         // 2-2. [11/25] 탈퇴한 번호는 7일 동안 다시 가입 불가(대표 지시)
         const blockedUntil = await rejoinBlockedUntil(supabaseAdmin, phone);
         if (blockedUntil) {
+            await purgePhoneVerifications(supabaseAdmin, phone);
             return NextResponse.json({ success: false, code: 'rejoin_blocked', message: rejoinBlockedMessage(blockedUntil) }, { status: 409 });
         }
 

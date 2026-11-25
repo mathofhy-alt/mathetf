@@ -13,6 +13,7 @@ export default function WithdrawSettings() {
     const [confirm, setConfirm] = useState('');
     const [busy, setBusy] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
+    const [done, setDone] = useState(false);
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,7 +26,8 @@ export default function WithdrawSettings() {
             const j = await res.json().catch(() => ({}));
             if (!res.ok || !j.ok) throw new Error(j.message || '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.');
             await createClient().auth.signOut().catch(() => {});
-            window.location.href = '/?withdrawn=1';
+            setMsg(null); setDone(true);
+            setTimeout(() => { window.location.href = '/'; }, 2500);
             return;
         } catch (err: any) {
             setMsg(err?.message || '탈퇴하지 못했어요.');
@@ -39,10 +41,13 @@ export default function WithdrawSettings() {
                 <span className="rd-my-card-icon"><UserX size={18} /></span> 회원 탈퇴
             </h3>
             <p className="rd-my-card-text">
-                탈퇴하면 계정과 저장한 시험지·폴더·이용 기록이 삭제되고, 남은 포인트와 구매한 자료의 다운로드 권한은 사라집니다.
-                결제 기록은 관계 법령에 따라 정해진 기간 동안 보관됩니다. <b>탈퇴한 휴대폰 번호로는 7일 동안 다시 가입할 수 없어요.</b>
+                탈퇴하면 계정과 저장한 시험지·폴더·이용 기록이 삭제되고, 남은 적립 포인트와 구매한 자료의 이용 권한은 사라집니다.
+                충전한 포인트가 남아 있으면 먼저 사용하거나 환불을 요청해 주세요. 결제·이용 기록은 관계 법령에 따라 정해진 기간 동안 보관됩니다.
+                보내 주신 원본 제보 중 사이트 자료가 된 시험지는 남고, 보낸 사람 정보만 지워집니다. <b>탈퇴한 휴대폰 번호로는 7일 동안 다시 가입할 수 없어요.</b>
             </p>
-            {!open ? (
+            {done ? (
+                <p role="status" className="rd-auth-ok rd-my-form-msg">탈퇴가 끝났어요. 그동안 이용해 주셔서 감사합니다. 잠시 뒤 첫 화면으로 이동합니다.</p>
+            ) : !open ? (
                 <button type="button" className="rd-btn rd-my-form-submit" onClick={() => setOpen(true)}>탈퇴하기</button>
             ) : (
                 <form onSubmit={submit} className="rd-my-form">
