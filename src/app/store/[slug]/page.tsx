@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -11,6 +12,20 @@ const CHIP_ORDER = ['원본', '변형', '구성', '분량'];
 const chipRank = (k: string) => { const i = CHIP_ORDER.indexOf(k); return i < 0 ? 99 : i; };
 import { storeBookBySlug, storeViewer, purchasedBookIds, withStoreImages } from '@/lib/store/server';
 import { createClient } from '@/utils/supabase/server';
+
+// [11/25] 책마다 제목·설명·canonical — 예전엔 7쪽(/store + 책 6권)이 모두 「서점 | 수학ETF」 한 제목에 canonical 이 없어
+//   구글봇에 열면 같은 제목 문서 7개가 되고, ?ref= 같은 쿼리 주소가 하나로 합쳐지지 않았다. robots 는 레이아웃 값을 따른다.
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+    let book: Awaited<ReturnType<typeof storeBookBySlug>> = null;
+    try { book = await storeBookBySlug(params.slug, false, []); } catch { book = null; }
+    if (!book) return {};
+    const summary = (book.subtitle || book.description || '').replace(/\s+/g, ' ').trim().slice(0, 140);
+    return {
+        title: `${book.title} | 수학ETF 서점`,
+        description: summary || '수학ETF가 직접 만든 변형 문제집.',
+        alternates: { canonical: `/store/${encodeURIComponent(params.slug)}` },
+    };
+}
 
 export default async function BookPage({ params }: { params: { slug: string } }) {
     const viewer = await storeViewer();

@@ -32,8 +32,8 @@ export default function Footer() {
                         <div>
                             <p>기출</p>
                             <Link href="/schools">학교별 기출</Link>
-                            <Link href="/region">지역별 기출</Link>
-                            <Link href="/mock">모의고사·사관·경찰대</Link>
+                            <Link href="/지역">지역별 기출</Link>
+                            <Link href="/모의고사">모의고사·사관·경찰대</Link>
                         </div>
                         <div>
                             <p>시험지 만들기</p>

@@ -13,7 +13,8 @@ import { getLongIndex } from '@/lib/exam-long';
 //   막혀 있던 것: 개별 학교 /school/… 779개(sitemap.xml 747 + sitemap-neis.xml 32) — 시험지로 가는 내부 링크
 //   (동탄고 한 곳에 <a href="/exam/…"> 47개)를 구글이 읽지 못했다. 사이트맵에 올려 놓고 robots 로 막은
 //   /store·/study·/question-bank·/teacher·/guide·/predict·/print-transform 도 같은 모순이었다
-//   (모두 비로그인 공개, index·follow, 자기 canonical — 11/25 구글봇 UA 로 확인).
+//   (모두 비로그인 공개·index·follow — 11/25 구글봇 UA 로 확인. 서점 7쪽만 canonical·제목이 없어 같은 커밋에서 붙였다).
+//   /school/·/store/·/study/ 는 접두로 열고 그 아래 쿼리 주소는 다시 막는다(Disallow …/*? 가 더 길어 이긴다).
 //   ⚠ 파비콘(/icon.png 등)도 막혀 있었다 — 구글은 파비콘 파일과 홈이 둘 다 크롤 가능해야 검색결과에 아이콘을 띄운다.
 //   효과 확인: 대표 시험지에 구글의 '마지막 크롤링' 날짜가 생기는지(scripts/gsc/check_index.py).
 export const revalidate = 3600;
@@ -55,24 +56,30 @@ export async function GET() {
     const index = await getLongIndex(true);
     const google = [
         'User-agent: Googlebot',
+        // [11/25] 막는 규칙을 맨 위로 — 구글은 robots.txt 의 500KiB 넘는 뒷부분을 읽지 않는다.
+        //   맨 끝에 두면 분석글이 늘어 파일이 커질 때 이 줄이 잘려 전부 허용이 된다(11/25 약 219KiB). 규칙 순서는 판정에 영향 없음.
+        'Disallow: /',
         'Allow: /$',
         'Allow: /_next/',                                  // 화면을 그리는 CSS·JS — 막으면 렌더링이 깨진다
         'Allow: /api/og-image',
         `Allow: /${encodeURIComponent('모의고사')}`,        // 사관·경찰대 등 — 우리만 가진 자료
         'Allow: /insights',
         // [10/23] 입구 페이지 — 10/22 허용 목록에서 빠져 /schools·/지역·과목 허브가 구글봇에 막혀 있었다
-        //   (/schools 는 '크롤링됨-색인 안 됨', /지역 은 '알 수 없는 URL'). 학교 페이지는 여전히 막는다.
+        //   (/schools 는 '크롤링됨-색인 안 됨', /지역 은 '알 수 없는 URL'). 학교 페이지는 11/25 부터 연다(아래).
         'Allow: /schools$',
         `Allow: /${encodeURIComponent('지역')}`,
         'Allow: /subject/',
         // [11/25] 개별 학교 페이지 — 학교별 기출 목록에서 시험지 상세로 이어지는 내부 링크 경로.
         'Allow: /school/',
+        'Disallow: /school/*?',                            // 쿼리 주소(?utm_ ?_rsc= 등) — Allow 보다 길어서 이긴다
         // [11/25] 사이트맵에 올린 공개 안내·서점 페이지 — 사이트맵과 robots 를 맞춘다.
         //   $ 로 끝낸 것은 쿼리 주소(?school= ?src= ?demo= 등, 본문이 같은 중복)를 계속 막기 위해서다.
         'Allow: /store$',
         'Allow: /store/',
         'Disallow: /store/*/complete',                     // 구매 완료(로그인 전용·noindex)
+        'Disallow: /store/*?',
         'Allow: /study/',
+        'Disallow: /study/*?',
         'Allow: /question-bank$',
         'Allow: /teacher$',
         'Allow: /guide$',
@@ -82,6 +89,7 @@ export async function GET() {
         'Allow: /icon.png',
         'Allow: /icon.svg',
         'Allow: /apple-icon.png',
+        'Allow: /og-image.png$',                           // 홈 Organization 구조화 데이터의 로고
         // ⚠ 사이트맵 파일도 허용해야 한다 — 구글은 사이트맵을 가져올 때도 robots 를 지킨다.
         //   10/23 배포 직후 /sitemap-exam-analysis.xml 이 서치콘솔에서 '가져올 수 없음'(Disallow: / 에 막힘).
         'Allow: /sitemap',             // sitemap.xml · sitemap-neis.xml · sitemap-exam-analysis.xml
@@ -89,7 +97,6 @@ export async function GET() {
         'Allow: /rss.xml',
         'Allow: /robots.txt',
         ...Object.keys(index).sort().map(id => `Allow: /exam/${id}$`),
-        'Disallow: /',
     ];
     const text = [
         'User-agent: *', ...COMMON, '',
