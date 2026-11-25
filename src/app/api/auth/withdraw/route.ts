@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 /**
  * [2026-11-25] 회원 탈퇴(대표 지시: 탈퇴 후 7일간 같은 번호 재가입 금지). 11/25 배포 전 검토 반영.
  * 1) 로그인한 본인 + 현재 비밀번호 재확인
- * 2) 충전 포인트가 남아 있으면 막는다(약관상 소멸 대상은 적립 포인트뿐 — 사용·환불 안내)
+ * 2) 남은 포인트는 탈퇴와 함께 사라진다(회사가 준 포인트 — 대표 11/25, 환불 없음)
  * 3) 번호는 HMAC 값으로만 7일 기록 + 가입 인증 기록의 원번호 삭제
  * 4) withdraw_account(): 한 트랜잭션 — 거래 기록 없으면 계정까지 삭제, 있으면 기록은 남기고 개인정보만 비움
  * 5) 익명 처리면 계정 이메일·메타데이터를 지우고 로그인 차단 / 저장소 파일(저장 시험지·PDF·개인DB 요청 첨부) 삭제
@@ -31,9 +31,6 @@ export async function POST(req: Request) {
 
     const admin = createAdminClient();
     const uid = user.id;
-    const { data: prof } = await admin.from('profiles').select('purchased_points').eq('id', uid).maybeSingle();
-    if ((prof?.purchased_points ?? 0) > 0)
-        return NextResponse.json({ ok: false, message: `충전한 포인트 ${Number(prof!.purchased_points).toLocaleString()}점이 남아 있어요. 사용하시거나 건의사항으로 환불을 요청하신 뒤 탈퇴해 주세요.` }, { status: 409 });
 
     try {
         await recordWithdrawnPhone(admin, String(user.user_metadata?.phone || user.phone || ''));

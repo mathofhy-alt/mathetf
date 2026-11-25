@@ -71,7 +71,7 @@ begin
     -- 거래 기록이 남는 회원: 구매·이용·발급 기록은 분쟁 처리 증빙이라 남기고(전자상거래법), 개인정보 칸만 비운다
     update feature_usage set user_email = null where user_id = p_uid;
     -- 포인트 잔액은 건드리지 않는다: 계정이 막혀 쓸 수 없으니 적립 포인트는 약관대로 소멸한 것과 같고, 원장과 잔액도 어긋나지 않는다.
-    -- (충전 포인트가 남은 회원은 API 가 탈퇴 전에 막고 사용·환불을 안내한다)
+    -- (포인트는 회사가 준 것이라 환불 없이 탈퇴와 함께 사라진다 — 대표 11/25)
     update profiles set display_name = null, postcode = null, address = null, address_detail = null,
                         persona = null, updated_at = now()
      where id = p_uid;
