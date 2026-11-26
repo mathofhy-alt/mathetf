@@ -8,15 +8,19 @@ export const dynamic = 'force-dynamic';
 
 /**
  * 원본 제보 운영자 알림 (10/9, Vercel 크론 5분마다 — vercel.json).
- * 사용자: "한 번에 받는 게 낫지. 5분 간격으로. 없으면 보내지 말고."
+ * 사용자: "한 번에 받는 게 낫지. 5분 간격으로. 없으면 보내지 말고." → [11/27] 운영자 문자만 1시간 간격(ADMIN_GAP_MS), 크론은 5분 유지.
  *  - 아직 알리지 않은 제보(description.admin_notified 없음)를 모아 문자 한 통으로 보내고 표시한다. 없으면 아무것도 안 한다.
- *  - 최근 2시간 접수분만 본다 — 처음 켤 때 옛 제보가 한꺼번에 오지 않게, 크론이 잠깐 멈춰도 다음 회차가 주워 가게.
+ *  - 최근 3시간 접수분만 본다 — 처음 켤 때 옛 제보가 한꺼번에 오지 않게, 크론이 잠깐 멈춰도 다음 회차가 주워 가게.
  *  - 문자는 운영자 계정에 가입 때 인증한 번호로. 밤에도 바로 보낸다(운영자는 새벽에 일한다).
  *
  * [10/15] 같은 크론에서 제보자 '한글 파일 완성' 문자도 보낸다 — donePass 참고.
  */
 const ADMIN_USER_ID = '0f1db267-e257-460b-9549-2fdd6e6ae988';
-const WINDOW_MS = 2 * 60 * 60 * 1000;
+// [11/27] 1시간 간격 알림으로 늘리며 2→3시간: 1시간 넘게 모인 제보·직전 알림 기록이 창 밖으로 빠지지 않게
+const WINDOW_MS = 3 * 60 * 60 * 1000;
+// [11/27 대표 「5분은 너무 자주 울린다, 1시간으로」] 운영자 문자는 마지막 알림 뒤 1시간이 지나야 보낸다(그 사이 제보는 모아 한 통).
+//   크론은 5분 그대로 — 같은 크론의 제보자 '한글 파일 완성' 문자(donePass)가 늦어지지 않게.
+const ADMIN_GAP_MS = 60 * 60 * 1000;
 
 // [10/9] 단문(SMS, 90바이트 = 한글 45자) 안에 — 넘으면 장문(LMS)이라 단가가 몇 배다(사용자 지적).
 const SHORT: Record<string, string> = { 확률과통계: '확통', 공통수학1: '공수1', 공통수학2: '공수2', 미적분I: '미적1', 미적분II: '미적2', 미적분: '미적', 기하: '기하', 대수: '대수', 수학I: '수1', 수학II: '수2' };
@@ -47,6 +51,9 @@ async function adminPass(admin: Admin): Promise<Record<string, any>> {
 
     const fresh = (rows || []).filter(r => !parse(r.description).admin_notified);
     if (!fresh.length) return { ok: true, sent: 0 };
+    // 직전 운영자 알림 시각(창 안 제보에 찍힌 admin_notified 중 가장 늦은 것) — 1시간이 안 지났으면 이번엔 모아만 둔다
+    const last = Math.max(0, ...(rows || []).map(r => Date.parse(parse(r.description).admin_notified || '') || 0));
+    if (Date.now() - last < ADMIN_GAP_MS) return { ok: true, sent: 0, waiting: fresh.length, next_after: new Date(last + ADMIN_GAP_MS).toISOString() };
 
     // 첫 건만 '학교 학년-학기시험 과목'으로 줄여 적고 나머지는 '외 N건'. 연도는 관리자 화면에서 본다.
     // [10/19 대표] 제보자 닉네임도 붙인다 — 단문 90바이트를 넘으면 닉네임 말고 시험 이름 쪽을 줄인다(닉네임은 10자까지).
